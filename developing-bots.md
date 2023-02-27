@@ -68,14 +68,11 @@ For example:
 `2D` represents the 2 of diamonds, and `TC` represents the 10 of clubs.
 
 ## Programming a bot
-Bots are uploaded as a zip containing a file named `bot.json`. This file contains the name
-and version of your bot (version is an integer, and only the highest version bot will run), and a 
+Bots are uploaded as a zip containing a file named `bot.json`. This file contains a 
 command to run it. For example:
 
 ```json
 {
-    "name": "RNG",
-    "version": 0,
     "command": "python3 rngbot.py"
 }
 ```
