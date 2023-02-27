@@ -2,6 +2,20 @@ use leptos::*;
 use leptos_meta::*;
 use leptos_router::*;
 
+#[path = "./app_config.rs"]
+mod app_config;
+
+mod pages {
+    pub mod homepage;
+    pub mod signup;
+}
+
+mod components {
+    pub mod nav;
+}
+use pages::homepage::*;
+use pages::signup::*;
+
 #[component]
 pub fn App(cx: Scope) -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
@@ -15,28 +29,16 @@ pub fn App(cx: Scope) -> impl IntoView {
         <Stylesheet id="leptos" href="/pkg/leptos_start.css"/>
 
         // sets the document title
-        <Title text="Welcome to Leptos"/>
+        <Title text="Pokerbots McGill"/>
 
         // content for this welcome page
         <Router>
             <main>
                 <Routes>
                     <Route path="" view=|cx| view! { cx, <HomePage/> }/>
+                    <Route path="/signup" view=|cx| view! { cx, <SignUp/> }/>
                 </Routes>
             </main>
         </Router>
-    }
-}
-
-/// Renders the home page of your application.
-#[component]
-fn HomePage(cx: Scope) -> impl IntoView {
-    // Creates a reactive value to update the button
-    let (count, set_count) = create_signal(cx, 0);
-    let on_click = move |_| set_count.update(|count| *count += 1);
-
-    view! { cx,
-        <h1>"Pokerbots"</h1>
-        <button on:click=on_click>"Click Me: " {count}</button>
     }
 }
