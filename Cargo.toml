@@ -1,5 +1,5 @@
 [package]
-name = "leptos_start"
+name = "pokerbots"
 version = "0.1.0"
 edition = "2021"
 
@@ -21,21 +21,16 @@ leptos_router = { git = "https://github.com/leptos-rs/leptos", default-features 
 log = "0.4"
 simple_logger = "4"
 wasm-bindgen = "0.2"
+serde = "1.0.152"
+diesel = { version = "2.0.3", features = "sqlite" }
 
 [features]
 hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate"]
-ssr = [
-  "dep:actix-files",
-  "dep:actix-web",
-  "dep:leptos_actix",
-  "leptos/ssr",
-  "leptos_meta/ssr",
-  "leptos_router/ssr",
-]
+ssr = ["dep:actix-files", "dep:actix-web", "dep:leptos_actix", "leptos/ssr", "leptos_meta/ssr", "leptos_router/ssr"]
 
 [package.metadata.leptos]
 # The name used by wasm-bindgen/cargo-leptos for the JS/WASM bundle. Defaults to the crate name   
-output-name = "leptos_start"
+output-name = "pokerbots"
 # The site root folder is where cargo-leptos generate all output. WARNING: all content of this folder will be erased on a rebuild. Use it in your server setup.
 site-root = "target/site"
 # The site-root relative folder where all compiled output (JS, WASM and CSS) is written

@@ -3,18 +3,20 @@ use leptos_meta::*;
 use leptos_router::*;
 
 #[path = "./app_config.rs"]
-mod app_config;
+pub mod app_config;
 
-mod pages {
+pub mod pages {
     pub mod homepage;
-    pub mod signup;
+    pub mod team;
 }
 
-mod components {
+pub mod login;
+use login::*;
+pub mod components {
     pub mod nav;
 }
 use pages::homepage::*;
-use pages::signup::*;
+use pages::team::*;
 
 #[component]
 pub fn App(cx: Scope) -> impl IntoView {
@@ -23,10 +25,9 @@ pub fn App(cx: Scope) -> impl IntoView {
 
     view! {
         cx,
-
         // injects a stylesheet into the document <head>
         // id=leptos means cargo-leptos will hot-reload this stylesheet
-        <Stylesheet id="leptos" href="/pkg/leptos_start.css"/>
+        <Stylesheet id="leptos" href="/pkg/pokerbots.css"/>
 
         // sets the document title
         <Title text="Pokerbots McGill"/>
@@ -36,7 +37,7 @@ pub fn App(cx: Scope) -> impl IntoView {
             <main>
                 <Routes>
                     <Route path="" view=|cx| view! { cx, <HomePage/> }/>
-                    <Route path="/signup" view=|cx| view! { cx, <SignUp/> }/>
+                    <Route path="/team" view=|cx| view! { cx, <Team/> }/>
                 </Routes>
             </main>
         </Router>

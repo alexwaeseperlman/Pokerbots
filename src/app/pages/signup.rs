@@ -3,11 +3,13 @@ use std::vec;
 
 use super::super::app_config::TEAM_SIZE;
 
+use std::fmt;
+
 #[component]
-fn TeamMember(cx: Scope) -> impl IntoView {
+fn TeamMember(cx: Scope, id: i32) -> impl IntoView {
     view! {
         cx,
-        <div class="w-full">"Email address: "<input class="w-full" type="email"/></div>
+        <div class="w-full mt-2">"Email address: "<input required name={format!("member-{}", id)} class="w-full" type="email"/></div>
     }
 }
 
@@ -18,7 +20,9 @@ pub fn SignUp(cx: Scope) -> impl IntoView {
 
     let add_member = move || {
         let mut a = member_in();
-        a.push(view! { cx, <TeamMember/> }.into_view(cx));
+        a.push(
+            view! { cx, <TeamMember id={member_in().len().try_into().unwrap()}/> }.into_view(cx),
+        );
         set_member_in(a);
     };
     // TODO: Figure out why adding a member at the start causes the first member not to render after adding more
@@ -33,7 +37,7 @@ pub fn SignUp(cx: Scope) -> impl IntoView {
 
     view! {
         cx,
-        <form>
+        <form action="/maketeam">
             <div class="w-full flex content-center flex-col flex-wrap">
                 <div class="w-fit text-center"><h1 class="text-center">"Create a team"</h1></div>
                 "Team id: " <input name="teamid"/>
@@ -48,8 +52,9 @@ pub fn SignUp(cx: Scope) -> impl IntoView {
                     }} prop:disabled=few_members>"Remove member"</button>
                 </div>
                 <div class="w-80">
-                { member_in }
+                    { member_in }
                 </div>
+                <button class="primary mt-4">"Submit"</button>
             </div>
         </form>
     }

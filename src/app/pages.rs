@@ -1,2 +1,3 @@
+use leptos::*;
 pub mod homepage;
-pub mod signup;
+pub mod team;
