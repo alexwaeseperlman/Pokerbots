@@ -3,7 +3,7 @@ pub mod app {
     pub mod login;
     pub mod pages;
 }
-pub mod app_config;
+
 #[cfg(feature = "ssr")]
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

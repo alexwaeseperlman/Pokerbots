@@ -2,9 +2,7 @@ use leptos::*;
 use leptos_meta::*;
 use leptos_router::*;
 
-#[path = "./app_config.rs"]
-pub mod app_config;
-
+use super::app_config::*;
 pub mod pages {
     pub mod homepage;
     pub mod team;

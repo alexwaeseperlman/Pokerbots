@@ -22,7 +22,9 @@ log = "0.4"
 simple_logger = "4"
 wasm-bindgen = "0.2"
 serde = "1.0.152"
-diesel = { version = "2.0.3", features = "sqlite" }
+diesel = { version = "2.0.3", features = ["sqlite"] }
+dotenvy = "0.15"
+actix-session = "0.7.2"
 
 [features]
 hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate"]
