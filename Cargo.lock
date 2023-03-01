@@ -883,8 +883,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c05aeb6a22b8f62540c194aac980f2115af067bfe15a0734d7277a768d396b31"
 dependencies = [
  "cfg-if",
+ "js-sys",
  "libc",
  "wasi",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -1093,9 +1095,9 @@ checksum = "fad582f4b9e86b6caa621cabeb0963332d92eea04729ab12892c2533951e6440"
 
 [[package]]
 name = "jobserver"
-version = "0.1.25"
+version = "0.1.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "068b1ee6743e4d11fb9c6a1e6064b3693a1b600e7f5f5988047d98b3dc9fb90b"
+checksum = "936cfd212a0155903bcbc060e316fb6cc7cbf2e1907329391ebadc1fe0ce77c2"
 dependencies = [
  "libc",
 ]
@@ -1135,7 +1137,7 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 [[package]]
 name = "leptos"
 version = "0.2.0"
-source = "git+https://github.com/leptos-rs/leptos#b153ab51ee9bba50057ba65353a7312c94f753c5"
+source = "git+https://github.com/leptos-rs/leptos#4b98ece2b466b65bbcecb05e3893c467c8893998"
 dependencies = [
  "cfg-if",
  "leptos_config",
@@ -1150,7 +1152,7 @@ dependencies = [
 [[package]]
 name = "leptos_actix"
 version = "0.2.0"
-source = "git+https://github.com/leptos-rs/leptos#b153ab51ee9bba50057ba65353a7312c94f753c5"
+source = "git+https://github.com/leptos-rs/leptos#4b98ece2b466b65bbcecb05e3893c467c8893998"
 dependencies = [
  "actix-web",
  "futures 0.3.26",
@@ -1165,7 +1167,7 @@ dependencies = [
 [[package]]
 name = "leptos_config"
 version = "0.2.0"
-source = "git+https://github.com/leptos-rs/leptos#b153ab51ee9bba50057ba65353a7312c94f753c5"
+source = "git+https://github.com/leptos-rs/leptos#4b98ece2b466b65bbcecb05e3893c467c8893998"
 dependencies = [
  "config",
  "fs",
@@ -1178,7 +1180,7 @@ dependencies = [
 [[package]]
 name = "leptos_dom"
 version = "0.2.0"
-source = "git+https://github.com/leptos-rs/leptos#b153ab51ee9bba50057ba65353a7312c94f753c5"
+source = "git+https://github.com/leptos-rs/leptos#4b98ece2b466b65bbcecb05e3893c467c8893998"
 dependencies = [
  "async-recursion",
  "cfg-if",
@@ -1205,7 +1207,7 @@ dependencies = [
 [[package]]
 name = "leptos_integration_utils"
 version = "0.2.0"
-source = "git+https://github.com/leptos-rs/leptos#b153ab51ee9bba50057ba65353a7312c94f753c5"
+source = "git+https://github.com/leptos-rs/leptos#4b98ece2b466b65bbcecb05e3893c467c8893998"
 dependencies = [
  "futures 0.3.26",
  "leptos",
@@ -1217,7 +1219,7 @@ dependencies = [
 [[package]]
 name = "leptos_macro"
 version = "0.2.0"
-source = "git+https://github.com/leptos-rs/leptos#b153ab51ee9bba50057ba65353a7312c94f753c5"
+source = "git+https://github.com/leptos-rs/leptos#4b98ece2b466b65bbcecb05e3893c467c8893998"
 dependencies = [
  "cfg-if",
  "convert_case 0.6.0",
@@ -1238,7 +1240,7 @@ dependencies = [
 [[package]]
 name = "leptos_meta"
 version = "0.2.0"
-source = "git+https://github.com/leptos-rs/leptos#b153ab51ee9bba50057ba65353a7312c94f753c5"
+source = "git+https://github.com/leptos-rs/leptos#4b98ece2b466b65bbcecb05e3893c467c8893998"
 dependencies = [
  "cfg-if",
  "leptos",
@@ -1251,7 +1253,7 @@ dependencies = [
 [[package]]
 name = "leptos_reactive"
 version = "0.2.0"
-source = "git+https://github.com/leptos-rs/leptos#b153ab51ee9bba50057ba65353a7312c94f753c5"
+source = "git+https://github.com/leptos-rs/leptos#4b98ece2b466b65bbcecb05e3893c467c8893998"
 dependencies = [
  "base64 0.21.0",
  "cfg-if",
@@ -1272,7 +1274,7 @@ dependencies = [
 [[package]]
 name = "leptos_router"
 version = "0.2.0"
-source = "git+https://github.com/leptos-rs/leptos#b153ab51ee9bba50057ba65353a7312c94f753c5"
+source = "git+https://github.com/leptos-rs/leptos#4b98ece2b466b65bbcecb05e3893c467c8893998"
 dependencies = [
  "cfg-if",
  "common_macros",
@@ -1297,7 +1299,7 @@ dependencies = [
 [[package]]
 name = "leptos_server"
 version = "0.2.0"
-source = "git+https://github.com/leptos-rs/leptos#b153ab51ee9bba50057ba65353a7312c94f753c5"
+source = "git+https://github.com/leptos-rs/leptos#4b98ece2b466b65bbcecb05e3893c467c8893998"
 dependencies = [
  "ciborium",
  "form_urlencoded",
@@ -1651,6 +1653,7 @@ dependencies = [
  "console_log",
  "diesel",
  "dotenvy",
+ "getrandom",
  "leptos",
  "leptos_actix",
  "leptos_meta",

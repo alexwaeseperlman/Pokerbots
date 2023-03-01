@@ -1,8 +1,6 @@
 use leptos::{ev::MouseEvent, *};
 use std::vec;
 
-use super::super::app_config::TEAM_SIZE;
-
 use std::fmt;
 
 #[component]

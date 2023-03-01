@@ -2,7 +2,7 @@ use leptos::*;
 use std::vec;
 
 #[component]
-pub fn HomePage(cx: Scope) -> impl IntoView {
+pub fn Nav(cx: Scope) -> impl IntoView {
     view! {
         cx,
         <nav>

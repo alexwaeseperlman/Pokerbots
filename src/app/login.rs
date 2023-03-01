@@ -1,6 +1,4 @@
-#[path = "../app_config.rs"]
-mod app_config;
-use app_config::*;
+use super::super::app_config::*;
 use leptos::{ev::MouseEvent, *};
 use leptos_meta::*;
 use leptos_router::*;

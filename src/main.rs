@@ -1,24 +1,39 @@
-pub mod app {
-    pub mod components;
-    pub mod login;
-    pub mod pages;
-}
+use cfg_if::cfg_if;
 
-#[cfg(feature = "ssr")]
+cfg_if! {
+if #[cfg(feature = "ssr")] {
+use dotenvy::dotenv;
+use std::env;
+use diesel::prelude::*;
+//use diesel::sqlite::SqliteConnection;
+
+/*pub fn establish_connection() -> SqliteConnection {
+    dotenv().ok();
+
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    SqliteConnection::establish(&database_url)
+        .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
+}*/
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     use actix_files::Files;
+    //use actix_session::{storage::CookieSessionStore, Session, SessionMiddleware};
     use actix_web::*;
     use leptos::*;
     use leptos_actix::{generate_route_list, LeptosRoutes};
     use pokerbots::app::*;
+
+    dotenv().ok();
+
+    let key = env::var("SECRET_KEY").expect("SECRET_KEY must be set in .env");
 
     let conf = get_configuration(None).await.unwrap();
     let addr = conf.leptos_options.site_addr;
     // Generate the list of routes in your Leptos App
     let routes = generate_route_list(|cx| view! { cx, <App/> });
 
-    //crate::app::pages::register_server_functions();
+    register_server_functions();
 
     HttpServer::new(move || {
         let leptos_options = &conf.leptos_options;
@@ -38,10 +53,12 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await
 }
-
-#[cfg(not(feature = "ssr"))]
+}
+else {
 pub fn main() {
     // no client-side main function
     // unless we want this to work with e.g., Trunk for pure client-side testing
     // see lib.rs for hydration function instead
+}
+}
 }

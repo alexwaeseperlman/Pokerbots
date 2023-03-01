@@ -2,19 +2,24 @@ use leptos::*;
 use leptos_meta::*;
 use leptos_router::*;
 
-use super::app_config::*;
 pub mod pages {
     pub mod homepage;
     pub mod team;
 }
 
 pub mod login;
+
 use login::*;
-pub mod components {
-    pub mod nav;
-}
 use pages::homepage::*;
-use pages::team::*;
+use pages::team;
+use team::*;
+
+use super::app_config::*;
+
+#[cfg(feature = "ssr")]
+pub fn register_server_functions() {
+    team::register_server_functions();
+}
 
 #[component]
 pub fn App(cx: Scope) -> impl IntoView {
