@@ -2,31 +2,27 @@ use cfg_if::cfg_if;
 
 cfg_if! {
 if #[cfg(feature = "ssr")] {
+use actix_session::{Session, SessionMiddleware, storage::CookieSessionStore};
 use dotenvy::dotenv;
 use std::env;
-use diesel::prelude::*;
-//use diesel::sqlite::SqliteConnection;
+use actix_web::*;
 
-/*pub fn establish_connection() -> SqliteConnection {
-    dotenv().ok();
+fn get_secret_key() -> cookie::Key {
+    let key = env::var("SECRET_KEY").expect("SECRET_KEY must be set in .env");
+    cookie::Key::from(key.as_bytes())
+}
 
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    SqliteConnection::establish(&database_url)
-        .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
-}*/
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     use actix_files::Files;
     //use actix_session::{storage::CookieSessionStore, Session, SessionMiddleware};
-    use actix_web::*;
+    use actix_session::*;
     use leptos::*;
     use leptos_actix::{generate_route_list, LeptosRoutes};
     use pokerbots::app::*;
 
     dotenv().ok();
-
-    let key = env::var("SECRET_KEY").expect("SECRET_KEY must be set in .env");
 
     let conf = get_configuration(None).await.unwrap();
     let addr = conf.leptos_options.site_addr;
@@ -41,6 +37,9 @@ async fn main() -> std::io::Result<()> {
 
         App::new()
             .route("/api/{tail:.*}", leptos_actix::handle_server_fns())
+            .wrap(
+                SessionMiddleware::new(CookieSessionStore::default(), get_secret_key())
+            )
             .leptos_routes(
                 leptos_options.to_owned(),
                 routes.to_owned(),

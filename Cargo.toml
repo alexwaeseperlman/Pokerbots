@@ -22,14 +22,16 @@ log = "0.4"
 simple_logger = "4"
 wasm-bindgen = "0.2"
 serde = "1.0.152"
-diesel = { version = "2.0.3", features = ["sqlite"] }
+diesel = { version = "2.0.3", features = ["sqlite", "r2d2"], optional=true }
 dotenvy = "0.15"
 actix-session = {version = "0.7.2", features=["cookie-session"], optional=true}
 getrandom = { version = "0.2", features = ["js"] }
+lazy_static = "1.4.0"
+r2d2 = "0.8.10"
 
 [features]
 hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate"]
-ssr = ["dep:actix-files", "dep:actix-web", "dep:leptos_actix", "leptos/ssr", "leptos_meta/ssr", "leptos_router/ssr", "dep:actix-session"]
+ssr = ["dep:actix-files", "dep:actix-web", "dep:leptos_actix", "leptos/ssr", "leptos_meta/ssr", "leptos_router/ssr", "dep:actix-session", "dep:diesel"]
 
 [package.metadata.leptos]
 # The name used by wasm-bindgen/cargo-leptos for the JS/WASM bundle. Defaults to the crate name   

@@ -40,7 +40,7 @@ pub fn App(cx: Scope) -> impl IntoView {
             <main>
                 <Routes>
                     <Route path="" view=|cx| view! { cx, <HomePage/> }/>
-                    <Route path="/team" view=|cx| view! { cx, <Team/> }/>
+                    <Route path="/team" view=|cx| view! { cx, <TeamPage/> }/>
                 </Routes>
             </main>
         </Router>
