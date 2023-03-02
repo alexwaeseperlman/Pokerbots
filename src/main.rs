@@ -49,15 +49,15 @@ async fn main() -> std::io::Result<()> {
                 let team_data = get_team_data(Some(req.get_session().clone()));
                 req.extensions_mut().insert(user_data);
                 req.extensions_mut().insert(team_data);
-                println!("Add data stuff");
                 srv.call(req).map(|res| res)
             })
-            .app_data(hbars_ref.clone())
             .wrap(Logger::new("%a %{User-Agent}i"))
             .wrap(session_middleware)
+            .app_data(hbars_ref.clone())
             .route("/api/login", web::get().to(handle_login))
             .service(Files::new("/static", "static/"))
-            .service(pokerbots::app::home_page);
+            .service(pokerbots::app::home_page)
+            .service(pokerbots::app::pages::team::team);
         a
         //.wrap(middleware::Compress::default())
     })

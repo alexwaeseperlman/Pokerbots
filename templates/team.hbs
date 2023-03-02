@@ -1,0 +1,13 @@
+<html></html>
+{{#if team}}
+TEAM!
+{{else}}
+{{ #if user}}
+
+Hi {{ user.displayName }}
+You do not have a team. Would you like to create one?
+
+<a href="/create_team">Create a team</a>
+{{/if}}
+{{/if}}
+</html>

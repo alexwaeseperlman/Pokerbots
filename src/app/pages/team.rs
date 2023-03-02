@@ -1,18 +1,31 @@
-use crate::{app::login::AzureMeResponse, models::*};
-use cfg_if::cfg_if;
-/*
-#[server(GetTeam, "/api")]
-pub async fn get_team(cx: Scope) -> Result<Option<i32>, ServerFnError> {
-    use actix_session::SessionExt;
-    use actix_web::Error;
+use actix_session::Session;
+use actix_web::web::ReqData;
+use serde_json::json;
 
-    use crate::schema::teams::dsl::teams;
-    use crate::DB_CONNECTION;
-    use diesel::*;
-    let session = crate::get_session(cx);*/
-/*teams
-    .limit(5)
-    .load::<Team>(&mut (*DB_CONNECTION).get().unwrap())
-    .expect("Error loading teams");
-    Ok(Some(1))
-}*/
+use crate::app::login::*;
+use actix::*;
+use actix_service::{IntoService, Service, ServiceFactory};
+use actix_web::*;
+use actix_web::{get, HttpResponse};
+
+use crate::{TeamData, UserData};
+
+#[get("/team")]
+pub async fn team(
+    hb: web::Data<handlebars::Handlebars<'_>>,
+    session: Session,
+) -> Result<HttpResponse> {
+    let user = get_user_data(Some(session.clone()));
+    let team = get_team_data(Some(session));
+    if user.is_none() {
+        return Ok(HttpResponse::Found()
+            .append_header(("Location", "/login"))
+            .finish());
+    }
+    let data = json!({
+        "user": user,
+        "team": team
+    });
+    let body = hb.render("team", &data).unwrap();
+    Ok(HttpResponse::Ok().body(body))
+}

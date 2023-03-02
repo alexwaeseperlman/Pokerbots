@@ -4,7 +4,6 @@ pub mod pages {
 
 pub mod login;
 
-use log::log;
 use serde_json::json;
 
 use actix::*;
@@ -13,14 +12,11 @@ use actix_web::*;
 use actix_web::{get, HttpResponse};
 use login::*;
 use pages::team;
-use team::*;
 
 use crate::UserData;
 
-use super::app_config::*;
-
 pub fn all_routes() -> actix_web::Scope {
-    web::scope("/").service(home_page)
+    web::scope("/").service(home_page).service(team::team)
 }
 
 #[get("/")]
