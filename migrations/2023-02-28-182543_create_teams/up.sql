@@ -7,6 +7,7 @@ CREATE TABLE teams (
 );
 CREATE TABLE users (
     email TEXT PRIMARY KEY UNIQUE NOT NULL,
+    displayName TEXT NOT NULL,
     teamID INTEGER,
     FOREIGN KEY(teamID) REFERENCES team(id)
 )

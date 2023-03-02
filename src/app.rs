@@ -1,48 +1,38 @@
-use leptos::*;
-use leptos_meta::*;
-use leptos_router::*;
-
 pub mod pages {
-    pub mod homepage;
     pub mod team;
 }
 
 pub mod login;
 
+use log::log;
+use serde_json::json;
+
+use actix::*;
+use actix_service::{IntoService, Service, ServiceFactory};
+use actix_web::*;
+use actix_web::{get, HttpResponse};
 use login::*;
-use pages::homepage::*;
 use pages::team;
 use team::*;
 
+use crate::UserData;
+
 use super::app_config::*;
 
-#[cfg(feature = "ssr")]
-pub fn register_server_functions() {
-    team::register_server_functions();
+pub fn all_routes() -> actix_web::Scope {
+    web::scope("/").service(home_page)
 }
 
-#[component]
-pub fn App(cx: Scope) -> impl IntoView {
-    // Provides context that manages stylesheets, titles, meta tags, etc.
-    provide_meta_context(cx);
-
-    view! {
-        cx,
-        // injects a stylesheet into the document <head>
-        // id=leptos means cargo-leptos will hot-reload this stylesheet
-        <Stylesheet id="leptos" href="/pkg/pokerbots.css"/>
-
-        // sets the document title
-        <Title text="Pokerbots McGill"/>
-
-        // content for this welcome page
-        <Router>
-            <main>
-                <Routes>
-                    <Route path="" view=|cx| view! { cx, <HomePage/> }/>
-                    <Route path="/team" view=|cx| view! { cx, <TeamPage/> }/>
-                </Routes>
-            </main>
-        </Router>
-    }
+#[get("/")]
+pub async fn home_page(
+    hb: web::Data<handlebars::Handlebars<'_>>,
+    user: Option<web::ReqData<UserData>>,
+) -> Result<HttpResponse> {
+    let u: Option<UserData> = user.and_then(|x| Some(x.into_inner()));
+    let data = json!({
+        "microsoft_login": microsoft_login_url(),
+        "user": u
+    });
+    let body = hb.render("homepage", &data).unwrap();
+    Ok(HttpResponse::Ok().body(body))
 }
