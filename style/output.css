@@ -517,20 +517,16 @@ video {
   position: static;
 }
 
-.mt-auto {
-  margin-top: auto;
+.mt-2 {
+  margin-top: 0.5rem;
 }
 
 .mt-4 {
   margin-top: 1rem;
 }
 
-.mt-1 {
-  margin-top: 0.25rem;
-}
-
-.mt-2 {
-  margin-top: 0.5rem;
+.mt-auto {
+  margin-top: auto;
 }
 
 .flex {
@@ -572,10 +568,6 @@ video {
 
 .gap-4 {
   gap: 1rem;
-}
-
-.gap-2 {
-  gap: 0.5rem;
 }
 
 .bg-red-600 {

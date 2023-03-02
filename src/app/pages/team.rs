@@ -12,11 +12,10 @@ pub async fn get_team(cx: Scope) -> Result<Option<i32>, ServerFnError> {
     use crate::DB_CONNECTION;
     use diesel::*;
     let session = crate::get_session(cx);
-    teams
-        .limit(5)
-        .load::<Team>(&mut (*DB_CONNECTION).get().unwrap())
-        .expect("Error loading teams");
-    log!("Called");
+    /*teams
+    .limit(5)
+    .load::<Team>(&mut (*DB_CONNECTION).get().unwrap())
+    .expect("Error loading teams");*/
     Ok(Some(1))
 }
 

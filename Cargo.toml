@@ -28,6 +28,7 @@ actix-session = {version = "0.7.2", features=["cookie-session"], optional=true}
 getrandom = { version = "0.2", features = ["js"] }
 lazy_static = "1.4.0"
 r2d2 = "0.8.10"
+reqwest = { version = "0.11", features = ["json"] }
 
 [features]
 hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate"]

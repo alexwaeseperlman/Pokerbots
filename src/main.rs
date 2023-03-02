@@ -6,6 +6,7 @@ use actix_session::{Session, SessionMiddleware, storage::CookieSessionStore};
 use dotenvy::dotenv;
 use std::env;
 use actix_web::*;
+use pokerbots::app::login::handle_login;
 
 fn get_secret_key() -> cookie::Key {
     let key = env::var("SECRET_KEY").expect("SECRET_KEY must be set in .env");
@@ -36,6 +37,7 @@ async fn main() -> std::io::Result<()> {
         let site_root = &leptos_options.site_root;
 
         App::new()
+            .route("/api/login", web::get().to(handle_login))
             .route("/api/{tail:.*}", leptos_actix::handle_server_fns())
             .wrap(
                 SessionMiddleware::new(CookieSessionStore::default(), get_secret_key())

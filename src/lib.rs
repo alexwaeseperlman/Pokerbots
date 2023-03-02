@@ -60,6 +60,11 @@ pub fn get_session(cx: leptos::Scope) -> Option<actix_session::Session> {
     }
 }
 
+pub fn get_azure_secret() -> String {
+    use std::env;
+    env::var("AZURE_SECRET").expect("AZURE_SECRET must be set in .env")
+}
+
 }
 
 }
