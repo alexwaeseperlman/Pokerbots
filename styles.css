@@ -1,0 +1,253 @@
+@import url('https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700&display=swap');
+
+
+html{
+	overflow-x:hidden;
+	overscroll-behavior-y: none;
+}
+
+body {
+	font-family: sans-serif;
+	text-align: center;
+	background: rgb(25,19,53);
+	background: linear-gradient(180deg, rgba(25,19,53,1) 0%, rgba(10,0,58,1) 35%);
+	padding:0;
+	margin:0;
+	overscroll-behavior-y: none;
+  }
+  
+
+h1{
+	font-family: 'Kanit', sans-serif;
+	font-size: x-large;
+	color: white;
+	float: left;
+	margin: 0;
+	background-image: linear-gradient(180deg,#ffffff, #b9b8ff);
+    background-size: 100%;
+	-webkit-background-clip: text;
+    -moz-background-clip: text;
+    -webkit-text-fill-color: transparent; 
+    -moz-text-fill-color: transparent;
+}
+
+h2 {
+	font-family: 'Kanit', sans-serif;
+    background-color: #f3ec78;
+    background-image: linear-gradient(180deg,#E8C1FF, #B336FF);
+    background-size: 100%;
+	font-weight: 700;
+	font-size: 4vw;
+    -webkit-background-clip: text;
+    -moz-background-clip: text;
+    -webkit-text-fill-color: transparent; 
+    -moz-text-fill-color: transparent;
+	margin-bottom: 0;
+}
+
+
+h3 {
+	font-family: 'Kanit', sans-serif;
+    background-color: #f3ec78;
+    background-image: linear-gradient(180deg,#E8C1FF, #B336FF);
+    background-size: 100%;
+	font-weight: 700;
+	font-size: 3.5vw;
+    -webkit-background-clip: text;
+    -moz-background-clip: text;
+    -webkit-text-fill-color: transparent; 
+    -moz-text-fill-color: transparent;
+	margin-bottom: 3vh;
+}
+
+h4 {
+	font-family: 'Kanit', sans-serif;
+    background-image: linear-gradient(180deg,#ffffff, #D5D4FF);
+    background-size: 100%;
+	font-weight: 600;
+	font-size: 2.5vw;
+    -webkit-background-clip: text;
+    -moz-background-clip: text;
+    -webkit-text-fill-color: transparent; 
+    -moz-text-fill-color: transparent;
+	margin: 0;
+}
+
+
+h5 {
+	font-family: 'Kanit', sans-serif;
+	font-size: large;
+	color: #ffffff;
+	font-weight: 500;
+	margin: 0;
+	margin-bottom: 1vh;
+}
+
+
+h6{
+	font-family: 'Kanit', sans-serif;
+	font-size: small;
+	color: #ffffff;
+	font-weight: 400;
+	margin: 1vh;
+}
+
+
+p{
+	font-family: 'Kanit', sans-serif;
+	font-size: medium;
+	color: #ffffff;
+	font-weight: 400;
+}
+
+.logo {
+	overflow: hidden;
+	margin-right: 2vw;
+  }
+  
+.logo img {
+	float: left;
+	margin-right: 7px; 
+	width: 35px;
+	height: auto;
+	transition: transform .7s ease-in-out;
+  }
+
+.logo:hover img {
+	transform: rotate(360deg);
+  }
+
+header{
+	background: #27262d;
+	padding: 10px;
+	overflow: hidden;
+	display: flex;
+	align-items: center;
+	width: 100%;
+	filter: drop-shadow(0.35rem 0.35rem 0.4rem rgba(0, 0, 0, 0.2));
+}
+
+header a {
+	font-family: 'Kanit', sans-serif;
+	float: left;
+	color: #B8ADD2;
+	text-align: center;
+	padding: 14px 16px;
+	text-decoration: none;
+	font-size: medium;
+	font-weight: 400;
+  }
+
+header a:hover {
+	background-color: #353547;
+	border-radius: 15px;
+	color: rgb(231, 234, 255);
+  }
+
+.floating-picture {
+	position: relative;
+	animation: floating 5s ease-in-out infinite;
+	margin-bottom: 0;
+	margin-top: 8vh;
+	width: 50vw;
+	height: auto;
+  }
+  
+@keyframes floating {
+	0% {
+	  transform: translateY(0);
+	}
+	50% {
+	  transform: translateY(-30px);
+	}
+	100% {
+	  transform: translateY(0);
+	}
+  }
+
+.picture-section {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+  }
+  
+.picture-container {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	max-width: 800px;
+	width: 100%;
+  }
+  
+.picture-wrapper {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	max-width: 30%;
+  }
+  
+.picture-caption {
+	text-align: center;
+	margin-top: 10px;
+  }
+
+
+input[type='text'] { 
+	font-family: 'Kanit', sans-serif;
+	font-size: medium; 
+	color: #444444;
+
+}
+
+
+.email-container {
+	justify-content: center;
+	display: flex;
+}
+
+
+.email{
+	background: linear-gradient(180deg,#ffffff, #c2c1ff);
+	border-radius: 10px;
+	border: none;
+	width: 18vw;
+	height: 5vh;
+	padding: 0.7vw;
+	margin: 0;
+	margin-top: 2vh;
+	margin-right: 10px;
+}
+
+
+.join-button {
+	background: linear-gradient(180deg,#dda3ff, #B336FF);
+	border: none;
+	border-radius: 10px;
+	color: white;
+	padding: 0.6vw;
+	text-align: center;
+	text-decoration: none;
+	display: inline-block;
+	font-size: medium;
+	font-weight: 500;
+	margin-top: 2vh;
+	width: 4vw;
+	min-width: 50px;
+
+	cursor: pointer;
+	font-family: 'Kanit', sans-serif;
+	font-size: medium; 
+}
+
+
+.join-button:hover{
+	background: linear-gradient(180deg,#c45fff, #a109ff);
+}
+
+footer {
+	padding: 20px;
+	font-family: 'Kanit', sans-serif;
+	color: white;
+	text-align: center;
+	font-size: 14px;
+}
