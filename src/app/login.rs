@@ -38,7 +38,6 @@ struct AzureAuthTokenResopnse {
 }
 
 pub fn get_user_data(session: Option<Session>) -> Option<UserData> {
-    println!("{:?}", session.clone().unwrap().get::<UserData>("me"));
     if session.is_some()
         && session.clone().unwrap().get::<UserData>("me").is_ok()
         && session
@@ -49,7 +48,6 @@ pub fn get_user_data(session: Option<Session>) -> Option<UserData> {
             .is_some()
     {
         let me: UserData = session.unwrap().get("me").unwrap().unwrap();
-        println!("{}", me.displayName.clone());
         return Some(me);
     }
     None
@@ -115,9 +113,7 @@ pub async fn handle_login(
     // TODO: Is it bad to make a new client for every login?
     let client = reqwest::Client::new();
     let secret = get_azure_secret();
-    println!("\n\n\n\n\n printing!!");
 
-    println!("Inserting {} {}", code, secret);
     let response: AzureAuthTokenResopnse = client
         .post(format!(
             "https://login.microsoftonline.com/{}/oauth2/v2.0/token",
@@ -140,9 +136,7 @@ pub async fn handle_login(
             .await?
             .json()
             .await?;
-        println!("Inserting {:?}", me);
         if me.mail.is_some() {
-            println!("Inserting {}", me.mail.clone().unwrap());
             session.insert(
                 "me",
                 UserData {

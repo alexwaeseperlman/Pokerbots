@@ -40,7 +40,6 @@ async fn main() -> std::io::Result<()> {
         let mut hbars = Handlebars::new();
         hbars.set_strict_mode(true);
         hbars.register_templates_directory(".hbs", "templates");
-        println!("{:?}", hbars.get_templates());
         let hbars_ref = web::Data::new(hbars);
 
         let a = App::new()
