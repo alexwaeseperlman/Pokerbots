@@ -1,13 +1,12 @@
 CREATE TABLE teams (
-    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    teamname TEXT NOT NULL CHECK(
-        typeof("name") = "text" AND
-        length("name") <= 20
+    id SERIAL PRIMARY KEY NOT NULL,
+    teamName TEXT NOT NULL CHECK(
+        length(teamName) <= 10
     )
 );
 CREATE TABLE users (
     email TEXT PRIMARY KEY UNIQUE NOT NULL,
     displayName TEXT NOT NULL,
     teamID INTEGER,
-    FOREIGN KEY(teamID) REFERENCES team(id)
+    FOREIGN KEY(teamID) REFERENCES teams(id)
 )

@@ -92,7 +92,7 @@ pub fn get_team_data(session: Option<Session>) -> Option<TeamData> {
     let t = ts.get(0).unwrap();
 
     let members: Vec<UserData> = users::dsl::users
-        .filter(users::dsl::teamID.eq(t.id))
+        .filter(users::dsl::teamid.eq(t.id))
         .load::<User>(connection)
         .expect("Unable to load users in team")
         .into_iter()

@@ -1,0 +1,14 @@
+<html>
+{{ #if team }}
+    {{! TEAM! }}
+{{ else }}
+    {{ #if user}}
+        Hi {{ user.displayName }}
+
+        <form action="/api/create-team">
+            <input type="text" name="teamName" placeholder="Team Name" pattern="[a-zA-Z ]*"/>
+            <input type="submit" value="Create Team"/>
+        </form>
+    {{/if}}
+{{/if}}
+</html>

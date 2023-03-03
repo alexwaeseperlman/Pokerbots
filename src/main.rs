@@ -57,7 +57,8 @@ async fn main() -> std::io::Result<()> {
             .route("/api/login", web::get().to(handle_login))
             .service(Files::new("/static", "static/"))
             .service(pokerbots::app::home_page)
-            .service(pokerbots::app::pages::team::team);
+            .service(pokerbots::app::pages::team::team)
+            .service(pokerbots::app::pages::manage_team::manage_team);
         a
         //.wrap(middleware::Compress::default())
     })

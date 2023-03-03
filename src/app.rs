@@ -1,4 +1,5 @@
 pub mod pages {
+    pub mod manage_team;
     pub mod team;
 }
 

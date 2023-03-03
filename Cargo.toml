@@ -16,7 +16,7 @@ log = "0.4"
 simple_logger = "4"
 wasm-bindgen = "0.2"
 serde = {version = "1.0.152", features=["derive"]}
-diesel = { version = "2.0.3", features = ["sqlite", "r2d2"] }
+diesel = { version = "2.0.3", features = ["postgres", "r2d2"] }
 dotenvy = "0.15"
 actix-session = {version = "0.7.2", features=["cookie-session"]}
 getrandom = { version = "0.2", features = ["js"] }
