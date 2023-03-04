@@ -1,2 +1,2 @@
-DROP TABLE teams;
-DROP TABLE users
+DROP TABLE teams cascade;
+DROP TABLE users cascade

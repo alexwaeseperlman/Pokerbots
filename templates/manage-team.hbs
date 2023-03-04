@@ -1,14 +1,38 @@
 <html>
 {{ #if team }}
     {{! TEAM! }}
+    Hi {{user.displayname}}. You are a member of team {{team.teamname}}.
+    <br/>
+
+    Members of {{team.teamname}}:
+    <br/>
+
+    {{#each team.members}}
+        {{this.displayname}}
+    {{/each}}
+    <br/>
+
+    {{#if isOwner}}
+        <form action="/api/delete-team">
+            <input type="submit" value="Delete Team"/>
+        </form>
+    {{else}}
+        <form action="/api/leave-team">
+            <input type="submit" value="Leave Team"/>
+        </form>
+    {{/if}}
+
 {{ else }}
     {{ #if user}}
-        Hi {{ user.displayName }}
+        Hi {{ user.displayname }}. You do not have a team. Create one below.
 
         <form action="/api/create-team">
-            <input type="text" name="teamName" placeholder="Team Name" pattern="[a-zA-Z ]*"/>
+            <input type="text" name="team_name" placeholder="Team Name" pattern="[a-zA-Z ]*"/>
             <input type="submit" value="Create Team"/>
         </form>
+    {{ else }}
+        You are not logged in.
+        {{> login}}
     {{/if}}
 {{/if}}
 </html>

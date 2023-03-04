@@ -1,7 +1,7 @@
 CREATE TABLE teams (
     id SERIAL PRIMARY KEY NOT NULL,
-    teamName TEXT NOT NULL CHECK(
-        length(teamName) <= 10
+    teamName TEXT UNIQUE NOT NULL CHECK(
+        length(teamName) <= 20
     )
 );
 CREATE TABLE users (

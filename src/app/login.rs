@@ -3,7 +3,7 @@ use cfg_if::cfg_if;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-use crate::models::{Team, User};
+use crate::models::{NewUser, Team, User};
 use crate::schema::users;
 use crate::{app_config::TENANT_ID, UserData};
 
@@ -48,6 +48,21 @@ pub fn get_user_data(session: Option<Session>) -> Option<UserData> {
             .is_some()
     {
         let me: UserData = session.unwrap().get("me").unwrap().unwrap();
+        // If the user is logged in and we don't have an entry for them in the database, add them
+        use crate::schema::users::dsl::*;
+        use crate::DB_CONNECTION;
+        use diesel::*;
+        if let Err(err) = diesel::insert_into(users)
+            .values(NewUser {
+                email: me.email.clone(),
+                displayname: me.displayname.clone(),
+            })
+            .on_conflict_do_nothing()
+            .execute(&mut (*DB_CONNECTION).get().unwrap())
+        {
+            println!("{:?}", err);
+            return None;
+        };
         return Some(me);
     }
     None
@@ -95,13 +110,15 @@ pub fn get_team_data(session: Option<Session>) -> Option<TeamData> {
         .expect("Unable to load users in team")
         .into_iter()
         .map(|user| UserData {
-            displayName: user.displayName,
+            displayname: user.displayname,
             email: user.email,
         })
         .collect();
     Some(TeamData {
-        name: t.teamname.clone(),
+        id: t.id,
+        teamname: t.teamname.clone(),
         members: members,
+        owner: t.owner.clone(),
     })
 }
 // By the end of this method, if given a valid authorization code, the email address field in the session should be set
@@ -141,14 +158,14 @@ pub async fn handle_login(
                 "me",
                 UserData {
                     email: me.mail.clone().unwrap(),
-                    displayName: me
+                    displayname: me
                         .displayName
                         .unwrap_or(me.givenName.unwrap_or(me.mail.unwrap())),
                 },
             )?;
         }
         Ok(HttpResponse::Found()
-            .append_header(("Location", "/team"))
+            .append_header(("Location", "/manage-team"))
             .finish())
     } else {
         Ok(HttpResponse::Found()

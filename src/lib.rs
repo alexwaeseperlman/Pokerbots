@@ -16,13 +16,15 @@ use lazy_static::lazy_static;
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct UserData {
     pub email: String,
-    pub displayName: String,
+    pub displayname: String,
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct TeamData {
-    pub name: String,
+    pub id: i32,
+    pub teamname: String,
     pub members: Vec<UserData>,
+    pub owner: String,
 }
 
 // Build a database connection pool for server functions

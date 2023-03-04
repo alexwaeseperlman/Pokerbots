@@ -57,7 +57,8 @@ async fn main() -> std::io::Result<()> {
             .service(Files::new("/static", "static/"))
             .service(pokerbots::app::home_page)
             .service(pokerbots::app::pages::team::team)
-            .service(pokerbots::app::pages::manage_team::manage_team);
+            .service(pokerbots::app::pages::manage_team::manage_team)
+            .service(pokerbots::app::pages::manage_team::create_team);
         a
         //.wrap(middleware::Compress::default())
     })
