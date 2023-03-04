@@ -12,14 +12,14 @@ use actix_web::{get, HttpResponse};
 
 use crate::{TeamData, UserData, DB_CONNECTION};
 #[derive(Deserialize)]
-pub struct CreateTeam {
+pub struct CreateTeamQuery {
     pub team_name: String,
 }
 
 #[get("/api/create-team")]
 pub async fn create_team(
     session: Session,
-    web::Query::<CreateTeam>(CreateTeam { team_name }): web::Query<CreateTeam>,
+    web::Query::<CreateTeamQuery>(CreateTeamQuery { team_name }): web::Query<CreateTeamQuery>,
 ) -> Result<HttpResponse> {
     use diesel::*;
     let user = get_user_data(Some(session.clone()));
@@ -53,12 +53,74 @@ pub async fn create_team(
                 .set(teamid.eq(new_id))
                 .get_result::<User>(conn)
         );
-        return Ok(HttpResponse::Ok().body(format!("Team created with id {}", new_id)));
+        return Ok(HttpResponse::Found()
+            .append_header(("Location", "/manage-team"))
+            .finish());
     } else {
         println!("{:?}", team_create_result);
     }
 
     Ok(HttpResponse::Ok().body(format!("Could not create team")))
+}
+
+#[get("/api/delete-team")]
+pub async fn delete_team(session: Session) -> Result<HttpResponse> {
+    use diesel::*;
+    let user = get_user_data(Some(session.clone()));
+    let team = get_team_data(Some(session.clone()));
+    // You can't delete a team if you're not in one
+    if user.is_none() || team.is_none() || team.clone().unwrap().owner != user.unwrap().email {
+        return Ok(HttpResponse::Found()
+            .append_header(("Location", "/manage-team"))
+            .finish());
+    }
+    let conn = &mut (*DB_CONNECTION).get().unwrap();
+    use crate::schema::teams;
+    use crate::schema::users;
+
+    // Make everyone on the team leave the team
+    diesel::update(users::dsl::users)
+        .filter(users::dsl::teamid.eq(team.clone().unwrap().id))
+        .set(users::dsl::teamid.eq::<Option<i32>>(None))
+        .execute(conn)
+        .unwrap();
+
+    dsl::delete(teams::dsl::teams.filter(teams::dsl::id.eq(team.unwrap().id)))
+        .execute(conn)
+        .unwrap();
+
+    Ok(HttpResponse::Found()
+        .append_header(("Location", "/manage-team"))
+        .finish())
+}
+
+#[get("/api/leave-team")]
+pub async fn leave_team(session: Session) -> Result<HttpResponse> {
+    use diesel::*;
+    let user = get_user_data(Some(session.clone()));
+    let team = get_team_data(Some(session.clone()));
+    // You can't delete a team if you're not in one or you're the owner
+    if user.is_none()
+        || team.is_none()
+        || user.clone().unwrap().email == team.clone().unwrap().owner
+    {
+        return Ok(HttpResponse::Found()
+            .append_header(("Location", "/manage-team"))
+            .finish());
+    }
+    let conn = &mut (*DB_CONNECTION).get().unwrap();
+    use crate::schema::users;
+
+    // Set the current user's team to null
+    diesel::update(users::dsl::users)
+        .filter(users::dsl::email.eq(user.clone().unwrap().email))
+        .set(users::dsl::teamid.eq::<Option<i32>>(None))
+        .execute(conn)
+        .unwrap();
+
+    Ok(HttpResponse::Found()
+        .append_header(("Location", "/manage-team"))
+        .finish())
 }
 
 #[get("/manage-team")]
