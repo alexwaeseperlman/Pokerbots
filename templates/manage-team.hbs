@@ -1,4 +1,4 @@
-<html>
+{{> include/head}}
 {{ #if team }}
     {{! TEAM! }}
     Hi {{user.displayname}}. You are a member of team {{team.teamname}}.
@@ -35,4 +35,4 @@
         {{> login}}
     {{/if}}
 {{/if}}
-</html>
+{{> include/foot}}
