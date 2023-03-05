@@ -10,7 +10,7 @@ use actix_service::{IntoService, Service, ServiceFactory};
 use actix_web::*;
 use actix_web::{get, HttpResponse};
 
-use crate::{TeamData, UserData, DB_CONNECTION};
+use crate::{default_view_data, TeamData, UserData, DB_CONNECTION};
 #[derive(Deserialize)]
 pub struct CreateTeamQuery {
     pub team_name: String,
@@ -128,17 +128,8 @@ pub async fn manage_team(
     hb: web::Data<handlebars::Handlebars<'_>>,
     session: Session,
 ) -> Result<HttpResponse> {
-    let user = get_user_data(Some(session.clone()));
-    let team = get_team_data(Some(session));
-
-    let data = json!({
-        "user": user,
-        "team": team,
-        "microsoft_login": microsoft_login_url(),
-        "isOwner": user.is_some() && team.is_some() && user.unwrap().email == team.unwrap().owner
-
-    });
-    println!("{:?}", data);
-    let body = hb.render("manage-team", &data).unwrap();
+    let body = hb
+        .render("manage-team", &default_view_data(session))
+        .unwrap();
     Ok(HttpResponse::Ok().body(body))
 }

@@ -60,7 +60,8 @@ async fn main() -> std::io::Result<()> {
             .service(pokerbots::app::pages::manage_team::manage_team)
             .service(pokerbots::app::pages::manage_team::create_team)
             .service(pokerbots::app::pages::manage_team::delete_team)
-            .service(pokerbots::app::pages::manage_team::leave_team);
+            .service(pokerbots::app::pages::manage_team::leave_team)
+            .service(pokerbots::app::api::signout::signout);
         a
         //.wrap(middleware::Compress::default())
     })

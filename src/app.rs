@@ -3,8 +3,13 @@ pub mod pages {
     pub mod team;
 }
 
+pub mod api {
+    pub mod signout;
+}
+
 pub mod login;
 
+use actix_session::Session;
 use serde_json::json;
 
 use actix::*;
@@ -14,7 +19,7 @@ use actix_web::{get, HttpResponse};
 use login::*;
 use pages::team;
 
-use crate::UserData;
+use crate::{default_view_data, UserData};
 
 pub fn all_routes() -> actix_web::Scope {
     web::scope("/").service(home_page).service(team::team)
@@ -23,13 +28,8 @@ pub fn all_routes() -> actix_web::Scope {
 #[get("/")]
 pub async fn home_page(
     hb: web::Data<handlebars::Handlebars<'_>>,
-    user: Option<web::ReqData<UserData>>,
+    session: Session,
 ) -> Result<HttpResponse> {
-    let u: Option<UserData> = user.and_then(|x| Some(x.into_inner()));
-    let data = json!({
-        "microsoft_login": microsoft_login_url(),
-        "user": u
-    });
-    let body = hb.render("homepage", &data).unwrap();
+    let body = hb.render("homepage", &default_view_data(session)).unwrap();
     Ok(HttpResponse::Ok().body(body))
 }
