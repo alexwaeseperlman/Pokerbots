@@ -4,11 +4,14 @@ use serde::Deserialize;
 use serde_json::json;
 
 use crate::app::login::*;
+use crate::app::upload_bot::save_file;
 use crate::models::User;
 use actix::*;
 use actix_service::{IntoService, Service, ServiceFactory};
 use actix_web::*;
-use actix_web::{get, HttpResponse};
+use actix_web::{get, post, HttpResponse};
+
+use actix_multipart::Multipart;
 
 use crate::{TeamData, UserData, DB_CONNECTION};
 #[derive(Deserialize)]
@@ -121,6 +124,22 @@ pub async fn leave_team(session: Session) -> Result<HttpResponse> {
     Ok(HttpResponse::Found()
         .append_header(("Location", "/manage-team"))
         .finish())
+}
+
+#[post("/api/upload-bot")]
+pub async fn upload_bot(
+    payload: Multipart
+) -> Result<HttpResponse> {
+    let upload_status = save_file(payload, "/tmp/bot.py").await;
+
+    match upload_status {
+        Some(true) => {
+            Ok(HttpResponse::Ok().body(format!("Successfully uploaded bot")))
+        }
+        _ => {
+            Ok(HttpResponse::BadRequest().body("Failed to upload bot"))
+        }
+    }
 }
 
 #[get("/manage-team")]

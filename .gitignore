@@ -20,3 +20,6 @@ style/output.css
 # database
 database.db
 database/*
+
+# MacOS
+.DS_Store
