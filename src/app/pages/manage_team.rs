@@ -16,6 +16,18 @@ pub struct CreateTeamQuery {
     pub team_name: String,
 }
 
+pub fn validate_team_name(name: &String) -> bool {
+    if name.len() < 3 || name.len() > 20 {
+        return false;
+    }
+    for c in name.chars() {
+        if !c.is_alphanumeric() && c != ' ' && c != '-' {
+            return false;
+        }
+    }
+    return true;
+}
+
 #[get("/api/create-team")]
 pub async fn create_team(
     session: Session,
@@ -29,7 +41,13 @@ pub async fn create_team(
             .finish());
     }
     // You can't create a team if you're already in one
-    if get_team_data(Some(session)).is_some() {
+    if get_team_data(Some(session.clone())).is_some() {
+        return Ok(HttpResponse::Found()
+            .append_header(("Location", "/manage-team"))
+            .finish());
+    }
+    if !validate_team_name(&team_name) {
+        session.insert("message", "Team name must be between 3 and 20 characters long and can only contain letters, numbers, spaces, and dashes.");
         return Ok(HttpResponse::Found()
             .append_header(("Location", "/manage-team"))
             .finish());

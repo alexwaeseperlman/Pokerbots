@@ -1,14 +1,11 @@
 {{> include/head}}
 {{ #if team }}
-    {{! TEAM! }}
-    Hi {{user.displayname}}. You are a member of team {{team.teamname}}.
     <br/>
 
-    Members of {{team.teamname}}:
-    <br/>
+    <h4>Members of "{{team.teamname}}"</h3>.
 
     {{#each team.members}}
-        {{this.displayname}}
+        <p>{{this.displayname}}</p>
     {{/each}}
     <br/>
 
@@ -24,12 +21,17 @@
 
 {{ else }}
     {{ #if user}}
-        Hi {{ user.displayname }}. You do not have a team. Create one below.
+    <div>
+        <p>Hi {{ user.displayname }}. You do not have a team. Create one below.</p>
 
         <form action="/api/create-team">
-            <input type="text" name="team_name" placeholder="Team Name" pattern="[a-zA-Z ]*"/>
-            <input type="submit" value="Create Team"/>
+            {{#if message}}
+                <p>{{message}}</p>
+            {{/if}}
+            <input type="text" name="team_name" placeholder="Team Name"/>
+            <button type="submit" value="Create Team">Submit</button>
         </form>
+        </div>
     {{ else }}
         You are not logged in.
         {{> login}}

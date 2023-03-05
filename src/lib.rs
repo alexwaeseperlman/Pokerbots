@@ -49,11 +49,15 @@ pub fn get_azure_secret() -> String {
 
 pub fn default_view_data(session: Session) -> serde_json::Value {
     let user = get_user_data(Some(session.clone()));
-    let team = get_team_data(Some(session));
+    let team = get_team_data(Some(session.clone()));
+    let message = session.get::<String>("message").unwrap_or(None);
+    session.remove("message");
+
     json!({
         "user": user,
         "team": team,
         "microsoft_login": microsoft_login_url(),
-        "isOwner": user.is_some() && team.is_some() && user.unwrap().email == team.unwrap().owner
+        "isOwner": user.is_some() && team.is_some() && user.unwrap().email == team.unwrap().owner,
+        "message": message,
     })
 }
