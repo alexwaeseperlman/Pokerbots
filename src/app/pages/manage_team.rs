@@ -2,14 +2,15 @@ use actix_session::Session;
 use actix_web::web::ReqData;
 use serde::Deserialize;
 use serde_json::json;
+use std::io::Write;
 
 use crate::app::login::*;
-use crate::app::upload_bot::save_file;
 use crate::models::User;
 use actix::*;
 use actix_service::{IntoService, Service, ServiceFactory};
 use actix_web::*;
 use actix_web::{get, post, HttpResponse};
+use futures::{StreamExt, TryStreamExt};
 
 use actix_multipart::Multipart;
 
@@ -127,19 +128,27 @@ pub async fn leave_team(session: Session) -> Result<HttpResponse> {
 }
 
 #[post("/api/upload-bot")]
-pub async fn upload_bot(
-    payload: Multipart
-) -> Result<HttpResponse> {
-    let upload_status = save_file(payload, "/tmp/bot.py").await;
+pub async fn upload_bot(session: Session, mut payload: Multipart) -> Result<HttpResponse> {
+    while let Ok(Some(mut field)) = payload.try_next().await {
+        let team = get_team_data(Some(session.clone()));
+        let file_string = format!("/tmp/{}.py", team.unwrap().teamname);
+        let mut f =
+            match web::block(move || std::fs::File::create(std::path::Path::new(&file_string)))
+                .await
+            {
+                Ok(Ok(file)) => file,
+                _ => return Ok(HttpResponse::BadRequest().body("Failed to create file")),
+            };
 
-    match upload_status {
-        Some(true) => {
-            Ok(HttpResponse::Ok().body(format!("Successfully uploaded bot")))
-        }
-        _ => {
-            Ok(HttpResponse::BadRequest().body("Failed to upload bot"))
+        while let Some(chunk) = field.next().await {
+            let data = chunk.unwrap();
+            f = match web::block(move || f.write_all(&data).map(|_| f)).await {
+                Ok(Ok(file)) => file,
+                _ => return Ok(HttpResponse::BadRequest().body("Failed to upload bot to file")),
+            }
         }
     }
+    Ok(HttpResponse::Ok().body(format!("Successfully uploaded bot")))
 }
 
 #[get("/manage-team")]

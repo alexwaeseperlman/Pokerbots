@@ -4,7 +4,7 @@ pub mod pages {
 }
 
 pub mod login;
-pub mod upload_bot;
+pub mod run_bot;
 
 use serde_json::json;
 

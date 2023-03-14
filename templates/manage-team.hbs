@@ -22,6 +22,12 @@
         </form>
     {{/if}}
 
+    Upload bot:
+    <form action="/api/upload-bot" enctype="multipart/form-data" method="POST">
+        <input type="file" name="bot" accept=".py"/>
+        <button type="submit">Submit</button>
+    </form>
+
 {{ else }}
     {{ #if user}}
         Hi {{ user.displayname }}. You do not have a team. Create one below.
@@ -35,5 +41,4 @@
         {{> login}}
     {{/if}}
 {{/if}}
-{{> upload-bot}}
 </html>
