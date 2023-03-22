@@ -1,14 +1,14 @@
 <html>
 {{ #if team }}
     {{! TEAM! }}
-    Hi {{user.displayname}}. You are a member of team {{team.teamname}}.
+    Hi {{user.display_name}}. You are a member of team {{team.team_name}}.
     <br/>
 
-    Members of {{team.teamname}}:
+    Members of {{team.team_name}}:
     <br/>
 
     {{#each team.members}}
-        {{this.displayname}}
+        {{this.display_name}}
     {{/each}}
     <br/>
 
@@ -30,7 +30,7 @@
 
 {{ else }}
     {{ #if user}}
-        Hi {{ user.displayname }}. You do not have a team. Create one below.
+        Hi {{ user.display_name }}. You do not have a team. Create one below.
 
         <form action="/api/create-team">
             <input type="text" name="team_name" placeholder="Team Name" pattern="[a-zA-Z ]*"/>

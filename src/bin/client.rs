@@ -1,4 +1,4 @@
-use std::os::unix::net::{UnixListener, UnixStream};
+use std::os::unix::net::UnixStream;
 use std::io::{Read, Write};
 use std::path::Path;
 use server::SOCKET_PATH;
@@ -10,7 +10,7 @@ fn main() {
 
     let mut stream = UnixStream::connect(socket).expect("Failed to connect stream to socket");
 
-    stream.write(b"Hello, world!").unwrap();
+    stream.write_all(b"Hello, world!").unwrap();
 
     stream.shutdown(std::net::Shutdown::Write).unwrap();
 
