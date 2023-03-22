@@ -3,7 +3,7 @@
 diesel::table! {
     teams (id) {
         id -> Int4,
-        teamname -> Text,
+        team_name -> Text,
         owner -> Text,
     }
 }
@@ -11,8 +11,8 @@ diesel::table! {
 diesel::table! {
     users (email) {
         email -> Text,
-        displayname -> Text,
-        teamid -> Nullable<Int4>,
+        display_name -> Text,
+        team_id -> Nullable<Int4>,
     }
 }
 

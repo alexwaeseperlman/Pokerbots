@@ -29,3 +29,8 @@ actix = "0.13.0"
 serde_json = "1.0.93"
 futures-util = "0.3.26"
 env_logger = "0.10.0"
+actix-multipart = "0.6.0"
+futures = "0.3.26"
+
+[dev-dependencies]
+cargo-watch = "8.4.0"
