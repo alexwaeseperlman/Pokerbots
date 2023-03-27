@@ -2395,6 +2395,7 @@ dependencies = [
  "lazy_static",
  "log",
  "r2d2",
+ "rand",
  "reqwest",
  "serde",
  "serde_json",
