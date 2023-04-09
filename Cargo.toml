@@ -7,31 +7,27 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+actix = "0.13.0"
 actix-files = { version = "0.6.2" }
 actix-web = { version = "4.3.1" }
-console_error_panic_hook = "0.1"
-console_log = "0.2"
-cfg-if = "1"
+actix-multipart = "0.6.0"
+actix-service = "2.0.2"
+actix-session = {version = "0.7.2", features=["cookie-session"]}
 log = "0.4"
-simple_logger = "4"
-wasm-bindgen = "0.2"
-serde = {version = "1.0.152", features=["derive"]}
+env_logger = "0.10.0"
 diesel = { version = "2.0.3", features = ["postgres", "r2d2"] }
 dotenvy = "0.15"
-actix-session = {version = "0.7.2", features=["cookie-session"]}
-getrandom = { version = "0.2", features = ["js"] }
 lazy_static = "1.4.0"
 r2d2 = "0.8.10"
 reqwest = { version = "0.11", features = ["json"] }
-actix-service = "2.0.2"
 handlebars = {version = "4.3.6", features=["dir_source"]}
-actix = "0.13.0"
-serde_json = "1.0.93"
 futures-util = "0.3.26"
-env_logger = "0.10.0"
-actix-multipart = "0.6.0"
 futures = "0.3.26"
 rand = "0.8.5"
+serde = {version = "1.0.152", features=["derive"]}
+serde_json = "1.0.93"
+serde_yaml = "0.9.19"
+zip = "0.6.4"
 
 [dev-dependencies]
 cargo-watch = "8.4.0"

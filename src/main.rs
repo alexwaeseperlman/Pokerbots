@@ -1,11 +1,13 @@
+use std::sync::Mutex;
+
 use actix_service::*;
 use actix_session::storage::CookieSessionStore;
 use actix_session::*;
-use actix_web::{middleware::Logger, App, cookie};
 use actix_web::*;
+use actix_web::{cookie, middleware::Logger, App};
 use futures_util::future::FutureExt;
 
-use pokerbots::app::{api, login, pages};
+use pokerbots::app::{api, api::BotsList, login, pages};
 
 fn get_secret_key() -> cookie::Key {
     let key = std::env::var("SECRET_KEY").expect("SECRET_KEY must be set in .env");
@@ -17,9 +19,12 @@ async fn main() -> std::io::Result<()> {
     std::env::set_var("RUST_LOG", "debug");
     env_logger::init();
     dotenvy::dotenv().ok();
+    let bots_list = web::Data::new(BotsList {
+        bots: Mutex::new(Vec::new())
+    });
 
     // Generate the list of routes in your App
-    HttpServer::new(|| {
+    HttpServer::new(move || {
         let session_middleware =
             SessionMiddleware::builder(CookieSessionStore::default(), get_secret_key())
                 .cookie_secure(true)
@@ -49,6 +54,7 @@ async fn main() -> std::io::Result<()> {
             .service(api::create_team)
             .service(api::delete_team)
             .service(api::leave_team)
+            .app_data(bots_list.clone())
             .service(api::upload_bot)
 
         //.wrap(middleware::Compress::default())
