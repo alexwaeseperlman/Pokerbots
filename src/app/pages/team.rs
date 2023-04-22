@@ -1,22 +1,16 @@
 use actix_session::Session;
-use actix_web::web::ReqData;
 use serde_json::json;
+use actix_web::{web, get, HttpResponse};
 
-use crate::app::login::*;
-use actix::*;
-use actix_service::{IntoService, Service, ServiceFactory};
-use actix_web::*;
-use actix_web::{get, HttpResponse};
-
-use crate::{TeamData, UserData};
+use crate::app::login;
 
 #[get("/team")]
 pub async fn team(
     hb: web::Data<handlebars::Handlebars<'_>>,
     session: Session,
-) -> Result<HttpResponse> {
-    let user = get_user_data(Some(session.clone()));
-    let team = get_team_data(Some(session));
+) -> actix_web::Result<HttpResponse> {
+    let user = login::get_user_data(&session);
+    let team = login::get_team_data(&session);
     if user.is_none() {
         return Ok(HttpResponse::Found()
             .append_header(("Location", "/login"))
@@ -26,6 +20,8 @@ pub async fn team(
         "user": user,
         "team": team
     });
-    let body = hb.render("team", &data).unwrap();
+    let body = hb.render("team", &data).map_err(|e| {
+        actix_web::error::ErrorInternalServerError(format!("Template error: {}", e))
+    })?;
     Ok(HttpResponse::Ok().body(body))
 }

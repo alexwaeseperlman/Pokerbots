@@ -1,11 +1,9 @@
 pub mod pages {
+    pub mod home;
     pub mod manage_team;
     pub mod team;
 }
-
-pub mod api {
-    pub mod signout;
-}
+pub mod api;
 
 pub mod login;
 
@@ -14,22 +12,17 @@ use serde_json::json;
 
 use actix::*;
 use actix_service::{IntoService, Service, ServiceFactory};
-use actix_web::*;
-use actix_web::{get, HttpResponse};
+use actix_web::{get, web};
 use login::*;
 use pages::team;
 
 use crate::{default_view_data, UserData};
 
-pub fn all_routes() -> actix_web::Scope {
-    web::scope("/").service(home_page).service(team::team)
-}
-
 #[get("/")]
 pub async fn home_page(
     hb: web::Data<handlebars::Handlebars<'_>>,
     session: Session,
-) -> Result<HttpResponse> {
-    let body = hb.render("homepage", &default_view_data(session)).unwrap();
-    Ok(HttpResponse::Ok().body(body))
+) -> actix_web::Result<actix_web::HttpResponse> {
+    let body = hb.render("homepage", &default_view_data(session)?).unwrap();
+    Ok(actix_web::HttpResponse::Ok().body(body))
 }

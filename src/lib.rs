@@ -1,5 +1,5 @@
 pub mod app;
-pub mod app_config;
+pub mod config;
 pub mod models;
 pub mod schema;
 
@@ -47,17 +47,19 @@ pub fn get_azure_secret() -> String {
     env::var("AZURE_SECRET").expect("AZURE_SECRET must be set in .env")
 }
 
-pub fn default_view_data(session: Session) -> serde_json::Value {
-    let user = get_user_data(Some(session.clone()));
-    let team = get_team_data(Some(session.clone()));
-    let message = session.get::<String>("message").unwrap_or(None);
+pub fn default_view_data(session: Session) -> Result<serde_json::Value, actix_web::Error> {
+    let user = get_user_data(&session.clone());
+    let team = get_team_data(&session.clone());
+    let message = session.get::<String>("message").map_err(|e| {
+        actix_web::error::ErrorInternalServerError(format!("Error loading session {}", e))
+    })?;
     session.remove("message");
 
-    json!({
+    Ok(json!({
         "user": user,
         "team": team,
         "microsoft_login": microsoft_login_url(),
         "isOwner": user.is_some() && team.is_some() && user.unwrap().email == team.unwrap().owner,
         "message": message,
-    })
+    }))
 }

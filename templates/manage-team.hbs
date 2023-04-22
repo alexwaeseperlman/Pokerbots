@@ -1,11 +1,14 @@
 {{> include/head}}
 {{ #if team }}
+    {{! TEAM! }}
+    Hi {{user.display_name}}. You are a member of team {{team.team_name}}.
     <br/>
 
-    <h4>Members of "{{team.teamname}}"</h3>.
+    Members of {{team.team_name}}:
+    <br/>
 
     {{#each team.members}}
-        <p>{{this.displayname}}</p>
+        {{this.display_name}}
     {{/each}}
     <br/>
 
@@ -19,10 +22,16 @@
         </form>
     {{/if}}
 
+    Upload bot:
+    <form action="/api/upload-bot" enctype="multipart/form-data" method="POST">
+        <input type="file" name="bot" accept=".py"/>
+        <button type="submit">Submit</button>
+    </form>
+
 {{ else }}
     {{ #if user}}
     <div>
-        <p>Hi {{ user.displayname }}. You do not have a team. Create one below.</p>
+        <p>Hi {{ user.display_name }}. You do not have a team. Create one below.</p>
 
         <form action="/api/create-team">
             {{#if message}}
