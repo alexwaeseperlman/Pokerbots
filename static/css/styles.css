@@ -26,6 +26,9 @@ body {
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
+  font-family: "Kanit", sans-serif;
+  color: #ffffff;
+  font-weight: 400;
 }
 
 h1 {
