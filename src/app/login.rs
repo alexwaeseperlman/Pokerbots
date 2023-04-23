@@ -1,5 +1,5 @@
 use actix_session::Session;
-use actix_web::{web, HttpResponse};
+use actix_web::{middleware::Logger, web, HttpResponse};
 use diesel::prelude::*;
 use log::error;
 use serde::{Deserialize, Serialize};
@@ -35,10 +35,10 @@ pub fn get_azure_secret() -> String {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AzureMeResponse {
-    pub display_name: Option<String>,
-    pub given_name: Option<String>,
+    pub displayName: Option<String>,
+    pub givenName: Option<String>,
     pub mail: Option<String>,
-    pub user_principal_name: Option<String>,
+    pub userPrincipalName: Option<String>,
     pub id: Option<String>,
 }
 
@@ -114,7 +114,6 @@ pub async fn handle_login(
     // TODO: Is it bad to make a new client for every login?
     let client = reqwest::Client::new();
     let secret = get_azure_secret();
-
     let response: AzureAuthTokenResopnse = client
         .post(format!(
             "https://login.microsoftonline.com/{}/oauth2/v2.0/token",
@@ -129,32 +128,39 @@ pub async fn handle_login(
         .json()
         .await?;
 
-    if response.access_token.is_some() {
+    if let Some(token) = response.access_token {
         let me: AzureMeResponse = client
             .get("https://graph.microsoft.com/v1.0/me")
             .header("Content-Type", "application/json")
-            .header("Authorization", response.access_token.unwrap())
+            .header("Authorization", token)
             .send()
             .await?
             .json()
             .await?;
-        if me.mail.is_some() {
+        // TODO: When you sign in with some microsoft accounts, there is no email
+        // but there is a userPrincipalName. We should confirm that it is ok
+        // to use userPrincipalName when email doesn't exist (this is mainly
+        // used to verify that a user is from an allowed organization)
+        if let Some(mail) = me.userPrincipalName.clone() {
             session.insert(
                 "me",
                 UserData {
-                    email: me.mail.clone().unwrap(),
+                    email: mail.clone(),
                     display_name: me
-                        .display_name
-                        .unwrap_or_else(|| me.given_name.unwrap_or_else(|| me.mail.unwrap())),
+                        .displayName
+                        .clone()
+                        .unwrap_or_else(|| me.givenName.unwrap_or_else(|| mail.clone())),
                 },
             )?;
+        } else {
+            session.insert("message", "There was an issue logging you in.")?;
         }
         Ok(HttpResponse::Found()
             .append_header(("Location", "/manage-team"))
             .finish())
     } else {
         Ok(HttpResponse::Found()
-            .append_header(("Location", "/login"))
+            .append_header(("Location", "/"))
             .finish())
     }
 }

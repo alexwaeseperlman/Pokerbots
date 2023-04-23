@@ -4,7 +4,10 @@
     Hi {{user.display_name}}. You are a member of team {{team.team_name}}.
     <br/>
 
-    Members of {{team.team_name}}:
+    {{#if message}}
+        <p>{{message}}</p>
+    {{/if}}
+    Members of "{{team.team_name}}":
     <br/>
 
     {{#each team.members}}
@@ -42,7 +45,10 @@
         </form>
         </div>
     {{ else }}
-        You are not logged in.
+        {{#if message}}
+            <p>{{message}}</p>
+        {{/if}}
+        <p>You are not logged in.</p>
         {{> login}}
     {{/if}}
 {{/if}}
