@@ -1,3 +1,4 @@
+use std::{fs, io, io::Write, path::PathBuf};
 use actix_multipart::Multipart;
 use actix_session::Session;
 use actix_web::{get, post, web, HttpResponse};
@@ -5,7 +6,6 @@ use diesel::prelude::*;
 use futures::{StreamExt, TryStreamExt};
 use log::debug;
 use serde::Deserialize;
-use std::{fs, io, io::Write, path::PathBuf};
 
 use crate::{
     app::{bots::Bot, login},
@@ -133,18 +133,18 @@ pub async fn upload_bot(
         let team = login::get_team_data(&session);
         team.unwrap().team_name
     };
-    let bot_path = PathBuf::from(format!("/tmp/pokerzero/{}/bot", team_name));
+    let team_path = PathBuf::from(format!("/tmp/pokerzero/{}", team_name));
 
     let mut zip_file = {
-        if !bot_path.exists() {
-            fs::create_dir_all(&bot_path)?;
+        if !team_path.exists() {
+            fs::create_dir_all(&team_path)?;
         }
         fs::OpenOptions::new()
             .read(true)
             .write(true)
             .create(true)
             .truncate(true)
-            .open(bot_path.join("bot.zip"))?
+            .open(team_path.join("bot.zip"))?
     };
 
     while let Ok(Some(mut field)) = payload.try_next().await {
@@ -155,13 +155,14 @@ pub async fn upload_bot(
     }
 
     // TODO: IS IT BETTER TO SCOPE VARIABLES AS SMALL AS POSSIBLE?
+    // TODO: SHOULD WE web::block these?
     let vals: serde_yaml::Value = {
         let mut archive = zip::ZipArchive::new(zip_file).map_err(io::Error::from)?;
-        archive.extract(&bot_path).map_err(io::Error::from)?;
-        let yaml_file = match std::fs::File::open(bot_path.join("bot").join("cmd.yaml")) {
+        archive.extract(&team_path).map_err(io::Error::from)?;
+        let yaml_file = match std::fs::File::open(team_path.join("bot").join("cmd.yaml")) {
             Ok(f) => f,
             Err(e) => match e.kind() {
-                io::ErrorKind::NotFound => fs::File::open(bot_path.join("bot").join("cmd.yml"))?,
+                io::ErrorKind::NotFound => fs::File::open(team_path.join("bot").join("cmd.yml"))?,
                 _ => return Err(e).map_err(actix_web::Error::from),
             },
         };
@@ -173,7 +174,7 @@ pub async fn upload_bot(
     let bot = Bot::new(
         team_name,
         // team.unwrap().team_name,
-        bot_path,
+        team_path,
         vals.get("build")
             .map_or(None, |v| v.as_str())
             .map(String::from),
@@ -184,7 +185,7 @@ pub async fn upload_bot(
     let bot_ = bot.clone();
     // TODO: MAKE IT REPLACE OLD BOT RATHER THAN PUSH
     data.bots.lock().unwrap().push(bot_);
-    bot.play(&data.bots.lock().unwrap())?;
+    bot.play(&data.bots.lock().unwrap()).await?;
 
     Ok(HttpResponse::Ok().body("Successfully uploaded bot"))
 }

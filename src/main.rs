@@ -1,10 +1,7 @@
 use std::sync::Mutex;
-
-use actix_service::*;
-use actix_session::storage::CookieSessionStore;
-use actix_session::*;
-use actix_web::*;
-use actix_web::{cookie, middleware::Logger, App};
+use actix_service::Service;
+use actix_session::{storage::CookieSessionStore, SessionExt, SessionMiddleware};
+use actix_web::{cookie, web, middleware::Logger, App, HttpMessage, HttpServer};
 use futures_util::future::FutureExt;
 
 use pokerbots::app::{api, api::BotsList, login, pages};
@@ -20,7 +17,7 @@ async fn main() -> std::io::Result<()> {
     env_logger::init();
     dotenvy::dotenv().ok();
     let bots_list = web::Data::new(BotsList {
-        bots: Mutex::new(Vec::new())
+        bots: Mutex::new(Vec::new()),
     });
 
     // Generate the list of routes in your App
@@ -56,9 +53,8 @@ async fn main() -> std::io::Result<()> {
             .service(api::leave_team)
             .app_data(bots_list.clone())
             .service(api::upload_bot)
-
-        //.wrap(middleware::Compress::default())
     })
+    .workers(8)
     .bind(("0.0.0.0", 3000))?
     .run()
     .await

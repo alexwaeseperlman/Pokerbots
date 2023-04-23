@@ -1,11 +1,11 @@
-use log::{debug, error, info};
-use rand::Rng;
 use std::{
     fs,
     io::{Read, Write},
     os::unix::net::{UnixListener, UnixStream},
     path::{Path, PathBuf},
 };
+use log::{debug, error, info};
+use rand::Rng;
 
 #[derive(Debug, Clone)]
 pub struct Bot {
@@ -31,8 +31,8 @@ pub struct Dealer {
     deck: Vec<Card>,
 }
 
-pub struct Game<'a> {
-    bots: Vec<&'a Bot>,
+pub struct Game {
+    bots: Vec<Bot>,
     num_players: u32,
     dealer: Dealer,
     button: u32,
@@ -73,13 +73,12 @@ impl Bot {
         Ok(())
     }
 
-    fn connect(&self, socket_path: &Path) -> std::io::Result<()> {
-        let socket = Path::new(socket_path);
-
-        let mut stream = UnixStream::connect(socket)?;
+    async fn connect(&self, socket_path: &Path) -> std::io::Result<()> {
+        debug!("{socket_path:?}");
+        let mut stream = UnixStream::connect(socket_path)?;
+        info!("CONNECTED client");
 
         stream.write_all(b"Hello, world!")?;
-
         stream.shutdown(std::net::Shutdown::Write)?;
 
         let mut response = String::new();
@@ -88,7 +87,7 @@ impl Bot {
         Ok(())
     }
 
-    pub fn play(&self, bots: &Vec<Bot>) -> std::io::Result<()> {
+    pub async fn play(&self, bots: &Vec<Bot>) -> std::io::Result<()> {
         info!("PLAYING");
         debug!("{bots:?}");
         let socket_path = PathBuf::from(format!("/tmp/pokerzero/{}/socket", self.team_name));
@@ -98,13 +97,16 @@ impl Bot {
         for b in bots {
             if b.team_name != self.team_name {
                 let socket_file =
-                    socket_path.join(format!("{}_vs_{}", self.team_name, b.team_name));
-                let bots_game = vec![b, self];
+                    socket_path.join(format!("{}_vs_{}.sock", self.team_name, b.team_name));
+                let bots_game = vec![b.clone(), self.clone()];
                 let dealer = Dealer::new();
                 let game = Game::new(bots_game, dealer);
-                game.start_server(&socket_file)?;
-                self.connect(&socket_file)?;
-                b.connect(&socket_file)?;
+                let socket_file_ = socket_file.clone();
+                tokio::task::spawn(async move { game.start_server(&socket_file).await });
+                std::thread::sleep(std::time::Duration::from_millis(2000));
+                info!("MOVING ON");
+                self.connect(&socket_file_).await?;
+                // b.connect(&socket_file)?;
             }
         }
         Ok(())
@@ -149,8 +151,8 @@ impl Dealer {
     }
 }
 
-impl<'a> Game<'a> {
-    pub fn new(bots: Vec<&'a Bot>, dealer: Dealer) -> Self {
+impl Game {
+    pub fn new(bots: Vec<Bot>, dealer: Dealer) -> Self {
         let l = bots.len() as u32;
         Self {
             bots,
@@ -163,7 +165,7 @@ impl<'a> Game<'a> {
         }
     }
 
-    fn add_bot(&mut self, bot: &'a Bot) {
+    fn add_bot(&mut self, bot: Bot) {
         self.bots.push(bot);
         self.num_players = self.num_players + 1;
     }
@@ -176,7 +178,7 @@ impl<'a> Game<'a> {
         Ok(())
     }
 
-    fn start_server(&self, socket_path: &Path) -> std::io::Result<()> {
+    async fn start_server(&self, socket_path: &Path) -> std::io::Result<()> {
         let socket = Path::new(socket_path);
         if socket.exists() {
             std::fs::remove_file(socket)?;
