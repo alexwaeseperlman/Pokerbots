@@ -1,9 +1,7 @@
 CREATE TABLE team_invites (
-    id SERIAL PRIMARY KEY NOT NULL,
+    invite_code TEXT UNIQUE NOT NULL PRIMARY KEY,
     teamID INTEGER NOT NULL,
-    invite_code BIGINT NOT NULL,
     FOREIGN KEY(teamID) REFERENCES teams(id) ON DELETE CASCADE,
     -- use bigint for utc time stamp
-    expires BIGINT NOT NULL,
-    used BOOLEAN NOT NULL DEFAULT false
+    expires BIGINT NOT NULL
 );
