@@ -1,5 +1,5 @@
 use crate::{
-    app::login,
+    app::login::{self, microsoft_login_url, url_encode},
     config::DB_CONNECTION,
     default_view_data,
     models::User,
@@ -134,6 +134,7 @@ pub async fn leave_team(session: Session) -> actix_web::Result<HttpResponse> {
         .append_header(("Location", "/manage-team"))
         .finish())
 }
+// TODO: there should be some kind of rate limiting here
 #[get("/api/make-invite")]
 pub async fn make_invite(session: Session) -> actix_web::Result<HttpResponse> {
     let user = login::get_user_data(&session);
@@ -162,6 +163,25 @@ pub async fn make_invite(session: Session) -> actix_web::Result<HttpResponse> {
             actix_web::error::ErrorInternalServerError(format!("Database insert error: {}", e))
         })?;
     Ok(HttpResponse::Ok().body(format!("{:02x}", out)))
+}
+
+#[get("/api/join-team")]
+pub async fn join_team(
+    session: Session,
+    web::Query::<JoinTeamQuery>(JoinTeamQuery { invite_code }): web::Query<JoinTeamQuery>,
+    req: actix_web::HttpRequest,
+) -> actix_web::Result<HttpResponse> {
+    let user = login::get_user_data(&session);
+    let team = login::get_team_data(&session);
+    // You can't join a team if you are already on one or if you aren't logged in
+    if user.is_none() {
+        session.insert("message", "You are not logged in.")?;
+        return Ok(HttpResponse::Found()
+            .append_header(("Location", microsoft_login_url(&req.uri().to_string())))
+            .finish());
+    }
+    // Check if there is an existing team invite with this code
+    Ok(HttpResponse::Ok().body(user.unwrap().display_name))
 }
 
 #[get("/manage-team")]

@@ -36,6 +36,7 @@ async fn main() -> std::io::Result<()> {
                 let team_data = login::get_team_data(&req.get_session());
                 req.extensions_mut().insert(user_data);
                 req.extensions_mut().insert(team_data);
+                log::debug!("{}", req.uri());
                 srv.call(req).map(|res| res)
             })
             .wrap(Logger::new("%a %{User-Agent}i"))
@@ -50,6 +51,7 @@ async fn main() -> std::io::Result<()> {
             .service(pages::manage_team::delete_team)
             .service(pages::manage_team::leave_team)
             .service(pages::manage_team::make_invite)
+            .service(pages::manage_team::join_team)
             .service(api::signout::signout)
             .service(api::upload_bot)
 

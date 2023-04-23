@@ -25,8 +25,29 @@ pub struct TeamData {
     pub owner: String,
 }
 
-pub fn microsoft_login_url() -> String {
-    format!("https://login.microsoftonline.com/{}/oauth2/v2.0/authorize?client_id={}&response_type=code&redirect_uri={}&response_mode=query&scope=User.Read", "common", CLIENT_ID, REDIRECT_URI)
+// TODO: right now state is just the return address,
+// but we should do more with it in the future
+// e.g. store a code in the database with the
+// return address and other relevant info
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub struct HandleLoginQuery {
+    pub state: Option<String>,
+}
+
+pub fn url_encode(s: &str) -> String {
+    url::form_urlencoded::byte_serialize(s.as_bytes()).collect::<String>()
+}
+
+pub fn microsoft_login_url(return_to: &str) -> String {
+    format!(
+        "https://login.microsoftonline.com/{}/oauth2/\
+    v2.0/authorize?client_id={}&response_type=code&redirect_uri={}\
+    &response_mode=query&scope=User.Read&state={}",
+        "common",
+        CLIENT_ID,
+        url_encode(REDIRECT_URI),
+        url_encode(return_to)
+    )
 }
 
 pub fn get_azure_secret() -> String {
@@ -104,16 +125,17 @@ pub fn get_team_data(session: &Session) -> Option<TeamData> {
         owner: t.owner.clone(),
     })
 }
-//
 // By the end of this method, if given a valid authorization code, the email address field in the session should be set
 pub async fn handle_login(
     req: web::Query<MicrosoftLoginCode>,
     session: Session,
+    web::Query::<HandleLoginQuery>(HandleLoginQuery { state }): web::Query<HandleLoginQuery>,
 ) -> Result<HttpResponse, Box<dyn std::error::Error>> {
     let code = req.code.clone().unwrap_or_default();
     // TODO: Is it bad to make a new client for every login?
     let client = reqwest::Client::new();
     let secret = get_azure_secret();
+
     let response: AzureAuthTokenResopnse = client
         .post(format!(
             "https://login.microsoftonline.com/{}/oauth2/v2.0/token",
@@ -121,7 +143,10 @@ pub async fn handle_login(
         ))
         .body(format!(
             "code={}&client_id={}&redirect_uri={}&grant_type=authorization_code&client_secret={}",
-            code, CLIENT_ID, REDIRECT_URI, secret
+            code,
+            CLIENT_ID,
+            url_encode(REDIRECT_URI),
+            secret
         ))
         .send()
         .await?
@@ -156,7 +181,7 @@ pub async fn handle_login(
             session.insert("message", "There was an issue logging you in.")?;
         }
         Ok(HttpResponse::Found()
-            .append_header(("Location", "/manage-team"))
+            .append_header(("Location", state.unwrap_or("/manage-team".to_string())))
             .finish())
     } else {
         Ok(HttpResponse::Found()

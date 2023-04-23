@@ -64,7 +64,7 @@
 
     const genInvite = () => {
         fetch("/api/make-invite").then(async (result) => {
-            inviteLink.value = window.location.origin + '/api/join-team?invite-code='+(await result.text());
+            inviteLink.value = window.location.origin + '/api/join-team?invite_code='+(await result.text());
         });
     }
     window.addEventListener('load', () => {

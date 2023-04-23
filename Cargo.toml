@@ -33,6 +33,7 @@ actix-multipart = "0.6.0"
 futures = "0.3.26"
 chrono = "0.4.24"
 rand = "0.8.5"
+url = "2.3.1"
 
 [dev-dependencies]
 cargo-watch = "8.4.0"

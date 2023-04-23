@@ -58,7 +58,7 @@ pub fn default_view_data(session: Session) -> Result<serde_json::Value, actix_we
     Ok(json!({
         "user": user,
         "team": team,
-        "microsoft_login": microsoft_login_url(),
+        "microsoft_login": microsoft_login_url("/manage-team"),
         "isOwner": user.is_some() && team.is_some() && user.unwrap().email == team.unwrap().owner,
         "message": message,
     }))

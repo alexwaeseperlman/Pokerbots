@@ -1,10 +1,7 @@
-use serde_json::json;
 use actix_web::{get, web, HttpResponse};
+use serde_json::json;
 
-use crate::app::{
-    login,
-    login::UserData,
-};
+use crate::app::{login, login::UserData};
 
 #[get("/")]
 pub async fn home(
@@ -13,7 +10,7 @@ pub async fn home(
 ) -> actix_web::Result<HttpResponse> {
     let u: Option<UserData> = user.map(|x| x.into_inner());
     let data = json!({
-        "microsoft_login": login::microsoft_login_url(),
+        "microsoft_login": login::microsoft_login_url("/manage-team"),
         "user": u
     });
 
