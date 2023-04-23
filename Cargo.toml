@@ -31,6 +31,8 @@ futures-util = "0.3.26"
 env_logger = "0.10.0"
 actix-multipart = "0.6.0"
 futures = "0.3.26"
+chrono = "0.4.24"
+rand = "0.8.5"
 
 [dev-dependencies]
 cargo-watch = "8.4.0"

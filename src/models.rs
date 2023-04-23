@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::schema::{teams, users};
+use crate::schema::{team_invites, teams, users};
 
 #[derive(Serialize, Deserialize, diesel::Queryable, Debug)]
 pub struct Team {
@@ -28,4 +28,22 @@ pub struct User {
 pub struct NewUser {
     pub email: String,
     pub display_name: String,
+}
+
+#[derive(diesel::Insertable, Debug)]
+#[diesel(table_name = team_invites)]
+pub struct NewInvite {
+    pub expires: i64,
+    pub invite_code: i64,
+    pub teamid: i32,
+}
+
+#[derive(Serialize, Deserialize, diesel::Queryable, Debug)]
+#[diesel(table_name = team_invites)]
+pub struct TeamInvites {
+    pub id: i32,
+    pub expires: i64,
+    pub invite_code: i64,
+    pub teamid: i32,
+    pub used: bool,
 }

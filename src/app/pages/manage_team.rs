@@ -3,19 +3,26 @@ use crate::{
     config::DB_CONNECTION,
     default_view_data,
     models::User,
-    schema::{teams, users},
+    schema::{team_invites, teams, users},
 };
 use actix_multipart::Multipart;
 use actix_session::Session;
 use actix_web::{get, post, web, HttpResponse};
+use chrono;
 use diesel::prelude::*;
 use futures::{StreamExt, TryStreamExt};
+use rand::{self, Rng};
 use serde::Deserialize;
 use std::io::Write;
 
 #[derive(Deserialize)]
 pub struct CreateTeamQuery {
     pub team_name: String,
+}
+
+#[derive(Deserialize)]
+pub struct JoinTeamQuery {
+    pub invite_code: String,
 }
 
 pub fn validate_team_name(name: &String) -> bool {
@@ -126,6 +133,35 @@ pub async fn leave_team(session: Session) -> actix_web::Result<HttpResponse> {
     Ok(HttpResponse::Found()
         .append_header(("Location", "/manage-team"))
         .finish())
+}
+#[get("/api/make-invite")]
+pub async fn make_invite(session: Session) -> actix_web::Result<HttpResponse> {
+    let user = login::get_user_data(&session);
+    let team = login::get_team_data(&session);
+    // You can't join a team if you are already on one or if you aren't logged in
+    // Also only the owner can create a team
+    if user.is_none() || team.is_none() || user.unwrap().email != team.clone().unwrap().owner {
+        session.insert("message", "You don't have permission to do that.")?;
+        return Ok(HttpResponse::Found()
+            .append_header(("Location", "/manage-team"))
+            .finish());
+    }
+    // Insert an invite with expiry date 24 hours from now
+    let day: i64 = 24 * 3600 * 1000;
+    let now: i64 = chrono::offset::Utc::now().timestamp();
+    let conn = &mut (*DB_CONNECTION).get().unwrap();
+    let out = diesel::insert_into(team_invites::dsl::team_invites)
+        .values(crate::models::NewInvite {
+            expires: now + day,
+            invite_code: rand::thread_rng().gen::<i64>(),
+            teamid: team.clone().unwrap().id,
+        })
+        .returning(team_invites::dsl::invite_code)
+        .get_result::<i64>(conn)
+        .map_err(|e| {
+            actix_web::error::ErrorInternalServerError(format!("Database insert error: {}", e))
+        })?;
+    Ok(HttpResponse::Ok().body(format!("{:02x}", out)))
 }
 
 #[get("/manage-team")]

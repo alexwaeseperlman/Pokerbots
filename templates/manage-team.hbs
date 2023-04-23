@@ -16,6 +16,11 @@
     <br/>
 
     {{#if isOwner}}
+        <div>
+            Invite link (click to copy):
+            <input type="text" id="invite-link" readonly />
+            <button id="generate-invite">Generate new link</button>
+        </div>
         <form action="/api/delete-team">
             <input type="submit" value="Delete Team"/>
         </form>
@@ -52,4 +57,25 @@
         {{> login}}
     {{/if}}
 {{/if}}
+<script>
+    // generate invite links if necessary
+    const inviteLink = document.getElementById('invite-link');
+    const genInviteButton = document.getElementById('generate-invite');
+
+    const genInvite = () => {
+        fetch("/api/make-invite").then(async (result) => {
+            inviteLink.value = window.location.origin + '/api/join-team?invite-code='+(await result.text());
+        });
+    }
+    window.addEventListener('load', () => {
+        genInvite()
+        genInviteButton.addEventListener('click', genInvite);
+        inviteLink.addEventListener('click', () => {
+            inviteLink.select()
+            // https://www.w3schools.com/howto/howto_js_copy_clipboard.asp
+            inviteLink.setSelectionRange(0, 1e5);
+            navigator.clipboard.writeText(inviteLink.value)
+        })
+    });
+</script>
 {{> include/foot}}

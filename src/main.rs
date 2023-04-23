@@ -49,6 +49,7 @@ async fn main() -> std::io::Result<()> {
             .service(pages::manage_team::create_team)
             .service(pages::manage_team::delete_team)
             .service(pages::manage_team::leave_team)
+            .service(pages::manage_team::make_invite)
             .service(api::signout::signout)
             .service(api::upload_bot)
 
