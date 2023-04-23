@@ -2,7 +2,7 @@ use crate::{
     app::login::{self, microsoft_login_url, url_encode},
     config::DB_CONNECTION,
     default_view_data,
-    models::User,
+    models::{TeamInvite, User},
     schema::{team_invites, teams, users},
 };
 use actix_multipart::Multipart;
@@ -90,19 +90,18 @@ pub async fn delete_team(session: Session) -> actix_web::Result<HttpResponse> {
     }
     let conn = &mut (*DB_CONNECTION).get().unwrap();
 
+    diesel::delete(teams::dsl::teams.filter(teams::dsl::id.eq(team.clone().unwrap().id)))
+        .execute(conn)
+        .map_err(|e| {
+            actix_web::error::ErrorInternalServerError(format!("Database delete error {}", e))
+        })?;
     // Make everyone on the team leave the team
     diesel::update(users::dsl::users)
-        .filter(users::dsl::team_id.eq(team.clone().unwrap().id))
+        .filter(users::dsl::team_id.eq(team.unwrap().id))
         .set(users::dsl::team_id.eq::<Option<i32>>(None))
         .execute(conn)
         .map_err(|e| {
             actix_web::error::ErrorInternalServerError(format!("Database update error {}", e))
-        })?;
-
-    diesel::delete(teams::dsl::teams.filter(teams::dsl::id.eq(team.unwrap().id)))
-        .execute(conn)
-        .map_err(|e| {
-            actix_web::error::ErrorInternalServerError(format!("Database delete error {}", e))
         })?;
 
     Ok(HttpResponse::Found()
@@ -135,6 +134,7 @@ pub async fn leave_team(session: Session) -> actix_web::Result<HttpResponse> {
         .finish())
 }
 // TODO: there should be some kind of rate limiting here
+// Maybe if there was one created within the last 5 seconds, return that?
 #[get("/api/make-invite")]
 pub async fn make_invite(session: Session) -> actix_web::Result<HttpResponse> {
     let user = login::get_user_data(&session);
@@ -154,15 +154,15 @@ pub async fn make_invite(session: Session) -> actix_web::Result<HttpResponse> {
     let out = diesel::insert_into(team_invites::dsl::team_invites)
         .values(crate::models::NewInvite {
             expires: now + day,
-            invite_code: rand::thread_rng().gen::<i64>(),
+            invite_code: format!("{:02x}", rand::thread_rng().gen::<u128>()),
             teamid: team.clone().unwrap().id,
         })
         .returning(team_invites::dsl::invite_code)
-        .get_result::<i64>(conn)
+        .get_result::<String>(conn)
         .map_err(|e| {
             actix_web::error::ErrorInternalServerError(format!("Database insert error: {}", e))
         })?;
-    Ok(HttpResponse::Ok().body(format!("{:02x}", out)))
+    Ok(HttpResponse::Ok().body(out))
 }
 
 #[get("/api/join-team")]
@@ -180,8 +180,52 @@ pub async fn join_team(
             .append_header(("Location", microsoft_login_url(&req.uri().to_string())))
             .finish());
     }
-    // Check if there is an existing team invite with this code
-    Ok(HttpResponse::Ok().body(user.unwrap().display_name))
+    if team.is_some() {
+        session.insert(
+            "message",
+            "You cannot join a team if you are already on one.",
+        )?;
+    } else {
+        let conn = &mut (*DB_CONNECTION).get().unwrap();
+        //.map_err(|e| actix_web::error::ErrorInternalServerError("No database connection"))?;
+        // Check if there is an existing team invite with this code
+        let codes: Vec<TeamInvite> = team_invites::dsl::team_invites
+            .find(invite_code.clone())
+            .load::<TeamInvite>(conn)
+            .map_err(|e| actix_web::error::ErrorNotFound("Unable to load invite"))?;
+        if let Some(code) = codes.first() {
+            let now: i64 = chrono::offset::Utc::now().timestamp();
+            if code.expires < now {
+                session.insert("message", "That code is no longer valid.")?
+            } else {
+                // Set the users team and set the code to used
+                diesel::delete(team_invites::dsl::team_invites)
+                    .filter(team_invites::dsl::invite_code.eq(invite_code))
+                    .execute(conn)
+                    .map_err(|e| {
+                        actix_web::error::ErrorInternalServerError(format!(
+                            "Failed to delete team invite: {}",
+                            e
+                        ))
+                    })?;
+                diesel::update(users::dsl::users)
+                    .filter(users::dsl::email.eq(user.unwrap().email))
+                    .set(users::dsl::team_id.eq(code.teamid))
+                    .execute(conn)
+                    .map_err(|e| {
+                        actix_web::error::ErrorInternalServerError(format!(
+                            "Failed to update user team: {}",
+                            e
+                        ))
+                    })?;
+            }
+        } else {
+            session.insert("message", "That code is no longer valid.")?
+        }
+    }
+    Ok(HttpResponse::Found()
+        .append_header(("Location", "/manage-team"))
+        .finish())
 }
 
 #[get("/manage-team")]

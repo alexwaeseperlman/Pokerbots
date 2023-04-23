@@ -1,12 +1,10 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
-    team_invites (id) {
-        id -> Int4,
+    team_invites (invite_code) {
+        invite_code -> Text,
         teamid -> Int4,
-        invite_code -> Int8,
         expires -> Int8,
-        used -> Bool,
     }
 }
 
@@ -25,8 +23,6 @@ diesel::table! {
         team_id -> Nullable<Int4>,
     }
 }
-
-diesel::joinable!(team_invites -> teams (teamid));
 
 diesel::allow_tables_to_appear_in_same_query!(
     team_invites,

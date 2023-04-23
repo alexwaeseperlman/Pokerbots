@@ -34,16 +34,13 @@ pub struct NewUser {
 #[diesel(table_name = team_invites)]
 pub struct NewInvite {
     pub expires: i64,
-    pub invite_code: i64,
+    pub invite_code: String,
     pub teamid: i32,
 }
 
 #[derive(Serialize, Deserialize, diesel::Queryable, Debug)]
-#[diesel(table_name = team_invites)]
-pub struct TeamInvites {
-    pub id: i32,
-    pub expires: i64,
-    pub invite_code: i64,
+pub struct TeamInvite {
+    pub invite_code: String,
     pub teamid: i32,
-    pub used: bool,
+    pub expires: i64,
 }
