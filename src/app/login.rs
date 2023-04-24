@@ -1,9 +1,9 @@
+use std::env;
 use actix_session::Session;
-use actix_web::{web, HttpResponse};
+use actix_web::{middleware::Logger, web, HttpResponse};
 use diesel::prelude::*;
 use log::error;
 use serde::{Deserialize, Serialize};
-use std::env;
 
 use crate::{
     config::{CLIENT_ID, DB_CONNECTION, REDIRECT_URI},
@@ -25,8 +25,29 @@ pub struct TeamData {
     pub owner: String,
 }
 
-pub fn microsoft_login_url() -> String {
-    format!("https://login.microsoftonline.com/{}/oauth2/v2.0/authorize?client_id={}&response_type=code&redirect_uri={}&response_mode=query&scope=User.Read", "common", CLIENT_ID, REDIRECT_URI)
+// TODO: right now state is just the return address,
+// but we should do more with it in the future
+// e.g. store a code in the database with the
+// return address and other relevant info
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub struct HandleLoginQuery {
+    pub state: Option<String>,
+}
+
+pub fn url_encode(s: &str) -> String {
+    url::form_urlencoded::byte_serialize(s.as_bytes()).collect::<String>()
+}
+
+pub fn microsoft_login_url(return_to: &str) -> String {
+    format!(
+        "https://login.microsoftonline.com/{}/oauth2/\
+    v2.0/authorize?client_id={}&response_type=code&redirect_uri={}\
+    &response_mode=query&scope=User.Read&state={}",
+        "common",
+        CLIENT_ID,
+        url_encode(REDIRECT_URI),
+        url_encode(return_to)
+    )
 }
 
 pub fn get_azure_secret() -> String {
@@ -35,10 +56,10 @@ pub fn get_azure_secret() -> String {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AzureMeResponse {
-    pub display_name: Option<String>,
-    pub given_name: Option<String>,
+    pub displayName: Option<String>,
+    pub givenName: Option<String>,
     pub mail: Option<String>,
-    pub user_principal_name: Option<String>,
+    pub userPrincipalName: Option<String>,
     pub id: Option<String>,
 }
 
@@ -104,11 +125,11 @@ pub fn get_team_data(session: &Session) -> Option<TeamData> {
         owner: t.owner.clone(),
     })
 }
-//
 // By the end of this method, if given a valid authorization code, the email address field in the session should be set
 pub async fn handle_login(
     req: web::Query<MicrosoftLoginCode>,
     session: Session,
+    web::Query::<HandleLoginQuery>(HandleLoginQuery { state }): web::Query<HandleLoginQuery>,
 ) -> Result<HttpResponse, Box<dyn std::error::Error>> {
     let code = req.code.clone().unwrap_or_default();
     // TODO: Is it bad to make a new client for every login?
@@ -122,39 +143,49 @@ pub async fn handle_login(
         ))
         .body(format!(
             "code={}&client_id={}&redirect_uri={}&grant_type=authorization_code&client_secret={}",
-            code, CLIENT_ID, REDIRECT_URI, secret
+            code,
+            CLIENT_ID,
+            url_encode(REDIRECT_URI),
+            secret
         ))
         .send()
         .await?
         .json()
         .await?;
 
-    if response.access_token.is_some() {
+    if let Some(token) = response.access_token {
         let me: AzureMeResponse = client
             .get("https://graph.microsoft.com/v1.0/me")
             .header("Content-Type", "application/json")
-            .header("Authorization", response.access_token.unwrap())
+            .header("Authorization", token)
             .send()
             .await?
             .json()
             .await?;
-        if me.mail.is_some() {
+        // TODO: When you sign in with some microsoft accounts, there is no email
+        // but there is a userPrincipalName. We should confirm that it is ok
+        // to use userPrincipalName when email doesn't exist (this is mainly
+        // used to verify that a user is from an allowed organization)
+        if let Some(mail) = me.userPrincipalName.clone() {
             session.insert(
                 "me",
                 UserData {
-                    email: me.mail.clone().unwrap(),
+                    email: mail.clone(),
                     display_name: me
-                        .display_name
-                        .unwrap_or_else(|| me.given_name.unwrap_or_else(|| me.mail.unwrap())),
+                        .displayName
+                        .clone()
+                        .unwrap_or_else(|| me.givenName.unwrap_or_else(|| mail.clone())),
                 },
             )?;
+        } else {
+            session.insert("message", "There was an issue logging you in.")?;
         }
         Ok(HttpResponse::Found()
-            .append_header(("Location", "/manage-team"))
+            .append_header(("Location", state.unwrap_or("/manage-team".to_string())))
             .finish())
     } else {
         Ok(HttpResponse::Found()
-            .append_header(("Location", "/login"))
+            .append_header(("Location", "/"))
             .finish())
     }
 }

@@ -1,6 +1,14 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
+    team_invites (invite_code) {
+        invite_code -> Text,
+        teamid -> Int4,
+        expires -> Int8,
+    }
+}
+
+diesel::table! {
     teams (id) {
         id -> Int4,
         team_name -> Text,
@@ -17,6 +25,7 @@ diesel::table! {
 }
 
 diesel::allow_tables_to_appear_in_same_query!(
+    team_invites,
     teams,
     users,
 );

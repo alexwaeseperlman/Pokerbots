@@ -1,32 +1,4 @@
-<!DOCTYPE html>  
-<html>
-
- <head>
-    <title>PokerZero | Build bots that win at Poker.</title>
-    <script src="https://kit.fontawesome.com/f272322fbe.js" crossorigin="anonymous"></script>
-    <link rel="stylesheet" href="/static/css/styles.css">
-    <link rel="apple-touch-icon" sizes="180x180" href="/static/assets/favicon/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/assets/favicon/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/assets/favicon/favicon-16x16.png">
-    <link rel="manifest" href="/static/assets/favicon/site.webmanifest">
- </head>
-
- <body>    
-      <header>
-
-           <div class="logo">
-              <img src="/static/assets/logo.webp" alt="Logo"/>
-              <h1>PokerZero</h1>
-           </div>
-
-           <nav>
-              <a href="#dashboard">Dashboard &nbsp;<i class="fa-solid fa-lock"></i></a>
-              <a href="#leaderboard">Leaderboard &nbsp;<i class="fa-solid fa-lock"></i></a>
-              <a href="#documentation">Documentation &nbsp;<i class="fa-solid fa-lock"></i></a>
-              <a href="mailto:pokerzero3@gmail.com">Contact</a>
-           </nav>
-
-        </header>
+{{> include/head}}
 
         <img src="/static/assets/main.png" class="floating-picture" alt="fancy poker visual"/>
         <h2>Build bots that win at Poker.</h2>
@@ -71,10 +43,5 @@
         </section>
 
         <h3>That's it for now!</h3>
-        
-        <footer>
-           Built with &#9829; by Bonnie Li, Tommy He, Alex Waese-Perlman and Santosh Passoubady
-        </footer>
- </body> 
 
-</html>
+{{> include/foot}}
