@@ -96,10 +96,8 @@ Bots are uploaded as a zip containing a file named `cmd.yaml` or `cmd.yml` along
 command to build and run it. For example:
 
 ```yaml
-{
-    "build": "pip install -r requirements.txt"
-    "run": "python bot.py"
-}
+build: pip install -r requirements.txt
+run: python bot.py
 ```
 
 We will build and run according to the `cmd.yaml` and interact with that in an isolated environment.
