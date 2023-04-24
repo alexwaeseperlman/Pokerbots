@@ -1,17 +1,22 @@
+use std::{fs, io, io::Write, path::PathBuf};
 use actix_multipart::Multipart;
 use actix_session::Session;
 use actix_web::{get, post, web, HttpResponse};
 use diesel::prelude::*;
 use futures::{StreamExt, TryStreamExt};
+use log::debug;
 use serde::Deserialize;
-use std::io::Write;
 
 use crate::{
-    app::login,
+    app::{bots::Bot, login},
     config::DB_CONNECTION,
     models::User,
     schema::{teams, users},
 };
+
+pub struct BotsList {
+    pub bots: std::sync::Mutex<Vec<Bot>>,
+}
 
 #[derive(Deserialize)]
 pub struct CreateTeamQuery {
@@ -97,10 +102,7 @@ pub async fn leave_team(session: Session) -> actix_web::Result<HttpResponse> {
     let user = login::get_user_data(&session);
     let team = login::get_team_data(&session);
     // You can't delete a team if you're not in one or you're the owner
-    if user.is_none()
-        || team.is_none()
-        || user.clone().unwrap().email == team.unwrap().owner
-    {
+    if user.is_none() || team.is_none() || user.clone().unwrap().email == team.unwrap().owner {
         return Ok(HttpResponse::Found()
             .append_header(("Location", "/manage-team"))
             .finish());
@@ -124,18 +126,65 @@ pub async fn leave_team(session: Session) -> actix_web::Result<HttpResponse> {
 #[post("/api/upload-bot")]
 pub async fn upload_bot(
     session: Session,
+    data: web::Data<BotsList>,
     mut payload: Multipart,
 ) -> actix_web::Result<HttpResponse> {
-    while let Ok(Some(mut field)) = payload.try_next().await {
+    let team_name = {
         let team = login::get_team_data(&session);
-        let file_string = format!("/tmp/{}.py", team.unwrap().team_name);
-        let mut f =
-            web::block(move || std::fs::File::create(std::path::Path::new(&file_string))).await??;
+        team.unwrap().team_name
+    };
+    let team_path = PathBuf::from(format!("/tmp/pokerzero/{}", team_name));
 
+    let mut zip_file = {
+        if !team_path.exists() {
+            fs::create_dir_all(&team_path)?;
+        }
+        fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(team_path.join("bot.zip"))?
+    };
+
+    while let Ok(Some(mut field)) = payload.try_next().await {
         while let Some(chunk) = field.next().await {
-            let data = chunk.unwrap();
-            f = web::block(move || f.write_all(&data).map(|_| f)).await??;
+            let data = chunk?;
+            zip_file = zip_file.write_all(&data).map(|_| zip_file)?;
         }
     }
+
+    // TODO: SHOULD WE web::block these?
+    let vals: serde_yaml::Value = {
+        let mut archive = zip::ZipArchive::new(zip_file).map_err(io::Error::from)?;
+        archive.extract(&team_path).map_err(io::Error::from)?;
+        let yaml_file = match std::fs::File::open(team_path.join("bot").join("cmd.yaml")) {
+            Ok(f) => f,
+            Err(e) => match e.kind() {
+                io::ErrorKind::NotFound => fs::File::open(team_path.join("bot").join("cmd.yml"))?,
+                _ => return Err(e).map_err(actix_web::Error::from),
+            },
+        };
+        serde_yaml::from_reader(yaml_file).map_err(|e| {
+            actix_web::error::ErrorInternalServerError(format!("Yaml parsing error: {}", e))
+        })?
+    };
+
+    let bot = Bot::new(
+        team_name,
+        // team.unwrap().team_name,
+        team_path,
+        vals.get("build")
+            .map_or(None, |v| v.as_str())
+            .map(String::from),
+        vals.get("run")
+            .map_or(None, |v| v.as_str())
+            .map(String::from),
+    );
+    let bot_ = bot.clone();
+    // TODO: MAKE IT REPLACE OLD BOT RATHER THAN PUSH
+    data.bots.lock().unwrap().push(bot_);
+    bot.play(&data.bots.lock().unwrap()).await?;
+
     Ok(HttpResponse::Ok().body("Successfully uploaded bot"))
 }
