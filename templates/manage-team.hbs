@@ -1,18 +1,26 @@
-<html>
+{{> include/head}}
 {{ #if team }}
     {{! TEAM! }}
     Hi {{user.display_name}}. You are a member of team {{team.team_name}}.
     <br/>
 
-    Members of {{team.team_name}}:
+    {{#if message}}
+        <p>{{message}}</p>
+    {{/if}}
+    Members of "{{team.team_name}}":
     <br/>
 
     {{#each team.members}}
-        {{this.display_name}}
+        {{this.display_name}}<br/>
     {{/each}}
     <br/>
 
     {{#if isOwner}}
+        <div>
+            Invite link (click to copy):
+            <input type="text" id="invite-link" readonly />
+            <button id="generate-invite">Generate new link</button>
+        </div>
         <form action="/api/delete-team">
             <input type="submit" value="Delete Team"/>
         </form>
@@ -30,15 +38,44 @@
 
 {{ else }}
     {{ #if user}}
-        Hi {{ user.display_name }}. You do not have a team. Create one below.
+    <div>
+        <p>Hi {{ user.display_name }}. You do not have a team. Create one below.</p>
 
         <form action="/api/create-team">
-            <input type="text" name="team_name" placeholder="Team Name" pattern="[a-zA-Z ]*"/>
-            <input type="submit" value="Create Team"/>
+            {{#if message}}
+                <p>{{message}}</p>
+            {{/if}}
+            <input type="text" name="team_name" placeholder="Team Name"/>
+            <button type="submit" value="Create Team">Submit</button>
         </form>
+        </div>
     {{ else }}
-        You are not logged in.
+        {{#if message}}
+            <p>{{message}}</p>
+        {{/if}}
+        <p>You are not logged in.</p>
         {{> login}}
     {{/if}}
 {{/if}}
-</html>
+<script>
+    // generate invite links if necessary
+    const inviteLink = document.getElementById('invite-link');
+    const genInviteButton = document.getElementById('generate-invite');
+
+    const genInvite = () => {
+        fetch("/api/make-invite").then(async (result) => {
+            inviteLink.value = window.location.origin + '/api/join-team?invite_code='+(await result.text());
+        });
+    }
+    window.addEventListener('load', () => {
+        genInvite()
+        genInviteButton.addEventListener('click', genInvite);
+        inviteLink.addEventListener('click', () => {
+            inviteLink.select()
+            // https://www.w3schools.com/howto/howto_js_copy_clipboard.asp
+            inviteLink.setSelectionRange(0, 1e5);
+            navigator.clipboard.writeText(inviteLink.value)
+        })
+    });
+</script>
+{{> include/foot}}
