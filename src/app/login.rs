@@ -1,9 +1,9 @@
+use std::env;
 use actix_session::Session;
 use actix_web::{middleware::Logger, web, HttpResponse};
 use diesel::prelude::*;
 use log::error;
 use serde::{Deserialize, Serialize};
-use std::env;
 
 use crate::{
     config::{CLIENT_ID, DB_CONNECTION, REDIRECT_URI},

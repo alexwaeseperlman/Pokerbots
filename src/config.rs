@@ -1,10 +1,10 @@
+use std::env;
 use diesel::{
     pg::PgConnection,
     r2d2::{ConnectionManager, Pool},
 };
 use dotenvy::dotenv;
 use lazy_static::lazy_static;
-use std::env;
 
 // Build a database connection pool for server functions
 lazy_static! {

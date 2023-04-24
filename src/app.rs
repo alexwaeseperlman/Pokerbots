@@ -4,7 +4,7 @@ pub mod pages {
     pub mod team;
 }
 pub mod api;
-
+pub mod bots;
 pub mod login;
 
 use actix_session::Session;

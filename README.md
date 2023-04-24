@@ -1,4 +1,4 @@
-# Pokerbots, better than MIT
+# Pokerzero, compete with poker algorithms
 
 To get it running,
 ```
