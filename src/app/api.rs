@@ -154,7 +154,6 @@ pub async fn upload_bot(
         }
     }
 
-    // TODO: IS IT BETTER TO SCOPE VARIABLES AS SMALL AS POSSIBLE?
     // TODO: SHOULD WE web::block these?
     let vals: serde_yaml::Value = {
         let mut archive = zip::ZipArchive::new(zip_file).map_err(io::Error::from)?;

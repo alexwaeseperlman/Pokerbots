@@ -3,6 +3,8 @@ use std::{
     io::{Read, Write},
     os::unix::net::{UnixListener, UnixStream},
     path::{Path, PathBuf},
+    thread,
+    time::Duration,
 };
 use log::{debug, error, info};
 use rand::Rng;
@@ -56,6 +58,7 @@ impl Bot {
         }
     }
 
+    /// builds files necesary for bot in subprocess
     fn build(&self) -> std::io::Result<()> {
         if self.build_cmd.is_some() {
             std::process::Command::new(self.build_cmd.as_ref().unwrap()).spawn()?;
@@ -64,6 +67,7 @@ impl Bot {
         Ok(())
     }
 
+    /// runs the bot in subprocess
     fn run(&self) -> std::io::Result<()> {
         std::process::Command::new(self.run_cmd.as_ref().ok_or_else(|| {
             std::io::Error::new(std::io::ErrorKind::Other, "Run command failed to parse")
@@ -73,10 +77,10 @@ impl Bot {
         Ok(())
     }
 
+    /// connects bot to socket_path
     async fn connect(&self, socket_path: &Path) -> std::io::Result<()> {
-        debug!("{socket_path:?}");
         let mut stream = UnixStream::connect(socket_path)?;
-        info!("CONNECTED client");
+        info!("CLIENT {} has connected!", self.team_name);
 
         stream.write_all(b"Hello, world!")?;
         stream.shutdown(std::net::Shutdown::Write)?;
@@ -87,6 +91,9 @@ impl Bot {
         Ok(())
     }
 
+    /// plays current bot against all other bots
+    /// spawns a Dealer and Game per game and begins 
+    /// games in their own socket files
     pub async fn play(&self, bots: &Vec<Bot>) -> std::io::Result<()> {
         info!("PLAYING");
         debug!("{bots:?}");
@@ -102,11 +109,10 @@ impl Bot {
                 let dealer = Dealer::new();
                 let game = Game::new(bots_game, dealer);
                 let socket_file_ = socket_file.clone();
-                tokio::task::spawn(async move { game.start_server(&socket_file).await });
-                std::thread::sleep(std::time::Duration::from_millis(2000));
-                info!("MOVING ON");
+                thread::spawn(move || game.start_server(&socket_file));
+                thread::park_timeout(Duration::from_secs(1));
                 self.connect(&socket_file_).await?;
-                // b.connect(&socket_file)?;
+                b.connect(&socket_file_).await?;
             }
         }
         Ok(())
@@ -178,15 +184,15 @@ impl Game {
         Ok(())
     }
 
-    async fn start_server(&self, socket_path: &Path) -> std::io::Result<()> {
+    fn start_server(&self, socket_path: &Path) -> std::io::Result<()> {
         let socket = Path::new(socket_path);
         if socket.exists() {
             std::fs::remove_file(socket)?;
         }
 
         let listener = UnixListener::bind(socket)?;
+        info!("SERVER on {socket_path:?} started...");
 
-        info!("Server started");
         loop {
             let (unix_stream, _addr) = listener.accept().expect("Failed to accept connection");
             if let Err(e) = self.handle(unix_stream) {
