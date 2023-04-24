@@ -2,8 +2,6 @@ use crate::{
     app::login::{self, microsoft_login_url, url_encode},
     config::DB_CONNECTION,
     default_view_data,
-    models::{TeamInvite, User},
-    schema::{team_invites, teams, users},
 };
 use actix_session::Session;
 use actix_web::{get, web, HttpResponse};
