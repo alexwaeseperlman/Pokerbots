@@ -45,7 +45,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(session_middleware)
             .app_data(web::Data::new(hbars))
             .route("/api/login", web::get().to(login::handle_login))
-            .service(actix_files::Files::new("./static", "static/"))
+            .service(actix_files::Files::new("/static", "static/"))
             .service(pages::home::home)
             .service(pages::team::team)
             .service(pages::manage_team::manage_team)
