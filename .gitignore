@@ -20,7 +20,9 @@ website/.env
 
 # database
 website/database.db
-website/database/*
+website/database
+database.db
+database
 
 # MacOS
 .DS_Store
