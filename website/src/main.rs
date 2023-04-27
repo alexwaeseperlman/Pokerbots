@@ -5,7 +5,7 @@ use futures_util::future::FutureExt;
 use std::sync::Mutex;
 
 use pokerbots::app::{
-    api::{self, upload_bot::BotsList},
+    api::self,
     login, pages,
 };
 
@@ -19,9 +19,6 @@ async fn main() -> std::io::Result<()> {
     std::env::set_var("RUST_LOG", "debug");
     env_logger::init();
     dotenvy::dotenv().ok();
-    let bots_list = web::Data::new(BotsList {
-        bots: Mutex::new(Vec::new()),
-    });
 
     // Generate the list of routes in your App
     HttpServer::new(move || {
@@ -48,7 +45,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(session_middleware)
             .app_data(web::Data::new(hbars))
             .route("/api/login", web::get().to(login::handle_login))
-            .service(actix_files::Files::new("/static", "static/"))
+            .service(actix_files::Files::new("./static", "static/"))
             .service(pages::home::home)
             .service(pages::team::team)
             .service(pages::manage_team::manage_team)
@@ -58,8 +55,6 @@ async fn main() -> std::io::Result<()> {
             .service(api::manage_team::make_invite)
             .service(api::manage_team::join_team)
             .service(api::signout::signout)
-            .service(api::upload_bot::upload_bot)
-            .app_data(bots_list.clone())
 
         //.wrap(middleware::Compress::default())
     })
