@@ -4,10 +4,7 @@ use actix_web::{cookie, middleware::Logger, web, App, HttpMessage, HttpServer};
 use futures_util::future::FutureExt;
 use std::sync::Mutex;
 
-use pokerbots::app::{
-    api::self,
-    login, pages,
-};
+use pokerbots::app::{api, login, pages};
 
 fn get_secret_key() -> cookie::Key {
     let key = std::env::var("SECRET_KEY").expect("SECRET_KEY must be set in .env");

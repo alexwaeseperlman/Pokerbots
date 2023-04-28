@@ -1,9 +1,9 @@
-use std::env;
 use actix_session::Session;
 use actix_web::{middleware::Logger, web, HttpResponse};
 use diesel::prelude::*;
 use log::error;
 use serde::{Deserialize, Serialize};
+use std::env;
 
 use crate::{
     config::{CLIENT_ID, DB_CONNECTION, REDIRECT_URI},
@@ -44,8 +44,8 @@ pub fn microsoft_login_url(return_to: &str) -> String {
     v2.0/authorize?client_id={}&response_type=code&redirect_uri={}\
     &response_mode=query&scope=User.Read&state={}",
         "common",
-        CLIENT_ID,
-        url_encode(REDIRECT_URI),
+        CLIENT_ID.to_string(),
+        url_encode(&REDIRECT_URI),
         url_encode(return_to)
     )
 }
@@ -144,8 +144,8 @@ pub async fn handle_login(
         .body(format!(
             "code={}&client_id={}&redirect_uri={}&grant_type=authorization_code&client_secret={}",
             code,
-            CLIENT_ID,
-            url_encode(REDIRECT_URI),
+            CLIENT_ID.to_string(),
+            url_encode(&REDIRECT_URI),
             secret
         ))
         .send()
