@@ -97,7 +97,7 @@ impl GameState {
 
     pub fn shuffle(&mut self) {
         // Fisher-Yates
-        for i in 51..=0 {
+        for i in (0..=51).rev() {
             let j = rand::thread_rng().gen_range(0..=i);
             self.deck.swap(i, j);
         }
@@ -154,8 +154,13 @@ mod tests {
     fn deck_is_full() {
         let mut dealer = Game::new(vec![]);
         dealer.state.reset_deck();
+        let initial = dealer.state.deck.clone();
         dealer.state.shuffle();
         dealer.state.shuffle();
+        assert!(
+            dealer.state.deck != initial,
+            "shuffled deck should not be equal to the initial deck"
+        );
         let mut counts = vec![0; 52];
         for c in dealer.state.deck {
             counts[((c.value - 1) * 4

@@ -1,4 +1,4 @@
-#[derive(PartialEq, Eq, Clone)]
+#[derive(PartialEq, Eq, Clone, Debug, Copy)]
 pub enum Suite {
     Clubs,
     Spades,
@@ -18,7 +18,7 @@ impl ToString for Suite {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Copy, PartialEq, Eq)]
 pub struct Card {
     pub value: u32,
     pub suite: Suite,
@@ -169,20 +169,22 @@ pub mod HandEval {
                 counts[14] += 1;
             }
         }
+
         for card in hand2 {
             counts[card.value as usize] -= 1;
             if card.value == 1 {
                 counts[14] -= 1;
             }
         }
-
-        for i in 14..=2 {
+        for i in (2..=14).rev() {
             if counts[i] < 0 {
+                println!("Break");
                 return Ordering::Less;
             } else if counts[i] > 0 {
                 return Ordering::Greater;
             }
         }
+        println!("Didn't break?");
         return Ordering::Equal;
     }
 
@@ -681,6 +683,52 @@ pub mod HandEval {
                 assert!(full_house(mask) == None, "should not be a full house");
                 let n = rand::random::<usize>() % 5;
                 hand.swap(n, 0);
+            }
+        }
+        #[test]
+        pub fn hand_comparison() {
+            let hands = [("AcAsAdTsTd", "AhThKhQhJh"), ("QcTc3h2c5d", "KdThQd9h2s")];
+            for (lower, higher) in hands {
+                let mut a = vec![];
+                let mut b = vec![];
+                for i in 0..5 {
+                    a.push(Card::from(&lower[2 * i..2 * i + 2]));
+                    b.push(Card::from(&higher[2 * i..2 * i + 2]));
+                }
+                for i in 0..10 {
+                    assert_eq!(
+                        compare_hands(
+                            &a.clone().try_into().unwrap(),
+                            &b.clone().try_into().unwrap()
+                        ),
+                        Ordering::Less
+                    );
+                    assert_eq!(
+                        compare_hands(
+                            &b.clone().try_into().unwrap(),
+                            &a.clone().try_into().unwrap()
+                        ),
+                        Ordering::Greater
+                    );
+                    assert_eq!(
+                        compare_hands(
+                            &a.clone().try_into().unwrap(),
+                            &a.clone().try_into().unwrap()
+                        ),
+                        Ordering::Equal
+                    );
+                    assert_eq!(
+                        compare_hands(
+                            &b.clone().try_into().unwrap(),
+                            &b.clone().try_into().unwrap()
+                        ),
+                        Ordering::Equal
+                    );
+                    let m = rand::random::<usize>() % 5;
+                    let n = rand::random::<usize>() % 5;
+                    a.swap(m, 0);
+                    b.swap(n, 0);
+                }
             }
         }
     }
