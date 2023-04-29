@@ -2513,6 +2513,9 @@ dependencies = [
 [[package]]
 name = "pokerbots-game"
 version = "0.1.0"
+dependencies = [
+ "rand",
+]
 
 [[package]]
 name = "polling"

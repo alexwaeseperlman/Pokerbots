@@ -1,3 +1,5 @@
+use log::{debug, error, info};
+use rand::Rng;
 use std::{
     fs,
     io::{Read, Write},
@@ -6,32 +8,6 @@ use std::{
     thread,
     time::Duration,
 };
-use log::{debug, error, info};
-use rand::Rng;
-
-#[derive(Debug, Clone)]
-pub struct Bot {
-    team_name: String,
-    path: PathBuf,
-    build_cmd: Option<String>,
-    run_cmd: Option<String>,
-}
-
-enum Suite {
-    Clubs,
-    Spades,
-    Hearts,
-    Diamonds,
-}
-
-struct Card {
-    value: u32,
-    suite: Suite,
-}
-
-pub struct Dealer {
-    deck: Vec<Card>,
-}
 
 pub struct Game {
     bots: Vec<Bot>,
@@ -92,7 +68,7 @@ impl Bot {
     }
 
     /// plays current bot against all other bots
-    /// spawns a Dealer and Game per game and begins 
+    /// spawns a Dealer and Game per game and begins
     /// games in their own socket files
     pub async fn play(&self, bots: &Vec<Bot>) -> std::io::Result<()> {
         info!("PLAYING");
@@ -116,44 +92,6 @@ impl Bot {
             }
         }
         Ok(())
-    }
-}
-
-impl Dealer {
-    fn new() -> Self {
-        let mut deck = Vec::new();
-        deck.reserve(52);
-        for value in 1..=13 {
-            deck.push(Card {
-                value,
-                suite: Suite::Clubs,
-            });
-            deck.push(Card {
-                value,
-                suite: Suite::Spades,
-            });
-            deck.push(Card {
-                value,
-                suite: Suite::Hearts,
-            });
-            deck.push(Card {
-                value,
-                suite: Suite::Diamonds,
-            });
-        }
-        Self { deck }
-    }
-
-    fn shuffle(&mut self) {
-        // Fisher-Yates
-        for i in 51..=1 {
-            let j = rand::thread_rng().gen_range(0..=i);
-            self.deck.swap(i, j);
-        }
-    }
-
-    fn deal(&mut self) -> Option<Card> {
-        self.deck.pop()
     }
 }
 
