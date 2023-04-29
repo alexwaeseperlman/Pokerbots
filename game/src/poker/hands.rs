@@ -42,6 +42,8 @@ impl ToString for Card {
 }
 
 pub mod HandEval {
+    use std::cmp::Ordering;
+
     use super::*;
 
     pub fn card_mask(cards: Vec<Card>) -> u64 {
@@ -152,8 +154,71 @@ pub mod HandEval {
             None
         }
     }
-    //const hand_tests: Vec<fn(u64) -> bool> = vec![straight_flush, fours, full_house, flush, straight, threes, two_pair, pair];
-    //pub fn compare_hands()
+
+    /*
+    Used a loop here. It's possible to make it cute with bitmasks by using pdep to convert
+    from base 2 to base 4, and adding all the suits together
+    (i.e. deposit the cards from each suit onto the string 010101...01 (13 ones),
+    sum, and compare the integers)
+    */
+    pub fn tie_break(hand1: &[Card; 5], hand2: &[Card; 5]) -> Ordering {
+        let mut counts = [0; 15];
+        for card in hand1 {
+            counts[card.value as usize] += 1;
+            if card.value == 1 {
+                counts[14] += 1;
+            }
+        }
+        for card in hand2 {
+            counts[card.value as usize] -= 1;
+            if card.value == 1 {
+                counts[14] -= 1;
+            }
+        }
+
+        for i in 14..=2 {
+            if counts[i] < 0 {
+                return Ordering::Less;
+            } else if counts[i] > 0 {
+                return Ordering::Greater;
+            }
+        }
+        return Ordering::Equal;
+    }
+
+    const hand_tests: [fn(u64) -> Option<u32>; 8] = [
+        straight_flush,
+        fours,
+        full_house,
+        flush,
+        straight,
+        threes,
+        two_pair,
+        pair,
+    ];
+
+    /*
+    Compare two hands and output if the first is greater, equal, or less than the second
+     */
+    pub fn compare_hands(hand1: &[Card; 5], hand2: &[Card; 5]) -> Ordering {
+        let bm1 = card_mask(hand1.to_vec());
+        let bm2 = card_mask(hand2.to_vec());
+        for test in hand_tests {
+            let a = test(bm1);
+            let b = test(bm2);
+            if a.is_some() && b.is_some() {
+                return match a.unwrap().cmp(&b.unwrap()) {
+                    Ordering::Equal => tie_break(hand1, hand2),
+                    _ => a.unwrap().cmp(&b.unwrap()),
+                };
+            } else if a.is_some() && b.is_none() {
+                return Ordering::Greater;
+            } else if a.is_none() && b.is_some() {
+                return Ordering::Less;
+            }
+        }
+        tie_break(hand1, hand2)
+    }
     #[cfg(test)]
     mod tests {
         use super::super::*;
