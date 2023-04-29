@@ -1,5 +1,5 @@
 use actix_session::Session;
-use actix_web::{middleware::Logger, web, HttpResponse};
+use actix_web::{web, HttpResponse};
 use diesel::prelude::*;
 use log::error;
 use serde::{Deserialize, Serialize};

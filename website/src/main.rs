@@ -2,7 +2,6 @@ use actix_service::Service;
 use actix_session::{storage::CookieSessionStore, SessionExt, SessionMiddleware};
 use actix_web::{cookie, middleware::Logger, web, App, HttpMessage, HttpServer};
 use futures_util::future::FutureExt;
-use std::sync::Mutex;
 
 use pokerbots::app::{api, login, pages};
 
