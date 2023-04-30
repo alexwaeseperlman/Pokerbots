@@ -97,8 +97,8 @@ impl GameState {
 
     pub fn shuffle(&mut self) {
         // Fisher-Yates
-        for i in (0..=51).rev() {
-            let j = rand::thread_rng().gen_range(0..=i);
+        for i in (0..51).rev() {
+            let j = rand::thread_rng().gen_range((i + 1)..52);
             self.deck.swap(i, j);
         }
     }
