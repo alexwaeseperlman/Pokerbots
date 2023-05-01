@@ -25,6 +25,7 @@ website/database.db
 website/database
 database.db
 database
+.vscode
 
 # MacOS
 .DS_Store
