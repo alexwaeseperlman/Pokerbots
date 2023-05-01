@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 #[derive(PartialEq, Eq, Clone, Debug, Copy)]
 pub enum Suite {
     Clubs,
@@ -6,15 +8,19 @@ pub enum Suite {
     Diamonds,
 }
 
-impl ToString for Suite {
-    fn to_string(&self) -> String {
-        match self {
-            Self::Clubs => "c",
-            Self::Spades => "s",
-            Self::Hearts => "h",
-            Self::Diamonds => "d",
-        }
-        .to_string()
+impl Display for Suite {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            &match self {
+                Self::Clubs => "c",
+                Self::Spades => "s",
+                Self::Hearts => "h",
+                Self::Diamonds => "d",
+            }
+            .to_string(),
+        )
     }
 }
 
@@ -23,9 +29,10 @@ pub struct Card {
     pub value: u32,
     pub suite: Suite,
 }
-impl ToString for Card {
-    fn to_string(&self) -> String {
-        format!(
+impl Display for Card {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
             "{}{}",
             match self.value {
                 1 => "A".to_string(),
@@ -34,7 +41,7 @@ impl ToString for Card {
                 11 => "J".to_string(),
                 12 => "Q".to_string(),
                 13 => "K".to_string(),
-                _ => "X".to_string(),
+                _ => panic!("Invalid card value"),
             },
             self.suite.to_string()
         )
