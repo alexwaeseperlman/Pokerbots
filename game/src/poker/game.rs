@@ -167,7 +167,7 @@ impl GameState {
     pub fn get_player_hand(&self, player: bool) -> hands::Hand {
         let mut cards = self.community_cards.clone();
         cards.extend(self.player_states[player as usize].hole_cards.clone());
-        hands::HandEval::best5(&cards)
+        hands::hand_eval::best5(&cards)
     }
 
     pub fn post_action(self, action: Action) -> Result<GameState, GameError> {

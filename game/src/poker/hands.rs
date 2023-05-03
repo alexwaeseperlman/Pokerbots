@@ -69,11 +69,11 @@ impl PartialOrd for Hand {
 
 impl Ord for Hand {
     fn cmp(&self, other: &Self) -> Ordering {
-        HandEval::compare_hands(&self.cards, &other.cards)
+        hand_eval::compare_hands(&self.cards, &other.cards)
     }
 }
 
-pub mod HandEval {
+pub mod hand_eval {
     use std::cmp::Ordering;
 
     use super::*;
