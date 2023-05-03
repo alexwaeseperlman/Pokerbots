@@ -93,13 +93,11 @@ pub mod hand_eval {
         }
 
         (
-            if hist[0].0 == 4 || hist[0].0 == 3 && hist[1].0 == 2 {
-                4
-            } else if hist.len() == 5 {
+            if hist.len() < 5 {
+                (hist[0].0 + hist[1].0 == 5) as u8 * 4
+            } else {
                 (hand.map(|c| c.suite).iter().all_equal()) as u8 * 3
                     + (hist[0].1 == hist[4].1 + 4) as u8 * 2
-            } else {
-                0
             },
             hist.iter().map(|(k, _)| *k).collect(),
             hist.iter().map(|(_, v)| *v).collect(),
@@ -129,8 +127,6 @@ pub mod hand_eval {
     }
     #[cfg(test)]
     mod tests {
-        use crate::poker::game;
-
         use super::super::*;
         use super::*;
         impl Card {
@@ -157,6 +153,8 @@ pub mod hand_eval {
         #[test]
         pub fn hand_comparison() {
             // 100 randomly generated hands of 7 cards in order of strength
+            // The current and previous algorithm agree on this ordering,
+            // so we can have confidence that it is correct
             let hands_order = [
                 "Js6d2c8h7d3s4s",
                 "Jc3d4h5s2sTdKs",
