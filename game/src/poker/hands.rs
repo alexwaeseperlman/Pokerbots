@@ -96,11 +96,8 @@ pub mod hand_eval {
             if hist[0].0 == 4 || hist[0].0 == 3 && hist[1].0 == 2 {
                 4
             } else if hist.len() == 5 {
-                (if hand.iter().group_by(|c| c.suite).into_iter().count() == 1 {
-                    3
-                } else {
-                    0
-                }) + (if hist[0].1 == hist[4].1 + 4 { 2 } else { 0 })
+                (hand.map(|c| c.suite).iter().all_equal()) as u8 * 3
+                    + (hist[0].1 == hist[4].1 + 4) as u8 * 2
             } else {
                 0
             },
