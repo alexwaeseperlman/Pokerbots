@@ -76,6 +76,8 @@ impl Ord for Hand {
 pub mod hand_eval {
     use std::cmp::Ordering;
 
+    use log::debug;
+
     use super::*;
 
     fn hand_value(hand: &[Card; 5]) -> (u8, Vec<u8>, Vec<u8>) {
@@ -125,30 +127,38 @@ pub mod hand_eval {
             cards: [*h[0], *h[1], *h[2], *h[3], *h[4]],
         }
     }
+    impl Card {
+        pub(crate) fn from(code: &str) -> Card {
+            let value = match code.chars().nth(0).unwrap() {
+                'A' => 1,
+                'T' => 10,
+                'J' => 11,
+                'Q' => 12,
+                'K' => 13,
+                _ => code.chars().nth(0).unwrap().to_digit(10).unwrap() as u32,
+            };
+            let suite = match code.chars().nth(1).unwrap() {
+                'c' => Suite::Clubs,
+                's' => Suite::Spades,
+                'h' => Suite::Hearts,
+                'd' => Suite::Diamonds,
+                _ => panic!("Invalid suite"),
+            };
+            Self { value, suite }
+        }
+    }
+
+    pub(crate) fn cards_from(code: &str) -> Vec<Card> {
+        code.chars()
+            .chunks(2)
+            .into_iter()
+            .map(|c| Card::from(c.collect::<String>().as_str()))
+            .collect()
+    }
     #[cfg(test)]
     mod tests {
         use super::super::*;
         use super::*;
-        impl Card {
-            pub fn from(code: &str) -> Card {
-                let value = match code.chars().nth(0).unwrap() {
-                    'A' => 1,
-                    'T' => 10,
-                    'J' => 11,
-                    'Q' => 12,
-                    'K' => 13,
-                    _ => code.chars().nth(0).unwrap().to_digit(10).unwrap() as u32,
-                };
-                let suite = match code.chars().nth(1).unwrap() {
-                    'c' => Suite::Clubs,
-                    's' => Suite::Spades,
-                    'h' => Suite::Hearts,
-                    'd' => Suite::Diamonds,
-                    _ => panic!("Invalid suite"),
-                };
-                Self { value, suite }
-            }
-        }
 
         #[test]
         pub fn hand_comparison() {
@@ -257,18 +267,7 @@ pub mod hand_eval {
                 "TsQhThJdTd4cJh",
                 "As7cAh5s2c2sAc",
             ]
-            .map(|a| {
-                best5(
-                    &a.chars()
-                        .chunks(2)
-                        .into_iter()
-                        .map(|c| {
-                            let x = c.into_iter().join("");
-                            Card::from(&x)
-                        })
-                        .collect::<Vec<Card>>(),
-                )
-            });
+            .map(|a| best5(&cards_from(a)));
 
             for a in 0..hands_order.len() {
                 for b in 0..hands_order.len() {
