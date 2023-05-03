@@ -1,4 +1,5 @@
-use std::fmt::Display;
+use itertools::Itertools;
+use std::{cmp::Ordering, fmt::Display};
 
 #[derive(PartialEq, Eq, Clone, Debug, Copy)]
 pub enum Suite {
@@ -48,188 +49,91 @@ impl Display for Card {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct Hand {
+    pub cards: [Card; 5],
+}
+
+impl PartialEq for Hand {
+    fn eq(&self, other: &Self) -> bool {
+        self.cmp(other) == Ordering::Equal
+    }
+}
+impl Eq for Hand {}
+
+impl PartialOrd for Hand {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Hand {
+    fn cmp(&self, other: &Self) -> Ordering {
+        HandEval::compare_hands(&self.cards, &other.cards)
+    }
+}
+
 pub mod HandEval {
     use std::cmp::Ordering;
 
     use super::*;
 
-    pub fn card_mask(cards: Vec<Card>) -> u64 {
-        let mut mask = 0;
-        for card in cards {
-            let suiteVal = match card.suite {
-                Suite::Clubs => 0,
-                Suite::Spades => 1,
-                Suite::Hearts => 2,
-                Suite::Diamonds => 3,
-            };
-            mask |= 1 << (card.value - 1 + suiteVal * 14);
-            if card.value == 1 {
-                mask |= 1 << (13 + suiteVal * 14);
-            }
-        }
-        mask
-    }
-
-    pub fn fours(hand: u64) -> Option<u32> {
-        // Subtract 2 from the mask because we only care about the higher representation of ace
-        let mask = (hand & (hand >> 14) & (hand >> 28) & (hand >> 42)) & ((1 << 14) - 2);
-        if mask == 0 {
-            None
-        } else {
-            Some(mask.trailing_zeros() + 1)
-        }
-    }
-    pub fn full_house(hand: u64) -> Option<u32> {
-        let xor = (hand ^ (hand >> 14) ^ (hand >> 28) ^ (hand >> 42)) & ((1 << 14) - 2);
-        let or = (hand | (hand >> 14) | (hand >> 28) | (hand >> 42)) & ((1 << 14) - 2);
-        if xor.count_ones() == 1 && or.count_ones() == 2 && fours(hand) == None {
-            Some(((xor).trailing_zeros() + 1) * 15 + (or ^ xor).trailing_zeros() + 1)
-        } else {
-            None
-        }
-    }
-    pub fn threes(hand: u64) -> Option<u32> {
-        // necessary and sufficient that there are exactly 3 cards whose frequency have odd parity
-        // and exactly 3 cards
-        let xor = (hand ^ (hand >> 14) ^ (hand >> 28) ^ (hand >> 42)) & ((1 << 14) - 2);
-        let or = (hand | (hand >> 14) | (hand >> 28) | (hand >> 42)) & ((1 << 14) - 2);
-        if or.count_ones() == 3 && xor.count_ones() == 3 {
-            Some(
-                (((hand & (hand >> 14)) | (hand & (hand >> 28)) | ((hand >> 14) & (hand >> 28)))
-                    & ((1 << 14) - 2))
-                    .trailing_zeros()
-                    + 1,
-            )
-        } else {
-            None
-        }
-    }
-
-    pub fn two_pair(hand: u64) -> Option<u32> {
-        // necessary and sufficient that there are exactly 3 unique cards,
-        // two of which have frequency with even parity
-        let xor = (hand ^ (hand >> 14) ^ (hand >> 28) ^ (hand >> 42)) & ((1 << 14) - 2);
-        let or = (hand | (hand >> 14) | (hand >> 28) | (hand >> 42)) & ((1 << 14) - 2);
-        if xor.count_ones() == 1 && or.count_ones() == 3 {
-            let a = (xor ^ or).trailing_zeros();
-            let b = (xor ^ or ^ (1 << a)).trailing_zeros();
-            Some((b + 1) * 15 + a + 1)
-        } else {
-            None
-        }
-    }
-
-    pub fn pair(hand: u64) -> Option<u32> {
-        // necessary and sufficient that there are exactly 4 unique cards
-        let xor = (hand ^ (hand >> 14) ^ (hand >> 28) ^ (hand >> 42)) & ((1 << 14) - 2);
-        let or = (hand | (hand >> 14) | (hand >> 28) | (hand >> 42)) & ((1 << 14) - 2);
-        if or.count_ones() == 4 {
-            Some((xor ^ or).trailing_zeros() + 1)
-        } else {
-            None
-        }
-    }
-    /*
-    Test if a hand contains a straight. It accepts any consecutive set of values,
-    and also the set '10 11 12 13 1', since Ace has the lowest and highest values
-     */
-    pub fn straight(hand: u64) -> Option<u32> {
-        let counts = (hand | (hand >> 14) | (hand >> 28) | (hand >> 42)) & ((1 << 14) - 1);
-        let x = counts & (counts >> 1) & (counts >> 2) & (counts >> 3) & (counts >> 4);
-        if x == 0 {
-            None
-        } else {
-            Some(x.trailing_zeros() + 1)
-        }
-    }
-    pub fn flush(hand: u64) -> Option<u32> {
-        let mask: u64 = (1 << 14) - 1;
-        if (hand == hand & mask)
-            || (hand == hand & (mask << 14))
-            || (hand == hand & (mask << 28))
-            || (hand == hand & (mask << 42))
-        {
-            Some(1)
-        } else {
-            None
-        }
-    }
-    pub fn straight_flush(hand: u64) -> Option<u32> {
-        if let Some(x) = flush(hand) {
-            straight(hand)
-        } else {
-            None
-        }
-    }
-
-    /*
-    Used a loop here. It's possible to make it cute with bitmasks by using pdep to convert
-    from base 2 to base 4, and adding all the suits together
-    (i.e. deposit the cards from each suit onto the string 010101...01 (13 ones),
-    sum, and compare the integers)
-    */
-    pub fn tie_break(hand1: &[Card; 5], hand2: &[Card; 5]) -> Ordering {
-        let mut counts = [0; 15];
-        for card in hand1 {
-            counts[card.value as usize] += 1;
-            if card.value == 1 {
-                counts[14] += 1;
-            }
+    fn hand_value(hand: &[Card; 5]) -> (u8, Vec<u8>, Vec<u8>) {
+        let mut hist = hand
+            .iter()
+            .counts_by(|c| if c.value == 1 { 14 } else { c.value })
+            .iter()
+            .map(|(k, v)| (u8::try_from(*v).unwrap(), u8::try_from(*k).unwrap()))
+            .sorted()
+            .rev()
+            .collect_vec();
+        // check low straight
+        if hist[0].1 == 14 && hist[1].1 == 5 {
+            hist = vec![(1, 5), (1, 4), (1, 3), (1, 2), (1, 1)];
         }
 
-        for card in hand2 {
-            counts[card.value as usize] -= 1;
-            if card.value == 1 {
-                counts[14] -= 1;
-            }
-        }
-        for i in (2..=14).rev() {
-            if counts[i] < 0 {
-                println!("Break");
-                return Ordering::Less;
-            } else if counts[i] > 0 {
-                return Ordering::Greater;
-            }
-        }
-        println!("Didn't break?");
-        return Ordering::Equal;
+        (
+            if hist[0].0 == 4 || hist[0].0 == 3 && hist[1].0 == 2 {
+                4
+            } else if hist.len() == 5 {
+                (if hand.iter().group_by(|c| c.suite).into_iter().count() == 1 {
+                    3
+                } else {
+                    0
+                }) + (if hist[0].1 == hist[4].1 + 4 { 2 } else { 0 })
+            } else {
+                0
+            },
+            hist.iter().map(|(k, _)| *k).collect(),
+            hist.iter().map(|(_, v)| *v).collect(),
+        )
     }
 
-    const hand_tests: [fn(u64) -> Option<u32>; 8] = [
-        straight_flush,
-        fours,
-        full_house,
-        flush,
-        straight,
-        threes,
-        two_pair,
-        pair,
-    ];
-
-    /*
-    Compare two hands and output if the first is greater, equal, or less than the second
-     */
     pub fn compare_hands(hand1: &[Card; 5], hand2: &[Card; 5]) -> Ordering {
-        let bm1 = card_mask(hand1.to_vec());
-        let bm2 = card_mask(hand2.to_vec());
-        for test in hand_tests {
-            let a = test(bm1);
-            let b = test(bm2);
-            if a.is_some() && b.is_some() {
-                return match a.unwrap().cmp(&b.unwrap()) {
-                    Ordering::Equal => tie_break(hand1, hand2),
-                    _ => a.unwrap().cmp(&b.unwrap()),
-                };
-            } else if a.is_some() && b.is_none() {
-                return Ordering::Greater;
-            } else if a.is_none() && b.is_some() {
-                return Ordering::Less;
-            }
+        hand_value(hand1).cmp(&hand_value(hand2))
+    }
+
+    pub fn best5(hand: &Vec<Card>) -> Hand {
+        if hand.len() < 5 {
+            panic!("Not enough cards");
         }
-        tie_break(hand1, hand2)
+        let h = hand
+            .iter()
+            .combinations(5)
+            .max_by(|a, b| {
+                let a = [*a[0], *a[1], *a[2], *a[3], *a[4]];
+                let b = [*b[0], *b[1], *b[2], *b[3], *b[4]];
+                compare_hands(&a, &b)
+            })
+            .unwrap();
+        Hand {
+            cards: [*h[0], *h[1], *h[2], *h[3], *h[4]],
+        }
     }
     #[cfg(test)]
     mod tests {
+        use crate::poker::game;
+
         use super::super::*;
         use super::*;
         impl Card {
@@ -252,489 +156,138 @@ pub mod HandEval {
                 Self { value, suite }
             }
         }
-        #[test]
-        pub fn flush_straight_A2345() {
-            let mut hand = [
-                Card::from("As"),
-                Card::from("2s"),
-                Card::from("3s"),
-                Card::from("4s"),
-                Card::from("5s"),
-            ];
-            // Ensure that it works for any permutation
-            for i in 0..10 {
-                let mask = card_mask(hand.to_vec());
-                assert!(straight(mask) == Some(1), "should be a straight from A");
-                assert!(flush(mask) == Some(1), "should be a flush");
-                assert!(
-                    straight_flush(mask) == Some(1),
-                    "should be a straight flush"
-                );
-                assert!(fours(mask) == None, "should not be fours");
-                assert!(full_house(mask) == None, "should not be full house");
 
-                let n = rand::random::<usize>() % 5;
-                hand.swap(n, 0);
-            }
-        }
-        #[test]
-        pub fn not_flush_straight_TJQKA() {
-            let mut hand = [
-                Card::from("Td"),
-                Card::from("Jh"),
-                Card::from("Qc"),
-                Card::from("Kc"),
-                Card::from("Ac"),
-            ];
-            // Ensure that it works for any permutation
-            for i in 0..10 {
-                let mask = card_mask(hand.to_vec());
-                assert!(straight(mask) == Some(10), "should be a straight");
-                assert!(flush(mask) == None, "should not be a flush");
-                assert!(
-                    straight_flush(mask) == None,
-                    "should not be a straight flush"
-                );
-                assert!(fours(mask) == None, "should not be fours");
-                assert!(full_house(mask) == None, "should not be full house");
-                let n = rand::random::<usize>() % 5;
-                hand.swap(n, 0);
-            }
-        }
-
-        #[test]
-        pub fn not_flush_not_straight_9JQKA() {
-            let mut hand = [
-                Card::from("9s"),
-                Card::from("Jd"),
-                Card::from("Qc"),
-                Card::from("Ks"),
-                Card::from("As"),
-            ];
-            // Ensure that it works for any permutation
-            for i in 0..10 {
-                let mask = card_mask(hand.to_vec());
-                assert!(straight(mask) == None, "should not be a straight");
-                assert!(flush(mask) == None, "should not be a flush");
-                assert!(
-                    straight_flush(mask) == None,
-                    "should not be a straight flush"
-                );
-                assert!(full_house(mask) == None, "should not be full house");
-
-                assert!(fours(mask) == None, "should not be fours");
-                let n = rand::random::<usize>() % 5;
-                hand.swap(n, 0);
-            }
-        }
-        #[test]
-        pub fn not_flush_not_straight_AA234() {
-            let mut hand = [
-                Card::from("Ad"),
-                Card::from("Ah"),
-                Card::from("2d"),
-                Card::from("3d"),
-                Card::from("4d"),
-            ];
-            // Ensure that it works for any permutation
-            for i in 0..10 {
-                let mask = card_mask(hand.to_vec());
-                assert!(straight(mask) == None, "should not be a straight");
-                assert!(flush(mask) == None, "should not be a flush");
-                assert!(
-                    straight_flush(mask) == None,
-                    "should not be a straight flush"
-                );
-                assert!(fours(mask) == None, "should not be fours");
-                assert!(full_house(mask) == None, "should not be full house");
-                let n = rand::random::<usize>() % 5;
-                hand.swap(n, 0);
-            }
-        }
-        #[test]
-        pub fn fours_AAAA4() {
-            let mut hand = [
-                Card::from("Ac"),
-                Card::from("Ad"),
-                Card::from("Ah"),
-                Card::from("As"),
-                Card::from("4d"),
-            ];
-            // Ensure that it works for any permutation
-            for i in 0..10 {
-                let mask = card_mask(hand.to_vec());
-
-                assert!(straight(mask) == None, "should not be a straight");
-                assert!(flush(mask) == None, "should not be a flush");
-                assert!(fours(mask) == Some(14), "should be four aces");
-                assert!(threes(mask) == None, "should not threes");
-                assert!(full_house(mask) == None, "should not be full house");
-                let n = rand::random::<usize>() % 5;
-                hand.swap(n, 0);
-            }
-        }
-        #[test]
-        pub fn fours_2222A() {
-            let mut hand = [
-                Card::from("2d"),
-                Card::from("2c"),
-                Card::from("2h"),
-                Card::from("2s"),
-                Card::from("Ad"),
-            ];
-            // Ensure that it works for any permutation
-            for i in 0..10 {
-                let mask = card_mask(hand.to_vec());
-
-                assert!(straight(mask) == None, "should not be a straight");
-                assert!(flush(mask) == None, "should not be a flush");
-                assert!(fours(mask) == Some(2), "should be four twos");
-                assert!(full_house(mask) == None, "should not be full house");
-                let n = rand::random::<usize>() % 5;
-                hand.swap(n, 0);
-            }
-        }
-
-        #[test]
-        pub fn full_house_222AA() {
-            let mut hand = [
-                Card::from("2d"),
-                Card::from("2c"),
-                Card::from("2h"),
-                Card::from("As"),
-                Card::from("Ad"),
-            ];
-            // Ensure that it works for any permutation
-            for i in 0..10 {
-                let mask = card_mask(hand.to_vec());
-
-                assert!(straight(mask) == None, "should not be a straight");
-                assert!(flush(mask) == None, "should not be a flush");
-                assert!(fours(mask) == None, "should not be four twos");
-                assert!(
-                    full_house(mask) == Some(2 * 15 + 14),
-                    "should be full house with 3 2s and 2 aces"
-                );
-                let n = rand::random::<usize>() % 5;
-                hand.swap(n, 0);
-            }
-        }
-        #[test]
-        pub fn full_house_AAA22() {
-            let mut hand = [
-                Card::from("Ad"),
-                Card::from("Ac"),
-                Card::from("Ah"),
-                Card::from("2s"),
-                Card::from("2d"),
-            ];
-            // Ensure that it works for any permutation
-            for i in 0..10 {
-                let mask = card_mask(hand.to_vec());
-
-                assert!(straight(mask) == None, "should not be a straight");
-                assert!(flush(mask) == None, "should not be a flush");
-                assert!(threes(mask) == None, "should not be threes");
-                assert!(fours(mask) == None, "should not be four twos");
-                assert!(
-                    full_house(mask) == Some(14 * 15 + 2),
-                    "should be full house with 2 2s and 3 aces"
-                );
-                let n = rand::random::<usize>() % 5;
-                hand.swap(n, 0);
-            }
-        }
-        #[test]
-        pub fn threes_AAA23() {
-            let mut hand = [
-                Card::from("Ad"),
-                Card::from("Ac"),
-                Card::from("Ah"),
-                Card::from("2s"),
-                Card::from("3d"),
-            ];
-            // Ensure that it works for any permutation
-            for i in 0..10 {
-                let mask = card_mask(hand.to_vec());
-
-                assert!(straight(mask) == None, "should not be a straight");
-                assert!(flush(mask) == None, "should not be a flush");
-                assert!(threes(mask) == Some(14), "should be three aces");
-                assert!(fours(mask) == None, "should not be fours");
-                assert!(full_house(mask) == None, "should not be a full house");
-                let n = rand::random::<usize>() % 5;
-                hand.swap(n, 0);
-            }
-        }
-        #[test]
-        pub fn threes_KKK34() {
-            let mut hand = [
-                Card::from("Kd"),
-                Card::from("Kc"),
-                Card::from("Kh"),
-                Card::from("3s"),
-                Card::from("4d"),
-            ];
-            // Ensure that it works for any permutation
-            for i in 0..10 {
-                let mask = card_mask(hand.to_vec());
-
-                assert!(straight(mask) == None, "should not be a straight");
-                assert!(flush(mask) == None, "should not be a flush");
-                assert!(threes(mask) == Some(13), "should be three kings");
-                assert!(fours(mask) == None, "should not be fours");
-                assert!(full_house(mask) == None, "should not be a full house");
-                let n = rand::random::<usize>() % 5;
-                hand.swap(n, 0);
-            }
-        }
-        #[test]
-        pub fn two_pair_AA334() {
-            let mut hand = [
-                Card::from("Ad"),
-                Card::from("Ac"),
-                Card::from("3h"),
-                Card::from("3s"),
-                Card::from("4d"),
-            ];
-            // Ensure that it works for any permutation
-            for i in 0..10 {
-                let mask = card_mask(hand.to_vec());
-
-                assert!(straight(mask) == None, "should not be a straight");
-                assert!(flush(mask) == None, "should not be a flush");
-                assert!(threes(mask) == None, "should not be threes");
-                assert!(pair(mask) == None, "should not be pair");
-                println!("{:?}", two_pair(mask));
-                assert!(
-                    two_pair(mask) == Some(15 * 14 + 3),
-                    "should be two pair of ace and 3"
-                );
-                assert!(fours(mask) == None, "should not be fours");
-                assert!(full_house(mask) == None, "should not be a full house");
-                let n = rand::random::<usize>() % 5;
-                hand.swap(n, 0);
-            }
-        }
-        #[test]
-        pub fn two_pair_KK334() {
-            let mut hand = [
-                Card::from("Kd"),
-                Card::from("Kc"),
-                Card::from("3h"),
-                Card::from("3s"),
-                Card::from("4d"),
-            ];
-            // Ensure that it works for any permutation
-            for i in 0..10 {
-                let mask = card_mask(hand.to_vec());
-
-                assert!(straight(mask) == None, "should not be a straight");
-                assert!(flush(mask) == None, "should not be a flush");
-                assert!(threes(mask) == None, "should not be threes");
-                assert!(pair(mask) == None, "should not be pair");
-                println!("{:?}", two_pair(mask));
-                assert!(
-                    two_pair(mask) == Some(15 * 13 + 3),
-                    "should be two pair of king and 3"
-                );
-                assert!(fours(mask) == None, "should not be fours");
-                assert!(full_house(mask) == None, "should not be a full house");
-                let n = rand::random::<usize>() % 5;
-                hand.swap(n, 0);
-            }
-        }
-        #[test]
-        pub fn two_pair_KKAA4() {
-            let mut hand = [
-                Card::from("Kd"),
-                Card::from("Kc"),
-                Card::from("Ah"),
-                Card::from("As"),
-                Card::from("4d"),
-            ];
-            // Ensure that it works for any permutation
-            for i in 0..10 {
-                let mask = card_mask(hand.to_vec());
-
-                assert!(straight(mask) == None, "should not be a straight");
-                assert!(flush(mask) == None, "should not be a flush");
-                assert!(threes(mask) == None, "should not be threes");
-                assert!(pair(mask) == None, "should not be pair");
-                println!("{:?}", two_pair(mask));
-                assert!(
-                    two_pair(mask) == Some(15 * 14 + 13),
-                    "should be two pair of ace and king"
-                );
-                assert!(fours(mask) == None, "should not be fours");
-                assert!(full_house(mask) == None, "should not be a full house");
-                let n = rand::random::<usize>() % 5;
-                hand.swap(n, 0);
-            }
-        }
-        #[test]
-        pub fn pair_KKAQ4() {
-            let mut hand = [
-                Card::from("Kd"),
-                Card::from("Kc"),
-                Card::from("Ah"),
-                Card::from("Qs"),
-                Card::from("4d"),
-            ];
-            // Ensure that it works for any permutation
-            for i in 0..10 {
-                let mask = card_mask(hand.to_vec());
-
-                assert!(straight(mask) == None, "should not be a straight");
-                assert!(flush(mask) == None, "should not be a flush");
-                assert!(threes(mask) == None, "should not be threes");
-                assert!(pair(mask) == Some(13), "should be pair king");
-                assert!(two_pair(mask) == None, "should not be two pair");
-                assert!(fours(mask) == None, "should not be fours");
-                assert!(full_house(mask) == None, "should not be a full house");
-                let n = rand::random::<usize>() % 5;
-                hand.swap(n, 0);
-            }
-        }
-        #[test]
-        pub fn pair_22AQ4() {
-            let mut hand = [
-                Card::from("2d"),
-                Card::from("2c"),
-                Card::from("Ah"),
-                Card::from("Qs"),
-                Card::from("4d"),
-            ];
-            // Ensure that it works for any permutation
-            for i in 0..10 {
-                let mask = card_mask(hand.to_vec());
-
-                assert!(straight(mask) == None, "should not be a straight");
-                assert!(flush(mask) == None, "should not be a flush");
-                assert!(threes(mask) == None, "should not be threes");
-                assert!(pair(mask) == Some(2), "should be pair 2");
-                assert!(two_pair(mask) == None, "should not be two pair");
-                assert!(fours(mask) == None, "should not be fours");
-                assert!(full_house(mask) == None, "should not be a full house");
-                let n = rand::random::<usize>() % 5;
-                hand.swap(n, 0);
-            }
-        }
-        #[test]
-        pub fn pair_AAKQ4() {
-            let mut hand = [
-                Card::from("Ad"),
-                Card::from("Kc"),
-                Card::from("Ah"),
-                Card::from("Qs"),
-                Card::from("4d"),
-            ];
-            // Ensure that it works for any permutation
-            for i in 0..10 {
-                let mask = card_mask(hand.to_vec());
-
-                assert!(straight(mask) == None, "should not be a straight");
-                assert!(flush(mask) == None, "should not be a flush");
-                assert!(threes(mask) == None, "should not be threes");
-                assert!(pair(mask) == Some(14), "should be pair ace");
-                assert!(two_pair(mask) == None, "should not be two pair");
-                assert!(fours(mask) == None, "should not be fours");
-                assert!(full_house(mask) == None, "should not be a full house");
-                let n = rand::random::<usize>() % 5;
-                hand.swap(n, 0);
-            }
-        }
-        #[test]
-        pub fn nothing_A2KQ4() {
-            let mut hand = [
-                Card::from("Ad"),
-                Card::from("Kc"),
-                Card::from("2h"),
-                Card::from("Qs"),
-                Card::from("4d"),
-            ];
-            // Ensure that it works for any permutation
-            for i in 0..10 {
-                let mask = card_mask(hand.to_vec());
-
-                assert!(straight(mask) == None, "should not be a straight");
-                assert!(flush(mask) == None, "should not be a flush");
-                assert!(threes(mask) == None, "should not be threes");
-                assert!(pair(mask) == None, "should not be pair");
-                assert!(two_pair(mask) == None, "should not be two pair");
-                assert!(fours(mask) == None, "should not be fours");
-                assert!(full_house(mask) == None, "should not be a full house");
-                let n = rand::random::<usize>() % 5;
-                hand.swap(n, 0);
-            }
-        }
-        #[test]
-        pub fn nothing_2468T() {
-            let mut hand = [
-                Card::from("2d"),
-                Card::from("4d"),
-                Card::from("6d"),
-                Card::from("8d"),
-                Card::from("Ts"),
-            ];
-            // Ensure that it works for any permutation
-            for i in 0..10 {
-                let mask = card_mask(hand.to_vec());
-
-                assert!(straight(mask) == None, "should not be a straight");
-                assert!(flush(mask) == None, "should not be a flush");
-                assert!(threes(mask) == None, "should not be threes");
-                assert!(pair(mask) == None, "should not be pair");
-                assert!(two_pair(mask) == None, "should not be two pair");
-                assert!(fours(mask) == None, "should not be fours");
-                assert!(full_house(mask) == None, "should not be a full house");
-                let n = rand::random::<usize>() % 5;
-                hand.swap(n, 0);
-            }
-        }
         #[test]
         pub fn hand_comparison() {
-            let hands = [("AcAsAdTsTd", "AhThKhQhJh"), ("QcTc3h2c5d", "KdThQd9h2s")];
-            for (lower, higher) in hands {
-                let mut a = vec![];
-                let mut b = vec![];
-                for i in 0..5 {
-                    a.push(Card::from(&lower[2 * i..2 * i + 2]));
-                    b.push(Card::from(&higher[2 * i..2 * i + 2]));
-                }
-                for i in 0..10 {
-                    assert_eq!(
-                        compare_hands(
-                            &a.clone().try_into().unwrap(),
-                            &b.clone().try_into().unwrap()
-                        ),
-                        Ordering::Less
+            // 100 randomly generated hands of 7 cards in order of strength
+            let hands_order = [
+                "Js6d2c8h7d3s4s",
+                "Jc3d4h5s2sTdKs",
+                "3h2cKd7c9dJdTh",
+                "Kd3dQc7h5c9c8c",
+                "4c7sQc6cKs8cTd",
+                "4c6d5dJdQcKc7c",
+                "6dTsJsQs7d5hKc",
+                "8dKdTcJs6dQs7s",
+                "7c9dJhAc2c3s5s",
+                "9d3dQcTs2cAc5s",
+                "Ah3s5hQdJc2h6c",
+                "AdJhTs6d9h4cQc",
+                "9hKs7s6sTc4dAd",
+                "7s4c2d2h6cJsTh",
+                "4dTsQc2d2h7cJs",
+                "5h8s6dJcAh2c2d",
+                "4d5sTh3d3s6sKs",
+                "TdKs5h3s3dQd4d",
+                "2d9c3c4cAdKh3s",
+                "6h8c4d9d4s7c2d",
+                "8s4cTd7cAd6d4s",
+                "AsKsQc4d9h4h2s",
+                "8s5d5hQhKc6d7s",
+                "Qs6c5h5cTsAs9h",
+                "5cTdKd7cQsAd5s",
+                "6c2s6d4hQs7dJs",
+                "4c6d9h5s8hKc6h",
+                "Qc2h6hKs7c4s6d",
+                "4s2d9sAcJs6c6d",
+                "Ks8s6dJc4h6sAh",
+                "Jc3d7hTsQs7c8d",
+                "2s7cAc3c7s8h4c",
+                "JdKs3c8c8d4s7d",
+                "Ks6d4d8s8c3dQh",
+                "8cJd8d6c7sKcQc",
+                "8dJd3d2hAsTd8s",
+                "Qd5sAh8c8d6d2d",
+                "8hQh8dTsAd3c4h",
+                "8c9dAd6c8sKdJs",
+                "5c4c8d9c9h2hQs",
+                "9cTd4s6h8s9sQd",
+                "Kc9cQd4d9h3d2s",
+                "9hAh4dTh3sJc9s",
+                "5h7c2dThTd9h6h",
+                "Ts7d9c2sJd3dTd",
+                "8s3cQs7hTcTh4c",
+                "5s8hTd7d3cTcKd",
+                "Kc8hAc7sQdTcTd",
+                "9sJd8cJc3h6c4s",
+                "JdKsAcJc8d3cTc",
+                "Qh5d8d2sQcJh3s",
+                "Qh3c7cKhQs4s8h",
+                "Kh5c8dKd3h2s7c",
+                "Td2cKh7d5h3hKc",
+                "2c3dQsKcKdJd9d",
+                "Ks2cKcAh8hQhTd",
+                "5cTdAh9h4d6dAd",
+                "AsAcTs6d4h9dJc",
+                "3dAcQhAh5c6hJh",
+                "AcKdAdTcJc6h3s",
+                "6hAh9dAcQdKh5h",
+                "4cKsTsJs2h4h2c",
+                "Jh3h4d3c2dTs4c",
+                "5hAd2d7h4c5c2c",
+                "4d5hQhJd6c4h5d",
+                "6s5c3c3d6hTdQh",
+                "8d3h3sKh6c6d4s",
+                "Kd9c6d4s4d6hQs",
+                "6h5cQh5s6s9dTc",
+                "4c4d8d5c8s7c5d",
+                "6h6d4d7c9h9c8d",
+                "Tc3c9s6h9h8c6d",
+                "Js8h6d6c9d2c9c",
+                "4hJsTcTd3h2s3c",
+                "Qc2h3sJsAhJd3c",
+                "Jc6hJs7d8cTc8d",
+                "Qh7c9hQc9c5d4c",
+                "Kh5h9c3d3hKdTh",
+                "8cQsKd3dKc3c4h",
+                "9s7s4c7hKd3dKc",
+                "5hKd8sKsQsJh8c",
+                "KsQhKd9dTsQc5d",
+                "Jd8h3sJcAcAdQh",
+                "9s5sJdQhQsQc2d",
+                "2cKhKs4c7h5sKd",
+                "TdKs5hKcKd2c6s",
+                "Ac7dAhAs6s5dTh",
+                "4sAhTdAdJsAc9c",
+                "2cKh6h8c4d5h3c",
+                "As9s5s8h7s6d5c",
+                "2s8d3c9cQcJcTh",
+                "Jc3s2s5s8sQdTs",
+                "Th7s2d5hJhQh4h",
+                "6cTc2c9cKc4d2s",
+                "Qs8h7s2sJcKs6s",
+                "Jh7h7c2h8h3sAh",
+                "6h6d2cAc5h2h2s",
+                "4s9d9s9h8s2s4c",
+                "TsQhThJdTd4cJh",
+                "As7cAh5s2c2sAc",
+            ]
+            .map(|a| {
+                best5(
+                    &a.chars()
+                        .chunks(2)
+                        .into_iter()
+                        .map(|c| {
+                            let x = c.into_iter().join("");
+                            Card::from(&x)
+                        })
+                        .collect::<Vec<Card>>(),
+                )
+            });
+
+            for a in 0..hands_order.len() {
+                for b in 0..hands_order.len() {
+                    println!("{} vs {}", a, b);
+                    println!(
+                        "{:?} vs {:?}",
+                        hand_value(&hands_order[a].cards),
+                        hand_value(&hands_order[b].cards)
                     );
                     assert_eq!(
-                        compare_hands(
-                            &b.clone().try_into().unwrap(),
-                            &a.clone().try_into().unwrap()
-                        ),
-                        Ordering::Greater
-                    );
-                    assert_eq!(
-                        compare_hands(
-                            &a.clone().try_into().unwrap(),
-                            &a.clone().try_into().unwrap()
-                        ),
-                        Ordering::Equal
-                    );
-                    assert_eq!(
-                        compare_hands(
-                            &b.clone().try_into().unwrap(),
-                            &b.clone().try_into().unwrap()
-                        ),
-                        Ordering::Equal
-                    );
-                    let m = rand::random::<usize>() % 5;
-                    let n = rand::random::<usize>() % 5;
-                    a.swap(m, 0);
-                    b.swap(n, 0);
+                        hands_order[a].cmp(&hands_order[b]),
+                        a.cmp(&b),
+                        "hand order should be the same as given"
+                    )
                 }
             }
         }

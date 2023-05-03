@@ -9,16 +9,13 @@ use std::{
     time::Duration,
 };
 
-pub struct Game {
-    bots: Vec<Bot>,
-    num_players: u32,
-    dealer: Dealer,
-    button: u32,
-    pot: u32,
-    hole_cards: Vec<Card>,
-    community_cards: Vec<Card>,
+#[derive(Debug, Clone)]
+pub struct Bot {
+    team_name: String,
+    path: PathBuf,
+    build_cmd: Option<String>,
+    run_cmd: Option<String>,
 }
-
 impl Bot {
     pub fn new(
         team_name: String,
@@ -66,35 +63,8 @@ impl Bot {
         info!("Response: {}", response);
         Ok(())
     }
-
-    /// plays current bot against all other bots
-    /// spawns a Dealer and Game per game and begins
-    /// games in their own socket files
-    pub async fn play(&self, bots: &Vec<Bot>) -> std::io::Result<()> {
-        info!("PLAYING");
-        debug!("{bots:?}");
-        let socket_path = PathBuf::from(format!("/tmp/pokerzero/{}/socket", self.team_name));
-        if !socket_path.exists() {
-            fs::create_dir_all(&socket_path)?;
-        }
-        for b in bots {
-            if b.team_name != self.team_name {
-                let socket_file =
-                    socket_path.join(format!("{}_vs_{}.sock", self.team_name, b.team_name));
-                let bots_game = vec![b.clone(), self.clone()];
-                let dealer = Dealer::new();
-                let game = Game::new(bots_game, dealer);
-                let socket_file_ = socket_file.clone();
-                thread::spawn(move || game.start_server(&socket_file));
-                thread::park_timeout(Duration::from_secs(1));
-                self.connect(&socket_file_).await?;
-                b.connect(&socket_file_).await?;
-            }
-        }
-        Ok(())
-    }
 }
-
+/*
 impl Game {
     pub fn new(bots: Vec<Bot>, dealer: Dealer) -> Self {
         let l = bots.len() as u32;
@@ -150,3 +120,4 @@ impl Game {
         Ok(())
     }
 }
+*/
