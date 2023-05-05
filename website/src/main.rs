@@ -2,12 +2,8 @@ use actix_service::Service;
 use actix_session::{storage::CookieSessionStore, SessionExt, SessionMiddleware};
 use actix_web::{cookie, middleware::Logger, web, App, HttpMessage, HttpServer};
 use futures_util::future::FutureExt;
-use std::sync::Mutex;
 
-use pokerbots::app::{
-    api::{self, upload_bot::BotsList},
-    login, pages,
-};
+use pokerbots::app::{api, login, pages};
 
 fn get_secret_key() -> cookie::Key {
     let key = std::env::var("SECRET_KEY").expect("SECRET_KEY must be set in .env");
@@ -19,9 +15,6 @@ async fn main() -> std::io::Result<()> {
     std::env::set_var("RUST_LOG", "debug");
     env_logger::init();
     dotenvy::dotenv().ok();
-    let bots_list = web::Data::new(BotsList {
-        bots: Mutex::new(Vec::new()),
-    });
 
     // Generate the list of routes in your App
     HttpServer::new(move || {
@@ -58,8 +51,6 @@ async fn main() -> std::io::Result<()> {
             .service(api::manage_team::make_invite)
             .service(api::manage_team::join_team)
             .service(api::signout::signout)
-            .service(api::upload_bot::upload_bot)
-            .app_data(bots_list.clone())
 
         //.wrap(middleware::Compress::default())
     })

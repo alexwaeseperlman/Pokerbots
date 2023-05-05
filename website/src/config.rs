@@ -1,10 +1,10 @@
-use std::env;
 use diesel::{
     pg::PgConnection,
     r2d2::{ConnectionManager, Pool},
 };
 use dotenvy::dotenv;
 use lazy_static::lazy_static;
+use std::env;
 
 // Build a database connection pool for server functions
 lazy_static! {
@@ -19,6 +19,12 @@ lazy_static! {
 }
 
 pub const TEAM_SIZE: i32 = 5;
-pub const CLIENT_ID: &str = "cc6185f1-7e94-4314-a79e-7d72d8fd68fc";
-pub const REDIRECT_URI: &str = "http://localhost:3000/api/login";
-pub const TENANT_ID: &str = "f8cdef31-a31e-4b4a-93e4-5f571e91255a";
+
+lazy_static! {
+    pub static ref CLIENT_ID: String =
+        std::env::var("MICROSOFT_CLIENT_ID").expect("MICROSOFT_CLIENT_ID must be set in .env");
+    pub static ref REDIRECT_URI: String =
+        std::env::var("REDIRECT_URI").expect("REDIRECT_URI must be set in .env");
+    pub static ref TENANT_ID: String =
+        std::env::var("MICROSOFT_TENANT_ID").expect("MICROSOFT_TENANT_ID must be set in .env");
+}

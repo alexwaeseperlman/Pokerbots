@@ -1,3 +1,5 @@
+use log::{debug, error, info};
+use rand::Rng;
 use std::{
     fs,
     io::{Read, Write},
@@ -6,8 +8,6 @@ use std::{
     thread,
     time::Duration,
 };
-use log::{debug, error, info};
-use rand::Rng;
 
 #[derive(Debug, Clone)]
 pub struct Bot {
@@ -16,33 +16,6 @@ pub struct Bot {
     build_cmd: Option<String>,
     run_cmd: Option<String>,
 }
-
-enum Suite {
-    Clubs,
-    Spades,
-    Hearts,
-    Diamonds,
-}
-
-struct Card {
-    value: u32,
-    suite: Suite,
-}
-
-pub struct Dealer {
-    deck: Vec<Card>,
-}
-
-pub struct Game {
-    bots: Vec<Bot>,
-    num_players: u32,
-    dealer: Dealer,
-    button: u32,
-    pot: u32,
-    hole_cards: Vec<Card>,
-    community_cards: Vec<Card>,
-}
-
 impl Bot {
     pub fn new(
         team_name: String,
@@ -90,73 +63,8 @@ impl Bot {
         info!("Response: {}", response);
         Ok(())
     }
-
-    /// plays current bot against all other bots
-    /// spawns a Dealer and Game per game and begins 
-    /// games in their own socket files
-    pub async fn play(&self, bots: &Vec<Bot>) -> std::io::Result<()> {
-        info!("PLAYING");
-        debug!("{bots:?}");
-        let socket_path = PathBuf::from(format!("/tmp/pokerzero/{}/socket", self.team_name));
-        if !socket_path.exists() {
-            fs::create_dir_all(&socket_path)?;
-        }
-        for b in bots {
-            if b.team_name != self.team_name {
-                let socket_file =
-                    socket_path.join(format!("{}_vs_{}.sock", self.team_name, b.team_name));
-                let bots_game = vec![b.clone(), self.clone()];
-                let dealer = Dealer::new();
-                let game = Game::new(bots_game, dealer);
-                let socket_file_ = socket_file.clone();
-                thread::spawn(move || game.start_server(&socket_file));
-                thread::park_timeout(Duration::from_secs(1));
-                self.connect(&socket_file_).await?;
-                b.connect(&socket_file_).await?;
-            }
-        }
-        Ok(())
-    }
 }
-
-impl Dealer {
-    fn new() -> Self {
-        let mut deck = Vec::new();
-        deck.reserve(52);
-        for value in 1..=13 {
-            deck.push(Card {
-                value,
-                suite: Suite::Clubs,
-            });
-            deck.push(Card {
-                value,
-                suite: Suite::Spades,
-            });
-            deck.push(Card {
-                value,
-                suite: Suite::Hearts,
-            });
-            deck.push(Card {
-                value,
-                suite: Suite::Diamonds,
-            });
-        }
-        Self { deck }
-    }
-
-    fn shuffle(&mut self) {
-        // Fisher-Yates
-        for i in 51..=1 {
-            let j = rand::thread_rng().gen_range(0..=i);
-            self.deck.swap(i, j);
-        }
-    }
-
-    fn deal(&mut self) -> Option<Card> {
-        self.deck.pop()
-    }
-}
-
+/*
 impl Game {
     pub fn new(bots: Vec<Bot>, dealer: Dealer) -> Self {
         let l = bots.len() as u32;
@@ -212,3 +120,4 @@ impl Game {
         Ok(())
     }
 }
+*/
