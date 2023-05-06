@@ -1,0 +1,22 @@
+{{> include/head}}
+
+<h3>Top Teams</h3>
+
+  <table id="rank">
+    <tr>
+      <th>Rank</th>
+      <th>Team name</th>
+      <th>ELO</th>
+    </tr>
+
+{{#each teams}}
+      <tr>
+        <td>{{@index}}</td>
+        <td>{{this}}</td>
+        <td>{{lookup ../elos @index}}</td>
+      </tr>
+{{/each}}
+  </table>
+
+
+{{> include/foot}}
