@@ -21,9 +21,13 @@
             <input type="text" id="invite-link" readonly />
             <button id="generate-invite">Generate new link</button>
         </div>
+
+       <p> {{team.elo}}</p>
+
         <form action="/api/delete-team">
-            <input type="submit" value="Delete Team"/>
+            <button type="submit" onclick="confirmDelete(event)">Delete Team</button>
         </form>
+
     {{else}}
         <form action="/api/leave-team">
             <input type="submit" value="Leave Team"/>
@@ -39,40 +43,103 @@
 {{ else }}
     {{ #if user}}
     <div>
-        <p>Hi {{ user.display_name }}. You do not have a team. Create one below.</p>
+        <div class="greetings"><span>Hi {{ user.display_name }}</span> &#x1F44B;</div>
+        
+        <p>You do not have a team. Create one below or join one by pasting an invitation link into your browser.</p>
 
-        <form action="/api/create-team">
+        <form action="/api/create-team" onsubmit="return checkTeamName(document.getElementById('team-name-input').value)">
+
             {{#if message}}
                 <p>{{message}}</p>
             {{/if}}
-            <input type="text" name="team_name" placeholder="Team Name"/>
-            <button type="submit" value="Create Team">Submit</button>
-        </form>
+
+        <div class="email-container">
+           <input type="text" class="team-name" id="team-name-input" name="team_name" placeholder="Team Name"/>
+           <button type="submit" value="Create Team" class="submit-name-button">Submit</button>
         </div>
+
+        </form>
+        <button class="random-button" onclick="generator()"> &#x1F3B2; Random</button>
+        </div>
+
     {{ else }}
         {{#if message}}
             <p>{{message}}</p>
         {{/if}}
-        <p>You are not logged in.</p>
         {{> login}}
     {{/if}}
 {{/if}}
+
+<script>
+    function confirmDelete(event) {
+        if (confirm("Are you sure you want to delete your team? This action cannot be undone.")) {
+            // Proceed with form submission
+        } else {
+            // Prevent form submission
+            event.preventDefault();
+        }
+    }
+</script>
+
+<script> // checking for team name
+
+    function checkTeamName(input) {
+    // List of banned words
+    const bannedWords = ["badword1", "badword2", "badword3"];
+
+    // Split input into words
+    const words = input.split(" ");
+
+    // Check input against each banned word
+    for (let i = 0; i < words.length; i++) {
+        if (bannedWords.includes(words[i].toLowerCase())) {
+        alert("Your input contains a banned word. Please try again.");
+        return false;
+        }
+    }
+
+    // Check input length
+    if (input.length < 3) {
+        alert("Team name should be at least 3 characters long. Please try again.");
+        return false;
+    }
+    if (input.length > 20) {
+        alert("Team name should be at most 20 characters long. Please try again.");
+        return false;
+    }
+
+    return true;
+    }
+
+</script>
+
 <script>
     // generate invite links if necessary
     const inviteLink = document.getElementById('invite-link');
     const genInviteButton = document.getElementById('generate-invite');
+    let lastGenerated = parseInt(localStorage.getItem('lastGenerated'));
 
-    const genInvite = () => {
-        fetch("/api/make-invite").then(async (result) => {
-            inviteLink.value = window.location.origin + '/api/join-team?invite_code='+(await result.text());
-        });
+const genInvite = () => {
+    if (lastGenerated !== null && (Date.now() - lastGenerated) < 10000) {
+        inviteLink.value = localStorage.getItem('lastLink');
+        return;
     }
+
+    // Generate a new invite link
+    fetch("/api/make-invite")
+        .then(async (result) => {
+            const newInviteLinkValue = window.location.origin + '/api/join-team?invite_code='+(await result.text());
+            inviteLink.value = newInviteLinkValue;
+            lastGenerated = Date.now();
+            localStorage.setItem('lastGenerated', lastGenerated.toString());
+            localStorage.setItem('lastLink', newInviteLinkValue);
+        });
+}
     window.addEventListener('load', () => {
         genInvite()
         genInviteButton.addEventListener('click', genInvite);
         inviteLink.addEventListener('click', () => {
             inviteLink.select()
-            // https://www.w3schools.com/howto/howto_js_copy_clipboard.asp
             inviteLink.setSelectionRange(0, 1e5);
             navigator.clipboard.writeText(inviteLink.value)
         })
