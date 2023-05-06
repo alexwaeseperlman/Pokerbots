@@ -13,11 +13,6 @@ body {
   font-family: sans-serif;
   text-align: center;
   background: rgb(25, 19, 53);
-  background: linear-gradient(
-    180deg,
-    rgba(25, 19, 53, 1) 0%,
-    rgba(10, 0, 58, 1) 35%
-  );
   padding: 0;
   margin: 0;
   overscroll-behavior-y: none;
@@ -51,7 +46,7 @@ h2 {
   background-image: linear-gradient(180deg, #e8c1ff, #b336ff);
   background-size: 100%;
   font-weight: 700;
-  font-size: 4vw;
+  font-size: 4.0vmax;
   -webkit-background-clip: text;
   -moz-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -65,7 +60,7 @@ h3 {
   background-image: linear-gradient(180deg, #e8c1ff, #b336ff);
   background-size: 100%;
   font-weight: 700;
-  font-size: 3.5vw;
+  font-size: 3.5vmax;
   -webkit-background-clip: text;
   -moz-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -75,9 +70,9 @@ h3 {
 
 h4 {
   font-family: "Kanit", sans-serif;
+  font-weight: 600;
   background-image: linear-gradient(180deg, #ffffff, #d5d4ff);
   background-size: 100%;
-  font-weight: 600;
   font-size: 2.5vw;
   -webkit-background-clip: text;
   -moz-background-clip: text;
@@ -86,9 +81,25 @@ h4 {
   margin: 0;
 }
 
+.greetings {
+  font-family: "Kanit", sans-serif;
+  font-weight: 600;
+  font-size: 2.5vmax;
+  margin: 0;
+}
+
+.greetings span {
+  background-image: linear-gradient(180deg, #ffffff, #d5d4ff);
+  background-size: 100%;
+  -webkit-background-clip: text;
+  -moz-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  -moz-text-fill-color: transparent;
+}
+
 h5 {
   font-family: "Kanit", sans-serif;
-  font-size: large;
+  font-size: medium;
   color: #ffffff;
   font-weight: 500;
   margin: 0;
@@ -105,7 +116,7 @@ h6 {
 
 p {
   font-family: "Kanit", sans-serif;
-  font-size: medium;
+  font-size: 1.1vmax;
   color: #ffffff;
   font-weight: 400;
 }
@@ -156,14 +167,38 @@ header a:hover {
   color: rgb(231, 234, 255);
 }
 
+.parent {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .floating-picture {
   position: relative;
-  animation: floating 5s ease-in-out infinite;
   margin-bottom: 0;
-  margin-top: 8vh;
+  margin-top: 8vmin;
   width: 50vw;
   height: auto;
+  text-align: center; /* Center the image horizontally */
 }
+
+.glow {
+  position: absolute;
+  left: 50%;
+  margin-top: 11vmin;
+  transform: translate(-50%, -50%);
+  z-index: -1;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: rgb(255, 202, 255);
+  box-shadow:
+    0 0 60px 30px #fff,  /* inner white */
+    0 0 100px 60px #f0f, /* middle magenta */
+    0 0 140px 90px #0ff; /* outer cyan */
+}
+
+
 
 @keyframes floating {
   0% {
@@ -185,17 +220,44 @@ header a:hover {
 
 .picture-container {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  z-index: 100;
   max-width: 800px;
   width: 100%;
 }
 
 .picture-wrapper {
+  transform-style: preserve-3d;
   display: flex;
+  height: 100%;
+  height: 50vh;
+  border-style: solid;
+  border-radius: 5vmin;
   flex-direction: column;
   align-items: center;
   max-width: 30%;
+  padding: 15px;
+  margin: 10px;
+  border-color: #2e2e3f;
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  -webkit-box-shadow: -4px 4px 60px -10px rgba(0,0,0,0.75);
+  -moz-box-shadow: -4px 4px 60px -10px rgba(0,0,0,0.75);
+  box-shadow: -4px 4px 60px -10px rgba(0,0,0,0.75);
+  
+}
+
+@media (max-width : 980px) {
+  .picture-wrapper {
+    max-width: 100%;
+    height: 100%;
+    border: none;
+    box-shadow: none;
+  }
+}
+.picture-wrapper:hover{
+  background-image: linear-gradient(180deg, #d489ff, #b336ff);
 }
 
 .picture-caption {
@@ -214,41 +276,154 @@ input[type="text"] {
   display: flex;
 }
 
-.email {
-  background: linear-gradient(180deg, #ffffff, #c2c1ff);
-  border-radius: 10px;
-  border: none;
-  width: 18vw;
-  height: 5vh;
-  padding: 0.7vw;
-  margin: 0;
-  margin-top: 2vh;
-  margin-right: 10px;
+.email{
+	background: linear-gradient(180deg,#ffffff, #c2c1ff);
+	border-radius: 10px;
+	border: none;
+	width: 18vw;
+	height: 5vmin;
+	padding: 0.7vw;
+	margin: 0;
+	margin-top: 2vh;
+	margin-right: 10px;
+  -webkit-transition: all .5s;
+  -moz-transition: all .5s;
+  transition: all .5s;
 }
 
+.team-name{
+	background: linear-gradient(180deg,#ffffff, #c2c1ff);
+	border-radius: 10px;
+	border: none;
+	width: 18vw;
+	height: 5vmin;
+	padding: 0.7vw;
+	margin: 0;
+	margin-top: 2vh;
+	margin-right: 10px;
+  -webkit-transition: all .5s;
+  -moz-transition: all .5s;
+  transition: all .5s;
+}
+
+
+
 .join-button {
-  background: linear-gradient(180deg, #dda3ff, #b336ff);
+  background: linear-gradient(180deg,#cf7cff, #B336FF);
   border: none;
   border-radius: 10px;
   color: white;
   padding: 0.6vw;
   text-align: center;
   text-decoration: none;
-  display: inline-block;
+  justify-content: center;
+  display: flex; /* Display as flex container */
+  align-items: center; /* Center items vertically */
   font-size: medium;
   font-weight: 500;
   margin-top: 2vh;
+  height: 5vmin;
   width: 4vw;
   min-width: 50px;
-
   cursor: pointer;
-  font-family: "Kanit", sans-serif;
-  font-size: medium;
+  font-family: 'Kanit', sans-serif;
+  font-size: medium; 
+  -webkit-transition: all .5s;
+  -moz-transition: all .5s;
+  transition: all .5s;
 }
 
 .join-button:hover {
-  background: linear-gradient(180deg, #c45fff, #a109ff);
+  background: linear-gradient(180deg, #c45fff, #9700f5);
 }
+
+
+.login-button {
+  background: linear-gradient(180deg,#c45fff, #B336FF);
+  border: none;
+  border-radius: 0.75vmax;
+  color: white;
+  padding: 1vmax;
+  text-align: center;
+  text-decoration: none;
+  display: flex; 
+  font-size: large;
+  font-weight: 500;
+  margin-top: 2vh;
+  height: auto;
+  width: auto;
+  min-width: 50px;
+  cursor: pointer;
+  font-family: 'Kanit', sans-serif;
+  -webkit-transition: all .5s;
+  -moz-transition: all .5s;
+  transition: all .5s;
+}
+
+.login-button:hover {
+  transform: scale(1.05);
+  background: linear-gradient(180deg,#c45fff, #9700f5);
+}
+
+.submit-name-button {
+  background: linear-gradient(180deg,#cf7cff, #B336FF);
+  border: none;
+  border-radius: 10px;
+  color: white;
+  padding: 0.6vw;
+  text-align: center;
+  text-decoration: none;
+  justify-content: center;
+  display: flex; /* Display as flex container */
+  align-items: center; /* Center items vertically */
+  font-size: medium;
+  font-weight: 500;
+  margin-top: 2vh;
+  height: 5vmin;
+  width: auto;
+  min-width: 50px;
+  cursor: pointer;
+  font-family: 'Kanit', sans-serif;
+  font-size: medium; 
+  -webkit-transition: all .5s;
+  -moz-transition: all .5s;
+  transition: all .5s;
+}
+
+.submit-name-button:hover {
+  background: linear-gradient(180deg,#c45fff, #9700f5);
+}
+
+
+.random-button {
+  background: linear-gradient(180deg,#cf7cff, #B336FF);
+  border: none;
+  border-radius: 10px;
+  color: white;
+  padding: 0.6vw;
+  text-align: center;
+  text-decoration: none;
+  font-size: medium;
+  font-weight: 500;
+  height: 5vmin;
+  width: auto;
+  min-width: 50px;
+  cursor: pointer;
+  font-family: 'Kanit', sans-serif;
+  font-size: medium;
+  -webkit-transition: all .5s;
+  -moz-transition: all .5s;
+  transition: all .5s;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  }
+
+.random-button:hover {
+  background: linear-gradient(180deg,#c45fff, #9700f5);
+}
+
 
 footer {
   padding: 20px;
@@ -259,4 +434,29 @@ footer {
 }
 .spacer {
   flex: 1;
+}
+
+*:focus {
+  outline: none;
+}
+
+#rank {
+  font-family: "Kanit", sans-serif;
+  font-size: large;
+  width: 60%;
+  border-collapse:separate;
+  border:solid black 1px;
+  border-radius:15px;
+  background-color: rgb(255, 255, 255);
+}
+
+#rank tr{
+  font-family: "Kanit", sans-serif;
+  font-size: medium;
+  color: black;
+  border-bottom: #353547;
+}
+
+th {
+  border: none;
 }
