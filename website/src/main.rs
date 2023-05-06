@@ -44,6 +44,7 @@ async fn main() -> std::io::Result<()> {
             .service(actix_files::Files::new("/static", "static/"))
             .service(pages::home::home)
             .service(pages::team::team)
+            .service(pages::leaderboard::leaderboard)
             .service(pages::manage_team::manage_team)
             .service(api::manage_team::create_team)
             .service(api::manage_team::delete_team)
