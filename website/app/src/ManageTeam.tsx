@@ -1,6 +1,7 @@
 import React from "react";
 import { useTeam, useUser } from "./state";
 import CreateTeam from "./CreateTeam";
+import Login from "./Login";
 
 export default function ManageTeam() {
   const user = useUser();
@@ -167,11 +168,30 @@ const genInvite = () => {
         {team.members.map((member) => (
           <>{member.display_name}</>
         ))}
+        <form action="/api/delete-team">
+          <button
+            type="submit"
+            onClick={function confirmDelete(event) {
+              if (
+                confirm(
+                  "Are you sure you want to delete your team? This action cannot be undone."
+                )
+              ) {
+                // Proceed with form submission
+              } else {
+                // Prevent form submission
+                event.preventDefault();
+              }
+            }}
+          >
+            Delete Team
+          </button>
+        </form>
       </>
     );
   } else if (user) {
     return <CreateTeam />;
   } else {
-    return <></>;
+    return <Login />;
   }
 }

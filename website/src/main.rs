@@ -48,6 +48,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(Logger::new("%a %{User-Agent}i"))
             .wrap(session_middleware)
             .route("/api/login", web::get().to(login::handle_login))
+            .service(login::login_provider)
             .service(api::manage_team::create_team)
             .service(api::manage_team::delete_team)
             .service(api::manage_team::leave_team)

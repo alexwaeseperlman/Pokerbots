@@ -1,5 +1,5 @@
 use actix_session::Session;
-use actix_web::{web, HttpResponse};
+use actix_web::{get, web, HttpResponse};
 use diesel::prelude::*;
 use log::error;
 use serde::{Deserialize, Serialize};
@@ -197,5 +197,24 @@ pub async fn handle_login(
         Ok(HttpResponse::Found()
             .append_header(("Location", "/"))
             .finish())
+    }
+}
+
+#[derive(Deserialize)]
+pub struct LoginProvider {
+    provider: String,
+}
+#[get("/api/login-provider")]
+pub async fn login_provider(
+    web::Query::<LoginProvider>(LoginProvider { provider }): web::Query<LoginProvider>,
+) -> actix_web::Result<HttpResponse> {
+    match provider.as_str() {
+        "microsoft" => {
+            let url = microsoft_login_url("/manage-team");
+            Ok(HttpResponse::Found()
+                .append_header(("Location", url))
+                .finish())
+        }
+        _ => Ok(HttpResponse::NotFound().finish()),
     }
 }
