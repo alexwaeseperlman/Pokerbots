@@ -46,7 +46,7 @@ h2 {
   background-image: linear-gradient(180deg, #e8c1ff, #b336ff);
   background-size: 100%;
   font-weight: 700;
-  font-size: 4.0vmax;
+  font-size: 4vmax;
   -webkit-background-clip: text;
   -moz-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -192,13 +192,9 @@ header a:hover {
   height: 40px;
   border-radius: 50%;
   background-color: rgb(255, 202, 255);
-  box-shadow:
-    0 0 60px 30px #fff,  /* inner white */
-    0 0 100px 60px #f0f, /* middle magenta */
-    0 0 140px 90px #0ff; /* outer cyan */
+  box-shadow: 0 0 60px 30px #fff, /* inner white */ 0 0 100px 60px #f0f,
+    /* middle magenta */ 0 0 140px 90px #0ff; /* outer cyan */
 }
-
-
 
 @keyframes floating {
   0% {
@@ -242,13 +238,12 @@ header a:hover {
   border-color: #2e2e3f;
   -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
-  -webkit-box-shadow: -4px 4px 60px -10px rgba(0,0,0,0.75);
-  -moz-box-shadow: -4px 4px 60px -10px rgba(0,0,0,0.75);
-  box-shadow: -4px 4px 60px -10px rgba(0,0,0,0.75);
-  
+  -webkit-box-shadow: -4px 4px 60px -10px rgba(0, 0, 0, 0.75);
+  -moz-box-shadow: -4px 4px 60px -10px rgba(0, 0, 0, 0.75);
+  box-shadow: -4px 4px 60px -10px rgba(0, 0, 0, 0.75);
 }
 
-@media (max-width : 980px) {
+@media (max-width: 980px) {
   .picture-wrapper {
     max-width: 100%;
     height: 100%;
@@ -256,7 +251,7 @@ header a:hover {
     box-shadow: none;
   }
 }
-.picture-wrapper:hover{
+.picture-wrapper:hover {
   background-image: linear-gradient(180deg, #d489ff, #b336ff);
 }
 
@@ -276,40 +271,38 @@ input[type="text"] {
   display: flex;
 }
 
-.email{
-	background: linear-gradient(180deg,#ffffff, #c2c1ff);
-	border-radius: 10px;
-	border: none;
-	width: 18vw;
-	height: 5vmin;
-	padding: 0.7vw;
-	margin: 0;
-	margin-top: 2vh;
-	margin-right: 10px;
-  -webkit-transition: all .5s;
-  -moz-transition: all .5s;
-  transition: all .5s;
+.email {
+  background: linear-gradient(180deg, #ffffff, #c2c1ff);
+  border-radius: 10px;
+  border: none;
+  width: 18vw;
+  height: 5vmin;
+  padding: 0.7vw;
+  margin: 0;
+  margin-top: 2vh;
+  margin-right: 10px;
+  -webkit-transition: all 0.5s;
+  -moz-transition: all 0.5s;
+  transition: all 0.5s;
 }
 
-.team-name{
-	background: linear-gradient(180deg,#ffffff, #c2c1ff);
-	border-radius: 10px;
-	border: none;
-	width: 18vw;
-	height: 5vmin;
-	padding: 0.7vw;
-	margin: 0;
-	margin-top: 2vh;
-	margin-right: 10px;
-  -webkit-transition: all .5s;
-  -moz-transition: all .5s;
-  transition: all .5s;
+.team-name {
+  background: linear-gradient(180deg, #ffffff, #c2c1ff);
+  border-radius: 10px;
+  border: none;
+  width: 18vw;
+  height: 5vmin;
+  padding: 0.7vw;
+  margin: 0;
+  margin-top: 2vh;
+  margin-right: 10px;
+  -webkit-transition: all 0.5s;
+  -moz-transition: all 0.5s;
+  transition: all 0.5s;
 }
-
-
 
 .join-button {
-  background: linear-gradient(180deg,#cf7cff, #B336FF);
+  background: linear-gradient(180deg, #cf7cff, #b336ff);
   border: none;
   border-radius: 10px;
   color: white;
@@ -326,27 +319,26 @@ input[type="text"] {
   width: 4vw;
   min-width: 50px;
   cursor: pointer;
-  font-family: 'Kanit', sans-serif;
-  font-size: medium; 
-  -webkit-transition: all .5s;
-  -moz-transition: all .5s;
-  transition: all .5s;
+  font-family: "Kanit", sans-serif;
+  font-size: medium;
+  -webkit-transition: all 0.5s;
+  -moz-transition: all 0.5s;
+  transition: all 0.5s;
 }
 
 .join-button:hover {
   background: linear-gradient(180deg, #c45fff, #9700f5);
 }
 
-
 .login-button {
-  background: linear-gradient(180deg,#c45fff, #B336FF);
+  background: linear-gradient(180deg, #c45fff, #b336ff);
   border: none;
   border-radius: 0.75vmax;
   color: white;
   padding: 1vmax;
   text-align: center;
   text-decoration: none;
-  display: flex; 
+  display: flex;
   font-size: large;
   font-weight: 500;
   margin-top: 2vh;
@@ -354,19 +346,19 @@ input[type="text"] {
   width: auto;
   min-width: 50px;
   cursor: pointer;
-  font-family: 'Kanit', sans-serif;
-  -webkit-transition: all .5s;
-  -moz-transition: all .5s;
-  transition: all .5s;
+  font-family: "Kanit", sans-serif;
+  -webkit-transition: all 0.5s;
+  -moz-transition: all 0.5s;
+  transition: all 0.5s;
 }
 
 .login-button:hover {
   transform: scale(1.05);
-  background: linear-gradient(180deg,#c45fff, #9700f5);
+  background: linear-gradient(180deg, #c45fff, #9700f5);
 }
 
 .submit-name-button {
-  background: linear-gradient(180deg,#cf7cff, #B336FF);
+  background: linear-gradient(180deg, #cf7cff, #b336ff);
   border: none;
   border-radius: 10px;
   color: white;
@@ -383,20 +375,19 @@ input[type="text"] {
   width: auto;
   min-width: 50px;
   cursor: pointer;
-  font-family: 'Kanit', sans-serif;
-  font-size: medium; 
-  -webkit-transition: all .5s;
-  -moz-transition: all .5s;
-  transition: all .5s;
+  font-family: "Kanit", sans-serif;
+  font-size: medium;
+  -webkit-transition: all 0.5s;
+  -moz-transition: all 0.5s;
+  transition: all 0.5s;
 }
 
 .submit-name-button:hover {
-  background: linear-gradient(180deg,#c45fff, #9700f5);
+  background: linear-gradient(180deg, #c45fff, #9700f5);
 }
 
-
 .random-button {
-  background: linear-gradient(180deg,#cf7cff, #B336FF);
+  background: linear-gradient(180deg, #cf7cff, #b336ff);
   border: none;
   border-radius: 10px;
   color: white;
@@ -409,21 +400,20 @@ input[type="text"] {
   width: auto;
   min-width: 50px;
   cursor: pointer;
-  font-family: 'Kanit', sans-serif;
+  font-family: "Kanit", sans-serif;
   font-size: medium;
-  -webkit-transition: all .5s;
-  -moz-transition: all .5s;
-  transition: all .5s;
+  -webkit-transition: all 0.5s;
+  -moz-transition: all 0.5s;
+  transition: all 0.5s;
   margin: 0 auto;
   display: flex;
   justify-content: center;
   align-items: center;
-  }
-
-.random-button:hover {
-  background: linear-gradient(180deg,#c45fff, #9700f5);
 }
 
+.random-button:hover {
+  background: linear-gradient(180deg, #c45fff, #9700f5);
+}
 
 footer {
   padding: 20px;
@@ -444,13 +434,13 @@ footer {
   font-family: "Kanit", sans-serif;
   font-size: large;
   width: 60%;
-  border-collapse:separate;
-  border:solid black 1px;
-  border-radius:15px;
+  border-collapse: separate;
+  border: solid black 1px;
+  border-radius: 15px;
   background-color: rgb(255, 255, 255);
 }
 
-#rank tr{
+#rank tr {
   font-family: "Kanit", sans-serif;
   font-size: medium;
   color: black;

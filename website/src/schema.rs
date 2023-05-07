@@ -13,6 +13,7 @@ diesel::table! {
         id -> Int4,
         team_name -> Text,
         owner -> Text,
+        elo -> Nullable<Int4>,
     }
 }
 

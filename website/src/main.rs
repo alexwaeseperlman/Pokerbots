@@ -1,9 +1,17 @@
-use actix_service::Service;
+use actix_files::NamedFile;
+use actix_service::{fn_service, Service};
 use actix_session::{storage::CookieSessionStore, SessionExt, SessionMiddleware};
-use actix_web::{cookie, middleware::Logger, web, App, HttpMessage, HttpServer};
+use actix_web::{
+    cookie,
+    dev::{ServiceRequest, ServiceResponse},
+    get,
+    http::header::{ContentDisposition, DispositionType},
+    middleware::Logger,
+    web, App, HttpMessage, HttpRequest, HttpServer,
+};
 use futures_util::future::FutureExt;
 
-use pokerbots::app::{api, login, pages};
+use pokerbots::app::{api, login};
 
 fn get_secret_key() -> cookie::Key {
     let key = std::env::var("SECRET_KEY").expect("SECRET_KEY must be set in .env");
@@ -39,19 +47,26 @@ async fn main() -> std::io::Result<()> {
             })
             .wrap(Logger::new("%a %{User-Agent}i"))
             .wrap(session_middleware)
-            .app_data(web::Data::new(hbars))
             .route("/api/login", web::get().to(login::handle_login))
-            .service(actix_files::Files::new("/static", "static/"))
-            .service(pages::home::home)
-            .service(pages::team::team)
-            .service(pages::leaderboard::leaderboard)
-            .service(pages::manage_team::manage_team)
             .service(api::manage_team::create_team)
             .service(api::manage_team::delete_team)
             .service(api::manage_team::leave_team)
             .service(api::manage_team::make_invite)
             .service(api::manage_team::join_team)
             .service(api::signout::signout)
+            // All remaining paths go to /app/dist, and fallback to index.html for client side routing
+            .service(
+                actix_files::Files::new("/", "app/dist/")
+                    .index_file("/index.html")
+                    .default_handler(fn_service(|req: ServiceRequest| async {
+                        let (req, _) = req.into_parts();
+
+                        let f = NamedFile::open_async("app/dist/index.html")
+                            .await?
+                            .into_response(&req);
+                        Ok(ServiceResponse::new(req, f))
+                    })),
+            )
 
         //.wrap(middleware::Compress::default())
     })
