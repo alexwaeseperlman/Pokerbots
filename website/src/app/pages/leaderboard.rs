@@ -45,12 +45,8 @@ pub async fn leaderboard(
         .map_err(|err| error::ErrorInternalServerError(err))?;
 
     let elos_json: Value = serde_json::to_value(&elos)
-        .map_err(|err| error::ErrorInternalServerError(err))?;
-
-
-    println!("{:?}", teams_names);
-    println!("{:?}", elos);
-
+        .map_err(|err| error::ErrorInternalServerError(err))?
+        
     // data packaging
     let data = json!({
         "user": u,
