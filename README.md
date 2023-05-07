@@ -4,5 +4,6 @@ To get it running,
 ```
 docker-compose up -d
 cargo install diesel_cli --no-default-features --features postgres 
+cd website
 diesel migration run
 ```

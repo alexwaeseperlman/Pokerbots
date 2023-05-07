@@ -7,6 +7,7 @@ pub struct Team {
     pub id: i32,
     pub team_name: String,
     pub owner: String,
+    pub elo: Option<i32>,
 }
 
 #[derive(diesel::Insertable, Debug)]

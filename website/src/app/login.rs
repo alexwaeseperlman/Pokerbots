@@ -23,6 +23,7 @@ pub struct TeamData {
     pub team_name: String,
     pub members: Vec<UserData>,
     pub owner: String,
+    pub elo: Option<i32>,
 }
 
 // TODO: right now state is just the return address,
@@ -123,6 +124,7 @@ pub fn get_team_data(session: &Session) -> Option<TeamData> {
         team_name: t.team_name.clone(),
         members,
         owner: t.owner.clone(),
+        elo: t.elo,
     })
 }
 // By the end of this method, if given a valid authorization code, the email address field in the session should be set

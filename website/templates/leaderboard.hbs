@@ -1,0 +1,33 @@
+{{> include/head}}
+
+<h3>Top Teams</h3>
+
+  <table id="rank">
+    <tr>
+      <th>Rank</th>
+      <th>Team name</th>
+      <th>ELO</th>
+    </tr>
+
+{{#each teams}}
+      <tr>
+        <td>#{{@index}}</td>
+        <td>{{this}}</td>
+        <td>{{lookup ../elos @index}}</td>
+      </tr>
+{{/each}}
+  </table>
+
+
+<script> // increment the index value by 1 for the rank
+  let table = document.getElementById("rank");
+  let rows = table.getElementsByTagName("tr");
+  for (let i = 1; i < rows.length; i++) {
+    let row = rows[i];
+    let cells = row.getElementsByTagName("td");
+    cells[0].textContent = i.toString();
+  }
+</script>
+
+{{> include/foot}}
+

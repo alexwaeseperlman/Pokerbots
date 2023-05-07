@@ -29,6 +29,7 @@ pub struct TeamData {
     pub teamname: String,
     pub members: Vec<UserData>,
     pub owner: String,
+    pub elo: Option<i32>,
 }
 
 // Build a database connection pool for server functions
