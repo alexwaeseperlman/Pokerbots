@@ -1,5 +1,8 @@
 import React from "react";
 import mainImage from "../static/assets/main.png";
+import testImage from "../static/assets/test.webp";
+import buildImage from "../static/assets/build.webp";
+import competeImage from "../static/assets/compete.webp";
 
 export default function HomePage() {
   return (
@@ -28,7 +31,7 @@ export default function HomePage() {
       <section className="picture-section">
         <div className="picture-container">
           <div className="picture-wrapper">
-            <img src="/static/assets/build.webp" alt="Picture 1" />
+            <img src={buildImage} alt="Picture 1" />
             <div className="picture-caption">
               <h4>Build.</h4>
               <p>
@@ -39,7 +42,7 @@ export default function HomePage() {
           </div>
 
           <div className="picture-wrapper">
-            <img src="/static/assets/test.webp" alt="Picture 2" />
+            <img src={testImage} alt="Picture 2" />
             <div className="picture-caption">
               <h4>Test.</h4>
               <p>
@@ -50,7 +53,7 @@ export default function HomePage() {
           </div>
 
           <div className="picture-wrapper">
-            <img src="/static/assets/compete.webp" alt="Picture 3" />
+            <img src={competeImage} alt="Picture 3" />
             <div className="picture-caption">
               <h4>Compete.</h4>
               <p>
