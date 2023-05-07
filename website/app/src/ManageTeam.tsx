@@ -157,7 +157,9 @@ const genInvite = () => {
 </script>
 {{> include/foot}}
 */
-
+  if (user === undefined) {
+    return <div>Loading...</div>;
+  }
   if (team && user) {
     return (
       <>

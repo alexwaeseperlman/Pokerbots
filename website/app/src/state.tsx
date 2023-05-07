@@ -5,7 +5,7 @@ export type User = {
   email: string;
   display_name: string;
 };
-const userAtom = atom<User | null>(null);
+const userAtom = atom<User | null | undefined>(undefined);
 
 export const useUser = () => {
   const [user, setUser] = useAtom(userAtom);
@@ -29,7 +29,7 @@ export type Team = {
   elo: number | null;
 };
 
-const teamAtom = atom<Team | null>(null);
+const teamAtom = atom<Team | null | undefined>(undefined);
 
 export const useTeam = () => {
   const [team, setTeam] = useAtom(teamAtom);
@@ -49,4 +49,4 @@ export type ServerMessage = {
   message: string;
   type: "success" | "error";
 };
-const serverMessageAtom = atom<ServerMessage | null>(null);
+const serverMessageAtom = atom<ServerMessage | null | undefined>(undefined);
