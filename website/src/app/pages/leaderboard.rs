@@ -3,7 +3,6 @@ use serde_json::{json, Value};
 use crate::app::login::UserData;
 use crate::{config::DB_CONNECTION, schema::teams};
 use diesel::prelude::*;
-use rand::Rng;
 
 #[get("/leaderboard")]
 pub async fn leaderboard(
@@ -14,9 +13,22 @@ pub async fn leaderboard(
 
     let conn = &mut (*DB_CONNECTION).get().unwrap();
     
-    // vector with all team names (ranked or not it doesnt matter)
 
+    // hardcoding elo values for testing purposes
+    diesel::update(teams::table.filter(teams::team_name.eq("Skilled Quesadillas")))
+    .set(teams::elo.eq(200))
+    .execute(conn)
+    .map_err(|err| error::ErrorInternalServerError(err))?;
+
+    // also hardcoding elo values for testing purposes
+    diesel::update(teams::table.filter(teams::team_name.eq("Merciless Alpacas")))
+    .set(teams::elo.eq(100))
+    .execute(conn)
+    .map_err(|err| error::ErrorInternalServerError(err))?;
+
+    // vector with all team names (ranked or not it doesnt matter)
     let teams_names = teams::table
+        .order(teams::elo.desc())
         .select(teams::team_name)
         .load::<String>(conn)
         .map_err(|err| error::ErrorInternalServerError(err))?;
@@ -25,9 +37,9 @@ pub async fn leaderboard(
         .map_err(|err| error::ErrorInternalServerError(err))?;
 
 
-    // vector of corresponding ELOs (ranked or not it doesnt matter)
-    
+    // vector of corresponding ranked ELOs
     let elos = teams::table
+        .order(teams::elo.desc())
         .select(teams::elo)
         .load::<Option<i32>>(conn)
         .map_err(|err| error::ErrorInternalServerError(err))?;
@@ -36,20 +48,14 @@ pub async fn leaderboard(
         .map_err(|err| error::ErrorInternalServerError(err))?;
 
 
-    // vector of dummy elos just for the UI
-    let rand_elos = teams_names
-    .iter()
-    .map(|_| rand::thread_rng().gen_range(1..=3000))
-    .collect::<Vec<i32>>();
-
-    let rand_elos_json: Value = serde_json::to_value(&rand_elos)
-    .map_err(|err| error::ErrorInternalServerError(err))?;
+    println!("{:?}", teams_names);
+    println!("{:?}", elos);
 
     // data packaging
     let data = json!({
         "user": u,
         "teams": teams_names_json,
-        "elos": rand_elos_json,
+        "elos": elos_json,
     });
 
     // template rendering
@@ -59,3 +65,4 @@ pub async fn leaderboard(
 
     Ok(HttpResponse::Ok().body(body))
 }
+
