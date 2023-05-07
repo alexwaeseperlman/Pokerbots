@@ -116,7 +116,7 @@ const object = [
   "Pandas",
 ];
 
-export default function generator() {
+export default function randomTeamName() {
   let name = "";
   do {
     name =

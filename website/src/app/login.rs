@@ -11,6 +11,8 @@ use crate::{
     schema::{teams, users},
 };
 
+use super::api::ServerMessage;
+
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct UserData {
     pub email: String,
@@ -180,7 +182,13 @@ pub async fn handle_login(
                 },
             )?;
         } else {
-            session.insert("message", "There was an issue logging you in.")?;
+            session.insert(
+                "message",
+                ServerMessage {
+                    message: "There was an issue logging you in.".to_owned(),
+                    message_type: "error".to_owned(),
+                },
+            )?;
         }
         Ok(HttpResponse::Found()
             .append_header(("Location", state.unwrap_or("/manage-team".to_string())))
