@@ -88,16 +88,22 @@ function BotUpload() {
         }}
       >
         Drag and drop files here or{" "}
-        <a
+        <label
           style={{
             color: "#CC385A",
             border: "none",
             textDecoration: "none",
+            cursor: "pointer",
           }}
-          href="#"
         >
           click to select files
-        </a>
+          <input
+            style={{ display: "none" }}
+            type="file"
+            id="bot-file-input"
+            name="bot-file-input"
+          />
+        </label>
       </Box>
     </Box>
   );
