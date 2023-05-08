@@ -8,4 +8,5 @@ export default defineConfig({
   build: {
     sourcemap: true,
   },
+  mode: "development",
 });

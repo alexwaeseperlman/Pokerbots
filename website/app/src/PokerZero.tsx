@@ -7,6 +7,7 @@ import { useUser } from "./state";
 import logoImage from "../static/assets/logo.webp";
 import { TopBar, BottomBar } from "./components/AppBar";
 import { Box, Container } from "@mui/system";
+import Leaderboard from "./Leaderboard";
 
 function HeaderFooter(props: React.PropsWithChildren<{}>) {
   const user = useUser();
@@ -16,7 +17,7 @@ function HeaderFooter(props: React.PropsWithChildren<{}>) {
     <Box display={"flex"} flexDirection={"column"} height="100%">
       <TopBar />
       {props.children}
-      <Box flexGrow={1}>test</Box>
+      <Box flexGrow={1}></Box>
       <BottomBar />
     </Box>
   );
@@ -39,6 +40,14 @@ export default function PokerZero() {
           element={
             <HeaderFooter>
               <ManageTeam />
+            </HeaderFooter>
+          }
+        />
+        <Route
+          path="leaderboard"
+          element={
+            <HeaderFooter>
+              <Leaderboard />
             </HeaderFooter>
           }
         />

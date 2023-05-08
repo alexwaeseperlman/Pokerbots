@@ -30,7 +30,7 @@ function BarItem(props: {
             height: "2px",
             width: props.selected ? "100%" : "0",
             background: "white",
-            transition: "width 0.3s ease-out",
+            transition: "width 0.1s ease-out",
           },
           ":hover::after": {
             width: props.command ? "100%" : "0",
@@ -47,7 +47,11 @@ export function TopBar() {
   const user = useUser();
   return (
     <Box className={menu_bar}>
-      <IconButton>
+      <IconButton
+        onClick={() => {
+          window.location.href = "/";
+        }}
+      >
         <Logo />
       </IconButton>
       <Box
@@ -102,7 +106,7 @@ export function BottomBar() {
           flexGrow: 1,
         }}
       >
-        <BarItem label="© Poker Zero 2023" />
+        <BarItem label="© Poker Bot League 2023" />
       </Box>
       <Box className={nav_group}>
         <BarItem label="REPORT AN ISSUE" command={() => {}} />

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useUser } from "./state";
+import { useUser } from "../state";
 import randomTeamName from "./random-name";
 
 export default function CreateTeam() {

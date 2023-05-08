@@ -5,16 +5,23 @@ export type User = {
   email: string;
   display_name: string;
 };
-const userAtom = atom<User | null | undefined>(undefined);
+const userAtom = atom<User | null | undefined>(
+  (JSON.parse(localStorage.getItem("user") || "null") ?? undefined) as
+    | User
+    | null
+    | undefined
+);
 
 export const useUser = () => {
   const [user, setUser] = useAtom(userAtom);
   // fetch user
   useEffect(() => {
     (async () => {
-      const data: User = (
+      const data: User = (await (
         await fetch("/api/my-account")
-      ).json() as unknown as User;
+      ).json()) as unknown as User;
+      console.log(data);
+      localStorage.setItem("user", JSON.stringify(data));
       setUser(data);
     })();
   }, []);
@@ -30,13 +37,21 @@ export type Team = {
   elo: number | null;
 };
 
-const teamAtom = atom<Team | null | undefined>(undefined);
+const teamAtom = atom<Team | null | undefined>(
+  (JSON.parse(localStorage.getItem("team") || "null") ?? undefined) as
+    | Team
+    | null
+    | undefined
+);
 
 export const useTeam = () => {
   const [team, setTeam] = useAtom(teamAtom);
   const fetchTeam = async () => {
-    const data: Team = (await fetch("/api/my-team")).json() as unknown as Team;
+    const data: Team = (await (
+      await fetch("/api/my-team")
+    ).json()) as unknown as Team;
     setTeam(data);
+    localStorage.setItem("team", JSON.stringify(data));
   };
   // fetch team
   useEffect(() => {
@@ -44,9 +59,3 @@ export const useTeam = () => {
   }, []);
   return [team, fetchTeam] as const;
 };
-
-export type ServerMessage = {
-  message: string;
-  type: "success" | "error";
-};
-const serverMessageAtom = atom<ServerMessage | null | undefined>(undefined);

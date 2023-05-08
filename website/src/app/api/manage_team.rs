@@ -41,9 +41,7 @@ pub async fn create_team(
     }
     // You can't create a team if you're already in one
     if login::get_team_data(&session).is_some() {
-        return Ok(HttpResponse::Found()
-            .append_header(("Location", "/manage-team"))
-            .finish());
+        return Ok(HttpResponse::Conflict().body("{\"error\": \"You are already in a team.\"}"));
     }
     let conn = &mut (*DB_CONNECTION).get().unwrap();
     let new_id = diesel::insert_into(teams::dsl::teams)

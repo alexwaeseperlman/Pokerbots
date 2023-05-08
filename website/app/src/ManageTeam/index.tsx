@@ -1,31 +1,31 @@
 import React, { useState } from "react";
 import { useTeam, useUser } from "../state";
-import CreateTeam from "../CreateTeam";
+import CreateTeam from "./CreateTeam";
 import Login from "../Login";
 import Box from "@mui/system/Box";
 import { Container } from "@mui/system";
 import { team_member_table_row } from "./styles.module.css";
 import AddIcon from "@mui/icons-material/Add";
 import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
-import {
-  Table,
-  TableBody,
-  TableCell as MuiTableCell,
-  TableContainer,
-  TableRow,
-  styled,
-  Button,
-} from "@mui/material";
+import TableBody from "@mui/material/TableBody";
+import MuiTableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableRow from "@mui/material/TableRow";
+import Table from "@mui/material/Table";
+import { styled } from "@mui/material/styles";
+import Button from "@mui/material/Button";
+const DataGrid = React.lazy(() =>
+  import("@mui/x-data-grid").then((mod) => ({ default: mod.DataGrid }))
+);
 
 const TableCell = styled(MuiTableCell)({
   borderBottom: "none",
 });
 const TableButton = styled((props) => <Button {...props} disableRipple />)({
   fontSize: "12px",
-  fontWeight: "bold",
+  fontWeight: 300,
   textAlign: "left",
   justifyContent: "left",
-  fontWeight: 300,
   textTransform: "none",
   padding: 0,
   cursor: "pointer",
@@ -303,29 +303,29 @@ export default function ManageTeam() {
     return (
       <>
         <TeamBar />
-        <br />
-        {team.members.map((member) => (
-          <>{member.display_name}</>
-        ))}
-        <form action="/api/delete-team">
-          <button
-            type="submit"
-            onClick={function confirmDelete(event) {
-              if (
-                confirm(
-                  "Are you sure you want to delete your team? This action cannot be undone."
-                )
-              ) {
-                // Proceed with form submission
-              } else {
-                // Prevent form submission
-                event.preventDefault();
-              }
-            }}
-          >
-            Delete Team
-          </button>
-        </form>
+        <Container>
+          <DataGrid
+            columns={[
+              { field: "bot-name", headerName: "Bot name", width: 130 },
+              { field: "uploaded", headerName: "Uploaded", width: 130 },
+              { field: "uploaded-by", headerName: "Uploaded by", width: 130 },
+            ]}
+            rows={[
+              {
+                id: 1,
+                "bot-name": "Bot 1",
+                uploaded: "2021-10-01",
+                "uploaded-by": "User 1",
+              },
+              {
+                id: 2,
+                "bot-name": "Bot 2",
+                uploaded: "2021-10-02",
+                "uploaded-by": "User 2",
+              },
+            ]}
+          ></DataGrid>
+        </Container>
       </>
     );
   } else if (user) {
