@@ -1,0 +1,36 @@
+.menu_bar {
+  display: flex;
+  margin: 0;
+  background: linear-gradient(89.88deg, #cc385a 0%, #e76fbe 100%);
+  border: none;
+  gap: 10px;
+  padding: 6px 15px;
+  height: 40px;
+
+  flex-direction: row;
+}
+
+.bar_item {
+  display: flex;
+  font-family: "Figtree";
+  font-style: normal;
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 17px;
+
+  letter-spacing: 1.25px;
+
+  color: #ffffff;
+  align-items: center;
+}
+
+.bar_item_clickable:hover {
+  cursor: pointer;
+  user-select: none;
+}
+
+.nav_group {
+  display: flex;
+  flex-direction: row;
+  gap: 36px;
+}

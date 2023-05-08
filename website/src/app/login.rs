@@ -7,8 +7,8 @@ use std::env;
 
 use crate::{
     config::{CLIENT_ID, DB_CONNECTION, REDIRECT_URI},
-    models::{NewUser, Team, User},
-    schema::{teams, users},
+    models::{NewUser, Team, TeamInvite, User},
+    schema::{team_invites, teams, users},
 };
 
 use super::api::ServerMessage;
@@ -26,6 +26,7 @@ pub struct TeamData {
     pub members: Vec<UserData>,
     pub owner: String,
     pub elo: Option<i32>,
+    pub invites: Vec<String>,
 }
 
 // TODO: right now state is just the return address,
@@ -121,12 +122,21 @@ pub fn get_team_data(session: &Session) -> Option<TeamData> {
         })
         .collect();
 
+    let invites: Vec<String> = team_invites::dsl::team_invites
+        .filter(team_invites::dsl::teamid.eq(t.id))
+        .load::<TeamInvite>(conn)
+        .expect("Unable to load team invites")
+        .into_iter()
+        .map(|invite: TeamInvite| invite.invite_code)
+        .collect();
+
     Some(TeamData {
         id: t.id,
         team_name: t.team_name.clone(),
         members,
         owner: t.owner.clone(),
         elo: t.elo,
+        invites,
     })
 }
 // By the end of this method, if given a valid authorization code, the email address field in the session should be set

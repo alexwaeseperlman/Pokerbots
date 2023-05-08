@@ -5,38 +5,20 @@ import ManageTeam from "./ManageTeam";
 import { useUser } from "./state";
 
 import logoImage from "../static/assets/logo.webp";
+import { TopBar, BottomBar } from "./components/AppBar";
+import { Box, Container } from "@mui/system";
 
 function HeaderFooter(props: React.PropsWithChildren<{}>) {
   const user = useUser();
   const navigate = useNavigate();
 
   return (
-    <>
-      <body>
-        <header>
-          <div className="logo" onClick={() => navigate("/")}>
-            <img src={logoImage} alt="Logo" />
-            <h1>PokerZero</h1>
-          </div>
-
-          <nav>
-            <a href="/manage-team">Dashboard</a>
-            <a href="/leaderboard">Leaderboard</a>
-            <a href="https://pokerzero.gitbook.io/pokerzero/" target="_blank">
-              Documentation
-            </a>
-            <a href="mailto:pokerzero3@gmail.com">Contact</a>
-          </nav>
-          <div className="spacer"></div>
-          {user && <a href="/api/signout">Sign out</a>}
-        </header>
-        {props.children}
-        <footer>
-          Built with &#9829; by Alex Waese-Perlman, Tommy He, Bonnie Li and
-          Santosh Passoubady
-        </footer>
-      </body>
-    </>
+    <Box display={"flex"} flexDirection={"column"} height="100%">
+      <TopBar />
+      {props.children}
+      <Box flexGrow={1}>test</Box>
+      <BottomBar />
+    </Box>
   );
 }
 

@@ -25,6 +25,7 @@ export type Team = {
   id: number;
   team_name: string;
   members: User[];
+  invites: string[];
   owner: string;
   elo: number | null;
 };
@@ -33,16 +34,15 @@ const teamAtom = atom<Team | null | undefined>(undefined);
 
 export const useTeam = () => {
   const [team, setTeam] = useAtom(teamAtom);
+  const fetchTeam = async () => {
+    const data: Team = (await fetch("/api/my-team")).json() as unknown as Team;
+    setTeam(data);
+  };
   // fetch team
   useEffect(() => {
-    (async () => {
-      const data: Team = (
-        await fetch("/api/my-team")
-      ).json() as unknown as Team;
-      setTeam(data);
-    })();
+    fetchTeam();
   }, []);
-  return team;
+  return [team, fetchTeam] as const;
 };
 
 export type ServerMessage = {

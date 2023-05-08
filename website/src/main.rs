@@ -54,6 +54,7 @@ async fn main() -> std::io::Result<()> {
             .service(api::manage_team::leave_team)
             .service(api::manage_team::make_invite)
             .service(api::manage_team::join_team)
+            .service(api::manage_team::cancel_invite)
             .service(api::data::my_account)
             .service(api::data::server_message)
             .service(api::data::my_team)

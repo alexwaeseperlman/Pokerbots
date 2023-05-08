@@ -1,0 +1,11 @@
+@import url("https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700&family=Roboto+Slab&family=Roboto:wght@400;900&display=swap");
+
+h1 {
+  font-weight: 700;
+  font-size: 60px;
+}
+
+* {
+  font-family: "Figtree", sans-serif;
+  box-sizing: border-box;
+}

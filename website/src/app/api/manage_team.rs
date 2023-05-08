@@ -111,9 +111,7 @@ pub async fn leave_team(session: Session) -> actix_web::Result<HttpResponse> {
     let team = login::get_team_data(&session);
     // You can't delete a team if you're not in one or you're the owner
     if user.is_none() || team.is_none() || user.clone().unwrap().email == team.unwrap().owner {
-        return Ok(HttpResponse::Found()
-            .append_header(("Location", "/manage-team"))
-            .finish());
+        return Ok(HttpResponse::NotAcceptable().body("{\"error\": \"You can't leave the team\""));
     }
     let conn = &mut (*DB_CONNECTION).get().unwrap();
 
@@ -130,19 +128,22 @@ pub async fn leave_team(session: Session) -> actix_web::Result<HttpResponse> {
         .append_header(("Location", "/manage-team"))
         .finish())
 }
-// TODO: there should be some kind of rate limiting here
-// Maybe if there was one created within the last 5 seconds, return that?
 #[get("/api/make-invite")]
 pub async fn make_invite(session: Session) -> actix_web::Result<HttpResponse> {
     let user = login::get_user_data(&session);
     let team = login::get_team_data(&session);
     // You can't join a team if you are already on one or if you aren't logged in
     // Also only the owner can create a team
+
+    // if the number of invites plus the number of users is at the limit, then don't create an invite
+    if let Some(team) = &team {
+        if team.invites.len() + team.members.len() >= crate::config::TEAM_SIZE as usize {
+            return Ok(HttpResponse::NotAcceptable().body("{\"error\": \"Team is full\"}"));
+        }
+    }
+
     if user.is_none() || team.is_none() || user.unwrap().email != team.clone().unwrap().owner {
-        session.insert("message", "You don't have permission to do that.")?;
-        return Ok(HttpResponse::Found()
-            .append_header(("Location", "/manage-team"))
-            .finish());
+        return Ok(HttpResponse::NotAcceptable().body("{\"error\": \"Not able to make invite\"}"));
     }
     // Insert an invite with expiry date 24 hours from now
     let day: i64 = 24 * 3600 * 1000;
@@ -154,6 +155,37 @@ pub async fn make_invite(session: Session) -> actix_web::Result<HttpResponse> {
             invite_code: format!("{:02x}", rand::thread_rng().gen::<u128>()),
             teamid: team.clone().unwrap().id,
         })
+        .returning(team_invites::dsl::invite_code)
+        .get_result::<String>(conn)
+        .map_err(|e| {
+            actix_web::error::ErrorInternalServerError(format!("Database insert error: {}", e))
+        })?;
+    Ok(HttpResponse::Ok().body(out))
+}
+
+#[derive(Deserialize)]
+pub struct CancelTeamQuery {
+    pub invite_code: String,
+}
+
+#[get("/api/cancel-invite")]
+pub async fn cancel_invite(
+    session: Session,
+    web::Query(CancelTeamQuery { invite_code }): web::Query<CancelTeamQuery>,
+) -> actix_web::Result<HttpResponse> {
+    let user = login::get_user_data(&session);
+    let team = login::get_team_data(&session);
+
+    if user.is_none() || team.is_none() || user.unwrap().email != team.clone().unwrap().owner {
+        return Ok(HttpResponse::NotAcceptable()
+            .body("{\"error\": \"Only team owner can cancel invites.\"}"));
+    }
+    // Insert an invite with expiry date 24 hours from now
+    let day: i64 = 24 * 3600 * 1000;
+    let now: i64 = chrono::offset::Utc::now().timestamp();
+    let conn = &mut (*DB_CONNECTION).get().unwrap();
+    let out = diesel::delete(team_invites::dsl::team_invites)
+        .filter(team_invites::dsl::invite_code.eq(&invite_code))
         .returning(team_invites::dsl::invite_code)
         .get_result::<String>(conn)
         .map_err(|e| {
