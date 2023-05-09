@@ -120,6 +120,7 @@ export default function HomePage() {
             <Container
               sx={{
                 width: "600px",
+                textAlign: "center",
               }}
             >
               The competition begins on November 1, 2023. For sponsorship

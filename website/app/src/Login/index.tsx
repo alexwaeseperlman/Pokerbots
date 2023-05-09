@@ -84,6 +84,7 @@ export default function Login() {
           justifyContent: "center",
           width: "500px",
           color: "white",
+          textAlign: "center",
         }}
       >
         Log in to your university email account with one of the following
