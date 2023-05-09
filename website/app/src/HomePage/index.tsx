@@ -123,7 +123,7 @@ export default function HomePage() {
               }}
             >
               The competition begins on November 1, 2023. For sponsorship
-              inquiries, please contact pokerbotleague@mcgill.ca. Lorem ipsum
+              inquiries, please contact pokerbotleague@mcgill.ca.
             </Container>
           </Box>
           <Box />

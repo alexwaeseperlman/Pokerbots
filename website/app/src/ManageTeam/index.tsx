@@ -36,7 +36,6 @@ const TableButton = styled((props) => <Button {...props} disableRipple />)({
 
 function BotUpload() {
   const [drag, setDrag] = useState(false);
-  const [inPage, setInPage] = useState(false);
 
   return (
     <Box
@@ -71,6 +70,7 @@ function BotUpload() {
       }}
       onDrop={(e) => {
         e.preventDefault();
+        console.log(e.dataTransfer.files);
         setDrag(false);
         console.log("file dragged");
       }}
