@@ -273,15 +273,14 @@ pub async fn pfp_upload_url(
         return Ok(HttpResponse::Unauthorized().body("{\"error\": \"Not team owner\"}"));
     }
     let user = user.unwrap();
-    let presigning_config = PresigningConfig::expires_in(std::time::Duration::from_millis(60000))
+    let presigning_config = PresigningConfig::expires_in(std::time::Duration::from_millis(1000))
         .map_err(|e| {
-        actix_web::error::ErrorInternalServerError(format!("Unable to make upload link: {}", e))
-    })?;
+            actix_web::error::ErrorInternalServerError(format!("Unable to make upload link: {}", e))
+        })?;
     let req = s3_client
         .put_object()
         .bucket("pokerbots-pfp")
         .key(format!("{}.png", team.unwrap().id))
-        .content_type("image/png")
         .acl(s3::types::ObjectCannedAcl::PublicRead)
         .presigned(presigning_config)
         .await

@@ -21,10 +21,10 @@
 
   color: #ffffff;
   align-items: center;
+  cursor: pointer;
 }
 
 .bar_item_clickable:hover {
-  cursor: pointer;
   user-select: none;
 }
 

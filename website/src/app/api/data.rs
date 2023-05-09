@@ -51,7 +51,7 @@ pub async fn pfp_url(
 
     let s = req.location_constraint().unwrap().as_ref().to_string();
     Ok(HttpResponse::Ok().body(format!(
-        "{}.s3.{}.amazonaws.com",
+        "https://{}.s3.{}.amazonaws.com",
         std::env::var("PFP_S3_BUCKET").unwrap(),
         if s == "" {
             // https://docs.rs/aws-sdk-s3/latest/aws_sdk_s3/operation/get_bucket_location/struct.GetBucketLocationOutput.html#method.location_constraint

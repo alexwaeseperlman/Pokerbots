@@ -63,6 +63,24 @@ async fn main() -> std::io::Result<()> {
         .await
         .unwrap();
 
+    s3_client
+        .put_bucket_cors()
+        .bucket(std::env::var("PFP_S3_BUCKET").unwrap())
+        .cors_configuration(
+            aws_sdk_s3::types::CorsConfiguration::builder()
+                .cors_rules(
+                    aws_sdk_s3::types::CorsRule::builder()
+                        .allowed_headers("*")
+                        .allowed_methods("PUT")
+                        .allowed_origins("*")
+                        .build(),
+                )
+                .build(),
+        )
+        .send()
+        .await
+        .unwrap();
+
     // Generate the list of routes in your App
     HttpServer::new(move || {
         let session_middleware =

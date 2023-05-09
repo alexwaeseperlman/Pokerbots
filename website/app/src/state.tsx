@@ -59,3 +59,25 @@ export const useTeam = () => {
   }, []);
   return [team, fetchTeam] as const;
 };
+
+const pfpEndpointAtom = atom<string | null | undefined>(
+  (localStorage.getItem("pfpEndpoint") ?? null ?? undefined) as
+    | string
+    | null
+    | undefined
+);
+export const usePfpEndpoint = () => {
+  const [pfpEndpoint, setPfpEndpoint] = useAtom(pfpEndpointAtom);
+  const fetchPfpEndpoint = async () => {
+    const data: string = (await (
+      await fetch("/api/pfp-url")
+    ).text()) as unknown as string;
+    setPfpEndpoint(data);
+    localStorage.setItem("pfpEndpoint", data);
+  };
+  // fetch pfpEndpoint
+  useEffect(() => {
+    fetchPfpEndpoint();
+  }, []);
+  return pfpEndpoint;
+};
