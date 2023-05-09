@@ -14,6 +14,9 @@ import TableRow from "@mui/material/TableRow";
 import Table from "@mui/material/Table";
 import { styled } from "@mui/material/styles";
 import Button from "@mui/material/Button";
+
+import { primary_background, secondary_background } from "../styles.module.css";
+
 const DataGrid = React.lazy(() =>
   import("@mui/x-data-grid").then((mod) => ({ default: mod.DataGrid }))
 );
@@ -40,7 +43,8 @@ function BotUpload() {
       sx={(theme) => ({
         borderRadius: theme.shape.borderRadius,
         backgroundColor: "white",
-        border: `#FFB5C6 solid 2px`,
+        transition: "ease-out 0.2s",
+        border: `#c4b7ff solid ${2}px`,
         width: "188px",
         height: "98px",
         display: "flex",
@@ -50,7 +54,7 @@ function BotUpload() {
         justifyContent: "center",
         alignItems: "center",
         ...(drag && {
-          backgroundColor: "#FFB5C6",
+          backgroundColor: "#c4b7ff",
         }),
       })}
       onDragEnter={(e) => {
@@ -90,7 +94,7 @@ function BotUpload() {
         Drag and drop files here or{" "}
         <label
           style={{
-            color: "#CC385A",
+            color: "#392889",
             border: "none",
             textDecoration: "none",
             cursor: "pointer",
@@ -116,8 +120,8 @@ function TeamBar() {
     throw new Error("Cannot render team bar when not logged in with a team");
   return (
     <Box
+      className={primary_background}
       sx={{
-        background: "linear-gradient(89.88deg, #CD395C 0%, #E76FBE 100%)",
         color: "white",
         padding: 2,
       }}
@@ -309,29 +313,38 @@ export default function ManageTeam() {
     return (
       <>
         <TeamBar />
-        <Container>
-          <DataGrid
-            columns={[
-              { field: "bot-name", headerName: "Bot name", width: 130 },
-              { field: "uploaded", headerName: "Uploaded", width: 130 },
-              { field: "uploaded-by", headerName: "Uploaded by", width: 130 },
-            ]}
-            rows={[
-              {
-                id: 1,
-                "bot-name": "Bot 1",
-                uploaded: "2021-10-01",
-                "uploaded-by": "User 1",
-              },
-              {
-                id: 2,
-                "bot-name": "Bot 2",
-                uploaded: "2021-10-02",
-                "uploaded-by": "User 2",
-              },
-            ]}
-          ></DataGrid>
-        </Container>
+        <Box
+          className={secondary_background}
+          sx={{
+            width: "100%",
+            height: "100%",
+            padding: "20px",
+          }}
+        >
+          <Container>
+            <DataGrid
+              columns={[
+                { field: "bot-name", headerName: "Bot name", width: 130 },
+                { field: "uploaded", headerName: "Uploaded", width: 130 },
+                { field: "uploaded-by", headerName: "Uploaded by", width: 130 },
+              ]}
+              rows={[
+                {
+                  id: 1,
+                  "bot-name": "Bot 1",
+                  uploaded: "2021-10-01",
+                  "uploaded-by": "User 1",
+                },
+                {
+                  id: 2,
+                  "bot-name": "Bot 2",
+                  uploaded: "2021-10-02",
+                  "uploaded-by": "User 2",
+                },
+              ]}
+            ></DataGrid>
+          </Container>
+        </Box>
       </>
     );
   } else if (user) {

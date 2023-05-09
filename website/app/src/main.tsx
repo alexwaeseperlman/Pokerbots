@@ -1,7 +1,7 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
-import "./styles.css";
+import "./styles.module.css";
 
 //import "../static/css/styles.css";
 import PokerZero from "./PokerZero";

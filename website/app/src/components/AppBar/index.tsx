@@ -11,6 +11,8 @@ import Box from "@mui/system/Box";
 import Logo from "../Logo";
 import IconButton from "@mui/material/IconButton";
 
+import { primary_background } from "../../styles.module.css";
+
 function BarItem(props: {
   label: string;
   selected?: boolean;
@@ -46,7 +48,7 @@ function BarItem(props: {
 export function TopBar() {
   const user = useUser();
   return (
-    <Box className={menu_bar}>
+    <Box className={`${menu_bar} ${primary_background}`}>
       <IconButton
         onClick={() => {
           window.location.href = "/";
@@ -93,13 +95,7 @@ export function TopBar() {
 export function BottomBar() {
   const user = useUser();
   return (
-    <Box
-      className={menu_bar}
-      sx={{
-        background:
-          "linear-gradient(0deg, rgba(3, 0, 21, 0.58), rgba(3, 0, 21, 0.58)), linear-gradient(89.88deg, #CC385A 0%, #E76FBE 100%)",
-      }}
-    >
+    <Box className={`${menu_bar} ${primary_background}`}>
       <Box
         className={nav_group}
         style={{

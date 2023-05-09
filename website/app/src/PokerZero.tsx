@@ -8,13 +8,19 @@ import logoImage from "../static/assets/logo.webp";
 import { TopBar, BottomBar } from "./components/AppBar";
 import { Box, Container } from "@mui/system";
 import Leaderboard from "./Leaderboard";
+import { primary_background } from "./styles.module.css";
 
 function HeaderFooter(props: React.PropsWithChildren<{}>) {
   const user = useUser();
   const navigate = useNavigate();
 
   return (
-    <Box display={"flex"} flexDirection={"column"} height="100%">
+    <Box
+      display={"flex"}
+      flexDirection={"column"}
+      height="100%"
+      className={primary_background}
+    >
       <TopBar />
       {props.children}
       <Box flexGrow={1}></Box>

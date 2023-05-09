@@ -12,6 +12,7 @@ import { signup_input, signup_button } from "./styles.module.css";
 import Container from "@mui/system/Container";
 import bot_poker_image from "./bot_poker.png";
 import styled from "@mui/system/styled";
+import { primary_background } from "../styles.module.css";
 
 const SignupButton = styled(Button)(({ theme }) => ({
   height: "40px",
@@ -33,11 +34,10 @@ export default function HomePage() {
   return (
     <>
       <Box
+        className={`${primary_background}`}
         sx={{
-          backgroundImage: `linear-gradient(89.88deg, #CC385A 0%, #E76FBE 100%)`,
-
           width: "100%",
-          height: "100%",
+          minHeight: "90%",
           color: "white",
           zIndex: 1,
         }}
@@ -45,9 +45,11 @@ export default function HomePage() {
         <Box
           sx={{
             backgroundImage: `url(${bot_poker_image})`,
+            filter: "grayscale(100%)",
             opacity: 0.4,
             backgroundPosition: "center",
-            position: "fixed",
+            position: "absolute",
+            top: 0,
             backgroundSize: "contain",
             zIndex: -1,
             backgroundRepeat: "no-repeat",
@@ -56,12 +58,13 @@ export default function HomePage() {
             height: "100%",
             display: "block",
             overflow: "hidden",
+            pointerEvents: "none",
           }}
         ></Box>
         <Box
           sx={{
             zIndex: 3,
-
+            marginTop: "20px",
             width: "100%",
             height: "100%",
             display: "flex",
@@ -75,6 +78,7 @@ export default function HomePage() {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
+              marginTop: "50px",
             }}
           >
             <Logo
@@ -108,14 +112,18 @@ export default function HomePage() {
               <SignupButton>Join now</SignupButton>
             </Box>
           </Box>
-          <Box>
+          <Box
+            sx={{
+              marginTop: "50px",
+            }}
+          >
             <Container
               sx={{
                 width: "600px",
               }}
             >
               The competition begins on November 1, 2023. For sponsorship
-              inquiries, please contact pokerbotleague@mcgill.ca.
+              inquiries, please contact pokerbotleague@mcgill.ca. Lorem ipsum
             </Container>
           </Box>
           <Box />

@@ -9,3 +9,11 @@ h1 {
   font-family: "Figtree", sans-serif;
   box-sizing: border-box;
 }
+
+.primary_background {
+  background: linear-gradient(269.89deg, #392889 0%, #191335 100%);
+}
+
+.secondary_background {
+  background: white;
+}

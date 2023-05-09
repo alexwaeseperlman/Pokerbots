@@ -1,6 +1,6 @@
 import Container from "@mui/system/Container";
 import React from "react";
-import { Button, SvgIcon, SvgIconProps } from "@mui/material";
+import { Button, SvgIcon, SvgIconProps, Box } from "@mui/material";
 import styled from "@mui/system/styled";
 function MicrosoftLogo(props: SvgIconProps) {
   return (
@@ -57,7 +57,6 @@ const LoginButton = styled(Button)(({ theme }) => ({
   margin: theme.spacing(1),
   padding: theme.spacing(1),
   color: "white",
-  background: "linear-gradient(89.88deg,#cc385a 0%,#e76fbe 100%)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -68,23 +67,34 @@ const LoginButton = styled(Button)(({ theme }) => ({
 
 export default function Login() {
   return (
-    <>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        height: "100%",
+      }}
+    >
       <Container
         sx={{
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          height: "100vh",
+          width: "500px",
+          color: "white",
         }}
       >
+        Log in to your university email account with one of the following
+        providers:
         <LoginButton
           onClick={() => {
             window.location.href = "/api/login-provider?provider=microsoft";
           }}
         >
           <MicrosoftLogo />
-          Log in with Microsoft
+          With Microsoft
         </LoginButton>
         <LoginButton
           onClick={() => {
@@ -92,9 +102,9 @@ export default function Login() {
           }}
         >
           <GoogleLogo />
-          Log in with Google
+          With Google
         </LoginButton>
       </Container>
-    </>
+    </Box>
   );
 }
