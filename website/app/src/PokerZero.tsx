@@ -23,7 +23,7 @@ function HeaderFooter(props: React.PropsWithChildren<{}>) {
     >
       <TopBar />
       {props.children}
-      <Box flexGrow={1}></Box>
+
       <BottomBar />
     </Box>
   );

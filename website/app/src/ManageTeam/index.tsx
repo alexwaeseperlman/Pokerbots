@@ -46,7 +46,7 @@ export default function ManageTeam() {
           className={secondary_background}
           sx={{
             width: "100%",
-            height: "100%",
+            flexGrow: 1,
             padding: "20px",
           }}
         >

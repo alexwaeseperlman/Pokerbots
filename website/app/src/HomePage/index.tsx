@@ -130,6 +130,7 @@ export default function HomePage() {
           <Box />
         </Box>
       </Box>
+      <Box flexGrow={1}></Box>
     </>
   );
 }
