@@ -10,7 +10,10 @@ use actix_web::{
     web, App, HttpMessage, HttpRequest, HttpServer,
 };
 use aws_config;
-use aws_sdk_s3::types::{OwnershipControls, OwnershipControlsRule, PublicAccessBlockConfiguration};
+use aws_sdk_s3::types::{
+    builders::CreateBucketConfigurationBuilder, CreateBucketConfiguration, ObjectOwnership,
+    OwnershipControls, OwnershipControlsRule, PublicAccessBlockConfiguration,
+};
 use futures_util::future::FutureExt;
 
 use pokerbots::app::{api, login};
