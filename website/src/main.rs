@@ -9,6 +9,8 @@ use actix_web::{
     middleware::Logger,
     web, App, HttpMessage, HttpRequest, HttpServer,
 };
+use aws_config;
+use aws_sdk_s3::types::{OwnershipControls, OwnershipControlsRule, PublicAccessBlockConfiguration};
 use futures_util::future::FutureExt;
 
 use pokerbots::app::{api, login};
@@ -23,6 +25,40 @@ async fn main() -> std::io::Result<()> {
     std::env::set_var("RUST_LOG", "debug");
     env_logger::init();
     dotenvy::dotenv().ok();
+
+    let aws_config = aws_config::load_from_env().await;
+
+    let s3_client = web::Data::new(aws_sdk_s3::Client::new(&aws_config));
+
+    s3_client
+        .create_bucket()
+        .bucket(std::env::var("PFP_S3_BUCKET").unwrap())
+        .send()
+        .await
+        .unwrap();
+
+    s3_client
+        .delete_public_access_block()
+        .bucket(std::env::var("PFP_S3_BUCKET").unwrap())
+        .send()
+        .await
+        .unwrap();
+
+    s3_client
+        .put_bucket_ownership_controls()
+        .bucket(std::env::var("PFP_S3_BUCKET").unwrap())
+        .ownership_controls(
+            OwnershipControls::builder()
+                .rules(
+                    OwnershipControlsRule::builder()
+                        .object_ownership(ObjectOwnership::BucketOwnerPreferred)
+                        .build(),
+                )
+                .build(),
+        )
+        .send()
+        .await
+        .unwrap();
 
     // Generate the list of routes in your App
     HttpServer::new(move || {
@@ -45,6 +81,7 @@ async fn main() -> std::io::Result<()> {
                 log::debug!("{}", req.uri());
                 srv.call(req).map(|res| res)
             })
+            .app_data(s3_client.clone())
             .wrap(Logger::new("%a %{User-Agent}i"))
             .wrap(session_middleware)
             .route("/api/login", web::get().to(login::handle_login))
@@ -53,11 +90,13 @@ async fn main() -> std::io::Result<()> {
             .service(api::manage_team::delete_team)
             .service(api::manage_team::leave_team)
             .service(api::manage_team::make_invite)
+            .service(api::manage_team::pfp_upload_url)
             .service(api::manage_team::join_team)
             .service(api::manage_team::cancel_invite)
             .service(api::data::my_account)
             .service(api::data::server_message)
             .service(api::data::my_team)
+            .service(api::data::pfp_url)
             .service(api::signout::signout)
             // All remaining paths go to /app/dist, and fallback to index.html for client side routing
             .service(

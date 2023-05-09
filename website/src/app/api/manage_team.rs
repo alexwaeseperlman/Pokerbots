@@ -7,10 +7,13 @@ use crate::{
 };
 use actix_session::Session;
 use actix_web::{get, web, HttpResponse};
+use aws_sdk_s3 as s3;
+use aws_sdk_s3::presigning::PresigningConfig;
 use chrono;
 use diesel::prelude::*;
 use rand::{self, Rng};
 use serde::Deserialize;
+use serde_json::json;
 
 #[derive(Deserialize)]
 pub struct CreateTeamQuery {
@@ -103,6 +106,7 @@ pub async fn delete_team(session: Session) -> actix_web::Result<HttpResponse> {
         .append_header(("Location", "/manage-team"))
         .finish())
 }
+
 #[get("/api/leave-team")]
 pub async fn leave_team(session: Session) -> actix_web::Result<HttpResponse> {
     let user = login::get_user_data(&session);
@@ -253,4 +257,43 @@ pub async fn join_team(
     Ok(HttpResponse::Found()
         .append_header(("Location", "/manage-team"))
         .finish())
+}
+
+#[get("/api/pfp-upload-url")]
+pub async fn pfp_upload_url(
+    s3_client: actix_web::web::Data<s3::Client>,
+    session: Session,
+) -> actix_web::Result<HttpResponse> {
+    let user = login::get_user_data(&session);
+    let team = login::get_team_data(&session);
+    if user.is_none() {
+        return Ok(HttpResponse::Unauthorized().body("{\"error\": \"Not logged in\"}"));
+    }
+    if team.is_none() || team.clone().unwrap().owner != user.clone().unwrap().email {
+        return Ok(HttpResponse::Unauthorized().body("{\"error\": \"Not team owner\"}"));
+    }
+    let user = user.unwrap();
+    let presigning_config = PresigningConfig::expires_in(std::time::Duration::from_millis(60000))
+        .map_err(|e| {
+        actix_web::error::ErrorInternalServerError(format!("Unable to make upload link: {}", e))
+    })?;
+    let req = s3_client
+        .put_object()
+        .bucket("pokerbots-pfp")
+        .key(format!("{}.png", team.unwrap().id))
+        .content_type("image/png")
+        .acl(s3::types::ObjectCannedAcl::PublicRead)
+        .presigned(presigning_config)
+        .await
+        .map_err(|e| {
+            actix_web::error::ErrorNotFound(format!("Unable to make upload link {}", e))
+        })?;
+    let headers = req.headers();
+    Ok(HttpResponse::Ok().json(json!({
+        "headers": headers
+            .iter()
+            .map(|(k, v)| (k.as_str(), v.to_str().unwrap()))
+            .collect::<Vec<(&str, &str)>>(),
+        "url": req.uri().to_string(),
+    })))
 }
