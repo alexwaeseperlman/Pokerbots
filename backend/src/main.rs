@@ -14,21 +14,28 @@ use aws_sdk_s3::types::{
     builders::CreateBucketConfigurationBuilder, CreateBucketConfiguration, ObjectOwnership,
     OwnershipControls, OwnershipControlsRule, PublicAccessBlockConfiguration,
 };
+use diesel_migrations::*;
 use futures_util::future::FutureExt;
 
-use pokerbots::app::{api, login};
+use pokerbots::{
+    app::{api, login},
+    config::DB_CONNECTION,
+};
 
 fn get_secret_key() -> cookie::Key {
     let key = std::env::var("SECRET_KEY").expect("SECRET_KEY must be set in .env");
     cookie::Key::from(key.as_bytes())
 }
 
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     std::env::set_var("RUST_LOG", "debug");
     env_logger::init();
     dotenvy::dotenv().ok();
 
+    let conn = &mut (*DB_CONNECTION).get().unwrap();
+    conn.run_pending_migrations(MIGRATIONS).unwrap();
     let aws_config = aws_config::load_from_env().await;
 
     let s3_client = web::Data::new(aws_sdk_s3::Client::new(&aws_config));
