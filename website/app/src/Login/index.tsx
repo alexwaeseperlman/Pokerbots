@@ -66,6 +66,11 @@ const LoginButton = styled(Button)(({ theme }) => ({
 }));
 
 export default function Login() {
+  console.log(
+    `/api/login-provider?provider=microsoft&state=${encodeURIComponent(
+      window.location.href
+    )}`
+  );
   return (
     <Box
       sx={{
@@ -91,7 +96,9 @@ export default function Login() {
         providers:
         <LoginButton
           onClick={() => {
-            window.location.href = "/api/login-provider?provider=microsoft";
+            window.location.href = `/api/login-provider?provider=microsoft&state=${encodeURIComponent(
+              window.location.href
+            )}`;
           }}
         >
           <MicrosoftLogo />

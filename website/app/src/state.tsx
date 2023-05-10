@@ -18,7 +18,7 @@ export const useUser = () => {
   useEffect(() => {
     (async () => {
       const data: User = (await (
-        await fetch("/api/my-account")
+        await fetch(`${apiUrl}/my-account`)
       ).json()) as unknown as User;
       console.log(data);
       localStorage.setItem("user", JSON.stringify(data));
@@ -48,7 +48,7 @@ export const useTeam = () => {
   const [team, setTeam] = useAtom(teamAtom);
   const fetchTeam = async () => {
     const data: Team = (await (
-      await fetch("/api/my-team")
+      await fetch(`${apiUrl}/my-team`)
     ).json()) as unknown as Team;
     setTeam(data);
     localStorage.setItem("team", JSON.stringify(data));
@@ -70,7 +70,7 @@ export const usePfpEndpoint = () => {
   const [pfpEndpoint, setPfpEndpoint] = useAtom(pfpEndpointAtom);
   const fetchPfpEndpoint = async () => {
     const data: string = (await (
-      await fetch("/api/pfp-url")
+      await fetch(`${apiUrl}/pfp-url`)
     ).text()) as unknown as string;
     setPfpEndpoint(data);
     localStorage.setItem("pfpEndpoint", data);
@@ -81,3 +81,5 @@ export const usePfpEndpoint = () => {
   }, []);
   return pfpEndpoint;
 };
+
+export const apiUrl = "/api";

@@ -27,4 +27,10 @@ lazy_static! {
         std::env::var("REDIRECT_URI").expect("REDIRECT_URI must be set in .env");
     pub static ref TENANT_ID: String =
         std::env::var("MICROSOFT_TENANT_ID").expect("MICROSOFT_TENANT_ID must be set in .env");
+    pub static ref PFP_S3_BUCKET: String =
+        std::env::var("APP_PFP_S3_BUCKET").expect("APP_PFP_S3_BUCKET must be set in .env");
+    pub static ref AZURE_SECRET: String =
+        std::env::var("AZURE_SECRET").expect("APP_PFP_S3_BUCKET must be set in .env");
+    pub static ref FRONTEND_URL: String =
+        std::env::var("APP_FRONTEND_URL").expect("APP_PFP_S3_BUCKET must be set in .env");
 }

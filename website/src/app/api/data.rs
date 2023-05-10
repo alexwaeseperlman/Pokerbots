@@ -3,7 +3,7 @@ use actix_web::{get, web, HttpResponse};
 use s3::presigning::PresigningConfig;
 use serde::Deserialize;
 
-use crate::app::login;
+use crate::{app::login, config::PFP_S3_BUCKET};
 
 use super::ServerMessage;
 use aws_sdk_s3 as s3;
@@ -41,7 +41,7 @@ pub async fn pfp_url(
 ) -> actix_web::Result<HttpResponse> {
     let req = s3_client
         .get_bucket_location()
-        .bucket(std::env::var("PFP_S3_BUCKET").unwrap())
+        .bucket(&*PFP_S3_BUCKET)
         .send()
         .await
         .map_err(|e| {
@@ -52,7 +52,7 @@ pub async fn pfp_url(
     let s = req.location_constraint().unwrap().as_ref().to_string();
     Ok(HttpResponse::Ok().body(format!(
         "https://{}.s3.{}.amazonaws.com",
-        std::env::var("PFP_S3_BUCKET").unwrap(),
+        *crate::config::PFP_S3_BUCKET,
         if s == "" {
             // https://docs.rs/aws-sdk-s3/latest/aws_sdk_s3/operation/get_bucket_location/struct.GetBucketLocationOutput.html#method.location_constraint
             // null is us-east-1 for some reason

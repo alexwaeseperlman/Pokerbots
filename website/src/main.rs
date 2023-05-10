@@ -35,21 +35,21 @@ async fn main() -> std::io::Result<()> {
 
     s3_client
         .create_bucket()
-        .bucket(std::env::var("PFP_S3_BUCKET").unwrap())
+        .bucket(&*pokerbots::config::PFP_S3_BUCKET)
         .send()
         .await
         .unwrap();
 
     s3_client
         .delete_public_access_block()
-        .bucket(std::env::var("PFP_S3_BUCKET").unwrap())
+        .bucket(&*pokerbots::config::PFP_S3_BUCKET)
         .send()
         .await
         .unwrap();
 
     s3_client
         .put_bucket_ownership_controls()
-        .bucket(std::env::var("PFP_S3_BUCKET").unwrap())
+        .bucket(&*pokerbots::config::PFP_S3_BUCKET)
         .ownership_controls(
             OwnershipControls::builder()
                 .rules(
@@ -65,7 +65,7 @@ async fn main() -> std::io::Result<()> {
 
     s3_client
         .put_bucket_cors()
-        .bucket(std::env::var("PFP_S3_BUCKET").unwrap())
+        .bucket(&*pokerbots::config::PFP_S3_BUCKET)
         .cors_configuration(
             aws_sdk_s3::types::CorsConfiguration::builder()
                 .cors_rules(
@@ -119,19 +119,19 @@ async fn main() -> std::io::Result<()> {
             .service(api::data::my_team)
             .service(api::data::pfp_url)
             .service(api::signout::signout)
-            // All remaining paths go to /app/dist, and fallback to index.html for client side routing
-            .service(
-                actix_files::Files::new("/", "app/dist/")
-                    .index_file("/index.html")
-                    .default_handler(fn_service(|req: ServiceRequest| async {
-                        let (req, _) = req.into_parts();
+        // All remaining paths go to /app/dist, and fallback to index.html for client side routing
+        /* .service(
+            actix_files::Files::new("/", "app/dist/")
+                .index_file("/index.html")
+                .default_handler(fn_service(|req: ServiceRequest| async {
+                    let (req, _) = req.into_parts();
 
-                        let f = NamedFile::open_async("app/dist/index.html")
-                            .await?
-                            .into_response(&req);
-                        Ok(ServiceResponse::new(req, f))
-                    })),
-            )
+                    let f = NamedFile::open_async("app/dist/index.html")
+                        .await?
+                        .into_response(&req);
+                    Ok(ServiceResponse::new(req, f))
+                })),
+        )*/
 
         //.wrap(middleware::Compress::default())
     })

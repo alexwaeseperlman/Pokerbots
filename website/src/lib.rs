@@ -43,7 +43,3 @@ lazy_static! {
             .unwrap()
     };
 }
-
-pub fn get_azure_secret() -> String {
-    env::var("AZURE_SECRET").expect("AZURE_SECRET must be set in .env")
-}

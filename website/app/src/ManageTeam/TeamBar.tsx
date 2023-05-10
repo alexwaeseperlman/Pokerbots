@@ -1,5 +1,5 @@
 import React, { useState, useLayoutEffect } from "react";
-import { usePfpEndpoint, useTeam, useUser } from "../state";
+import { apiUrl, usePfpEndpoint, useTeam, useUser } from "../state";
 import Box from "@mui/system/Box";
 import { Container } from "@mui/system";
 import AddIcon from "@mui/icons-material/Add";
@@ -25,7 +25,7 @@ function PfpUpload() {
 
   const handleUpload = async (f: File) => {
     setUploading(true);
-    const uploadLink = await (await fetch("/api/pfp-upload-url")).json();
+    const uploadLink = await (await fetch(`${apiUrl}/pfp-upload-url`)).json();
     await fetch(uploadLink.url, {
       method: "PUT",
       body: f,
@@ -168,7 +168,7 @@ export function TeamBar() {
                 <Table size="small">
                   <TableBody>
                     {team.members.map((member) => (
-                      <TableRow>
+                      <TableRow key={member.email}>
                         <TableCell
                           sx={{
                             color: "white",
@@ -203,14 +203,14 @@ export function TeamBar() {
 
                                 if (member.email == user.email) {
                                   if (team.owner == user.email) {
-                                    fetch(`/api/delete-team`).then(
+                                    fetch(`${apiUrl}/delete-team`).then(
                                       (response) => {
                                         console.log(response);
                                         fetchTeam();
                                       }
                                     );
                                   } else {
-                                    fetch(`/api/leave-team`).then(
+                                    fetch(`${apiUrl}/leave-team`).then(
                                       (response) => {
                                         console.log(response);
                                         fetchTeam();
@@ -219,7 +219,7 @@ export function TeamBar() {
                                   }
                                 } else {
                                   fetch(
-                                    `/api/kick-member?email=${member.email}`
+                                    `${apiUrl}/kick-member?email=${member.email}`
                                   ).then((response) => {
                                     console.log(response);
                                     fetchTeam();
@@ -239,7 +239,7 @@ export function TeamBar() {
                     ))}
 
                     {team.invites.map((invite) => (
-                      <TableRow>
+                      <TableRow key={invite}>
                         <TableCell
                           sx={{
                             color: "white",
@@ -295,7 +295,9 @@ export function TeamBar() {
                             color: "white",
                           }}
                           onClick={() =>
-                            fetch("/api/make-invite").then(() => fetchTeam())
+                            fetch(`${apiUrl}/make-invite`).then(() =>
+                              fetchTeam()
+                            )
                           }
                         >
                           Add a member

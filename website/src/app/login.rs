@@ -53,11 +53,6 @@ pub fn microsoft_login_url(return_to: &str) -> String {
         url_encode(return_to)
     )
 }
-
-pub fn get_azure_secret() -> String {
-    env::var("AZURE_SECRET").expect("AZURE_SECRET must be set in .env")
-}
-
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AzureMeResponse {
     pub displayName: Option<String>,
@@ -148,7 +143,6 @@ pub async fn handle_login(
     let code = req.code.clone().unwrap_or_default();
     // TODO: Is it bad to make a new client for every login?
     let client = reqwest::Client::new();
-    let secret = get_azure_secret();
 
     let response: AzureAuthTokenResopnse = client
         .post(format!(
@@ -160,7 +154,7 @@ pub async fn handle_login(
             code,
             CLIENT_ID.to_string(),
             url_encode(&REDIRECT_URI),
-            secret
+            &*crate::config::AZURE_SECRET
         ))
         .send()
         .await?
@@ -213,14 +207,22 @@ pub async fn handle_login(
 #[derive(Deserialize)]
 pub struct LoginProvider {
     provider: String,
+    state: Option<String>,
 }
 #[get("/api/login-provider")]
 pub async fn login_provider(
-    web::Query::<LoginProvider>(LoginProvider { provider }): web::Query<LoginProvider>,
+    web::Query::<LoginProvider>(LoginProvider { provider, state }): web::Query<LoginProvider>,
 ) -> actix_web::Result<HttpResponse> {
+    if state
+        .clone()
+        .and_then(|s| Some(!s.starts_with(&*crate::config::FRONTEND_URL)))
+        == Some(true)
+    {
+        return Ok(HttpResponse::BadRequest().finish());
+    }
     match provider.as_str() {
         "microsoft" => {
-            let url = microsoft_login_url("/manage-team");
+            let url = microsoft_login_url(&state.unwrap_or("/manage-team".to_string()));
             Ok(HttpResponse::Found()
                 .append_header(("Location", url))
                 .finish())
