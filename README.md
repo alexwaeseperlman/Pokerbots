@@ -11,27 +11,40 @@ diesel migration run
 First create a `.env` file in website that looks like this:
 ```
 AZURE_SECRET="your-azure-secret"
-DATABASE_URL="postgres://postgres:postgres@localhost:5432/postgres"
+DB_URL="localhost:5432/postgres"
+DB_USER="postgres"
+DB_PASSWORD="postgres"
 SECRET_KEY="very secret key just (this must be at least 64 characters) aaaaaaaaaaaaaaajk"
 MICROSOFT_CLIENT_ID = "your-client-id"
 REDIRECT_URI = "http://localhost:3000/api/login"
 MICROSOFT_TENANT_ID = "your-tenant-id"
 
-PFP_S3_BUCKET="s3-bucket-name-for-pfps"
+APP_PFP_S3_BUCKET="s3-bucket-name-for-pfps"
+APP_PFP_ENDPOINT=https://s3-bucket-name-for-pfps.s3.us-east-1.amazonaws.com
+
+APP_API_URL=http://localhost:3000
+APP_FRONTEND_URL=http://localhost:5173
+```
+
+If you plan on deploying to a domain name that you own add this (you will need go through the process
+of geting a certificate on aws):
+TODO: explain this
+```
+APP_DOMAIN_NAME=my-domain.name.com
 ```
 
 Then to run the website you need to build the frontend and start the server. In one shell run
 ```
-cd website
+cd website/backend
 cargo run
 ```
 And in another run
 ```
 cd website/app
 npm install
-npm run build
+npm run dev
 ```
-Then you will have pokerzero running at `http://localhost:3000`.
+Then you will have pokerzero running at `http://localhost:5173`.
 
 Also we use S3 to store profile pictures and execute games. In order to use these
 features you will need to have a valid aws configuration in your `~/.aws/` folder.
