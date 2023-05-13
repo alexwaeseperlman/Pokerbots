@@ -1,3 +1,5 @@
+use std::fs;
+
 use actix_files::NamedFile;
 use actix_service::{fn_service, Service};
 use actix_session::{storage::CookieSessionStore, SessionExt, SessionMiddleware};
@@ -23,7 +25,14 @@ use pokerbots::{
 };
 
 fn get_secret_key() -> cookie::Key {
-    let key = std::env::var("SECRET_KEY").expect("SECRET_KEY must be set in .env");
+    let key = std::env::var("SECRET_KEY").unwrap_or_else(|_| {
+        fs::read_to_string("/run/secrets/SECRET_KEY")
+            .expect("SECRET_KEY must be set in .env or /run/secrets/SECRET_KEY")
+    });
+    assert!(
+        key.len() >= 64,
+        "SECRET_KEY must be at least 64 characters long"
+    );
     cookie::Key::from(key.as_bytes())
 }
 
@@ -37,9 +46,9 @@ async fn main() -> std::io::Result<()> {
     let conn = &mut (*DB_CONNECTION).get().unwrap();
     conn.run_pending_migrations(MIGRATIONS).unwrap();
     let aws_config = aws_config::load_from_env().await;
-
     let s3_client = web::Data::new(aws_sdk_s3::Client::new(&aws_config));
 
+    /*
     s3_client
         .create_bucket()
         .bucket(&*pokerbots::config::PFP_S3_BUCKET)
@@ -87,6 +96,7 @@ async fn main() -> std::io::Result<()> {
         .send()
         .await
         .unwrap();
+    */
 
     // Generate the list of routes in your App
     HttpServer::new(move || {
@@ -94,12 +104,6 @@ async fn main() -> std::io::Result<()> {
             SessionMiddleware::builder(CookieSessionStore::default(), get_secret_key())
                 .cookie_secure(true)
                 .build();
-        let mut hbars = handlebars::Handlebars::new();
-        hbars.set_strict_mode(true);
-        hbars
-            .register_templates_directory(".hbs", "templates")
-            .expect("Failed to load templates");
-
         App::new()
             .wrap_fn(|req, srv| {
                 let user_data = login::get_user_data(&req.get_session());
@@ -126,24 +130,30 @@ async fn main() -> std::io::Result<()> {
             .service(api::data::my_team)
             .service(api::data::pfp_url)
             .service(api::signout::signout)
-        // All remaining paths go to /app/dist, and fallback to index.html for client side routing
-        /* .service(
-            actix_files::Files::new("/", "app/dist/")
-                .index_file("/index.html")
-                .default_handler(fn_service(|req: ServiceRequest| async {
-                    let (req, _) = req.into_parts();
+            // All remaining paths go to /app/dist, and fallback to index.html for client side routing
+            .service(
+                actix_files::Files::new("/", "app/dist/")
+                    .index_file("/index.html")
+                    .default_handler(fn_service(|req: ServiceRequest| async {
+                        let (req, _) = req.into_parts();
 
-                    let f = NamedFile::open_async("app/dist/index.html")
-                        .await?
-                        .into_response(&req);
-                    Ok(ServiceResponse::new(req, f))
-                })),
-        )*/
+                        let f = NamedFile::open_async("app/dist/index.html")
+                            .await?
+                            .into_response(&req);
+                        Ok(ServiceResponse::new(req, f))
+                    })),
+            )
 
         //.wrap(middleware::Compress::default())
     })
     .workers(8)
-    .bind(("0.0.0.0", 3000))?
+    .bind((
+        "0.0.0.0",
+        std::env::var("PORT")
+            .ok()
+            .and_then(|s| s.parse::<u16>().ok())
+            .unwrap_or(3000),
+    ))?
     .run()
     .await
 }

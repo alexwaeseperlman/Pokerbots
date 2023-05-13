@@ -17,9 +17,9 @@ function PfpUpload() {
   const [drag, setDrag] = useState(false);
   const [team, fetchTeam] = useTeam();
   const pfpEndpoint = usePfpEndpoint();
+  console.log(pfpEndpoint);
 
   const boxRef = React.useRef<HTMLDivElement>(null);
-  const imgRef = React.useRef<HTMLImageElement>(null);
   const [boxWidth, setBoxWidth] = useState(0);
   const [uploading, setUploading] = useState(false);
 
@@ -69,9 +69,6 @@ function PfpUpload() {
       ref={boxRef}
     >
       <Avatar
-        imgProps={{
-          ref: imgRef,
-        }}
         sx={(theme) => ({
           height: `${boxWidth}px`,
           width: `${boxWidth}px`,
@@ -246,7 +243,7 @@ export function TeamBar() {
                           }}
                         >
                           <input
-                            value={`${window.location.origin}/api/join-team?invite_code=${invite}`}
+                            value={`${apiUrl}/api/join-team?invite_code=${invite}`}
                             onClick={(e) => {
                               e.target.select();
                               // modern version of the following command
@@ -269,7 +266,7 @@ export function TeamBar() {
                               }}
                               onClick={() => {
                                 fetch(
-                                  `/api/cancel-invite?invite_code=${invite}`
+                                  `${apiUrl}/api/cancel-invite?invite_code=${invite}`
                                 ).then(() => fetchTeam());
                               }}
                             >

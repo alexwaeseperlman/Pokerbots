@@ -4,6 +4,7 @@ dotenv.config({
 });
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+
 console.log(process.env.APP_API_URL);
 
 // https://vitejs.dev/config/
@@ -13,7 +14,6 @@ export default defineConfig({
   build: {
     sourcemap: true,
   },
-  mode: "development",
   envPrefix: "APP_",
   envDir: "../../",
 
@@ -22,6 +22,8 @@ export default defineConfig({
       "/api": {
         target: process.env.APP_API_URL as string,
         changeOrigin: true,
+        secure: false,
+        ws: true,
       },
     },
   },

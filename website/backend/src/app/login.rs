@@ -209,17 +209,11 @@ pub struct LoginProvider {
     provider: String,
     state: Option<String>,
 }
+//TODO: instead of state being a parameter here, we should have state in the session
 #[get("/api/login-provider")]
 pub async fn login_provider(
     web::Query::<LoginProvider>(LoginProvider { provider, state }): web::Query<LoginProvider>,
 ) -> actix_web::Result<HttpResponse> {
-    if state
-        .clone()
-        .and_then(|s| Some(!s.starts_with(&*crate::config::FRONTEND_URL)))
-        == Some(true)
-    {
-        return Ok(HttpResponse::BadRequest().finish());
-    }
     match provider.as_str() {
         "microsoft" => {
             let url = microsoft_login_url(&state.unwrap_or("/manage-team".to_string()));

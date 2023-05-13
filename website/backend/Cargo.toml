@@ -3,6 +3,9 @@ name = "pokerbots"
 version = "0.1.0"
 edition = "2021"
 
+[build]
+jobs = 32
+
 [lib]
 crate-type = ["cdylib", "rlib"]
 
@@ -15,12 +18,11 @@ actix-service = "2.0.2"
 actix-session = {version = "0.7.2", features=["cookie-session"]}
 log = "0.4"
 env_logger = "0.10.0"
-diesel = { version = "2.0.3", features = ["postgres", "r2d2"] }
+diesel = { version = "2.0.3", features = ["postgres", "r2d2", "with-deprecated"], default-features=false }
 dotenvy = "0.15"
 lazy_static = "1.4.0"
 r2d2 = "0.8.10"
 reqwest = { version = "0.11", features = ["json"] }
-handlebars = {version = "4.3.6", features=["dir_source"]}
 futures-util = "0.3.26"
 futures = "0.3.26"
 chrono = "0.4.24"

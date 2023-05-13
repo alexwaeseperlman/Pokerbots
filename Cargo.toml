@@ -1,8 +1,8 @@
 [workspace]
 members = [
     "game",
-    "backend",
+    "website/backend",
 ]
 default-members = [
-    "backend",
+    "website/backend",
 ]

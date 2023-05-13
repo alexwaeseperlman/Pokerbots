@@ -6,6 +6,9 @@ game/target/
 pkg
 
 app/node_modules
+**/dist
+**/target
+**/node_modules
 app/dist
 resources/node_modules
 
