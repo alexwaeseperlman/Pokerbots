@@ -14,18 +14,21 @@ const userAtom = atom<User | null | undefined>(
 
 export const useUser = () => {
   const [user, setUser] = useAtom(userAtom);
+  const [team, fetchTeam] = useTeam();
+  const fetchUser = async () => {
+    const data: User = (await (
+      await fetch(`${apiUrl}/my-account`)
+    ).json()) as unknown as User;
+    console.log(data);
+    localStorage.setItem("user", JSON.stringify(data));
+    setUser(data);
+    fetchTeam();
+  };
   // fetch user
   useEffect(() => {
-    (async () => {
-      const data: User = (await (
-        await fetch(`${apiUrl}/my-account`)
-      ).json()) as unknown as User;
-      console.log(data);
-      localStorage.setItem("user", JSON.stringify(data));
-      setUser(data);
-    })();
+    fetchUser();
   }, []);
-  return user;
+  return [user, fetchUser] as const;
 };
 
 export type Team = {

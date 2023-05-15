@@ -46,7 +46,7 @@ pub fn microsoft_login_url(return_to: &str) -> String {
     format!(
         "https://login.microsoftonline.com/{}/oauth2/\
     v2.0/authorize?client_id={}&response_type=code&redirect_uri={}\
-    &response_mode=query&scope=User.Read&state={}",
+    &response_mode=query&scope=User.Read&state={}&prompt=select_account",
         "common",
         CLIENT_ID.to_string(),
         url_encode(&REDIRECT_URI),

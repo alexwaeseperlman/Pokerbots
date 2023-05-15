@@ -32,7 +32,7 @@ export const TableButton = styled((props) => (
 });
 
 export default function ManageTeam() {
-  const user = useUser();
+  const user = useUser()[0];
   const team = useTeam()[0];
 
   if (user === undefined) {

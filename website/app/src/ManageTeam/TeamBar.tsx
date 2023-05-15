@@ -128,7 +128,7 @@ function PfpUpload() {
 
 export function TeamBar() {
   const [team, fetchTeam] = useTeam();
-  const user = useUser();
+  const user = useUser()[0];
   if (!user || !team)
     throw new Error("Cannot render team bar when not logged in with a team");
   return (

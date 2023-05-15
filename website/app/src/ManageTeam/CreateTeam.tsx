@@ -3,7 +3,7 @@ import { useUser } from "../state";
 import randomTeamName from "./random-name";
 
 export default function CreateTeam() {
-  const user = useUser();
+  const user = useUser()[0];
   const [teamName, setTeamName] = useState("");
   return (
     <>

@@ -6,7 +6,7 @@ import {
   nav_group,
   bar_item_clickable,
 } from "./styles.module.css";
-import { useUser } from "../../state";
+import { apiUrl, useTeam, useUser } from "../../state";
 import Box from "@mui/system/Box";
 import Logo from "../Logo";
 import IconButton from "@mui/material/IconButton";
@@ -46,7 +46,7 @@ function BarItem(props: {
 }
 
 export function TopBar() {
-  const user = useUser();
+  const [user, fetchUser] = useUser();
   return (
     <Box className={`${menu_bar} ${primary_background}`}>
       <IconButton
@@ -83,7 +83,9 @@ export function TopBar() {
           <BarItem
             label="SIGN OUT"
             command={() => {
-              window.location.href = "/api/signout";
+              fetch(`${apiUrl}/signout`).then(() => {
+                fetchUser();
+              });
             }}
           />
         )}
@@ -93,7 +95,6 @@ export function TopBar() {
 }
 
 export function BottomBar() {
-  const user = useUser();
   return (
     <Box className={`${menu_bar} ${primary_background}`}>
       <Box

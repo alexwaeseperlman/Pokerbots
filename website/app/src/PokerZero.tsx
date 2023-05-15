@@ -11,7 +11,7 @@ import Leaderboard from "./Leaderboard";
 import { primary_background } from "./styles.module.css";
 
 function HeaderFooter(props: React.PropsWithChildren<{}>) {
-  const user = useUser();
+  const user = useUser()[0];
   const navigate = useNavigate();
 
   return (
