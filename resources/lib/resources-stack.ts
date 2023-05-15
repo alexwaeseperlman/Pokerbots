@@ -20,7 +20,8 @@ import * as sman from "aws-cdk-lib/aws-secretsmanager";
 import * as ssm from "aws-cdk-lib/aws-ssm";
 import * as s3deploy from "aws-cdk-lib/aws-s3-deployment";
 import * as pipelines from "aws-cdk-lib/pipelines";
-import * as cb from "aws-cdk-lib/aws-codebuild";
+import * as s3_notify from "aws-cdk-lib/aws-s3-notifications";
+import * as lambda from "aws-cdk-lib/aws-lambda";
 import { exec, execSync } from "child_process";
 import * as elb from "aws-cdk-lib/aws-elasticloadbalancingv2";
 
@@ -33,13 +34,40 @@ export class PFPS3Construct extends Construct {
     this.bucket = new s3.Bucket(this, "pfp", {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       objectOwnership: s3.ObjectOwnership.BUCKET_OWNER_PREFERRED,
-      accessControl: s3.BucketAccessControl.PUBLIC_READ,
     });
     this.bucket.addCorsRule({
       allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT],
       allowedOrigins: ["*"],
       allowedHeaders: ["*"],
     });
+  }
+}
+
+export class BotConstruct extends Construct {
+  public readonly bucket: s3.Bucket;
+  public readonly onCreationLambda: lambda.Function;
+
+  constructor(scope: Construct, id: string) {
+    super(scope, id);
+
+    this.bucket = new s3.Bucket(this, "bot", {
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      objectOwnership: s3.ObjectOwnership.BUCKET_OWNER_ENFORCED,
+    });
+    this.onCreationLambda = new lambda.Function(this, "onCreationLambda", {
+      runtime: lambda.Runtime.NODEJS_18_X,
+      handler: "index.handler",
+      code: lambda.Code.fromAsset("../lambdas/bot-uploaded"),
+      environment: {
+        BOT_SIZE: process.env.BOT_SIZE ?? "1000000",
+      },
+    });
+    this.bucket.addObjectCreatedNotification(
+      new s3_notify.LambdaDestination(this.onCreationLambda),
+      {
+        prefix: "upload/",
+      }
+    );
   }
 }
 
@@ -53,17 +81,13 @@ export class ScalingAPIConstruct extends Construct {
     vpc: ec2.Vpc,
     password: sman.Secret,
     cert: certManager.Certificate,
-    domainName: string
+    domainName: string,
+    bots: BotConstruct
   ) {
     super(scope, id);
 
     const cluster = new ecs.Cluster(this, "api-cluster", {
       vpc,
-      capacity: {
-        instanceType: new ec2.InstanceType("t4g.nano"),
-        minCapacity: 1,
-        desiredCapacity: 1,
-      },
     });
 
     const image = ecs.ContainerImage.fromDockerImageAsset(
@@ -103,7 +127,6 @@ export class ScalingAPIConstruct extends Construct {
             MICROSOFT_CLIENT_ID: process.env.MICROSOFT_CLIENT_ID ?? "",
             MICROSOFT_TENANT_ID: process.env.MICROSOFT_TENANT_ID ?? "",
             APP_PFP_S3_BUCKET: pfp_s3_bucket.bucketName,
-            APP_PFP_S3_ENDPOINT: pfp_s3_bucket.bucketWebsiteUrl,
             REDIRECT_URI: `https://${domainName}/api/login`,
             PORT: "80",
           },
@@ -128,9 +151,17 @@ export class ScalingAPIConstruct extends Construct {
     pfp_s3_bucket.grantReadWrite(
       this.loadBalancer.service.taskDefinition.taskRole
     );
+    pfp_s3_bucket.grantPutAcl(
+      this.loadBalancer.service.taskDefinition.taskRole
+    );
+    pfp_s3_bucket.grantPut(this.loadBalancer.service.taskDefinition.taskRole);
+    bots.bucket.grantPut(this.loadBalancer.service.taskDefinition.taskRole);
 
     new cdk.CfnOutput(this, "api-url", {
       value: this.loadBalancer.loadBalancer.loadBalancerDnsName,
+    });
+    new cdk.CfnOutput(this, "api-task-role", {
+      value: this.loadBalancer.service.taskDefinition.taskRole.roleArn,
     });
   }
 }
@@ -152,6 +183,7 @@ export class ResourcesStack extends cdk.Stack {
     });
 
     const pfp_s3 = new PFPS3Construct(this, "pfp_s3");
+    const bots = new Construct(this, "bots");
 
     const dbPassword = new sman.Secret(this, "db-password", {
       generateSecretString: {
@@ -181,7 +213,8 @@ export class ResourcesStack extends cdk.Stack {
       vpc,
       dbPassword,
       cert,
-      process.env.APP_DOMAIN_NAME as string
+      process.env.APP_DOMAIN_NAME as string,
+      bots
     );
     /*const cf = new cloudfront.Distribution(this, "cdnDistribution", {
       defaultBehavior: {

@@ -125,6 +125,7 @@ async fn main() -> std::io::Result<()> {
             .service(api::manage_team::pfp_upload_url)
             .service(api::manage_team::join_team)
             .service(api::manage_team::cancel_invite)
+            .service(api::manage_team::bot_upload_url)
             .service(api::data::my_account)
             .service(api::data::server_message)
             .service(api::data::my_team)

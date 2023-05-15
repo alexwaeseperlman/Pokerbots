@@ -1,7 +1,7 @@
 use crate::{
     app::login,
     app::login::microsoft_login_url,
-    config::DB_CONNECTION,
+    config::{BOT_S3_BUCKET, DB_CONNECTION, PFP_S3_BUCKET},
     models::{TeamInvite, User},
     schema::{team_invites, teams, users},
 };
@@ -260,14 +260,14 @@ pub async fn join_team(
 }
 
 #[derive(Deserialize)]
-pub struct PfpUploadUrlQuery {
+pub struct UploadUrlQuery {
     content_length: i64,
 }
 
 #[get("/api/pfp-upload-url")]
 pub async fn pfp_upload_url(
     s3_client: actix_web::web::Data<s3::Client>,
-    web::Query(PfpUploadUrlQuery { content_length }): web::Query<PfpUploadUrlQuery>,
+    web::Query(UploadUrlQuery { content_length }): web::Query<UploadUrlQuery>,
     session: Session,
 ) -> actix_web::Result<HttpResponse> {
     let user = login::get_user_data(&session);
@@ -282,16 +282,59 @@ pub async fn pfp_upload_url(
         return Ok(HttpResponse::BadRequest().body("{\"error\": \"File too large\"}"));
     }
     let user = user.unwrap();
-    let presigning_config = PresigningConfig::expires_in(std::time::Duration::from_millis(1000))
+    let presigning_config = PresigningConfig::expires_in(std::time::Duration::from_millis(60000))
         .map_err(|e| {
-            actix_web::error::ErrorInternalServerError(format!("Unable to make upload link: {}", e))
-        })?;
+        actix_web::error::ErrorInternalServerError(format!("Unable to make upload link: {}", e))
+    })?;
     let req = s3_client
         .put_object()
-        .bucket("pokerbots-pfp")
+        .bucket(&*PFP_S3_BUCKET)
         .key(format!("{}.png", team.unwrap().id))
         .acl(s3::types::ObjectCannedAcl::PublicRead)
         .content_length(content_length)
+        .presigned(presigning_config)
+        .await
+        .map_err(|e| {
+            actix_web::error::ErrorNotFound(format!("Unable to make upload link {}", e))
+        })?;
+    let headers = req.headers();
+    Ok(HttpResponse::Ok().json(json!({
+        "headers": headers
+            .iter()
+            .map(|(k, v)| (k.as_str(), v.to_str().unwrap()))
+            .collect::<Vec<(&str, &str)>>(),
+        "url": req.uri().to_string(),
+    })))
+}
+
+#[get("/api/bot-upload-url")]
+pub async fn bot_upload_url(
+    s3_client: actix_web::web::Data<s3::Client>,
+    web::Query(UploadUrlQuery { content_length }): web::Query<UploadUrlQuery>,
+    session: Session,
+) -> actix_web::Result<HttpResponse> {
+    let user = login::get_user_data(&session);
+    let team = login::get_team_data(&session);
+    if user.is_none() {
+        return Ok(HttpResponse::Unauthorized().body("{\"error\": \"Not logged in.\"}"));
+    }
+    if team.is_none() {
+        return Ok(HttpResponse::Unauthorized().body("{\"error\": \"Not a member of a team.\"}"));
+    }
+    if content_length > 262144 {
+        return Ok(HttpResponse::BadRequest().body("{\"error\": \"File too large\"}"));
+    }
+    let user = user.unwrap();
+    let presigning_config = PresigningConfig::expires_in(std::time::Duration::from_millis(10000))
+        .map_err(|e| {
+        actix_web::error::ErrorInternalServerError(format!("Unable to make upload link: {}", e))
+    })?;
+    let req = s3_client
+        .put_object()
+        .bucket(&*BOT_S3_BUCKET)
+        .key(format!("upload/{}.zip", team.unwrap().id))
+        .content_length(content_length)
+        .content_type("application/zip")
         .presigned(presigning_config)
         .await
         .map_err(|e| {

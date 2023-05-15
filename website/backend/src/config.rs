@@ -24,8 +24,7 @@ lazy_static! {
     };
 }
 
-pub const TEAM_SIZE: i32 = 5;
-
+pub const TEAM_SIZE: usize = 5;
 lazy_static! {
     pub static ref CLIENT_ID: String =
         std::env::var("MICROSOFT_CLIENT_ID").expect("MICROSOFT_CLIENT_ID must be set in .env");
@@ -35,7 +34,13 @@ lazy_static! {
         std::env::var("MICROSOFT_TENANT_ID").expect("MICROSOFT_TENANT_ID must be set in .env");
     pub static ref PFP_S3_BUCKET: String =
         std::env::var("APP_PFP_S3_BUCKET").expect("APP_PFP_S3_BUCKET must be set in .env");
+    pub static ref BOT_S3_BUCKET: String =
+        std::env::var("BOT_S3_BUCKET").expect("BOT_S3_BUCKET must be set in .env");
     pub static ref AZURE_SECRET: String = std::env::var("AZURE_SECRET")
         .unwrap_or_else(|_| fs::read_to_string("/run/secrets/AZURE_SECRET")
             .expect("AZURE_SECRET must be set in .env or /run/secrets/azure_secret"));
+    pub static ref BOT_SIZE: u64 = std::env::var("BOT_SIZE")
+        .expect("BOT_SIZE must be set in .env or /run/secrets/BOT_SIZE")
+        .parse()
+        .expect("BOT_SIZE must be a number");
 }

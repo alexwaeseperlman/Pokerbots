@@ -20,10 +20,11 @@ REDIRECT_URI = "http://localhost:3000/api/login"
 MICROSOFT_TENANT_ID = "your-tenant-id"
 
 APP_PFP_S3_BUCKET="s3-bucket-name-for-pfps"
-APP_PFP_ENDPOINT=https://s3-bucket-name-for-pfps.s3.us-east-1.amazonaws.com
-
 APP_API_URL=http://localhost:3000
 APP_FRONTEND_URL=http://localhost:5173
+
+BOT_S3_BUCKET=pokerbots-bots
+BOT_SIZE=5000000
 ```
 
 If you plan on deploying to a domain name that you own add this (you will need go through the process
