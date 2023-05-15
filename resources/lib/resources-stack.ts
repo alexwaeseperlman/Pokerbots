@@ -22,6 +22,7 @@ import * as s3deploy from "aws-cdk-lib/aws-s3-deployment";
 import * as pipelines from "aws-cdk-lib/pipelines";
 import * as cb from "aws-cdk-lib/aws-codebuild";
 import { exec, execSync } from "child_process";
+import * as elb from "aws-cdk-lib/aws-elasticloadbalancingv2";
 
 export class PFPS3Construct extends Construct {
   public readonly bucket: s3.Bucket;
@@ -30,10 +31,9 @@ export class PFPS3Construct extends Construct {
     super(scope, id);
 
     this.bucket = new s3.Bucket(this, "pfp", {
-      publicReadAccess: true,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       objectOwnership: s3.ObjectOwnership.BUCKET_OWNER_PREFERRED,
-      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ACLS,
+      accessControl: s3.BucketAccessControl.PUBLIC_READ,
     });
     this.bucket.addCorsRule({
       allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT],
@@ -51,17 +51,19 @@ export class ScalingAPIConstruct extends Construct {
     pfp_s3_bucket: s3.Bucket,
     db: rds.DatabaseInstance,
     vpc: ec2.Vpc,
-    password: sman.Secret
+    password: sman.Secret,
+    cert: certManager.Certificate,
+    domainName: string
   ) {
     super(scope, id);
 
     const cluster = new ecs.Cluster(this, "api-cluster", {
       vpc,
-      /*capacity: {
+      capacity: {
         instanceType: new ec2.InstanceType("t4g.nano"),
         minCapacity: 1,
         desiredCapacity: 1,
-      },*/
+      },
     });
 
     const image = ecs.ContainerImage.fromDockerImageAsset(
@@ -90,14 +92,19 @@ export class ScalingAPIConstruct extends Construct {
           cpuArchitecture: ecs.CpuArchitecture.ARM64,
           operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
         },
+        redirectHTTP: true,
+        targetProtocol: elb.ApplicationProtocol.HTTP,
         taskImageOptions: {
           image,
+
           environment: {
             DB_USER: "postgres",
             DB_URL: db.instanceEndpoint.socketAddress,
             MICROSOFT_CLIENT_ID: process.env.MICROSOFT_CLIENT_ID ?? "",
             MICROSOFT_TENANT_ID: process.env.MICROSOFT_TENANT_ID ?? "",
             APP_PFP_S3_BUCKET: pfp_s3_bucket.bucketName,
+            APP_PFP_S3_ENDPOINT: pfp_s3_bucket.bucketWebsiteUrl,
+            REDIRECT_URI: `https://${domainName}/api/login`,
             PORT: "80",
           },
           secrets: {
@@ -112,6 +119,8 @@ export class ScalingAPIConstruct extends Construct {
             ),
           }, //*/
         },
+        protocol: elb.ApplicationProtocol.HTTPS,
+        certificate: cert,
       }
     );
     //db.grantConnect(this.loadBalancer.service.taskDefinition.taskRole);
@@ -170,9 +179,11 @@ export class ResourcesStack extends cdk.Stack {
       pfp_s3.bucket,
       db,
       vpc,
-      dbPassword
+      dbPassword,
+      cert,
+      process.env.APP_DOMAIN_NAME as string
     );
-    const cf = new cloudfront.Distribution(this, "cdnDistribution", {
+    /*const cf = new cloudfront.Distribution(this, "cdnDistribution", {
       defaultBehavior: {
         origin: new origins.LoadBalancerV2Origin(api.loadBalancer.loadBalancer),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
@@ -187,16 +198,9 @@ export class ResourcesStack extends cdk.Stack {
           cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
         },
       },
-      errorResponses: [
-        {
-          httpStatus: 404,
-          responseHttpStatus: 200,
-          responsePagePath: "/index.html",
-        },
-      ],
       domainNames: [process.env.APP_DOMAIN_NAME as string],
       certificate: cert,
-    });
+    });*/
     /*api.loadBalancer.taskDefinition.defaultContainer?.addEnvironment(
       "REDIRECT_URI",
       `https://${cf.domainName}/api/login`
