@@ -81,4 +81,4 @@ export const usePfpEndpoint = () => {
   }, []);
   return pfpEndpoint;
 };
-export const apiUrl = "/api";
+export const apiUrl = window.location.origin + "/api";

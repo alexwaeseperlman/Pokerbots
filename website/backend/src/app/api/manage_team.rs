@@ -259,9 +259,15 @@ pub async fn join_team(
         .finish())
 }
 
+#[derive(Deserialize)]
+pub struct PfpUploadUrlQuery {
+    content_length: i64,
+}
+
 #[get("/api/pfp-upload-url")]
 pub async fn pfp_upload_url(
     s3_client: actix_web::web::Data<s3::Client>,
+    web::Query(PfpUploadUrlQuery { content_length }): web::Query<PfpUploadUrlQuery>,
     session: Session,
 ) -> actix_web::Result<HttpResponse> {
     let user = login::get_user_data(&session);
@@ -271,6 +277,9 @@ pub async fn pfp_upload_url(
     }
     if team.is_none() || team.clone().unwrap().owner != user.clone().unwrap().email {
         return Ok(HttpResponse::Unauthorized().body("{\"error\": \"Not team owner\"}"));
+    }
+    if content_length > 262144 {
+        return Ok(HttpResponse::BadRequest().body("{\"error\": \"File too large\"}"));
     }
     let user = user.unwrap();
     let presigning_config = PresigningConfig::expires_in(std::time::Duration::from_millis(1000))
@@ -282,6 +291,7 @@ pub async fn pfp_upload_url(
         .bucket("pokerbots-pfp")
         .key(format!("{}.png", team.unwrap().id))
         .acl(s3::types::ObjectCannedAcl::PublicRead)
+        .content_length(content_length)
         .presigned(presigning_config)
         .await
         .map_err(|e| {

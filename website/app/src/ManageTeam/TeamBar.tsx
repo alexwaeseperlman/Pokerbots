@@ -17,7 +17,6 @@ function PfpUpload() {
   const [drag, setDrag] = useState(false);
   const [team, fetchTeam] = useTeam();
   const pfpEndpoint = usePfpEndpoint();
-  console.log(pfpEndpoint);
 
   const boxRef = React.useRef<HTMLDivElement>(null);
   const [boxWidth, setBoxWidth] = useState(0);
@@ -25,7 +24,10 @@ function PfpUpload() {
 
   const handleUpload = async (f: File) => {
     setUploading(true);
-    const uploadLink = await (await fetch(`${apiUrl}/pfp-upload-url`)).json();
+    // TODO: Display errors on these api calls
+    const uploadLink = await (
+      await fetch(`${apiUrl}/pfp-upload-url?content_length=${f.size}`)
+    ).json();
     await fetch(uploadLink.url, {
       method: "PUT",
       body: f,
@@ -91,7 +93,13 @@ function PfpUpload() {
           handleUpload(e.dataTransfer.files[0]);
           setDrag(false);
         }}
-        src={uploading ? "" : `${pfpEndpoint}/${team?.id}.png?${Date.now()}`}
+        src={
+          uploading
+            ? ""
+            : `${pfpEndpoint}/${team?.id}.png?${
+                Math.floor(Date.now() / 1000) /* Reset the cache every second */
+              }`
+        }
       ></Avatar>
 
       <Box
@@ -202,14 +210,12 @@ export function TeamBar() {
                                   if (team.owner == user.email) {
                                     fetch(`${apiUrl}/delete-team`).then(
                                       (response) => {
-                                        console.log(response);
                                         fetchTeam();
                                       }
                                     );
                                   } else {
                                     fetch(`${apiUrl}/leave-team`).then(
                                       (response) => {
-                                        console.log(response);
                                         fetchTeam();
                                       }
                                     );
@@ -218,7 +224,6 @@ export function TeamBar() {
                                   fetch(
                                     `${apiUrl}/kick-member?email=${member.email}`
                                   ).then((response) => {
-                                    console.log(response);
                                     fetchTeam();
                                   });
                                 }
@@ -243,7 +248,7 @@ export function TeamBar() {
                           }}
                         >
                           <input
-                            value={`${apiUrl}/api/join-team?invite_code=${invite}`}
+                            value={`${apiUrl}/join-team?invite_code=${invite}`}
                             onClick={(e) => {
                               e.target.select();
                               // modern version of the following command
@@ -266,7 +271,7 @@ export function TeamBar() {
                               }}
                               onClick={() => {
                                 fetch(
-                                  `${apiUrl}/api/cancel-invite?invite_code=${invite}`
+                                  `${apiUrl}/cancel-invite?invite_code=${invite}`
                                 ).then(() => fetchTeam());
                               }}
                             >

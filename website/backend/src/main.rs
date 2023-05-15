@@ -146,7 +146,7 @@ async fn main() -> std::io::Result<()> {
 
         //.wrap(middleware::Compress::default())
     })
-    .workers(8)
+    .workers(2)
     .bind((
         "0.0.0.0",
         std::env::var("PORT")
