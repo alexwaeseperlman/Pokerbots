@@ -22,8 +22,12 @@ import * as s3deploy from "aws-cdk-lib/aws-s3-deployment";
 import * as pipelines from "aws-cdk-lib/pipelines";
 import * as s3_notify from "aws-cdk-lib/aws-s3-notifications";
 import * as lambda from "aws-cdk-lib/aws-lambda";
+import * as batch from "aws-cdk-lib/aws-batch";
+import * as batch_alpha from "@aws-cdk/aws-batch-alpha";
 import { exec, execSync } from "child_process";
 import * as elb from "aws-cdk-lib/aws-elasticloadbalancingv2";
+import * as iam from "aws-cdk-lib/aws-iam";
+import { FckNatInstanceProvider } from "cdk-fck-nat";
 
 export class PFPS3Construct extends Construct {
   public readonly bucket: s3.Bucket;
@@ -47,7 +51,7 @@ export class BotConstruct extends Construct {
   public readonly bucket: s3.Bucket;
   public readonly onCreationLambda: lambda.Function;
 
-  constructor(scope: Construct, id: string) {
+  constructor(scope: Construct, id: string, vpc: ec2.Vpc) {
     super(scope, id);
 
     this.bucket = new s3.Bucket(this, "bot", {
@@ -68,6 +72,58 @@ export class BotConstruct extends Construct {
         prefix: "upload/",
       }
     );
+
+    // batch queue for building bots
+    const env = new batch_alpha.FargateComputeEnvironment(this, "batch-env", {
+      vpc,
+      spot: true,
+    });
+
+    /*const buildImage = ecs.ContainerImage.fromDockerImageAsset(
+      new DockerImageAsset(this, "bots-container", {
+        directory: "../bots/buildenv",
+      })
+    );*/
+    const playImage = ecs.ContainerImage.fromDockerImageAsset(
+      new DockerImageAsset(this, "bots-container", {
+        directory: "../bots",
+      })
+    );
+    /*const buildJobDefn = new batch_alpha.EcsJobDefinition(this, "build-job", {
+      container: new batch_alpha.EcsFargateContainerDefinition(
+        this,
+        "build-container",
+        {
+          cpu: 256,
+          memory: cdk.Size.mebibytes(512),
+          image: buildImage,
+        }
+      ),
+    });*/
+    const playJobDefn = new batch_alpha.EcsJobDefinition(this, "play-job", {
+      container: new batch_alpha.EcsFargateContainerDefinition(
+        this,
+        "play-container",
+        {
+          cpu: 0.25,
+          memory: cdk.Size.mebibytes(512),
+          image: playImage,
+          command: ["Ref::botA", "Ref::botB", "Ref::resultUrl"],
+          logging: new ecs.AwsLogDriver({
+            streamPrefix: "play",
+            logRetention: cdk.aws_logs.RetentionDays.ONE_DAY,
+          }),
+        }
+      ),
+    });
+    const queue = new batch_alpha.JobQueue(this, "queue", {
+      computeEnvironments: [
+        {
+          computeEnvironment: env,
+          order: 1,
+        },
+      ],
+    });
   }
 }
 
@@ -180,10 +236,17 @@ export class ResourcesStack extends cdk.Stack {
     });
     const vpc = new ec2.Vpc(this, "app-vpc", {
       maxAzs: 3,
+      natGatewayProvider: ec2.NatProvider.instance({
+        instanceType: ec2.InstanceType.of(
+          ec2.InstanceClass.T3A,
+          ec2.InstanceSize.MICRO
+        ),
+      }),
+      natGateways: 1,
     });
 
     const pfp_s3 = new PFPS3Construct(this, "pfp_s3");
-    const bots = new Construct(this, "bots");
+    const bots = new BotConstruct(this, "bots", vpc);
 
     const dbPassword = new sman.Secret(this, "db-password", {
       generateSecretString: {

@@ -1,40 +1,42 @@
+# Build frontend in one container, backend in another, then copy the results into a third container
+FROM --platform=linux/arm64 node:20-alpine3.17 as frontend
+WORKDIR /usr/src/app
+COPY app/package.json package.json
+COPY app/package-lock.json ./package-lock.json
+RUN npm ci
+
+COPY app .
+RUN npm run build
+
+FROM --platform=linux/arm64 rust:1.69 as backend
+WORKDIR /usr/src/backend
+RUN apt-get update && apt-get install pkg-config libssl-dev libpq-dev curl build-essential -y
+
+# Copy dependency information first so we can cache the build
+ENV CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
+COPY backend/Cargo.toml .
+COPY backend/Cargo.lock .
+
+RUN mkdir src && echo 'fn main() { println!("!"); }' > src/main.rs 
+
+RUN cargo build --release && rm -rf src
+COPY backend .
+RUN cargo build --release
+
 # Copy files and build
 FROM --platform=linux/arm64 debian:stable
 
+WORKDIR /usr/src/website
 
-#RUN apt-get install nodejs npm
-RUN apt-get update  && apt-get install pkg-config libssl-dev libpq-dev curl build-essential -y
-
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain nightly
-ENV PATH=/root/.cargo/bin:$PATH
-WORKDIR /usr/src/backend
-
-
-ENV NODE_VERSION=20.0.0
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-ENV NVM_DIR=/root/.nvm
-RUN . "$NVM_DIR/nvm.sh" && nvm install ${NODE_VERSION}
-RUN . "$NVM_DIR/nvm.sh" && nvm use v${NODE_VERSION}
-RUN . "$NVM_DIR/nvm.sh" && nvm alias default v${NODE_VERSION}
-ENV PATH="/root/.nvm/versions/node/v${NODE_VERSION}/bin/:${PATH}"
-
-# Copy dependency information first so we can cache the build
-COPY backend/Cargo.toml .
-COPY backend/Cargo.lock .
 RUN mkdir app
-COPY app/package.json ./app/package.json
-COPY app/package-lock.json ./app/package-lock.json
+WORKDIR /usr/src/website
+COPY --from=backend /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+RUN apt-get update && apt-get install libssl-dev libpq-dev -y
 
-# Create a dummy file to force cargo to build the dependencies
-RUN mkdir ./src && echo 'fn main() { println!("!"); }' > ./src/main.rs && echo 'fn no() {}' > ./src/lib.rs && cargo install --path . && rm ./src/main.rs ./src/lib.rs
-RUN cd app && npm ci
+COPY --from=frontend /usr/src/app/dist ./app/dist
+COPY --from=backend /usr/src/backend/target/release/pokerbots ./pokerbots
 
-# Now copy the rest of the source code
-COPY app ./app
-RUN cd app && npm run build
 
-COPY backend .
-RUN /root/.cargo/bin/cargo install --path . 
 
-CMD ["pokerbots"]
+CMD ["./pokerbots"]
 

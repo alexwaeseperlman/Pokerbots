@@ -3,12 +3,6 @@ name = "pokerbots"
 version = "0.1.0"
 edition = "2021"
 
-[build]
-jobs = 32
-
-[lib]
-crate-type = ["cdylib", "rlib"]
-
 [dependencies]
 actix = "0.13.0"
 actix-files = { version = "0.6.2" }
