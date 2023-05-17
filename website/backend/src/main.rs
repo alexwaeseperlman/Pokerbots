@@ -47,6 +47,7 @@ async fn main() -> std::io::Result<()> {
     conn.run_pending_migrations(MIGRATIONS).unwrap();
     let aws_config = aws_config::load_from_env().await;
     let s3_client = web::Data::new(aws_sdk_s3::Client::new(&aws_config));
+    let batch_client = web::Data::new(aws_sdk_batch::Client::new(&aws_config));
 
     /*
     s3_client
@@ -114,6 +115,7 @@ async fn main() -> std::io::Result<()> {
                 srv.call(req).map(|res| res)
             })
             .app_data(s3_client.clone())
+            .app_data(batch_client.clone())
             .wrap(Logger::new("%a %{User-Agent}i"))
             .wrap(session_middleware)
             .route("/api/login", web::get().to(login::handle_login))
@@ -130,6 +132,8 @@ async fn main() -> std::io::Result<()> {
             .service(api::data::server_message)
             .service(api::data::my_team)
             .service(api::data::pfp_url)
+            .service(api::games::game_result)
+            .service(api::games::make_game)
             .service(api::signout::signout)
             // All remaining paths go to /app/dist, and fallback to index.html for client side routing
             .service(

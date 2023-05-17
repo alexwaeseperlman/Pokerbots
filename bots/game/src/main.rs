@@ -1,3 +1,5 @@
+use std::process::Command;
+
 use rand::Rng;
 pub mod bots;
 pub mod poker;
@@ -8,22 +10,25 @@ fn main() {
         .build()
         .unwrap()
         .block_on(async {
-            let botA = std::env::args()
+            let bota = std::env::args()
                 .nth(1)
                 .expect("first arg not set. should be link to botA");
-            let botB = std::env::args()
+            let bota = std::env::args()
                 .nth(2)
                 .expect("second arg not set. should be link to botB");
-            let outUrl = std::env::args().nth(3).expect("outUrl");
-            let client = reqwest::Client::new();
+            let out_url = std::env::args().nth(3).expect("id");
+            println!("Args good");
 
             // randomly choose score change for now
-            let mut scoreChange = rand::thread_rng().gen_range(-50..=50);
-            client
-                .put(&outUrl)
-                .body(scoreChange.to_string())
-                .send()
-                .await
-                .unwrap()
+            let score_change = rand::thread_rng().gen_range(-50..=50);
+            Command::new("curl")
+                .arg(format!(
+                    "https://{}?id={}&change={}",
+                    std::env::var("API_URL").expect("API_URL not set"),
+                    out_url,
+                    score_change
+                ))
+                .output()
+                .expect("Failed to reach outUrl");
         });
 }

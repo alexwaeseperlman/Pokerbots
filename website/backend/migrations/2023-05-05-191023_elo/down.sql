@@ -1,1 +1,1 @@
-ALTER TABLE teams DROP COLUMN elo;
+ALTER TABLE teams DROP COLUMN score;

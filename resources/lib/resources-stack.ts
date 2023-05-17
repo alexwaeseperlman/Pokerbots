@@ -50,6 +50,8 @@ export class PFPS3Construct extends Construct {
 export class BotConstruct extends Construct {
   public readonly bucket: s3.Bucket;
   public readonly onCreationLambda: lambda.Function;
+  public readonly playJobDefn: batch_alpha.EcsJobDefinition;
+  public readonly jobQueue: batch_alpha.JobQueue;
 
   constructor(scope: Construct, id: string, vpc: ec2.Vpc) {
     super(scope, id);
@@ -100,7 +102,7 @@ export class BotConstruct extends Construct {
         }
       ),
     });*/
-    const playJobDefn = new batch_alpha.EcsJobDefinition(this, "play-job", {
+    this.playJobDefn = new batch_alpha.EcsJobDefinition(this, "play-job", {
       container: new batch_alpha.EcsFargateContainerDefinition(
         this,
         "play-container",
@@ -108,7 +110,10 @@ export class BotConstruct extends Construct {
           cpu: 0.25,
           memory: cdk.Size.mebibytes(512),
           image: playImage,
-          command: ["Ref::botA", "Ref::botB", "Ref::resultUrl"],
+          command: ["Ref::botA", "Ref::botB", "Ref::id"],
+          environment: {
+            API_URL: process.env.APP_DOMAIN_NAME ?? "",
+          },
           logging: new ecs.AwsLogDriver({
             streamPrefix: "play",
             logRetention: cdk.aws_logs.RetentionDays.ONE_DAY,
@@ -116,7 +121,7 @@ export class BotConstruct extends Construct {
         }
       ),
     });
-    const queue = new batch_alpha.JobQueue(this, "queue", {
+    this.jobQueue = new batch_alpha.JobQueue(this, "queue", {
       computeEnvironments: [
         {
           computeEnvironment: env,
@@ -185,6 +190,8 @@ export class ScalingAPIConstruct extends Construct {
             APP_PFP_S3_BUCKET: pfp_s3_bucket.bucketName,
             REDIRECT_URI: `https://${domainName}/api/login`,
             PORT: "80",
+            JOB_QUEUE: bots.jobQueue.jobQueueArn,
+            PLAY_JOB_DEFINITION: bots.playJobDefn.jobDefinitionArn,
           },
           secrets: {
             SECRET_KEY: secretKey,
@@ -212,7 +219,19 @@ export class ScalingAPIConstruct extends Construct {
     );
     pfp_s3_bucket.grantPut(this.loadBalancer.service.taskDefinition.taskRole);
     bots.bucket.grantPut(this.loadBalancer.service.taskDefinition.taskRole);
-
+    this.loadBalancer.service.taskDefinition.taskRole.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        resources: [
+          cdk.Stack.of(this).formatArn({
+            service: "batch",
+            resource: "job-definition",
+            resourceName: "*",
+          }),
+          bots.jobQueue.jobQueueArn,
+        ],
+        actions: ["batch:SubmitJob"],
+      })
+    );
     new cdk.CfnOutput(this, "api-url", {
       value: this.loadBalancer.loadBalancer.loadBalancerDnsName,
     });
@@ -244,7 +263,6 @@ export class ResourcesStack extends cdk.Stack {
       }),
       natGateways: 1,
     });
-
     const pfp_s3 = new PFPS3Construct(this, "pfp_s3");
     const bots = new BotConstruct(this, "bots", vpc);
 

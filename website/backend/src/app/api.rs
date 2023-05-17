@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 pub mod data;
+pub mod games;
 pub mod manage_team;
 pub mod signout;
 

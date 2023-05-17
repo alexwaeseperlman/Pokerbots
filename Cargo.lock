@@ -640,6 +640,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "aws-sdk-batch"
+version = "0.27.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f34db54381df341f4b9c9b463ef36d3e3ec855a5618a3b62c79242ab6302fd49"
+dependencies = [
+ "aws-credential-types",
+ "aws-endpoint",
+ "aws-http",
+ "aws-sig-auth",
+ "aws-smithy-async",
+ "aws-smithy-client",
+ "aws-smithy-http",
+ "aws-smithy-http-tower",
+ "aws-smithy-json",
+ "aws-smithy-types",
+ "aws-types",
+ "bytes",
+ "http",
+ "regex",
+ "tokio-stream",
+ "tower",
+ "tracing",
+]
+
+[[package]]
 name = "aws-sdk-s3"
 version = "0.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2913,6 +2938,7 @@ dependencies = [
  "actix-session",
  "actix-web",
  "aws-config",
+ "aws-sdk-batch",
  "aws-sdk-s3",
  "cargo-watch",
  "chrono",
@@ -2941,7 +2967,6 @@ dependencies = [
  "itertools",
  "log",
  "rand",
- "reqwest",
  "tokio",
 ]
 

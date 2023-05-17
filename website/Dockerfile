@@ -21,6 +21,9 @@ RUN mkdir src && echo 'fn main() { println!("!"); }' > src/main.rs
 
 RUN cargo build --release && rm -rf src
 COPY backend .
+
+# touch the main file to force a rebuild
+RUN touch src/main.rs
 RUN cargo build --release
 
 # Copy files and build
@@ -35,8 +38,6 @@ RUN apt-get update && apt-get install libssl-dev libpq-dev -y
 
 COPY --from=frontend /usr/src/app/dist ./app/dist
 COPY --from=backend /usr/src/backend/target/release/pokerbots ./pokerbots
-
-
 
 CMD ["./pokerbots"]
 

@@ -40,7 +40,11 @@ lazy_static! {
         .unwrap_or_else(|_| fs::read_to_string("/run/secrets/AZURE_SECRET")
             .expect("AZURE_SECRET must be set in .env or /run/secrets/azure_secret"));
     pub static ref BOT_SIZE: u64 = std::env::var("BOT_SIZE")
-        .expect("BOT_SIZE must be set in .env or /run/secrets/BOT_SIZE")
+        .expect("BOT_SIZE must be set in .env")
         .parse()
         .expect("BOT_SIZE must be a number");
+    pub static ref JOB_QUEUE: String =
+        std::env::var("JOB_QUEUE").expect("JOB_QUEUE must be set in .env");
+    pub static ref PLAY_JOB_DEFINITION: String =
+        std::env::var("PLAY_JOB_DEFINITION").expect("PLAY_JOB_DEFINITION must be set in .env");
 }

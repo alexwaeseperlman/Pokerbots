@@ -206,16 +206,14 @@ pub async fn join_team(
     let team = login::get_team_data(&session);
     // You can't join a team if you are already on one or if you aren't logged in
     if user.is_none() {
-        session.insert("message", "You are not logged in.")?;
         return Ok(HttpResponse::Found()
             .append_header(("Location", microsoft_login_url(&req.uri().to_string())))
             .finish());
     }
     if team.is_some() {
-        session.insert(
-            "message",
-            "You cannot join a team if you are already on one.",
-        )?;
+        return Ok(
+            HttpResponse::NotAcceptable().json(json!({"error": "You are already on a team."}))
+        );
     } else {
         let conn = &mut (*DB_CONNECTION).get().unwrap();
         //.map_err(|e| actix_web::error::ErrorInternalServerError("No database connection"))?;
@@ -227,7 +225,7 @@ pub async fn join_team(
         if let Some(code) = codes.first() {
             let now: i64 = chrono::offset::Utc::now().timestamp();
             if code.expires < now {
-                session.insert("message", "That code is no longer valid.")?
+                return Ok(HttpResponse::NotAcceptable().json(json!({"error": "Invalid code."})));
             } else {
                 // Set the users team and set the code to used
                 diesel::delete(team_invites::dsl::team_invites)
@@ -251,7 +249,7 @@ pub async fn join_team(
                     })?;
             }
         } else {
-            session.insert("message", "That code is no longer valid.")?
+            return Ok(HttpResponse::NotAcceptable().json(json!({"error": "Invalid code."})));
         }
     }
     Ok(HttpResponse::Found()
