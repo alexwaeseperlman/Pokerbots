@@ -4,8 +4,9 @@ pub mod bots;
 pub mod poker;
 use futures_lite::stream::StreamExt;
 use lapin::options::{BasicAckOptions, BasicRejectOptions};
-use shared::PlayTask;
+use shared::{GameResult, PlayTask};
 
+use rand::Rng;
 #[tokio::main]
 async fn main() {
     env_logger::init();
@@ -16,7 +17,16 @@ async fn main() {
 
     // listen for messages
     let channel = conn.create_channel().await.unwrap();
-    let queue = channel
+    let channel_b = conn.create_channel().await.unwrap();
+    channel_b
+        .queue_declare(
+            "game_results",
+            lapin::options::QueueDeclareOptions::default(),
+            lapin::types::FieldTable::default(),
+        )
+        .await
+        .unwrap();
+    channel
         .queue_declare(
             "poker",
             lapin::options::QueueDeclareOptions::default(),
@@ -42,6 +52,23 @@ async fn main() {
             msg.ack(BasicAckOptions::default())
                 .await
                 .expect("Error while acknowledging message");
+
+            channel_b
+                .basic_publish(
+                    "",
+                    "game_results",
+                    lapin::options::BasicPublishOptions::default(),
+                    &serde_json::to_vec(&GameResult {
+                        id: payload.id.clone(),
+                        score_change: rand::thread_rng().gen_range(-50..=50),
+                    })
+                    .unwrap(),
+                    lapin::BasicProperties::default(),
+                )
+                .await
+                .unwrap()
+                .await
+                .unwrap();
         } else {
             msg.reject(BasicRejectOptions::default())
                 .await

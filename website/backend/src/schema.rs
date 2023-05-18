@@ -6,6 +6,7 @@ diesel::table! {
         teama -> Int4,
         teamb -> Int4,
         score_change -> Nullable<Int4>,
+        created -> Int8,
     }
 }
 
@@ -35,4 +36,9 @@ diesel::table! {
     }
 }
 
-diesel::allow_tables_to_appear_in_same_query!(games, team_invites, teams, users,);
+diesel::allow_tables_to_appear_in_same_query!(
+    games,
+    team_invites,
+    teams,
+    users,
+);

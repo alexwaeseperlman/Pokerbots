@@ -5,7 +5,7 @@ use crate::{
     app::login::microsoft_login_url,
     config::{BOT_S3_BUCKET, DB_CONNECTION, PFP_S3_BUCKET},
     models::{Game, TeamInvite, User},
-    schema::{games, team_invites, teams, users},
+    schema::{self, team_invites, teams, users},
 };
 use actix_session::Session;
 use actix_web::{
@@ -16,7 +16,7 @@ use actix_web::{
 use aws_sdk_s3 as s3;
 use aws_sdk_s3::presigning::PresigningConfig;
 use chrono;
-use diesel::prelude::*;
+use diesel::{prelude::*, query_builder::SelectQuery};
 use futures_util::FutureExt;
 use rand::{self, Rng};
 use serde::Deserialize;
@@ -44,9 +44,9 @@ pub async fn game_result(
     // with this value
     // Insert an invite with expiry date 24 hours from now
     let conn = &mut (*DB_CONNECTION).get().unwrap();
-    diesel::update(games::dsl::games)
-        .filter(games::dsl::id.eq(id))
-        .set(games::dsl::score_change.eq(change))
+    diesel::update(schema::games::dsl::games)
+        .filter(schema::games::dsl::id.eq(id))
+        .set(schema::games::dsl::score_change.eq(change))
         .execute(conn)
         .map_err(|e| {
             actix_web::error::ErrorInternalServerError(format!("Unable to update game: {}", e))
@@ -66,7 +66,7 @@ pub async fn make_game(
     // also push a batch job to the queue
     let id = format!("{:02x}", rand::thread_rng().gen::<u128>());
     let conn = &mut (*DB_CONNECTION).get().unwrap();
-    let game = diesel::insert_into(games::dsl::games)
+    let game = diesel::insert_into(schema::games::dsl::games)
         .values(crate::models::NewGame {
             teama: teamA,
             teamb: teamB,
@@ -76,7 +76,6 @@ pub async fn make_game(
         .map_err(|e| {
             actix_web::error::ErrorInternalServerError(format!("Unable to create game: {}", e))
         })?;
-    log::debug!("Channel state {:?}", amqp_channel.status());
     // push a batch job to the queue
     log::debug!(
         "message sent {:?}",
@@ -84,15 +83,12 @@ pub async fn make_game(
             .basic_publish(
                 "",
                 "poker",
-                lapin::options::BasicPublishOptions {
-                    mandatory: true,
-                    ..Default::default()
-                },
+                lapin::options::BasicPublishOptions::default(),
                 &serde_json::to_vec(&PlayTask {
                     bota: game.teama.to_string(),
                     botb: game.teamb.to_string(),
                     id: game.id.clone(),
-                    date: chrono::Utc::now().naive_utc().timestamp_millis(),
+                    date: game.created
                 })
                 .map_err(|e| {
                     actix_web::error::ErrorInternalServerError(format!(
@@ -108,7 +104,58 @@ pub async fn make_game(
             })?
             .await
             .unwrap()
-            .take_message()
     );
     Ok(HttpResponse::Ok().json(game))
+}
+
+#[derive(Deserialize)]
+pub struct GameQuery {
+    pub id: Option<String>,
+    pub team: Option<i32>,
+    pub active: Option<bool>,
+    pub page_size: Option<i32>,
+    pub page: Option<i32>,
+}
+
+#[get("/api/games")]
+pub async fn games(
+    session: Session,
+    web::Query::<GameQuery>(GameQuery {
+        id,
+        team,
+        active,
+        page_size,
+        page,
+    }): web::Query<GameQuery>,
+) -> actix_web::Result<HttpResponse> {
+    let conn = &mut (*DB_CONNECTION).get().unwrap();
+    let mut base = schema::games::dsl::games
+        .order_by(schema::games::dsl::created.desc())
+        .into_boxed();
+    if let Some(active) = active {
+        base = base.filter(schema::games::dsl::score_change.is_null().eq(active))
+    }
+    if let Some(id) = id {
+        base = base.filter(schema::games::dsl::id.eq(id));
+    }
+    if let Some(team) = team {
+        base = base.filter(
+            schema::games::dsl::teama
+                .eq(team)
+                .or(schema::games::dsl::teamb.eq(team)),
+        );
+    }
+    let page_size = page_size.unwrap_or(10).min(100);
+    let page = page.unwrap_or(0);
+    base = base
+        .limit((page_size).into())
+        .offset((page * page_size).into());
+    let result: Vec<Game> = base
+        .load::<Game>(conn)
+        .map_err(|e| {
+            actix_web::error::ErrorInternalServerError(format!("Unable to update game: {}", e))
+        })?
+        .into_iter()
+        .collect();
+    Ok(HttpResponse::Ok().json(result))
 }

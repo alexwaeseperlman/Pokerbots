@@ -30,6 +30,7 @@ aws-sdk-s3 = "0.27.0"
 diesel_migrations = {version= "2.0.0", features=["postgres"]}
 lapin = "2.1.1"
 shared = { path = "../../shared" }
+tokio = "1.28.1"
 
 [dev-dependencies]
 cargo-watch = "8.4.0"

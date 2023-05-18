@@ -18,7 +18,6 @@ use aws_sdk_s3::types::{
 };
 use diesel_migrations::*;
 use futures_util::future::FutureExt;
-
 use lapin::options::ConfirmSelectOptions;
 use pokerbots::{
     app::{api, login},
@@ -55,7 +54,8 @@ async fn main() -> std::io::Result<()> {
 
     // listen for messages
     let channel = conn.create_channel().await.unwrap();
-    let queue = channel
+    let channel_b = conn.create_channel().await.unwrap();
+    channel
         .queue_declare(
             "poker",
             lapin::options::QueueDeclareOptions::default(),
@@ -64,6 +64,14 @@ async fn main() -> std::io::Result<()> {
         .await
         .unwrap();
 
+    channel_b
+        .queue_declare(
+            "game_results",
+            lapin::options::QueueDeclareOptions::default(),
+            lapin::types::FieldTable::default(),
+        )
+        .await
+        .unwrap();
     /*
     s3_client
         .create_bucket()
@@ -114,6 +122,7 @@ async fn main() -> std::io::Result<()> {
         .unwrap();
     */
     let amqp_channel = web::Data::new(Arc::new(channel));
+    tokio::spawn(async { pokerbots::games::listen_for_game_results(channel_b).await });
     // Generate the list of routes in your App
     HttpServer::new(move || {
         let session_middleware =
@@ -149,6 +158,7 @@ async fn main() -> std::io::Result<()> {
             .service(api::data::pfp_url)
             .service(api::games::game_result)
             .service(api::games::make_game)
+            .service(api::games::games)
             .service(api::signout::signout)
             // All remaining paths go to /app/dist, and fallback to index.html for client side routing
             .service(

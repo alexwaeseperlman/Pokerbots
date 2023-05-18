@@ -61,4 +61,5 @@ pub struct Game {
     pub teama: i32,
     pub teamb: i32,
     pub score_change: Option<i32>,
+    pub created: i64,
 }
