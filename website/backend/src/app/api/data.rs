@@ -58,7 +58,7 @@ pub async fn teams(
 ) -> actix_web::Result<HttpResponse> {
     let conn = &mut (*DB_CONNECTION).get().unwrap();
     let mut base = schema::teams::dsl::teams
-        .order_by(schema::teams::dsl::id.desc())
+        .order_by(schema::teams::dsl::score.desc())
         .into_boxed();
     if let Some(ids) = ids {
         base = base.filter(schema::teams::dsl::id.eq_any(ids));
