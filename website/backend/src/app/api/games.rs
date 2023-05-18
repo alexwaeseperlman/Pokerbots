@@ -115,6 +115,7 @@ pub struct GameQuery {
     pub active: Option<bool>,
     pub page_size: Option<i32>,
     pub page: Option<i32>,
+    pub count: Option<bool>,
 }
 
 #[get("/api/games")]
@@ -126,12 +127,11 @@ pub async fn games(
         active,
         page_size,
         page,
+        count,
     }): web::Query<GameQuery>,
 ) -> actix_web::Result<HttpResponse> {
     let conn = &mut (*DB_CONNECTION).get().unwrap();
-    let mut base = schema::games::dsl::games
-        .order_by(schema::games::dsl::created.desc())
-        .into_boxed();
+    let mut base = schema::games::dsl::games.into_boxed();
     if let Some(active) = active {
         base = base.filter(schema::games::dsl::score_change.is_null().eq(active))
     }
@@ -145,9 +145,17 @@ pub async fn games(
                 .or(schema::games::dsl::teamb.eq(team)),
         );
     }
+    let count = count.unwrap_or(false);
     let page_size = page_size.unwrap_or(10).min(100);
     let page = page.unwrap_or(0);
+    if count {
+        let count = base.count().get_result::<i64>(conn).map_err(|e| {
+            actix_web::error::ErrorInternalServerError(format!("Unable to count games: {}", e))
+        })?;
+        return Ok(HttpResponse::Ok().json(json!({ "count": count })));
+    }
     base = base
+        .order_by(schema::games::dsl::created.desc())
         .limit((page_size).into())
         .offset((page * page_size).into());
     let result: Vec<Game> = base

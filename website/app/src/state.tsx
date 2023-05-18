@@ -1,4 +1,5 @@
 import { atom, useAtom, useAtomValue, useSetAtom, WritableAtom } from "jotai";
+import { atomFamily } from "jotai/utils";
 import { useEffect } from "react";
 
 export type User = {
@@ -63,6 +64,15 @@ export const useTeam = () => {
   return [team, fetchTeam] as const;
 };
 
+const teamsAtom = atomFamily((id) =>
+  atom(
+    async () =>
+      fetch(`${apiUrl}/teams?id=${id}`).then((res) =>
+        res.json()
+      ) as unknown as Team[]
+  )
+);
+
 const pfpEndpointAtom = atom<string | null | undefined>(
   (localStorage.getItem("pfpEndpoint") ?? null ?? undefined) as
     | string
@@ -85,3 +95,11 @@ export const usePfpEndpoint = () => {
   return pfpEndpoint;
 };
 export const apiUrl = window.location.origin + "/api";
+
+export type Game = {
+  id: string;
+  teama: Team;
+  teamb: Team;
+  score_change: number;
+  time: number;
+};
