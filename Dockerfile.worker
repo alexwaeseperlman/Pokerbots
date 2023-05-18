@@ -7,7 +7,7 @@ COPY shared /usr/shared
 COPY pokergame/worker/Cargo.toml .
 COPY pokergame/worker/Cargo.lock .
 
-RUN apk add  musl-dev
+RUN apk add musl-dev
 
 # create a dummy main.rs to cache dependencies
 RUN mkdir src && echo "fn main() {println!(\"wawaweewa\")}" > src/main.rs

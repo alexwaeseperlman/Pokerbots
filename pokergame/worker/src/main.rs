@@ -10,6 +10,7 @@ use rand::Rng;
 #[tokio::main]
 async fn main() {
     env_logger::init();
+    log::info!("Starting worker");
     let addr = std::env::var("AMQP_URL").expect("AMQP_URL must be set");
     let conn = lapin::Connection::connect(&addr, lapin::ConnectionProperties::default())
         .await

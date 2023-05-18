@@ -14,10 +14,11 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=postgres
+      - RUST_LOG=debug
     volumes:
       - ./.volumes/database:/var/lib/postgresql/data
   website:
-    build: 
+    build:
       context: .
       dockerfile: ./Dockerfile.website
     depends_on:
@@ -43,7 +44,7 @@ services:
 
       - AMQP_URL=amqp://rabbitmq
   worker:
-    build: 
+    build:
       context: .
       dockerfile: ./Dockerfile.worker
     restart: always
@@ -52,6 +53,7 @@ services:
         condition: service_healthy
     environment:
       - AMQP_URL=amqp://rabbitmq
+      - RUST_LOG=debug
   nginx:
     image: nginx:latest
     depends_on:
