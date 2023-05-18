@@ -152,7 +152,7 @@ export default function ManageTeam() {
   const team = useTeam()[0];
 
   if (user === undefined) {
-    return <div>Loading...</div>;
+    return <div style={{ flexGrow: 1 }}></div>;
   }
   if (team && user) {
     return (
