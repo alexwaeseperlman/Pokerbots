@@ -1,0 +1,12 @@
+{
+  "availability-zones:account=652569569068:region=us-east-1": [
+    "us-east-1a",
+    "us-east-1b",
+    "us-east-1c",
+    "us-east-1d",
+    "us-east-1e",
+    "us-east-1f"
+  ],
+  "ami:account=652569569068:filters.image-type.0=machine:filters.name.0=amzn-ami-vpc-nat-*:filters.state.0=available:owners.0=amazon:region=us-east-1": "ami-0830f7b072569d4a2",
+  "ami:account=652569569068:filters.image-type.0=machine:filters.name.0=fck-nat-amzn2-*-arm64-ebs:filters.state.0=available:owners.0=568608671756:region=us-east-1": "ami-0f57d652281755ea1"
+}

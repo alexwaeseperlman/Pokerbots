@@ -1,12 +1,70 @@
 version: "3.9"
 services:
-  postgres:
+  db:
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     image: postgres:14
+    user: postgres
+    ports:
+      - 5432:5432
     environment:
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=postgres
-    ports:
-      - "5432:5432"
     volumes:
-      - ./database/db:/var/lib/postgresql/data
+      - ./.volumes/database:/var/lib/postgresql/data
+  website:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - DB_URL=db:5432/postgres
+      - DB_USER=postgres
+      - DB_PASSWORD=${DB_PASSWORD}
+      - MICROSOFT_CLIENT_ID=b3bd7104-3006-4f15-99a3-14d09d6e4b45
+      - MICROSOFT_TENANT_ID=368f60b5-2a6e-428d-88e3-ce3975068888
+      - REDIRECT_URI=http://localhost:3000/api/login
+
+      - APP_PFP_S3_BUCKET=pokerbots-pfp
+      - BOT_S3_BUCKET=pokerbots-bots
+      - BOT_SIZE=5000000
+      - APP_PFP_ENDPOINT=https://pokerbots-pfp.s3.us-east-1.amazonaws.com
+
+      - AZURE_SECRET=${AZURE_SECRET}
+      - SECRET_KEY=${SECRET_KEY}
+
+      - RABBITMQ_URL=amqp://rabbitmq
+  worker:
+    build: ./pokergame
+    restart: always
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - RABBITMQ_URL=amqp://rabbitmq
+  nginx:
+    image: nginx:latest
+    depends_on:
+      - website
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - 3000:3000
+  rabbitmq:
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    image: rabbitmq:3-management-alpine
+    ports:
+      - 5672:5672
+      - 15672:15672
+    volumes:
+      - ./.volumes/rabbitmq:/data

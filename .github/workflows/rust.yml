@@ -19,5 +19,5 @@ jobs:
         run: cargo build --verbose
       - name: Run tests
         run: cargo test --verbose
-      - name: Run game tests
-        run: cd game; cargo test --verbose
+      - name: Run pokergame/worker tests
+        run: cd pokergame/worker; cargo test --verbose
