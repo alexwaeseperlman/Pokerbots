@@ -40,35 +40,6 @@ pub async fn server_message(
     }
     Ok(msg)
 }
-
-#[get("/api/pfp-url")]
-pub async fn pfp_url(
-    s3_client: actix_web::web::Data<s3::Client>,
-) -> actix_web::Result<HttpResponse> {
-    let req = s3_client
-        .get_bucket_location()
-        .bucket(&*PFP_S3_BUCKET)
-        .send()
-        .await
-        .map_err(|e| {
-            log::error!("Error getting pfp URL: {}", e);
-            actix_web::error::ErrorInternalServerError(e)
-        })?;
-
-    let s = req.location_constraint().unwrap().as_ref().to_string();
-    Ok(HttpResponse::Ok().body(format!(
-        "https://{}.s3.{}.amazonaws.com",
-        *crate::config::PFP_S3_BUCKET,
-        if s == "" {
-            // https://docs.rs/aws-sdk-s3/latest/aws_sdk_s3/operation/get_bucket_location/struct.GetBucketLocationOutput.html#method.location_constraint
-            // null is us-east-1 for some reason
-            "us-east-1"
-        } else {
-            s.as_str()
-        }
-    )))
-}
-
 #[derive(Deserialize)]
 pub struct TeamQuery {
     pub ids: Option<Vec<i32>>,

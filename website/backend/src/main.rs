@@ -155,7 +155,6 @@ async fn main() -> std::io::Result<()> {
             .service(api::data::my_account)
             .service(api::data::server_message)
             .service(api::data::my_team)
-            .service(api::data::pfp_url)
             .service(api::data::teams)
             .service(api::games::game_result)
             .service(api::games::make_game)

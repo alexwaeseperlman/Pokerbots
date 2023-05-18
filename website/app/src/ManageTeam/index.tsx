@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect } from "react";
-import { Game, apiUrl, useTeam, useUser, Team } from "../state";
+import { Game, apiUrl, useTeam, useUser, Team, pfpEndpoint } from "../state";
 import CreateTeam from "./CreateTeam";
 import Login from "../Login";
 import Box from "@mui/system/Box";
@@ -11,7 +11,7 @@ import Button from "@mui/material/Button";
 
 import { secondary_background } from "../styles.module.css";
 import { TeamBar } from "./TeamBar";
-import { Chip } from "@mui/material";
+import { Avatar, Chip } from "@mui/material";
 
 const DataGrid = React.lazy(() =>
   import("@mui/x-data-grid").then((mod) => ({ default: mod.DataGrid }))
@@ -59,7 +59,8 @@ function GameTable() {
                 ...game,
                 teama: game.teamb,
                 teamb: game.teama,
-                score_change: -game.score_change,
+                score_change:
+                  game.score_change === null ? null : -game.score_change,
               }
         );
         // replace team ids with their objects
@@ -88,7 +89,19 @@ function GameTable() {
     }, 1000);
     return () => clearInterval(int);
   }, [getGames, paginationModel]);
-  const renderTeam = (params) => <div>{params.value?.team_name}</div>;
+  const renderTeam = (params) => (
+    <>
+      <Avatar
+        sx={{
+          width: 24,
+          height: 24,
+          marginRight: 2,
+        }}
+        src={`${pfpEndpoint}${params.value?.id}`}
+      />
+      {params.value?.team_name}
+    </>
+  );
 
   return (
     <DataGrid
@@ -105,9 +118,22 @@ function GameTable() {
             return <Chip label={params.value} color={color} />;
           },
           minWidth: 100,
+          flex: 1,
         },
-        { field: "teama", headerName: "Team A", renderCell: renderTeam },
-        { field: "teamb", headerName: "Team B", renderCell: renderTeam },
+        {
+          field: "teama",
+          headerName: "Team A",
+          renderCell: renderTeam,
+          minWidth: 200,
+          flex: 1,
+        },
+        {
+          field: "teamb",
+          headerName: "Team B",
+          renderCell: renderTeam,
+          minWidth: 200,
+          flex: 1,
+        },
       ]}
       loading={loading}
       rows={games}

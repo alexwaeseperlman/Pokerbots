@@ -1,5 +1,5 @@
 import React, { useState, useLayoutEffect } from "react";
-import { apiUrl, usePfpEndpoint, useTeam, useUser } from "../state";
+import { apiUrl, pfpEndpoint, useTeam, useUser } from "../state";
 import Box from "@mui/system/Box";
 import { Container } from "@mui/system";
 import AddIcon from "@mui/icons-material/Add";
@@ -16,7 +16,6 @@ import { TableCell, TableButton } from ".";
 function PfpUpload() {
   const [drag, setDrag] = useState(false);
   const [team, fetchTeam] = useTeam();
-  const pfpEndpoint = usePfpEndpoint();
 
   const boxRef = React.useRef<HTMLDivElement>(null);
   const [boxWidth, setBoxWidth] = useState(0);
@@ -96,7 +95,7 @@ function PfpUpload() {
         src={
           uploading
             ? ""
-            : `${pfpEndpoint}/${team?.id}.png?${
+            : `${pfpEndpoint}${team?.id}.png?${
                 Math.floor(Date.now() / 1000) /* Reset the cache every second */
               }`
         }
