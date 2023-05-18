@@ -20,8 +20,6 @@ REDIRECT_URI = "http://localhost:3000/api/login"
 MICROSOFT_TENANT_ID = "your-tenant-id"
 
 APP_PFP_S3_BUCKET="s3-bucket-name-for-pfps"
-APP_API_URL=http://localhost:3000
-APP_FRONTEND_URL=http://localhost:5173
 
 BOT_S3_BUCKET=pokerbots-bots
 BOT_SIZE=5000000

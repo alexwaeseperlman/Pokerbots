@@ -11,7 +11,10 @@ lazy_static! {
     pub static ref DB_CONNECTION: Pool<ConnectionManager<PgConnection>> = {
         dotenv().ok();
         let db_url = env::var("DB_URL").expect("DB_URL must be set");
-        let db_password = env::var("DB_PASSWORD").expect("DB_PASSWORD must be set");
+        let db_password = env::var("DB_PASSWORD").unwrap_or_else(|_| {
+            fs::read_to_string("/run/secrets/db-password")
+                .expect("db-password must be set in .env or /run/secrets/db-password")
+        });
         let db_user = env::var("DB_USER").expect("DB_USER must be set");
 
         Pool::builder()
@@ -37,14 +40,12 @@ lazy_static! {
     pub static ref BOT_S3_BUCKET: String =
         std::env::var("BOT_S3_BUCKET").expect("BOT_S3_BUCKET must be set in .env");
     pub static ref AZURE_SECRET: String = std::env::var("AZURE_SECRET")
-        .unwrap_or_else(|_| fs::read_to_string("/run/secrets/AZURE_SECRET")
-            .expect("AZURE_SECRET must be set in .env or /run/secrets/azure_secret"));
+        .unwrap_or_else(|_| fs::read_to_string("/run/secrets/azure-secret")
+            .expect("AZURE_SECRET must be set in .env or /run/secrets/azure-secret"));
     pub static ref BOT_SIZE: u64 = std::env::var("BOT_SIZE")
         .expect("BOT_SIZE must be set in .env")
         .parse()
         .expect("BOT_SIZE must be a number");
-    pub static ref JOB_QUEUE: String =
-        std::env::var("JOB_QUEUE").expect("JOB_QUEUE must be set in .env");
-    pub static ref PLAY_JOB_DEFINITION: String =
-        std::env::var("PLAY_JOB_DEFINITION").expect("PLAY_JOB_DEFINITION must be set in .env");
+    pub static ref RABBITMQ_HOST: String =
+        std::env::var("RABBITMQ_URL").expect("RABBITMQ_URL must be set in .env");
 }

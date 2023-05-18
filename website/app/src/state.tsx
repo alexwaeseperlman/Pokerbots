@@ -37,7 +37,7 @@ export type Team = {
   members: User[];
   invites: string[];
   owner: string;
-  elo: number | null;
+  score: number | null;
 };
 
 const teamAtom = atom<Team | null | undefined>(

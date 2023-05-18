@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, sync::Arc};
 
 use actix_files::NamedFile;
 use actix_service::{fn_service, Service};
@@ -19,6 +19,7 @@ use aws_sdk_s3::types::{
 use diesel_migrations::*;
 use futures_util::future::FutureExt;
 
+use lapin::options::ConfirmSelectOptions;
 use pokerbots::{
     app::{api, login},
     config::DB_CONNECTION,
@@ -26,8 +27,8 @@ use pokerbots::{
 
 fn get_secret_key() -> cookie::Key {
     let key = std::env::var("SECRET_KEY").unwrap_or_else(|_| {
-        fs::read_to_string("/run/secrets/SECRET_KEY")
-            .expect("SECRET_KEY must be set in .env or /run/secrets/SECRET_KEY")
+        fs::read_to_string("/run/secrets/secret-key")
+            .expect("SECRET_KEY must be set in .env or /run/secrets/secret-key")
     });
     assert!(
         key.len() >= 64,
@@ -39,7 +40,6 @@ fn get_secret_key() -> cookie::Key {
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    std::env::set_var("RUST_LOG", "debug");
     env_logger::init();
     dotenvy::dotenv().ok();
 
@@ -47,7 +47,22 @@ async fn main() -> std::io::Result<()> {
     conn.run_pending_migrations(MIGRATIONS).unwrap();
     let aws_config = aws_config::load_from_env().await;
     let s3_client = web::Data::new(aws_sdk_s3::Client::new(&aws_config));
-    let batch_client = web::Data::new(aws_sdk_batch::Client::new(&aws_config));
+
+    let addr = std::env::var("AMQP_URL").expect("AMQP_URL must be set");
+    let conn = lapin::Connection::connect(&addr, lapin::ConnectionProperties::default())
+        .await
+        .expect("Connection error");
+
+    // listen for messages
+    let channel = conn.create_channel().await.unwrap();
+    let queue = channel
+        .queue_declare(
+            "poker",
+            lapin::options::QueueDeclareOptions::default(),
+            lapin::types::FieldTable::default(),
+        )
+        .await
+        .unwrap();
 
     /*
     s3_client
@@ -98,7 +113,7 @@ async fn main() -> std::io::Result<()> {
         .await
         .unwrap();
     */
-
+    let amqp_channel = web::Data::new(Arc::new(channel));
     // Generate the list of routes in your App
     HttpServer::new(move || {
         let session_middleware =
@@ -114,8 +129,8 @@ async fn main() -> std::io::Result<()> {
                 log::debug!("{}", req.uri());
                 srv.call(req).map(|res| res)
             })
+            .app_data(amqp_channel.clone())
             .app_data(s3_client.clone())
-            .app_data(batch_client.clone())
             .wrap(Logger::new("%a %{User-Agent}i"))
             .wrap(session_middleware)
             .route("/api/login", web::get().to(login::handle_login))

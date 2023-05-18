@@ -25,7 +25,7 @@ pub struct TeamData {
     pub team_name: String,
     pub members: Vec<UserData>,
     pub owner: String,
-    pub elo: Option<i32>,
+    pub score: Option<i32>,
     pub invites: Vec<String>,
 }
 
@@ -130,7 +130,7 @@ pub fn get_team_data(session: &Session) -> Option<TeamData> {
         team_name: t.team_name.clone(),
         members,
         owner: t.owner.clone(),
-        elo: t.elo,
+        score: t.score,
         invites,
     })
 }

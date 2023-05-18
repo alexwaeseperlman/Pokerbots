@@ -1,0 +1,8 @@
+[package]
+name = "shared"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+lapin = "2.1.1"
+serde = { version = "1.0.152", features = ["derive"] }

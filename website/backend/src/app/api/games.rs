@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{
     app::login,
     app::login::microsoft_login_url,
@@ -15,9 +17,11 @@ use aws_sdk_s3 as s3;
 use aws_sdk_s3::presigning::PresigningConfig;
 use chrono;
 use diesel::prelude::*;
+use futures_util::FutureExt;
 use rand::{self, Rng};
 use serde::Deserialize;
 use serde_json::json;
+use shared::PlayTask;
 
 #[derive(Deserialize)]
 pub struct GameResultQuery {
@@ -56,7 +60,7 @@ pub async fn game_result(
 pub async fn make_game(
     session: Session,
     web::Query::<MakeGameQuery>(MakeGameQuery { teamA, teamB }): web::Query<MakeGameQuery>,
-    batch_client: web::Data<aws_sdk_batch::Client>,
+    amqp_channel: web::Data<Arc<lapin::Channel>>,
 ) -> actix_web::Result<HttpResponse> {
     // generate a random code and insert it into the database
     // also push a batch job to the queue
@@ -72,19 +76,39 @@ pub async fn make_game(
         .map_err(|e| {
             actix_web::error::ErrorInternalServerError(format!("Unable to create game: {}", e))
         })?;
+    log::debug!("Channel state {:?}", amqp_channel.status());
     // push a batch job to the queue
-    batch_client
-        .submit_job()
-        .set_job_name(Some(id.clone()))
-        .set_job_queue(Some((*crate::config::JOB_QUEUE).clone()))
-        .set_job_definition(Some((*crate::config::PLAY_JOB_DEFINITION).clone()))
-        .parameters("botA", teamA.to_string())
-        .parameters("botB", teamB.to_string())
-        .parameters("id", id)
-        .send()
-        .await
-        .map_err(|e| {
-            actix_web::error::ErrorInternalServerError(format!("Unable to submit job: {}", e))
-        })?;
+    log::debug!(
+        "message sent {:?}",
+        amqp_channel
+            .basic_publish(
+                "",
+                "poker",
+                lapin::options::BasicPublishOptions {
+                    mandatory: true,
+                    ..Default::default()
+                },
+                &serde_json::to_vec(&PlayTask {
+                    bota: game.teama.to_string(),
+                    botb: game.teamb.to_string(),
+                    id: game.id.clone(),
+                    date: chrono::Utc::now().naive_utc().timestamp_millis(),
+                })
+                .map_err(|e| {
+                    actix_web::error::ErrorInternalServerError(format!(
+                        "Unable to serialize game: {}",
+                        e
+                    ))
+                })?,
+                lapin::BasicProperties::default(),
+            )
+            .await
+            .map_err(|e| {
+                actix_web::error::ErrorInternalServerError(format!("Unable to send game: {}", e))
+            })?
+            .await
+            .unwrap()
+            .take_message()
+    );
     Ok(HttpResponse::Ok().json(game))
 }

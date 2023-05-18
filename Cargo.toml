@@ -1,7 +1,8 @@
 [workspace]
 members = [
-    "bots/game",
+    "pokergame/worker",
     "website/backend",
+    "shared"
 ]
 default-members = [
     "website/backend",

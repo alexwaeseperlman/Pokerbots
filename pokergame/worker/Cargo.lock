@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "pokerbots-game"
+name = "pokergame"
 version = "0.1.0"
