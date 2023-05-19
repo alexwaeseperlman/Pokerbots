@@ -4,8 +4,8 @@ use crate::{
     app::login,
     app::login::microsoft_login_url,
     config::{BOT_S3_BUCKET, DB_CONNECTION, PFP_S3_BUCKET},
-    models::{Game, TeamInvite, User},
-    schema::{self, team_invites, teams, users},
+    models::{Bot, Game, TeamInvite, User},
+    schema,
 };
 use actix_session::Session;
 use actix_web::{
@@ -31,8 +31,8 @@ pub struct GameResultQuery {
 
 #[derive(Deserialize)]
 pub struct MakeGameQuery {
-    pub teamA: i32,
-    pub teamB: i32,
+    pub bot_a: i32,
+    pub bot_b: i32,
 }
 
 #[get("/api/game-result")]
@@ -59,7 +59,7 @@ pub async fn game_result(
 #[get("/api/make-game")]
 pub async fn make_game(
     session: Session,
-    web::Query::<MakeGameQuery>(MakeGameQuery { teamA, teamB }): web::Query<MakeGameQuery>,
+    web::Query::<MakeGameQuery>(MakeGameQuery { bot_a, bot_b }): web::Query<MakeGameQuery>,
     amqp_channel: web::Data<Arc<lapin::Channel>>,
 ) -> actix_web::Result<HttpResponse> {
     // generate a random code and insert it into the database
@@ -68,8 +68,8 @@ pub async fn make_game(
     let conn = &mut (*DB_CONNECTION).get().unwrap();
     let game = diesel::insert_into(schema::games::dsl::games)
         .values(crate::models::NewGame {
-            teama: teamA,
-            teamb: teamB,
+            bot_a,
+            bot_b,
             id: id.clone(),
         })
         .get_result::<Game>(conn)
@@ -83,8 +83,8 @@ pub async fn make_game(
             "poker",
             lapin::options::BasicPublishOptions::default(),
             &serde_json::to_vec(&PlayTask {
-                bota: game.teama.to_string(),
-                botb: game.teamb.to_string(),
+                bot_a: game.bot_a.to_string(),
+                bot_b: game.bot_b.to_string(),
                 id: game.id.clone(),
                 date: game.created,
             })
@@ -98,6 +98,17 @@ pub async fn make_game(
         )
         .await
         .map_err(|e| {
+            // Remove the game from the database
+            diesel::delete(schema::games::dsl::games)
+                .filter(schema::games::dsl::id.eq(id))
+                .execute(conn)
+                .map_err(|e| {
+                    actix_web::error::ErrorInternalServerError(format!(
+                        "Unable to delete game: {}",
+                        e
+                    ))
+                })
+                .unwrap();
             actix_web::error::ErrorInternalServerError(format!("Unable to send game: {}", e))
         })?
         .await
@@ -137,10 +148,23 @@ pub async fn games(
         base = base.filter(schema::games::dsl::id.eq(id));
     }
     if let Some(team) = team {
+        // get bots belonging to the team
+        let bots: Vec<i32> = schema::bots::dsl::bots
+            .filter(schema::bots::dsl::team.eq(team))
+            .select(schema::bots::dsl::id)
+            .load::<i32>(conn)
+            .map_err(|e| {
+                actix_web::error::ErrorInternalServerError(format!(
+                    "Unable to read bots for team {}",
+                    e
+                ))
+            })?
+            .into_iter()
+            .collect();
         base = base.filter(
-            schema::games::dsl::teama
-                .eq(team)
-                .or(schema::games::dsl::teamb.eq(team)),
+            schema::games::dsl::bot_a
+                .eq_any(bots.clone())
+                .or(schema::games::dsl::bot_b.eq_any(bots.clone())),
         );
     }
     let count = count.unwrap_or(false);

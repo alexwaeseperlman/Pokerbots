@@ -1,16 +1,19 @@
+use std::io::Read;
+
 use crate::{
     app::login,
     app::login::microsoft_login_url,
-    config::{BOT_S3_BUCKET, DB_CONNECTION, PFP_S3_BUCKET},
-    models::{TeamInvite, User},
-    schema::{team_invites, teams, users},
+    config::{BOT_S3_BUCKET, BOT_SIZE, DB_CONNECTION, PFP_S3_BUCKET},
+    models::{NewBot, TeamInvite, User},
+    schema::{bots, team_invites, teams, users},
 };
 use actix_session::Session;
-use actix_web::{get, web, HttpResponse};
+use actix_web::{get, post, put, web, HttpResponse};
 use aws_sdk_s3 as s3;
 use aws_sdk_s3::presigning::PresigningConfig;
 use chrono;
 use diesel::prelude::*;
+use futures_util::StreamExt;
 use rand::{self, Rng};
 use serde::Deserialize;
 use serde_json::json;
@@ -257,16 +260,11 @@ pub async fn join_team(
         .finish())
 }
 
-#[derive(Deserialize)]
-pub struct UploadUrlQuery {
-    content_length: i64,
-}
-
-#[get("/api/pfp-upload-url")]
-pub async fn pfp_upload_url(
+#[put("/api/upload-pfp")]
+pub async fn upload_pfp(
     s3_client: actix_web::web::Data<s3::Client>,
-    web::Query(UploadUrlQuery { content_length }): web::Query<UploadUrlQuery>,
     session: Session,
+    mut payload: web::Payload,
 ) -> actix_web::Result<HttpResponse> {
     let user = login::get_user_data(&session);
     let team = login::get_team_data(&session);
@@ -276,74 +274,117 @@ pub async fn pfp_upload_url(
     if team.is_none() || team.clone().unwrap().owner != user.clone().unwrap().email {
         return Ok(HttpResponse::Unauthorized().body("{\"error\": \"Not team owner\"}"));
     }
-    if content_length > 262144 {
-        return Ok(HttpResponse::BadRequest().body("{\"error\": \"File too large\"}"));
+
+    let mut body = web::BytesMut::new();
+    while let Some(chunk) = payload.next().await {
+        let chunk = chunk.unwrap();
+        // limit max size of in-memory payload
+        if (body.len() + chunk.len()) > 500000 {
+            return Err(actix_web::error::ErrorBadRequest("overflow"));
+        }
+        body.extend_from_slice(&chunk);
     }
-    let user = user.unwrap();
-    let presigning_config = PresigningConfig::expires_in(std::time::Duration::from_millis(60000))
-        .map_err(|e| {
-        actix_web::error::ErrorInternalServerError(format!("Unable to make upload link: {}", e))
-    })?;
-    let req = s3_client
+    s3_client
         .put_object()
         .bucket(&*PFP_S3_BUCKET)
         .key(format!("{}.png", team.unwrap().id))
+        .body(body.to_vec().into())
         .acl(s3::types::ObjectCannedAcl::PublicRead)
-        .content_length(content_length)
-        .presigned(presigning_config)
+        .send()
         .await
         .map_err(|e| {
+            log::warn!("Unable to upload pfp: {}", e);
             actix_web::error::ErrorNotFound(format!("Unable to make upload link {}", e))
         })?;
-    let headers = req.headers();
-    Ok(HttpResponse::Ok().json(json!({
-        "headers": headers
-            .iter()
-            .map(|(k, v)| (k.as_str(), v.to_str().unwrap()))
-            .collect::<Vec<(&str, &str)>>(),
-        "url": req.uri().to_string(),
-    })))
+
+    // TODO: Maybe run the image through a sanitizer/thumbnailer
+    // TODO: Maybe check for inappropriate content using Rekognition
+
+    Ok(HttpResponse::Ok().body(""))
 }
 
-#[get("/api/bot-upload-url")]
-pub async fn bot_upload_url(
+#[post("/api/upload-bot")]
+pub async fn upload_bot(
     s3_client: actix_web::web::Data<s3::Client>,
-    web::Query(UploadUrlQuery { content_length }): web::Query<UploadUrlQuery>,
     session: Session,
+    mut payload: web::Payload,
 ) -> actix_web::Result<HttpResponse> {
     let user = login::get_user_data(&session);
     let team = login::get_team_data(&session);
     if user.is_none() {
-        return Ok(HttpResponse::Unauthorized().body("{\"error\": \"Not logged in.\"}"));
+        return Ok(HttpResponse::Unauthorized().body("{\"error\": \"Not logged in\"}"));
     }
     if team.is_none() {
-        return Ok(HttpResponse::Unauthorized().body("{\"error\": \"Not a member of a team.\"}"));
+        return Ok(HttpResponse::Unauthorized().body("{\"error\": \"Not on a team\"}"));
     }
-    if content_length > 262144 {
-        return Ok(HttpResponse::BadRequest().body("{\"error\": \"File too large\"}"));
+
+    let mut body = web::BytesMut::new();
+    while let Some(chunk) = payload.next().await {
+        let chunk = chunk.unwrap();
+        // limit max size of in-memory payload
+        if (body.len() + chunk.len()) > (*BOT_SIZE).try_into().unwrap() {
+            return Err(actix_web::error::ErrorBadRequest("overflow"));
+        }
+        body.extend_from_slice(&chunk);
     }
-    let user = user.unwrap();
-    let presigning_config = PresigningConfig::expires_in(std::time::Duration::from_millis(10000))
-        .map_err(|e| {
-        actix_web::error::ErrorInternalServerError(format!("Unable to make upload link: {}", e))
+    let mut archive = zip::ZipArchive::new(std::io::Cursor::new(body.to_vec())).map_err(|e| {
+        actix_web::error::ErrorBadRequest(format!("Unable to parse zip file: {}", e))
     })?;
-    let req = s3_client
+    // TODO: if the zip file is one big folder, we should change it to be the root.
+    let mut bot_file = archive.by_name("bot.json").map_err(|e| {
+        actix_web::error::ErrorBadRequest(format!("Unable to find bot.json: {}", e))
+    })?;
+    if bot_file.is_dir() {
+        return Err(actix_web::error::ErrorBadRequest("bot.json is a directory"));
+    }
+    let mut bot_json = String::new();
+    bot_file.read_to_string(&mut bot_json).map_err(|e| {
+        actix_web::error::ErrorBadRequest(format!("Unable to read bot.json: {}", e))
+    })?;
+
+    let bot: shared::Bot = serde_json::from_str(&bot_json).map_err(|e| {
+        actix_web::error::ErrorBadRequest(format!("Unable to parse bot.json: {}", e))
+    })?;
+
+    println!("{:?}", bot);
+    // Create a bot entry in the database
+    let conn = &mut (*DB_CONNECTION).get().unwrap();
+    let id = diesel::insert_into(bots::dsl::bots)
+        .values(&NewBot {
+            team: team.unwrap().id,
+            name: bot.name,
+            description: bot.description,
+            score: 0.0,
+            uploaded_by: user.unwrap().email,
+        })
+        .returning(bots::dsl::id)
+        .get_result::<i32>(conn)
+        .map_err(|e| {
+            actix_web::error::ErrorInternalServerError(format!("Failed to create bot: {}", e))
+        })?;
+    // upload the file to s3
+    s3_client
         .put_object()
         .bucket(&*BOT_S3_BUCKET)
-        .key(format!("upload/{}.zip", team.unwrap().id))
-        .content_length(content_length)
-        .content_type("application/zip")
-        .presigned(presigning_config)
+        .key(format!("{}.zip", id))
+        .body(body.to_vec().into())
+        .send()
         .await
         .map_err(|e| {
+            log::warn!("Unable to upload bot: {}", e);
+
+            // delete the bot entry on upload fail
+            diesel::delete(bots::dsl::bots.filter(bots::dsl::id.eq(id)))
+                .execute(conn)
+                .map_err(|e| {
+                    actix_web::error::ErrorInternalServerError(format!(
+                        "Failed to delete bot: {}",
+                        e
+                    ))
+                })
+                .unwrap();
             actix_web::error::ErrorNotFound(format!("Unable to make upload link {}", e))
         })?;
-    let headers = req.headers();
-    Ok(HttpResponse::Ok().json(json!({
-        "headers": headers
-            .iter()
-            .map(|(k, v)| (k.as_str(), v.to_str().unwrap()))
-            .collect::<Vec<(&str, &str)>>(),
-        "url": req.uri().to_string(),
-    })))
+
+    Ok(HttpResponse::Ok().json(json!({ "id": id })))
 }

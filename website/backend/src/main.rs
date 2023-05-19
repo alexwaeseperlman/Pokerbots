@@ -17,7 +17,7 @@ use aws_sdk_s3::types::{
     OwnershipControls, OwnershipControlsRule, PublicAccessBlockConfiguration,
 };
 use diesel_migrations::*;
-use futures_util::future::FutureExt;
+use futures_util::{future::FutureExt, StreamExt};
 use lapin::options::ConfirmSelectOptions;
 use pokerbots::{
     app::{api, login},
@@ -55,7 +55,7 @@ async fn main() -> std::io::Result<()> {
     // listen for messages
     let channel = conn.create_channel().await.unwrap();
     let channel_b = conn.create_channel().await.unwrap();
-    channel
+    let mut queue = channel
         .queue_declare(
             "poker",
             lapin::options::QueueDeclareOptions::default(),
@@ -64,7 +64,7 @@ async fn main() -> std::io::Result<()> {
         .await
         .unwrap();
 
-    channel_b
+    let mut queue_b = channel_b
         .queue_declare(
             "game_results",
             lapin::options::QueueDeclareOptions::default(),
@@ -148,14 +148,16 @@ async fn main() -> std::io::Result<()> {
             .service(api::manage_team::delete_team)
             .service(api::manage_team::leave_team)
             .service(api::manage_team::make_invite)
-            .service(api::manage_team::pfp_upload_url)
+            .service(api::manage_team::upload_pfp)
+            .service(api::manage_team::upload_bot)
             .service(api::manage_team::join_team)
             .service(api::manage_team::cancel_invite)
-            .service(api::manage_team::bot_upload_url)
+            //.service(api::manage_team::bot_upload_url)
             .service(api::data::my_account)
             .service(api::data::server_message)
             .service(api::data::my_team)
             .service(api::data::teams)
+            .service(api::data::bots)
             .service(api::games::game_result)
             .service(api::games::make_game)
             .service(api::games::games)

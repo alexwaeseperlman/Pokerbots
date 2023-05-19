@@ -24,13 +24,13 @@ function PfpUpload() {
   const handleUpload = async (f: File) => {
     setUploading(true);
     // TODO: Display errors on these api calls
-    const uploadLink = await (
+    /*const uploadLink = await (
       await fetch(`${apiUrl}/pfp-upload-url?content_length=${f.size}`)
-    ).json();
-    await fetch(uploadLink.url, {
+    ).json();*/
+    await fetch(`${apiUrl}/upload-pfp` /*uploadLink.url*/, {
       method: "PUT",
       body: f,
-      headers: uploadLink.headers,
+      //headers: uploadLink.headers,
     }).finally(() => {
       setTimeout(() => {
         fetchTeam();

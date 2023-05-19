@@ -77,10 +77,47 @@ console.log(import.meta.env.APP_PFP_ENDPOINT);
 export const pfpEndpoint = import.meta.env.APP_PFP_ENDPOINT;
 export const apiUrl = window.location.origin + "/api";
 
+export type Bot = {
+  id: number;
+  name: string;
+  team: Team;
+  uploaded_by: string;
+  date_uploaded: number;
+};
+
 export type Game = {
   id: string;
-  teama: Team;
-  teamb: Team;
+  bot_a: Bot;
+  bot_b: Bot;
   score_change: number;
   time: number;
 };
+
+// take a list of games that have bot ids and replace them with bot objects
+export async function fillInGames(
+  games: ({ bot_a: number; bot_b: number } & Omit<Game, "bot_a" | "bot_b">)[]
+) {
+  // replace team ids with their objects
+  const botIds = new Set<number>([]);
+  for (const game of games) botIds.add(game.bot_a), botIds.add(game.bot_b);
+  const bots = await fetch(`${apiUrl}/bots?id=${[...botIds].join(",")}`).then(
+    (res) => res.json()
+  );
+
+  const teamIds = new Set<number>([]);
+  for (const bot of bots) teamIds.add(bot.team);
+  const teams = await fetch(
+    `${apiUrl}/teams?id=${[...teamIds].join(",")}`
+  ).then((res) => res.json());
+
+  const teamMap = new Map(teams.map((team) => [team.id, team]));
+  const botMap = new Map(
+    bots.map((bot) => [bot.id, { ...bot, team: teamMap.get(bot.team) }])
+  );
+
+  return games.map((game) => ({
+    ...game,
+    bot_a: botMap.get(game.bot_a) as Bot,
+    bot_b: botMap.get(game.bot_b) as Bot,
+  }));
+}

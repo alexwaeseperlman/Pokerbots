@@ -1,5 +1,6 @@
 version: "3.9"
 services:
+  # Postgres database
   db:
     healthcheck:
       test: ["CMD-SHELL", "pg_isready"]
@@ -16,6 +17,7 @@ services:
       - POSTGRES_DB=postgres
     volumes:
       - ./.volumes/database:/var/lib/postgresql/data
+  # Frontend and backend
   website:
     build:
       context: .
@@ -33,7 +35,7 @@ services:
       - MICROSOFT_TENANT_ID=${MICROSOFT_TENANT_ID}
       - REDIRECT_URI=http://localhost:3000/api/login
 
-      - APP_PFP_S3_BUCKET=pokerbots-pfp
+      - PFP_S3_BUCKET=pokerbots-pfp
       - BOT_S3_BUCKET=pokerbots-bots
       - BOT_SIZE=5000000
       - APP_PFP_ENDPOINT=https://pokerbots-pfp.s3.us-east-1.amazonaws.com
@@ -56,6 +58,7 @@ services:
     environment:
       - AMQP_URL=amqp://rabbitmq
       - RUST_LOG=debug
+  # nginx reverse proxy and load balancer
   nginx:
     image: nginx:latest
     depends_on:
@@ -64,6 +67,8 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     ports:
       - 3000:3000
+
+  # RabbitMQ message broker
   rabbitmq:
     healthcheck:
       test: rabbitmq-diagnostics -q ping

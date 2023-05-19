@@ -1,9 +1,27 @@
 import React, { useState } from "react";
 import Box from "@mui/system/Box";
 import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
+import { apiUrl } from "../state";
 
 export function BotUpload() {
   const [drag, setDrag] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const handleUpload = (file: File) => {
+    setUploading(true);
+    fetch(`${apiUrl}/upload-bot`, {
+      method: "POST",
+      body: file,
+    })
+      .then(async (res) => {
+        console.log(await res.text());
+      })
+      .catch((err) => {
+        console.log(err);
+      })
+      .finally(() => {
+        setUploading(false);
+      });
+  };
 
   return (
     <Box
@@ -38,7 +56,7 @@ export function BotUpload() {
       }}
       onDrop={(e) => {
         e.preventDefault();
-        console.log(e.dataTransfer.files);
+        handleUpload(e.dataTransfer.files[0]);
         setDrag(false);
         console.log("file dragged");
       }}
@@ -71,6 +89,9 @@ export function BotUpload() {
           click to select files
           <input
             style={{ display: "none" }}
+            onChange={(e) => {
+              handleUpload(e.target.files[0]);
+            }}
             type="file"
             id="bot-file-input"
             name="bot-file-input"

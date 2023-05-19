@@ -1,10 +1,22 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
+    bots (id) {
+        id -> Int4,
+        team -> Int4,
+        name -> Text,
+        description -> Nullable<Text>,
+        score -> Float4,
+        created -> Int8,
+        uploaded_by -> Text,
+    }
+}
+
+diesel::table! {
     games (id) {
         id -> Text,
-        teama -> Int4,
-        teamb -> Int4,
+        bot_a -> Int4,
+        bot_b -> Int4,
         score_change -> Nullable<Int4>,
         created -> Int8,
     }
@@ -37,6 +49,7 @@ diesel::table! {
 }
 
 diesel::allow_tables_to_appear_in_same_query!(
+    bots,
     games,
     team_invites,
     teams,

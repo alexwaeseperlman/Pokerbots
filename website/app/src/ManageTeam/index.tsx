@@ -1,5 +1,13 @@
 import React, { useCallback, useEffect } from "react";
-import { Game, apiUrl, useTeam, useUser, Team, pfpEndpoint } from "../state";
+import {
+  Game,
+  apiUrl,
+  useTeam,
+  useUser,
+  Team,
+  pfpEndpoint,
+  fillInGames,
+} from "../state";
 import CreateTeam from "./CreateTeam";
 import Login from "../Login";
 import Box from "@mui/system/Box";
@@ -11,7 +19,8 @@ import Button from "@mui/material/Button";
 
 import { secondary_background } from "../styles.module.css";
 import { TeamBar } from "./TeamBar";
-import { Avatar, Chip } from "@mui/material";
+import { Avatar, Chip, Typography } from "@mui/material";
+import BotTable from "./BotTable";
 
 const DataGrid = React.lazy(() =>
   import("@mui/x-data-grid").then((mod) => ({ default: mod.DataGrid }))
@@ -57,27 +66,15 @@ function GameTable() {
             ? game
             : {
                 ...game,
-                teama: game.teamb,
-                teamb: game.teama,
+                bot_a: game.bot_a,
+                bot_b: game.bot_b,
                 score_change:
                   game.score_change === null ? null : -game.score_change,
               }
         );
-        // replace team ids with their objects
-        const teamIds = new Set<number>([team?.id ?? 0]);
-        for (const game of games) teamIds.add(game.teamb);
-        const teams = await fetch(
-          `${apiUrl}/teams?id=${[...teamIds].join(",")}`
-        ).then((res) => res.json());
-        const teamMap = new Map(teams.map((team) => [team.id, team]));
+
         setLoading(false);
-        setGames(
-          games.map((game) => ({
-            ...game,
-            teama: teamMap.get(game.teama),
-            teamb: teamMap.get(game.teamb),
-          }))
-        );
+        setGames(await fillInGames(games));
       });
   }, [team?.id, paginationModel.page, paginationModel.pageSize]);
   //TODO: only poll active games
@@ -97,9 +94,13 @@ function GameTable() {
           height: 24,
           marginRight: 2,
         }}
-        src={`${pfpEndpoint}${params.value?.id}`}
+        src={`${pfpEndpoint}${params.value?.team.id}`}
       />
-      {params.value?.team_name}
+      <Box flexDirection={"column"}>
+        <Typography>{params.value?.team.team_name}</Typography>
+
+        <Typography color={"text.secondary"}>{params.value?.name}</Typography>
+      </Box>
     </>
   );
 
@@ -121,15 +122,15 @@ function GameTable() {
           flex: 1,
         },
         {
-          field: "teama",
-          headerName: "Team A",
+          field: "bot_a",
+          headerName: "You",
           renderCell: renderTeam,
           minWidth: 200,
           flex: 1,
         },
         {
-          field: "teamb",
-          headerName: "Team B",
+          field: "bot_b",
+          headerName: "Opponent",
           renderCell: renderTeam,
           minWidth: 200,
           flex: 1,
@@ -168,27 +169,8 @@ export default function ManageTeam() {
         >
           <Container>
             <h2>Bots</h2>
-            <DataGrid
-              columns={[
-                { field: "bot-name", headerName: "Bot name", width: 130 },
-                { field: "uploaded", headerName: "Uploaded", width: 130 },
-                { field: "uploaded-by", headerName: "Uploaded by", width: 130 },
-              ]}
-              rows={[
-                {
-                  id: 1,
-                  "bot-name": "Bot 1",
-                  uploaded: "2021-10-01",
-                  "uploaded-by": "User 1",
-                },
-                {
-                  id: 2,
-                  "bot-name": "Bot 2",
-                  uploaded: "2021-10-02",
-                  "uploaded-by": "User 2",
-                },
-              ]}
-            ></DataGrid>
+
+            <BotTable />
             <h2>Games</h2>
             <GameTable />
           </Container>
