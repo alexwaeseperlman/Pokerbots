@@ -22,37 +22,10 @@ use rand::{self, Rng};
 use serde::Deserialize;
 use serde_json::json;
 use shared::PlayTask;
-
-#[derive(Deserialize)]
-pub struct GameResultQuery {
-    pub id: String,
-    pub change: i32,
-}
-
 #[derive(Deserialize)]
 pub struct MakeGameQuery {
     pub bot_a: i32,
     pub bot_b: i32,
-}
-
-#[get("/api/game-result")]
-pub async fn game_result(
-    session: Session,
-    web::Query::<GameResultQuery>(GameResultQuery { id, change }): web::Query<GameResultQuery>,
-) -> actix_web::Result<HttpResponse> {
-    // check for the code in the database and update the game
-    // with this value
-    // Insert an invite with expiry date 24 hours from now
-    let conn = &mut (*DB_CONNECTION).get().unwrap();
-    diesel::update(schema::games::dsl::games)
-        .filter(schema::games::dsl::id.eq(id))
-        .set(schema::games::dsl::score_change.eq(change))
-        .execute(conn)
-        .map_err(|e| {
-            actix_web::error::ErrorInternalServerError(format!("Unable to update game: {}", e))
-        })?;
-    //TODO: calculate elo
-    Ok(HttpResponse::Ok().body(""))
 }
 
 //TODO: restrict who can make games
