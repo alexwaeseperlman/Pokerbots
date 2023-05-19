@@ -43,6 +43,7 @@ services:
       - SECRET_KEY=${SECRET_KEY}
 
       - AMQP_URL=amqp://rabbitmq
+      - APP_PFP_ENDPOINT=https://loremflickr.com/128/128?lock=
   worker:
     build:
       context: .
