@@ -77,34 +77,32 @@ pub async fn make_game(
             actix_web::error::ErrorInternalServerError(format!("Unable to create game: {}", e))
         })?;
     // push a batch job to the queue
-    log::debug!(
-        "message sent {:?}",
-        amqp_channel
-            .basic_publish(
-                "",
-                "poker",
-                lapin::options::BasicPublishOptions::default(),
-                &serde_json::to_vec(&PlayTask {
-                    bota: game.teama.to_string(),
-                    botb: game.teamb.to_string(),
-                    id: game.id.clone(),
-                    date: game.created
-                })
-                .map_err(|e| {
-                    actix_web::error::ErrorInternalServerError(format!(
-                        "Unable to serialize game: {}",
-                        e
-                    ))
-                })?,
-                lapin::BasicProperties::default(),
-            )
-            .await
+    let job = amqp_channel
+        .basic_publish(
+            "",
+            "poker",
+            lapin::options::BasicPublishOptions::default(),
+            &serde_json::to_vec(&PlayTask {
+                bota: game.teama.to_string(),
+                botb: game.teamb.to_string(),
+                id: game.id.clone(),
+                date: game.created,
+            })
             .map_err(|e| {
-                actix_web::error::ErrorInternalServerError(format!("Unable to send game: {}", e))
-            })?
-            .await
-            .unwrap()
-    );
+                actix_web::error::ErrorInternalServerError(format!(
+                    "Unable to serialize game: {}",
+                    e
+                ))
+            })?,
+            lapin::BasicProperties::default(),
+        )
+        .await
+        .map_err(|e| {
+            actix_web::error::ErrorInternalServerError(format!("Unable to send game: {}", e))
+        })?
+        .await
+        .unwrap();
+    log::debug!("message sent {:?}", job);
     Ok(HttpResponse::Ok().json(game))
 }
 

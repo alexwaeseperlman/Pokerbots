@@ -14,7 +14,6 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=postgres
-      - RUST_LOG=debug
     volumes:
       - ./.volumes/database:/var/lib/postgresql/data
   website:
@@ -43,6 +42,8 @@ services:
       - SECRET_KEY=${SECRET_KEY}
 
       - AMQP_URL=amqp://rabbitmq
+      - RUST_LOG=debug
+
       - APP_PFP_ENDPOINT=https://loremflickr.com/128/128?lock=
   worker:
     build:
@@ -74,4 +75,5 @@ services:
       - 5672:5672
       - 15672:15672
     volumes:
-      - ./.volumes/rabbitmq:/data
+      - ./.volumes/rabbitmq/data:/var/lib/rabbitmq
+      - ./.volumes/rabbitmq/log:/var/log/rabbitmq
