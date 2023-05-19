@@ -158,7 +158,6 @@ async fn main() -> std::io::Result<()> {
             .service(api::data::my_team)
             .service(api::data::teams)
             .service(api::data::bots)
-            .service(api::games::game_result)
             .service(api::games::make_game)
             .service(api::games::games)
             .service(api::signout::signout)
