@@ -15,7 +15,7 @@ use chrono;
 use diesel::prelude::*;
 use futures_util::StreamExt;
 use rand::{self, Rng};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 #[derive(Deserialize)]
@@ -387,4 +387,34 @@ pub async fn upload_bot(
         })?;
 
     Ok(HttpResponse::Ok().json(json!({ "id": id })))
+}
+
+#[derive(Deserialize)]
+pub struct KickMemberQuery {
+    pub email: String,
+}
+
+#[get("/api/kick-member")]
+pub async fn kick_member(
+    session: Session,
+    web::Query::<KickMemberQuery>(KickMemberQuery { email }): web::Query<KickMemberQuery>,
+) -> actix_web::Result<HttpResponse> {
+    let user = login::get_user_data(&session);
+    let team = login::get_team_data(&session);
+    if user.is_none() {
+        return Ok(HttpResponse::Unauthorized().body("{\"error\": \"Not logged in\"}"));
+    }
+    if team.is_none() || team.clone().unwrap().owner != user.clone().unwrap().email {
+        return Ok(HttpResponse::Unauthorized().body("{\"error\": \"Not team owner\"}"));
+    }
+
+    let conn = &mut (*DB_CONNECTION).get().unwrap();
+    diesel::update(users::dsl::users)
+        .filter(users::dsl::email.eq(email))
+        .set(users::dsl::team_id.eq::<Option<i32>>(None))
+        .execute(conn)
+        .map_err(|e| {
+            actix_web::error::ErrorInternalServerError(format!("Failed to kick member: {}", e))
+        })?;
+    Ok(HttpResponse::Ok().body(""))
 }
