@@ -56,6 +56,7 @@ export const useTeam = () => {
     ).json()) as unknown as Team;
     setTeam(data);
     localStorage.setItem("team", JSON.stringify(data));
+    return data;
   };
   // fetch team
   useEffect(() => {
@@ -97,24 +98,24 @@ export type Game = {
 export async function fillInGames(
   games: ({ bot_a: number; bot_b: number } & Omit<Game, "bot_a" | "bot_b">)[]
 ) {
+  if (games.length == 0) return [] as Game[];
   // replace team ids with their objects
   const botIds = new Set<number>([]);
   for (const game of games) botIds.add(game.bot_a), botIds.add(game.bot_b);
-  const bots = await fetch(`${apiUrl}/bots?id=${[...botIds].join(",")}`).then(
+  const bots = await fetch(`${apiUrl}/bots?ids=${[...botIds].join(",")}`).then(
     (res) => res.json()
   );
 
   const teamIds = new Set<number>([]);
   for (const bot of bots) teamIds.add(bot.team);
   const teams = await fetch(
-    `${apiUrl}/teams?id=${[...teamIds].join(",")}`
+    `${apiUrl}/teams?ids=${[...teamIds].join(",")}`
   ).then((res) => res.json());
 
   const teamMap = new Map(teams.map((team) => [team.id, team]));
   const botMap = new Map(
     bots.map((bot) => [bot.id, { ...bot, team: teamMap.get(bot.team) }])
   );
-
   return games.map((game) => ({
     ...game,
     bot_a: botMap.get(game.bot_a) as Bot,

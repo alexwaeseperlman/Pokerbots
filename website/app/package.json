@@ -25,6 +25,7 @@
     "dotenv": "^16.0.3",
     "emotion": "^11.0.0",
     "jotai": "^2.1.0",
+    "notistack": "^3.0.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.11.1"

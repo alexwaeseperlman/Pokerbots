@@ -15,12 +15,13 @@ import { Container } from "@mui/system";
 import { team_member_table_row } from "./styles.module.css";
 import MuiTableCell from "@mui/material/TableCell";
 import { styled } from "@mui/material/styles";
-import Button from "@mui/material/Button";
+import Button, { ButtonProps } from "@mui/material/Button";
 
 import { secondary_background } from "../styles.module.css";
 import { TeamBar } from "./TeamBar";
 import { Avatar, Chip, Typography } from "@mui/material";
 import BotTable from "./BotTable";
+import { BotUpload } from "./BotUpload";
 
 const DataGrid = React.lazy(() =>
   import("@mui/x-data-grid").then((mod) => ({ default: mod.DataGrid }))
@@ -29,7 +30,7 @@ const DataGrid = React.lazy(() =>
 export const TableCell = styled(MuiTableCell)({
   borderBottom: "none",
 });
-export const TableButton = styled((props) => (
+export const TableButton = styled((props: ButtonProps) => (
   <Button {...props} disableRipple />
 ))({
   fontSize: "12px",
@@ -39,6 +40,7 @@ export const TableButton = styled((props) => (
   textTransform: "none",
   padding: 0,
   cursor: "pointer",
+  color: "#c8bdfe",
 });
 
 function GameTable() {
@@ -148,9 +150,14 @@ function GameTable() {
   );
 }
 
-export default function ManageTeam() {
+export default function ManageTeam({
+  readonly,
+  team,
+}: {
+  readonly: boolean;
+  team?: Team | null;
+}) {
   const user = useUser()[0];
-  const team = useTeam()[0];
 
   if (user === undefined) {
     return <div style={{ flexGrow: 1 }}></div>;
@@ -158,7 +165,7 @@ export default function ManageTeam() {
   if (team && user) {
     return (
       <>
-        <TeamBar />
+        <TeamBar readonly={readonly} />
         <Box
           className={secondary_background}
           sx={{
@@ -169,6 +176,7 @@ export default function ManageTeam() {
         >
           <Container>
             <h2>Bots</h2>
+            <BotUpload />
 
             <BotTable />
             <h2>Games</h2>

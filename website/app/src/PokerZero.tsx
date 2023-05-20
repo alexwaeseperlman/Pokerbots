@@ -2,7 +2,7 @@ import React from "react";
 import { Route, Routes, useNavigate } from "react-router-dom";
 import HomePage from "./HomePage";
 import ManageTeam from "./ManageTeam";
-import { useUser } from "./state";
+import { useTeam, useUser } from "./state";
 
 import logoImage from "../static/assets/logo.webp";
 import { TopBar, BottomBar } from "./components/AppBar";
@@ -29,6 +29,11 @@ function HeaderFooter(props: React.PropsWithChildren<{}>) {
   );
 }
 
+function TeamDashboard() {
+  const team = useTeam()[0];
+  return <ManageTeam team={team} readonly={false} />;
+}
+
 export default function PokerZero() {
   return (
     <Routes>
@@ -45,7 +50,7 @@ export default function PokerZero() {
           path="manage-team"
           element={
             <HeaderFooter>
-              <ManageTeam />
+              <TeamDashboard />
             </HeaderFooter>
           }
         />

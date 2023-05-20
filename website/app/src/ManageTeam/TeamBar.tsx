@@ -12,12 +12,13 @@ import CircularProgress from "@mui/material/CircularProgress";
 import { primary_background } from "../styles.module.css";
 import { BotUpload } from "./BotUpload";
 import { TableCell, TableButton } from ".";
+import { Button, Icon } from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
 
-function PfpUpload() {
+function PfpUpload(props: { readonly: boolean }) {
   const [drag, setDrag] = useState(false);
   const [team, fetchTeam] = useTeam();
 
-  const boxRef = React.useRef<HTMLDivElement>(null);
   const [boxWidth, setBoxWidth] = useState(0);
   const [uploading, setUploading] = useState(false);
 
@@ -39,26 +40,9 @@ function PfpUpload() {
     });
   };
 
-  // Read the height so we can set the width to make the pfp square
-  useLayoutEffect(() => {
-    const box = boxRef.current;
-    if (!box) return;
-    const resizeListener = () => {
-      setBoxWidth((box.clientHeight * 5) / 6);
-    };
-    window.addEventListener("resize", resizeListener);
-    resizeListener();
-    return () => {
-      window.removeEventListener("resize", resizeListener);
-    };
-  });
-
   return (
     <Box
       sx={(theme) => ({
-        [theme.breakpoints.down("md")]: {
-          height: "30%",
-        },
         height: "100%",
         minWidth: "10px",
 
@@ -67,27 +51,34 @@ function PfpUpload() {
         alignItems: "center",
         position: "relative",
       })}
-      ref={boxRef}
     >
       <Avatar
         sx={(theme) => ({
-          height: `${boxWidth}px`,
-          width: `${boxWidth}px`,
+          [theme.breakpoints.down("md")]: {
+            width: "100px",
+            height: "100px",
+          },
+          height: `150px`,
+          width: `150px`,
           flexDirection: "column",
         })}
         onDragEnter={(e) => {
+          if (props.readonly) return;
           e.preventDefault();
           setDrag(true);
         }}
         onDragOver={(e) => {
+          if (props.readonly) return;
           e.preventDefault();
           setDrag(true);
         }}
         onDragLeave={(e) => {
+          if (props.readonly) return;
           e.preventDefault();
           setDrag(false);
         }}
         onDrop={(e) => {
+          if (props.readonly) return;
           e.preventDefault();
           handleUpload(e.dataTransfer.files[0]);
           setDrag(false);
@@ -96,7 +87,11 @@ function PfpUpload() {
           uploading
             ? ""
             : `${pfpEndpoint}${team?.id}.png?${
-                Math.floor(Date.now() / 1000) /* Reset the cache every second */
+                props.readonly
+                  ? ""
+                  : Math.floor(
+                      Date.now() / 1000
+                    ) /* Reset the cache every second */
               }`
         }
       ></Avatar>
@@ -125,9 +120,11 @@ function PfpUpload() {
   );
 }
 
-export function TeamBar() {
+export function TeamBar(props: { readonly: boolean }) {
   const [team, fetchTeam] = useTeam();
+  const [editing, setEditing] = useState(false);
   const user = useUser()[0];
+  const headerRef = React.useRef<HTMLHeadingElement>(null);
   if (!user || !team)
     throw new Error("Cannot render team bar when not logged in with a team");
   return (
@@ -147,19 +144,71 @@ export function TeamBar() {
           height: "100%",
         }}
       >
-        <PfpUpload />
+        <PfpUpload readonly={props.readonly} />
         <Box
           sx={{
             flexDirection: "column",
           }}
         >
-          <h1
-            style={{
-              margin: "10px",
-            }}
-          >
-            {team?.team_name}
-          </h1>
+          <Box display="flex" flexDirection="row" alignItems={"baseline"}>
+            <h1
+              ref={headerRef}
+              contentEditable={editing}
+              suppressContentEditableWarning={true}
+              id={`team-name-${team?.id}-${editing}`}
+              style={{
+                margin: "10px",
+              }}
+              onFocus={(e) => {
+                window.getSelection()?.selectAllChildren(e.target);
+              }}
+              onBlur={(e) => {
+                setEditing(false);
+                fetch(`${apiUrl}/rename-team?to=${e.target.textContent}`).then(
+                  () => {
+                    // TODO: handle errors in this fetch
+                    setTimeout(() => {
+                      fetchTeam().then((team) => {
+                        if (team) {
+                          headerRef.current!.textContent = team.team_name;
+                        }
+                      });
+                    });
+                  }
+                );
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  const el = e.target as HTMLElement;
+                  el.blur();
+                }
+              }}
+            >
+              {team?.team_name}
+            </h1>
+            {props.readonly || editing || (
+              <Box>
+                <TableButton
+                  sx={{
+                    margin: 2,
+                  }}
+                  onClick={() => {
+                    if (!props.readonly) setEditing(true);
+                    // set a timeout so that the focus happens after the contenteditable is enabled
+                    setTimeout(() => {
+                      if (headerRef.current) {
+                        headerRef.current.focus();
+                      }
+                    }, 5);
+                  }}
+                >
+                  <EditIcon sx={{ mr: "4px" }} fontSize="small" />
+                  Edit
+                </TableButton>
+              </Box>
+            )}
+          </Box>
           <Box
             sx={{
               flexDirection: "row",
@@ -187,53 +236,50 @@ export function TeamBar() {
                               color: "white",
                             }}
                           >
-                            <TableButton
-                              sx={{
-                                background: "none",
-                                border: "none",
-                                color: "white",
-                              }}
-                              onClick={() => {
-                                const confirmed = confirm(
-                                  `Are you sure you want to ${
-                                    member.email == user.email
-                                      ? team.owner == user.email
-                                        ? "delete the team"
-                                        : "leave the team"
-                                      : "kick this member"
-                                  }?`
-                                );
-                                if (!confirmed) return;
+                            {props.readonly || (
+                              <TableButton
+                                onClick={() => {
+                                  const confirmed = confirm(
+                                    `Are you sure you want to ${
+                                      member.email == user.email
+                                        ? team.owner == user.email
+                                          ? "delete the team"
+                                          : "leave the team"
+                                        : "kick this member"
+                                    }?`
+                                  );
+                                  if (!confirmed) return;
 
-                                if (member.email == user.email) {
-                                  if (team.owner == user.email) {
-                                    fetch(`${apiUrl}/delete-team`).then(
-                                      (response) => {
-                                        fetchTeam();
-                                      }
-                                    );
+                                  if (member.email == user.email) {
+                                    if (team.owner == user.email) {
+                                      fetch(`${apiUrl}/delete-team`).then(
+                                        (response) => {
+                                          fetchTeam();
+                                        }
+                                      );
+                                    } else {
+                                      fetch(`${apiUrl}/leave-team`).then(
+                                        (response) => {
+                                          fetchTeam();
+                                        }
+                                      );
+                                    }
                                   } else {
-                                    fetch(`${apiUrl}/leave-team`).then(
-                                      (response) => {
-                                        fetchTeam();
-                                      }
-                                    );
+                                    fetch(
+                                      `${apiUrl}/kick-member?email=${member.email}`
+                                    ).then((response) => {
+                                      fetchTeam();
+                                    });
                                   }
-                                } else {
-                                  fetch(
-                                    `${apiUrl}/kick-member?email=${member.email}`
-                                  ).then((response) => {
-                                    fetchTeam();
-                                  });
-                                }
-                              }}
-                            >
-                              {member.email == user.email
-                                ? team.owner == user.email
-                                  ? "Delete team"
-                                  : "Leave"
-                                : "Kick"}
-                            </TableButton>
+                                }}
+                              >
+                                {member.email == user.email
+                                  ? team.owner == user.email
+                                    ? "Delete team"
+                                    : "Leave"
+                                  : "Kick"}
+                              </TableButton>
+                            )}
                           </TableCell>
                         )}
                       </TableRow>
@@ -249,9 +295,10 @@ export function TeamBar() {
                           <input
                             value={`${apiUrl}/join-team?invite_code=${invite}`}
                             onClick={(e) => {
-                              e.target.select();
+                              const input = e.target as HTMLInputElement;
+                              input.select();
                               // modern version of the following command
-                              navigator.clipboard.writeText(e.target.value);
+                              navigator.clipboard.writeText(input.value);
                             }}
                             readOnly
                           />
@@ -263,53 +310,44 @@ export function TeamBar() {
                             }}
                           >
                             <TableButton
-                              sx={{
-                                background: "none",
-                                border: "none",
-                                color: "white",
-                              }}
                               onClick={() => {
                                 fetch(
                                   `${apiUrl}/cancel-invite?invite_code=${invite}`
                                 ).then(() => fetchTeam());
                               }}
                             >
-                              Cancel invite link
+                              Cancel invitation
                             </TableButton>
                           </TableCell>
                         )}
                       </TableRow>
                     ))}
-                    <TableRow>
-                      <TableCell
-                        sx={{
-                          alignItems: "center",
-                          justifyContent: "left",
-                          display: "flex",
-                        }}
-                      >
-                        <TableButton
-                          startIcon={<AddIcon />}
+                    {props.readonly || (
+                      <TableRow>
+                        <TableCell
                           sx={{
-                            background: "none",
-                            border: "none",
-                            color: "white",
+                            alignItems: "center",
+                            justifyContent: "left",
+                            display: "flex",
                           }}
-                          onClick={() =>
-                            fetch(`${apiUrl}/make-invite`).then(() =>
-                              fetchTeam()
-                            )
-                          }
                         >
-                          Add a member
-                        </TableButton>
-                      </TableCell>
-                    </TableRow>
+                          <TableButton
+                            startIcon={<AddIcon />}
+                            onClick={() =>
+                              fetch(`${apiUrl}/make-invite`).then(() =>
+                                fetchTeam()
+                              )
+                            }
+                          >
+                            Add a member
+                          </TableButton>
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </TableContainer>
             </Box>
-            <BotUpload />
           </Box>
           <Box></Box>
         </Box>

@@ -43,7 +43,7 @@ pub async fn server_message(
 }
 #[derive(Deserialize)]
 pub struct TeamQuery {
-    pub ids: Option<Vec<i32>>,
+    pub ids: Option<String>,
     pub page_size: Option<i32>,
     pub page: Option<i32>,
 }
@@ -62,6 +62,10 @@ pub async fn teams(
         .order_by(schema::teams::dsl::score.desc())
         .into_boxed();
     if let Some(ids) = ids {
+        let ids = ids
+            .split(",")
+            .map(|i| i.parse().unwrap())
+            .collect::<Vec<i32>>();
         base = base.filter(schema::teams::dsl::id.eq_any(ids));
     }
     let page_size = page_size.unwrap_or(10).min(100);
@@ -81,7 +85,7 @@ pub async fn teams(
 
 #[derive(Deserialize)]
 pub struct BotQuery {
-    pub ids: Option<Vec<i32>>,
+    pub ids: Option<String>,
     pub team: Option<i32>,
     pub page_size: Option<i32>,
     pub page: Option<i32>,
@@ -102,6 +106,10 @@ pub async fn bots(
     let conn = &mut (*DB_CONNECTION).get().unwrap();
     let mut base = schema::bots::dsl::bots.into_boxed();
     if let Some(ids) = ids {
+        let ids = ids
+            .split(",")
+            .map(|i| i.parse().unwrap())
+            .collect::<Vec<i32>>();
         base = base.filter(schema::bots::dsl::id.eq_any(ids));
     }
     if let Some(team) = team {

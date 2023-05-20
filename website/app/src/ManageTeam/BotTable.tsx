@@ -5,8 +5,10 @@ import Box from "@mui/system/Box";
 import Typography from "@mui/material/Typography";
 import { DataGrid } from "@mui/x-data-grid/DataGrid";
 import Chip from "@mui/material/Chip";
+import { TableButton } from ".";
+import Button from "@mui/material/Button";
 
-export default function BotTable() {
+export default function BotTable(props: { readonly?: boolean }) {
   const team = useTeam()[0];
   const [bots, setBots] = React.useState<Bot[]>([]);
   const [botCount, setBotCount] = React.useState(0);
@@ -83,13 +85,13 @@ export default function BotTable() {
         {
           field: "name",
           headerName: "Name",
-          minWidth: 200,
+          minWidth: 150,
           flex: 1,
         },
         {
           field: "created",
           headerName: "Uploaded",
-          minWidth: 200,
+          minWidth: 150,
           flex: 1,
           renderCell: (params) => {
             const date = new Date(params.value * 1000);
@@ -100,6 +102,38 @@ export default function BotTable() {
             );
           },
         },
+        ...(props.readonly
+          ? []
+          : [
+              {
+                field: "id",
+                headerName: "",
+                minWidth: 150,
+                renderCell: (params) => {
+                  // delete that bot
+                  return (
+                    <Button
+                      sx={{
+                        color: "black",
+                      }}
+                      onClick={() => {
+                        if (
+                          !window.confirm(
+                            "Are you sure you want to delete a bot?"
+                          )
+                        )
+                          return;
+                        fetch(`${apiUrl}/delete-bot?id=${params.value}`).then(
+                          () => getBots()
+                        );
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  );
+                },
+              },
+            ]),
       ]}
       loading={loading}
       rows={bots}

@@ -153,6 +153,8 @@ async fn main() -> std::io::Result<()> {
             .service(api::manage_team::join_team)
             .service(api::manage_team::cancel_invite)
             .service(api::manage_team::kick_member)
+            .service(api::manage_team::rename_team)
+            .service(api::manage_team::delete_bot)
             //.service(api::manage_team::bot_upload_url)
             .service(api::data::my_account)
             .service(api::data::server_message)

@@ -191,6 +191,7 @@ pub async fn cancel_invite(
     let conn = &mut (*DB_CONNECTION).get().unwrap();
     let out = diesel::delete(team_invites::dsl::team_invites)
         .filter(team_invites::dsl::invite_code.eq(&invite_code))
+        .filter(team_invites::dsl::teamid.eq(team.clone().unwrap().id))
         .returning(team_invites::dsl::invite_code)
         .get_result::<String>(conn)
         .map_err(|e| {
@@ -411,10 +412,74 @@ pub async fn kick_member(
     let conn = &mut (*DB_CONNECTION).get().unwrap();
     diesel::update(users::dsl::users)
         .filter(users::dsl::email.eq(email))
+        .filter(users::dsl::team_id.eq(team.unwrap().id))
         .set(users::dsl::team_id.eq::<Option<i32>>(None))
         .execute(conn)
         .map_err(|e| {
             actix_web::error::ErrorInternalServerError(format!("Failed to kick member: {}", e))
         })?;
+    // TODO: Maybe some kind of message should show for the user next time they log in?
+    Ok(HttpResponse::Ok().body(""))
+}
+
+#[derive(Deserialize)]
+pub struct RenameTeamQuery {
+    pub to: String,
+}
+
+#[get("/api/rename-team")]
+pub async fn rename_team(
+    session: Session,
+    web::Query::<RenameTeamQuery>(RenameTeamQuery { to }): web::Query<RenameTeamQuery>,
+) -> actix_web::Result<HttpResponse> {
+    let user = login::get_user_data(&session);
+    let team = login::get_team_data(&session);
+    if user.is_none() {
+        return Ok(HttpResponse::Unauthorized().body("{\"error\": \"Not logged in\"}"));
+    }
+    if team.is_none() || team.clone().unwrap().owner != user.clone().unwrap().email {
+        return Ok(HttpResponse::Unauthorized().body("{\"error\": \"Not team owner\"}"));
+    }
+
+    let conn = &mut (*DB_CONNECTION).get().unwrap();
+    diesel::update(teams::dsl::teams)
+        .filter(teams::dsl::id.eq(team.clone().unwrap().id))
+        .filter(teams::dsl::owner.eq(user.clone().unwrap().email))
+        .set(teams::dsl::team_name.eq(to))
+        .execute(conn)
+        .map_err(|e| {
+            actix_web::error::ErrorInternalServerError(format!("Failed to rename team: {}", e))
+        })?;
+    Ok(HttpResponse::Ok().body(""))
+}
+
+#[derive(Deserialize)]
+pub struct DeleteBot {
+    pub id: i32,
+}
+
+#[get("/api/delete-bot")]
+pub async fn delete_bot(
+    session: Session,
+    web::Query::<DeleteBot>(DeleteBot { id }): web::Query<DeleteBot>,
+) -> actix_web::Result<HttpResponse> {
+    let user = login::get_user_data(&session);
+    let team = login::get_team_data(&session);
+    if user.is_none() {
+        return Ok(HttpResponse::Unauthorized().body("{\"error\": \"Not logged in\"}"));
+    }
+    if team.is_none() {
+        return Ok(HttpResponse::Unauthorized().body("{\"error\": \"Not in a team\"}"));
+    }
+
+    let conn = &mut (*DB_CONNECTION).get().unwrap();
+    diesel::delete(bots::dsl::bots)
+        .filter(bots::dsl::id.eq(id))
+        .filter(bots::dsl::team.eq(team.unwrap().id))
+        .execute(conn)
+        .map_err(|e| {
+            actix_web::error::ErrorInternalServerError(format!("Failed to delete bot: {}", e))
+        })?;
+
     Ok(HttpResponse::Ok().body(""))
 }
