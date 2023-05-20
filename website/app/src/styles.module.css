@@ -17,3 +17,7 @@ h1 {
 .secondary_background {
   background: white;
 }
+
+input {
+  border: none;
+}

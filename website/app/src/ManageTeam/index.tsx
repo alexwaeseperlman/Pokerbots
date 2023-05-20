@@ -31,17 +31,18 @@ export const TableCell = styled(MuiTableCell)({
   borderBottom: "none",
 });
 export const TableButton = styled((props: ButtonProps) => (
-  <Button {...props} disableRipple />
-))({
+  <Button {...props} color="secondary" />
+))(() => ({
   fontSize: "12px",
   fontWeight: 300,
   textAlign: "left",
   justifyContent: "left",
   textTransform: "none",
-  padding: 0,
   cursor: "pointer",
-  color: "#c8bdfe",
-});
+  padding: 0,
+  paddingLeft: "8px",
+  paddingRight: "8px",
+}));
 
 function GameTable() {
   const team = useTeam()[0];

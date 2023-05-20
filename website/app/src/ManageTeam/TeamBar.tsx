@@ -12,8 +12,10 @@ import CircularProgress from "@mui/material/CircularProgress";
 import { primary_background } from "../styles.module.css";
 import { BotUpload } from "./BotUpload";
 import { TableCell, TableButton } from ".";
-import { Button, Icon } from "@mui/material";
+import { Button, Icon, TextField, useTheme } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
+import CopyIcon from "@mui/icons-material/ContentCopy";
+import { enqueueSnackbar } from "notistack";
 
 function PfpUpload(props: { readonly: boolean }) {
   const [drag, setDrag] = useState(false);
@@ -123,6 +125,7 @@ function PfpUpload(props: { readonly: boolean }) {
 export function TeamBar(props: { readonly: boolean }) {
   const [team, fetchTeam] = useTeam();
   const [editing, setEditing] = useState(false);
+  const theme = useTheme();
   const user = useUser()[0];
   const headerRef = React.useRef<HTMLHeadingElement>(null);
   if (!user || !team)
@@ -290,17 +293,33 @@ export function TeamBar(props: { readonly: boolean }) {
                         <TableCell
                           sx={{
                             color: "white",
+                            justifyContent: "center",
+                            display: "flex",
                           }}
                         >
                           <input
                             value={`${apiUrl}/join-team?invite_code=${invite}`}
+                            readOnly
+                            style={{
+                              backgroundColor: theme.palette.secondary.main,
+                              marginRight: "8px",
+                            }}
                             onClick={(e) => {
                               const input = e.target as HTMLInputElement;
                               input.select();
                               // modern version of the following command
                               navigator.clipboard.writeText(input.value);
+                              enqueueSnackbar("Copied to clipboard", {
+                                variant: "success",
+                              });
                             }}
-                            readOnly
+                          />
+                          <CopyIcon
+                            style={{
+                              cursor: "pointer",
+                            }}
+                            color="secondary"
+                            fontSize="small"
                           />
                         </TableCell>
                         {team.owner == user.email && (

@@ -6,13 +6,17 @@ import { SnackbarProvider } from "notistack";
 
 //import "../static/css/styles.css";
 import PokerZero from "./PokerZero";
+import { ThemeProvider } from "@mui/material";
+import theme from "./theme";
 
 function RootApp() {
   return (
     <SnackbarProvider maxSnack={3}>
-      <BrowserRouter>
-        <PokerZero />
-      </BrowserRouter>
+      <ThemeProvider theme={theme}>
+        <BrowserRouter>
+          <PokerZero />
+        </BrowserRouter>
+      </ThemeProvider>
     </SnackbarProvider>
   );
 }
