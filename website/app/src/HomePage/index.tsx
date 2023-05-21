@@ -25,7 +25,10 @@ const SignupButton = styled(Button)(({ theme }) => ({
   borderRadius: "0px 7px 7px 0px",
   outline: "none",
   border: "none",
-  background: "#c8007c",
+  background: theme.palette.primary.main,
+  ":hover": {
+    background: theme.palette.primary.main,
+  },
   display: "flex",
   opacity: 1,
 }));

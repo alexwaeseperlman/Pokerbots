@@ -38,7 +38,7 @@ export default function BotTable(props: { readonly?: boolean }) {
     getBots();
     const int = setInterval(() => {
       getBots();
-    }, 1000);
+    }, 5000);
     return () => clearInterval(int);
   }, [getBots, paginationModel]);
   const renderTeam = (params) => (

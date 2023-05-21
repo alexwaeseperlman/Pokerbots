@@ -86,7 +86,7 @@ function GameTable() {
     getGames();
     const int = setInterval(() => {
       getGames();
-    }, 1000);
+    }, 5000);
     return () => clearInterval(int);
   }, [getGames, paginationModel]);
   const renderTeam = (params) => (

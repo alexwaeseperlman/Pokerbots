@@ -16,15 +16,24 @@ export function BotUpload() {
       body: file,
     })
       .then(async (res) => {
-        console.log(await res.json());
+        const json = await res.json();
+        console.log(json);
+        if (res.status !== 200) {
+          enqueueSnackbar({
+            message: json.error,
+            variant: "error",
+          });
+        }
       })
       .catch((err) => {
+        console.log(err);
         enqueueSnackbar({
-          message: "Error uploading bot",
+          message: err.toString(),
           variant: "error",
         });
       })
       .finally(() => {
+        console.log("finally");
         setUploading(false);
       });
   };
