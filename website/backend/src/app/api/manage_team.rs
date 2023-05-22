@@ -255,7 +255,7 @@ pub async fn upload_pfp(
     // TODO: Maybe run the image through a sanitizer/thumbnailer
     // TODO: Maybe check for inappropriate content using Rekognition
 
-    Ok(HttpResponse::Ok().body(""))
+    Ok(HttpResponse::Ok().body("{}"))
 }
 
 #[post("/upload-bot")]
@@ -351,7 +351,7 @@ pub async fn kick_member(
         .set(users::dsl::team_id.eq::<Option<i32>>(None))
         .execute(conn)?;
     // TODO: Maybe some kind of message should show for the user next time they log in?
-    Ok(HttpResponse::Ok().body(""))
+    Ok(HttpResponse::Ok().body("{}"))
 }
 
 #[derive(Deserialize)]
@@ -382,7 +382,7 @@ pub async fn rename_team(
         .filter(teams::dsl::owner.eq(user.clone().email))
         .set(teams::dsl::team_name.eq(to))
         .execute(conn)?;
-    Ok(HttpResponse::Ok().body("")).into()
+    Ok(HttpResponse::Ok().body("{}")).into()
 }
 
 #[derive(Deserialize)]
@@ -406,5 +406,29 @@ pub async fn delete_bot(
         .filter(bots::dsl::team.eq(team.id))
         .execute(conn)?;
 
-    Ok(HttpResponse::Ok().body(""))
+    Ok(HttpResponse::Ok().body("{}"))
+}
+
+#[derive(Deserialize)]
+pub struct ActiveBot {
+    pub id: Option<i32>,
+}
+#[get("/set-active-bot")]
+pub async fn set_active_bot(
+    session: Session,
+    web::Query::<ActiveBot>(ActiveBot { id }): web::Query<ActiveBot>,
+) -> ApiResult {
+    let user = login::get_user_data(&session)
+        .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+    let team = login::get_team_data(&session)
+        .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
+
+    let conn = &mut (*DB_CONNECTION).get()?;
+    diesel::update(teams::dsl::teams)
+        .filter(teams::dsl::id.eq(team.id))
+        .filter(teams::dsl::owner.eq(user.clone().email))
+        .set(teams::dsl::active_bot.eq(id))
+        .execute(conn)?;
+
+    Ok(HttpResponse::Ok().body("{}"))
 }

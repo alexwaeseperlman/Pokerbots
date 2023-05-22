@@ -2,11 +2,12 @@ import React, { useCallback, useEffect } from "react";
 import {
   Game,
   apiUrl,
-  useTeam,
+  useMyTeam,
   useUser,
   Team,
   pfpEndpoint,
   fillInGames,
+  useTeam,
 } from "../state";
 import CreateTeam from "./CreateTeam";
 import Login from "../Login";
@@ -44,8 +45,8 @@ export const TableButton = styled((props: ButtonProps) => (
   paddingRight: "8px",
 }));
 
-function GameTable() {
-  const team = useTeam()[0];
+function GameTable({ readonly }: { readonly?: boolean }) {
+  const [team, fetchTeam] = useTeam();
   const [games, setGames] = React.useState<Game[]>([]);
   const [gameCount, setGameCount] = React.useState(0);
   const [paginationModel, setPaginationModel] = React.useState({
@@ -151,15 +152,25 @@ function GameTable() {
   );
 }
 
-export default function ManageTeam({
-  readonly,
-  team,
-}: {
-  readonly: boolean;
-  team?: Team | null;
-}) {
+function NoTeam() {
+  return (
+    <Box
+      className={secondary_background}
+      sx={{
+        width: "100%",
+        flexGrow: 1,
+        padding: "20px",
+      }}
+    >
+      <Container>There is no team at this URL.</Container>
+    </Box>
+  );
+}
+
+export default function ManageTeam({ readonly }: { readonly: boolean }) {
   const user = useUser()[0];
 
+  const team = useTeam()[0];
   if (user === undefined) {
     return <div style={{ flexGrow: 1 }}></div>;
   }
@@ -177,17 +188,17 @@ export default function ManageTeam({
         >
           <Container>
             <h2>Bots</h2>
-            <BotUpload />
+            {!readonly && <BotUpload />}
 
-            <BotTable />
+            <BotTable readonly={readonly} />
             <h2>Games</h2>
-            <GameTable />
+            <GameTable readonly={readonly} />
           </Container>
         </Box>
       </>
     );
   } else if (user) {
-    return <CreateTeam />;
+    return readonly ? <NoTeam /> : <CreateTeam />;
   } else {
     return <Login />;
   }

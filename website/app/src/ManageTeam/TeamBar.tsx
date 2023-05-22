@@ -1,5 +1,12 @@
 import React, { useState, useLayoutEffect } from "react";
-import { apiUrl, pfpEndpoint, useTeam, useUser } from "../state";
+import {
+  Team,
+  apiUrl,
+  pfpEndpoint,
+  useMyTeam,
+  useTeam,
+  useUser,
+} from "../state";
 import Box from "@mui/system/Box";
 import { Container } from "@mui/system";
 import AddIcon from "@mui/icons-material/Add";
@@ -17,9 +24,9 @@ import EditIcon from "@mui/icons-material/Edit";
 import CopyIcon from "@mui/icons-material/ContentCopy";
 import { enqueueSnackbar } from "notistack";
 
-function PfpUpload(props: { readonly: boolean }) {
+function PfpUpload({ team, readonly }: { team: Team; readonly: boolean }) {
   const [drag, setDrag] = useState(false);
-  const [team, fetchTeam] = useTeam();
+  const fetchTeam = useMyTeam()[1];
 
   const [boxWidth, setBoxWidth] = useState(0);
   const [uploading, setUploading] = useState(false);
@@ -65,22 +72,22 @@ function PfpUpload(props: { readonly: boolean }) {
           flexDirection: "column",
         })}
         onDragEnter={(e) => {
-          if (props.readonly) return;
+          if (readonly) return;
           e.preventDefault();
           setDrag(true);
         }}
         onDragOver={(e) => {
-          if (props.readonly) return;
+          if (readonly) return;
           e.preventDefault();
           setDrag(true);
         }}
         onDragLeave={(e) => {
-          if (props.readonly) return;
+          if (readonly) return;
           e.preventDefault();
           setDrag(false);
         }}
         onDrop={(e) => {
-          if (props.readonly) return;
+          if (readonly) return;
           e.preventDefault();
           handleUpload(e.dataTransfer.files[0]);
           setDrag(false);
@@ -89,7 +96,7 @@ function PfpUpload(props: { readonly: boolean }) {
           uploading
             ? ""
             : `${pfpEndpoint}${team?.id}.png?${
-                props.readonly
+                readonly
                   ? ""
                   : Math.floor(
                       Date.now() / 1000
@@ -122,7 +129,7 @@ function PfpUpload(props: { readonly: boolean }) {
   );
 }
 
-export function TeamBar(props: { readonly: boolean }) {
+export function TeamBar({ readonly }: { readonly: boolean }) {
   const [team, fetchTeam] = useTeam();
   const [editing, setEditing] = useState(false);
   const theme = useTheme();
@@ -147,7 +154,7 @@ export function TeamBar(props: { readonly: boolean }) {
           height: "100%",
         }}
       >
-        <PfpUpload readonly={props.readonly} />
+        <PfpUpload team={team} readonly={readonly} />
         <Box
           sx={{
             flexDirection: "column",
@@ -168,14 +175,21 @@ export function TeamBar(props: { readonly: boolean }) {
               onBlur={(e) => {
                 setEditing(false);
                 fetch(`${apiUrl}/rename-team?to=${e.target.textContent}`).then(
-                  () => {
+                  async (res) => {
+                    const json = await res.json();
+                    if (json.error) {
+                      enqueueSnackbar(json.error, {
+                        variant: "error",
+                      });
+                    }
                     // TODO: handle errors in this fetch
                     setTimeout(() => {
-                      fetchTeam().then((team) => {
+                      fetchTeam();
+                      setTimeout(() => {
                         if (team) {
                           headerRef.current!.textContent = team.team_name;
                         }
-                      });
+                      }, 100);
                     });
                   }
                 );
@@ -190,14 +204,14 @@ export function TeamBar(props: { readonly: boolean }) {
             >
               {team?.team_name}
             </h1>
-            {props.readonly || editing || (
+            {readonly || editing || (
               <Box>
                 <TableButton
                   sx={{
                     margin: 2,
                   }}
                   onClick={() => {
-                    if (!props.readonly) setEditing(true);
+                    if (!readonly) setEditing(true);
                     // set a timeout so that the focus happens after the contenteditable is enabled
                     setTimeout(() => {
                       if (headerRef.current) {
@@ -207,7 +221,7 @@ export function TeamBar(props: { readonly: boolean }) {
                   }}
                 >
                   <EditIcon sx={{ mr: "4px" }} fontSize="small" />
-                  Edit
+                  Rename
                 </TableButton>
               </Box>
             )}
@@ -239,7 +253,7 @@ export function TeamBar(props: { readonly: boolean }) {
                               color: "white",
                             }}
                           >
-                            {props.readonly || (
+                            {readonly || (
                               <TableButton
                                 onClick={() => {
                                   const confirmed = confirm(
@@ -288,60 +302,61 @@ export function TeamBar(props: { readonly: boolean }) {
                       </TableRow>
                     ))}
 
-                    {team.invites.map((invite) => (
-                      <TableRow key={invite}>
-                        <TableCell
-                          sx={{
-                            color: "white",
-                            justifyContent: "center",
-                            display: "flex",
-                          }}
-                        >
-                          <input
-                            value={`${apiUrl}/join-team?invite_code=${invite}`}
-                            readOnly
-                            style={{
-                              backgroundColor: theme.palette.secondary.main,
-                              marginRight: "8px",
-                            }}
-                            onClick={(e) => {
-                              const input = e.target as HTMLInputElement;
-                              input.select();
-                              // modern version of the following command
-                              navigator.clipboard.writeText(input.value);
-                              enqueueSnackbar("Copied to clipboard", {
-                                variant: "success",
-                              });
-                            }}
-                          />
-                          <CopyIcon
-                            style={{
-                              cursor: "pointer",
-                            }}
-                            color="secondary"
-                            fontSize="small"
-                          />
-                        </TableCell>
-                        {team.owner == user.email && (
+                    {team.invites &&
+                      team.invites.map((invite) => (
+                        <TableRow key={invite}>
                           <TableCell
                             sx={{
                               color: "white",
+                              justifyContent: "center",
+                              display: "flex",
                             }}
                           >
-                            <TableButton
-                              onClick={() => {
-                                fetch(
-                                  `${apiUrl}/cancel-invite?invite_code=${invite}`
-                                ).then(() => fetchTeam());
+                            <input
+                              value={`${apiUrl}/join-team?invite_code=${invite}`}
+                              readOnly
+                              style={{
+                                backgroundColor: theme.palette.secondary.main,
+                                marginRight: "8px",
+                              }}
+                              onClick={(e) => {
+                                const input = e.target as HTMLInputElement;
+                                input.select();
+                                // modern version of the following command
+                                navigator.clipboard.writeText(input.value);
+                                enqueueSnackbar("Copied to clipboard", {
+                                  variant: "success",
+                                });
+                              }}
+                            />
+                            <CopyIcon
+                              style={{
+                                cursor: "pointer",
+                              }}
+                              color="secondary"
+                              fontSize="small"
+                            />
+                          </TableCell>
+                          {team.owner == user.email && (
+                            <TableCell
+                              sx={{
+                                color: "white",
                               }}
                             >
-                              Cancel invitation
-                            </TableButton>
-                          </TableCell>
-                        )}
-                      </TableRow>
-                    ))}
-                    {props.readonly || (
+                              <TableButton
+                                onClick={() => {
+                                  fetch(
+                                    `${apiUrl}/cancel-invite?invite_code=${invite}`
+                                  ).then(() => fetchTeam());
+                                }}
+                              >
+                                Cancel invitation
+                              </TableButton>
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      ))}
+                    {readonly || (
                       <TableRow>
                         <TableCell
                           sx={{
@@ -353,9 +368,9 @@ export function TeamBar(props: { readonly: boolean }) {
                           <TableButton
                             startIcon={<AddIcon />}
                             onClick={() =>
-                              fetch(`${apiUrl}/make-invite`).then(() =>
-                                fetchTeam()
-                              )
+                              fetch(`${apiUrl}/make-invite`).then(async (a) => {
+                                fetchTeam();
+                              })
                             }
                           >
                             Add a member

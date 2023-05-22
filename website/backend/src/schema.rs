@@ -36,6 +36,7 @@ diesel::table! {
         team_name -> Text,
         owner -> Text,
         score -> Nullable<Int4>,
+        active_bot -> Nullable<Int4>,
     }
 }
 
@@ -47,6 +48,8 @@ diesel::table! {
         is_admin -> Bool,
     }
 }
+
+diesel::joinable!(teams -> bots (active_bot));
 
 diesel::allow_tables_to_appear_in_same_query!(
     bots,

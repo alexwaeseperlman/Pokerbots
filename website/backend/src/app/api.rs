@@ -33,6 +33,7 @@ pub fn api_service() -> actix_web::Scope {
         .service(manage_team::kick_member)
         .service(manage_team::rename_team)
         .service(manage_team::delete_bot)
+        .service(manage_team::set_active_bot)
         .service(data::my_account)
         .service(data::server_message)
         .service(data::my_team)

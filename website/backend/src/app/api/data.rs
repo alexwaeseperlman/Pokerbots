@@ -8,7 +8,7 @@ use serde_json::json;
 use crate::{
     app::{api::ApiResult, login},
     config::{DB_CONNECTION, PFP_S3_BUCKET},
-    models::{Bot, Team},
+    models::{Bot, Team, TeamInvite, TeamWithMembers, User},
     schema,
 };
 
@@ -46,6 +46,7 @@ pub struct TeamQuery {
     pub ids: Option<String>,
     pub page_size: Option<i32>,
     pub page: Option<i32>,
+    pub fill_members: Option<bool>,
 }
 
 #[get("/teams")]
@@ -55,8 +56,10 @@ pub async fn teams(
         ids,
         page_size,
         page,
+        fill_members,
     }): web::Query<TeamQuery>,
 ) -> ApiResult {
+    let team = login::get_team_data(&session);
     let conn = &mut (*DB_CONNECTION).get()?;
     let mut base = schema::teams::dsl::teams
         .order_by(schema::teams::dsl::score.desc())
@@ -72,6 +75,46 @@ pub async fn teams(
         .limit((page_size).into())
         .offset((page * page_size).into());
     let result: Vec<Team> = base.load::<Team>(conn)?.into_iter().collect();
+    if fill_members.unwrap_or(false) {
+        let users = schema::users::dsl::users
+            .filter(
+                schema::users::dsl::team_id
+                    .eq_any(result.iter().map(|t| t.id).collect::<Vec<i32>>()),
+            )
+            .load::<User>(conn)?;
+        let invites = schema::team_invites::dsl::team_invites
+            .filter(schema::team_invites::dsl::teamid.eq(team.clone().map(|u| u.id).unwrap_or(-1)))
+            .load::<TeamInvite>(conn)?;
+        return Ok(HttpResponse::Ok().json(
+            result
+                .into_iter()
+                .map(|t| TeamWithMembers {
+                    members: users
+                        .clone()
+                        .into_iter()
+                        .filter(|u| u.team_id == Some(t.id))
+                        .collect(),
+                    // only show invites if the user is on the team
+                    invites: if Some(t.id) == team.clone().map(|t| t.id) {
+                        Some(
+                            invites
+                                .clone()
+                                .into_iter()
+                                .filter(|u| u.teamid == t.id)
+                                .collect(),
+                        )
+                    } else {
+                        None
+                    },
+                    active_bot: t.active_bot,
+                    id: t.id,
+                    owner: t.owner,
+                    score: t.score,
+                    team_name: t.team_name,
+                })
+                .collect::<Vec<TeamWithMembers>>(),
+        ));
+    }
     Ok(HttpResponse::Ok().json(result))
 }
 

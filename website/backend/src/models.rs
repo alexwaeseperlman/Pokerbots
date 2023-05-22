@@ -8,6 +8,18 @@ pub struct Team {
     pub team_name: String,
     pub owner: String,
     pub score: Option<i32>,
+    pub active_bot: Option<i32>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct TeamWithMembers {
+    pub id: i32,
+    pub team_name: String,
+    pub owner: String,
+    pub score: Option<i32>,
+    pub active_bot: Option<i32>,
+    pub members: Vec<User>,
+    pub invites: Option<Vec<TeamInvite>>,
 }
 
 #[derive(diesel::Insertable, Debug)]
@@ -17,7 +29,7 @@ pub struct NewTeam {
     pub owner: String,
 }
 
-#[derive(Serialize, Deserialize, diesel::Queryable, Debug)]
+#[derive(Serialize, Deserialize, diesel::Queryable, Debug, Clone)]
 pub struct User {
     pub email: String,
     pub display_name: String,
@@ -40,7 +52,7 @@ pub struct NewInvite {
     pub teamid: i32,
 }
 
-#[derive(Serialize, Deserialize, diesel::Queryable, Debug)]
+#[derive(Serialize, Deserialize, diesel::Queryable, Debug, Clone)]
 pub struct TeamInvite {
     pub invite_code: String,
     pub teamid: i32,

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect } from "react";
-import { Bot, apiUrl, pfpEndpoint, useTeam } from "../state";
+import { Bot, Team, apiUrl, pfpEndpoint, useMyTeam, useTeam } from "../state";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/system/Box";
 import Typography from "@mui/material/Typography";
@@ -7,31 +7,37 @@ import { DataGrid } from "@mui/x-data-grid/DataGrid";
 import Chip from "@mui/material/Chip";
 import { TableButton } from ".";
 import Button from "@mui/material/Button";
+import { enqueueSnackbar } from "notistack";
 
-export default function BotTable(props: { readonly?: boolean }) {
-  const team = useTeam()[0];
-  const [bots, setBots] = React.useState<Bot[]>([]);
+export default function BotTable({ readonly }: { readonly?: boolean }) {
+  const [team, fetchTeam] = useTeam();
+  const [bots, setBots] = React.useState<(Bot & { active: boolean })[]>([]);
   const [botCount, setBotCount] = React.useState(0);
   const [paginationModel, setPaginationModel] = React.useState({
     page: 0,
     pageSize: 10,
   });
   const [loading, setLoading] = React.useState(true);
-  const getBots = useCallback(() => {
+  const getBots = () => {
     fetch(`${apiUrl}/bots?team=${team?.id}&count=true`)
       .then((res) => res.json())
       .then((data) => setBotCount(data.count));
 
-    fetch(
+    return fetch(
       `${apiUrl}/bots?page=${paginationModel.page}&page_size=${paginationModel.pageSize}&team=${team?.id}`
     )
       .then((res) => res.json())
       .then(async (data) => {
         // swap teama and teamb if teama is not the user's team
         setLoading(false);
-        setBots(data);
+        setBots(
+          data.map((bot: Bot) => ({
+            ...bot,
+            active: bot.id == team?.active_bot,
+          }))
+        );
       });
-  }, [team?.id, paginationModel.page, paginationModel.pageSize]);
+  };
   //TODO: only poll active games
   useEffect(() => {
     setLoading(true);
@@ -40,24 +46,8 @@ export default function BotTable(props: { readonly?: boolean }) {
       getBots();
     }, 5000);
     return () => clearInterval(int);
-  }, [getBots, paginationModel]);
-  const renderTeam = (params) => (
-    <>
-      <Avatar
-        sx={{
-          width: 24,
-          height: 24,
-          marginRight: 2,
-        }}
-        src={`${pfpEndpoint}${params.value?.team.id}`}
-      />
-      <Box flexDirection={"column"}>
-        <Typography>{params.value?.team.team_name}</Typography>
-
-        <Typography color={"text.secondary"}>{params.value?.name}</Typography>
-      </Box>
-    </>
-  );
+  }, [paginationModel]);
+  console.log(bots);
 
   return (
     <DataGrid
@@ -102,13 +92,16 @@ export default function BotTable(props: { readonly?: boolean }) {
             );
           },
         },
-        ...(props.readonly
+        ...(readonly
           ? []
           : [
               {
-                field: "id",
+                field: "delete-col",
                 headerName: "",
                 minWidth: 150,
+                valueGetter(params) {
+                  return params.id;
+                },
                 renderCell: (params) => {
                   // delete that bot
                   return (
@@ -133,7 +126,73 @@ export default function BotTable(props: { readonly?: boolean }) {
                   );
                 },
               },
+              {
+                field: "id",
+                headerName: "",
+                minWidth: 175,
+                valueGetter: (params) => ({
+                  active: params.row.active,
+                  id: params.value,
+                }),
+                renderCell: (params) => {
+                  // make that bot active
+                  return (
+                    <Button
+                      sx={{
+                        color: "black",
+                      }}
+                      onClick={() => {
+                        fetch(`${apiUrl}/set-active-bot?id=${params.id}`)
+                          .then(async (r) => {
+                            const data = await r.json();
+                            if (data.error) {
+                              enqueueSnackbar(data.error, { variant: "error" });
+                            }
+                          })
+                          .then(() => {
+                            enqueueSnackbar("Set active", {
+                              variant: "success",
+                            });
+                            setTimeout(() => {
+                              getBots();
+                              fetchTeam();
+                              console.log("fetching team");
+                            }, 500);
+                          });
+                      }}
+                    >
+                      {params.value.active ? "Currently active" : "Set active"}
+                    </Button>
+                  );
+                },
+              },
             ]),
+        {
+          field: "play-against",
+          headerName: "",
+          minWidth: 150,
+          renderCell: (params) => {
+            return (
+              <Button
+                sx={{
+                  color: "black",
+                }}
+                onClick={() => {
+                  fetch(
+                    `${apiUrl}/make-game?bot_a=${team?.active_bot}&bot_b=${params.id}`
+                  ).then(async (r) => {
+                    const data = await r.json();
+                    if (data.error) {
+                      enqueueSnackbar(data.error, { variant: "error" });
+                    }
+                  });
+                }}
+              >
+                Play against
+              </Button>
+            );
+          },
+        },
       ]}
       loading={loading}
       rows={bots}
