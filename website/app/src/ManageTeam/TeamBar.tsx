@@ -1,4 +1,4 @@
-import React, { useState, useLayoutEffect } from "react";
+import React, { useState, useLayoutEffect, useEffect } from "react";
 import {
   Team,
   apiUrl,
@@ -137,6 +137,12 @@ export function TeamBar({ readonly }: { readonly: boolean }) {
   const headerRef = React.useRef<HTMLHeadingElement>(null);
   if (!user || !team)
     throw new Error("Cannot render team bar when not logged in with a team");
+
+  useEffect(() => {
+    if (team.team_name) {
+      headerRef.current!.textContent = team.team_name;
+    }
+  }, [team.team_name]);
   return (
     <Box
       className={primary_background}
@@ -181,16 +187,9 @@ export function TeamBar({ readonly }: { readonly: boolean }) {
                       enqueueSnackbar(json.error, {
                         variant: "error",
                       });
+                      return;
                     }
-                    // TODO: handle errors in this fetch
-                    setTimeout(() => {
-                      fetchTeam();
-                      setTimeout(() => {
-                        if (team) {
-                          headerRef.current!.textContent = team.team_name;
-                        }
-                      }, 100);
-                    });
+                    fetchTeam();
                   }
                 );
               }}

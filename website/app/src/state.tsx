@@ -132,9 +132,5 @@ export const useTeam = () => {
   useEffect(() => {
     fetchTeam();
   }, [selectedTeam]);
-  return [
-    team,
-    () => setSelectedTeam(team?.id ?? null),
-    setSelectedTeam,
-  ] as const;
+  return [team, fetchTeam, setSelectedTeam] as const;
 };

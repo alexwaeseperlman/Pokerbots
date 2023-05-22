@@ -46,8 +46,7 @@ export default function BotTable({ readonly }: { readonly?: boolean }) {
       getBots();
     }, 5000);
     return () => clearInterval(int);
-  }, [paginationModel]);
-  console.log(bots);
+  }, [paginationModel, team?.active_bot]);
 
   return (
     <DataGrid
@@ -153,11 +152,7 @@ export default function BotTable({ readonly }: { readonly?: boolean }) {
                             enqueueSnackbar("Set active", {
                               variant: "success",
                             });
-                            setTimeout(() => {
-                              getBots();
-                              fetchTeam();
-                              console.log("fetching team");
-                            }, 500);
+                            fetchTeam();
                           });
                       }}
                     >
