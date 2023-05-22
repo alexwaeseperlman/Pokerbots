@@ -124,6 +124,7 @@ function GameTable({ readonly }: { readonly?: boolean }) {
           },
           minWidth: 100,
           flex: 1,
+          sortable: false,
         },
         {
           field: "bot_a",
@@ -131,6 +132,7 @@ function GameTable({ readonly }: { readonly?: boolean }) {
           renderCell: renderTeam,
           minWidth: 200,
           flex: 1,
+          sortable: false,
         },
         {
           field: "bot_b",
@@ -138,6 +140,7 @@ function GameTable({ readonly }: { readonly?: boolean }) {
           renderCell: renderTeam,
           minWidth: 200,
           flex: 1,
+          sortable: false,
         },
       ]}
       loading={loading}
@@ -148,6 +151,11 @@ function GameTable({ readonly }: { readonly?: boolean }) {
       paginationModel={paginationModel}
       rowCount={gameCount}
       onPaginationModelChange={setPaginationModel}
+      disableColumnFilter
+      disableColumnMenu
+      disableColumnSelector
+      disableDensitySelector
+      disableRowSelectionOnClick
     />
   );
 }

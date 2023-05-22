@@ -303,7 +303,7 @@ export function TeamBar({ readonly }: { readonly: boolean }) {
 
                     {team.invites &&
                       team.invites.map((invite) => (
-                        <TableRow key={invite}>
+                        <TableRow key={invite.invite_code}>
                           <TableCell
                             sx={{
                               color: "white",
@@ -312,7 +312,7 @@ export function TeamBar({ readonly }: { readonly: boolean }) {
                             }}
                           >
                             <input
-                              value={`${apiUrl}/join-team?invite_code=${invite}`}
+                              value={`${apiUrl}/join-team?invite_code=${invite.invite_code}`}
                               readOnly
                               style={{
                                 backgroundColor: theme.palette.secondary.main,
@@ -345,7 +345,7 @@ export function TeamBar({ readonly }: { readonly: boolean }) {
                               <TableButton
                                 onClick={() => {
                                   fetch(
-                                    `${apiUrl}/cancel-invite?invite_code=${invite}`
+                                    `${apiUrl}/cancel-invite?invite_code=${invite.invite_code}`
                                   ).then(() => fetchTeam());
                                 }}
                               >

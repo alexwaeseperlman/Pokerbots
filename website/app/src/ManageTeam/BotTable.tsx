@@ -64,18 +64,21 @@ export default function BotTable({ readonly }: { readonly?: boolean }) {
           },
           minWidth: 100,
           flex: 1,
+          sortable: false,
         },
         {
           field: "uploaded_by",
           headerName: "Uploaded By",
           minWidth: 200,
           flex: 1,
+          sortable: false,
         },
         {
           field: "name",
           headerName: "Name",
           minWidth: 150,
           flex: 1,
+          sortable: false,
         },
         {
           field: "created",
@@ -90,6 +93,7 @@ export default function BotTable({ readonly }: { readonly?: boolean }) {
               </Typography>
             );
           },
+          sortable: false,
         },
         ...(readonly
           ? []
@@ -98,6 +102,7 @@ export default function BotTable({ readonly }: { readonly?: boolean }) {
                 field: "delete-col",
                 headerName: "",
                 minWidth: 150,
+                sortable: false,
                 valueGetter(params) {
                   return params.id;
                 },
@@ -129,6 +134,7 @@ export default function BotTable({ readonly }: { readonly?: boolean }) {
                 field: "id",
                 headerName: "",
                 minWidth: 175,
+                sortable: false,
                 valueGetter: (params) => ({
                   active: params.row.active,
                   id: params.value,
@@ -166,6 +172,7 @@ export default function BotTable({ readonly }: { readonly?: boolean }) {
           field: "play-against",
           headerName: "",
           minWidth: 150,
+          sortable: false,
           renderCell: (params) => {
             return (
               <Button
@@ -197,6 +204,11 @@ export default function BotTable({ readonly }: { readonly?: boolean }) {
       paginationModel={paginationModel}
       rowCount={botCount}
       onPaginationModelChange={setPaginationModel}
+      disableColumnFilter
+      disableColumnMenu
+      disableColumnSelector
+      disableDensitySelector
+      disableRowSelectionOnClick
     />
   );
 }
