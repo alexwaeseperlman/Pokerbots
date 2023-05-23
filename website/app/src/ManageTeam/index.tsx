@@ -65,18 +65,7 @@ function GameTable({ readonly }: { readonly?: boolean }) {
       .then((res) => res.json())
       .then(async (data) => {
         // swap teama and teamb if teama is not the user's team
-        const games = data.map((game) =>
-          game.teama != team?.id
-            ? game
-            : {
-                ...game,
-                bot_a: game.bot_a,
-                bot_b: game.bot_b,
-                score_change:
-                  game.score_change === null ? null : -game.score_change,
-              }
-        );
-
+        const games = data;
         setLoading(false);
         setGames(await fillInGames(games));
       });
@@ -103,7 +92,9 @@ function GameTable({ readonly }: { readonly?: boolean }) {
       <Box flexDirection={"column"}>
         <Typography>{params.value?.team.team_name}</Typography>
 
-        <Typography color={"text.secondary"}>{params.value?.name}</Typography>
+        <Typography fontSize="small" color={"text.secondary"}>
+          {params.value?.name}
+        </Typography>
       </Box>
     </>
   );
@@ -128,7 +119,7 @@ function GameTable({ readonly }: { readonly?: boolean }) {
         },
         {
           field: "bot_a",
-          headerName: "You",
+          headerName: "Defender",
           renderCell: renderTeam,
           minWidth: 200,
           flex: 1,
@@ -136,7 +127,7 @@ function GameTable({ readonly }: { readonly?: boolean }) {
         },
         {
           field: "bot_b",
-          headerName: "Opponent",
+          headerName: "Challenger",
           renderCell: renderTeam,
           minWidth: 200,
           flex: 1,

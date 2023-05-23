@@ -13,6 +13,7 @@ export default function BotTable({ readonly }: { readonly?: boolean }) {
   const [team, fetchTeam] = useTeam();
   const [bots, setBots] = React.useState<(Bot & { active: boolean })[]>([]);
   const [botCount, setBotCount] = React.useState(0);
+  const [myTeam, fetchMyTeam] = useMyTeam();
   const [paginationModel, setPaginationModel] = React.useState({
     page: 0,
     pageSize: 10,
@@ -181,7 +182,7 @@ export default function BotTable({ readonly }: { readonly?: boolean }) {
                 }}
                 onClick={() => {
                   fetch(
-                    `${apiUrl}/make-game?bot_a=${team?.active_bot}&bot_b=${params.id}`
+                    `${apiUrl}/make-game?bot_a=${myTeam?.active_bot}&bot_b=${params.id}`
                   ).then(async (r) => {
                     const data = await r.json();
                     if (data.error) {
@@ -190,7 +191,7 @@ export default function BotTable({ readonly }: { readonly?: boolean }) {
                   });
                 }}
               >
-                Play against
+                Challenge
               </Button>
             );
           },
