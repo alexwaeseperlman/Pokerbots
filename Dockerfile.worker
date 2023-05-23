@@ -18,8 +18,13 @@ COPY pokergame/worker .
 RUN touch src/main.rs
 RUN cargo build --release 
 
-FROM alpine:3.17
-RUN apk add --update nodejs python3 curl
+FROM ubuntu:22.04
+RUN apt-get update && apt-get install -y python3 pip
+
+RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
+RUN echo 'source $HOME/.cargo/env' >> $HOME/.bashrc
+
+RUN pip install numpy pandas scipy scikit-learn
 
 WORKDIR /usr/src/worker
 COPY --from=builder /usr/src/worker/target/release/pokergame /usr/local/bin/pokergame
