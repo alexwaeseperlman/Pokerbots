@@ -1,0 +1,2 @@
+ALTER TABLE teams ADD COLUMN active_bot INTEGER;
+ALTER TABLE teams ADD CONSTRAINT active_bot_fk FOREIGN KEY (active_bot) REFERENCES bots(id) ON DELETE SET NULL;

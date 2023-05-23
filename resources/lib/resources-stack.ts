@@ -187,7 +187,7 @@ export class ScalingAPIConstruct extends Construct {
             DB_URL: db.instanceEndpoint.socketAddress,
             MICROSOFT_CLIENT_ID: process.env.MICROSOFT_CLIENT_ID ?? "",
             MICROSOFT_TENANT_ID: process.env.MICROSOFT_TENANT_ID ?? "",
-            APP_PFP_S3_BUCKET: pfp_s3_bucket.bucketName,
+            PFP_S3_BUCKET: pfp_s3_bucket.bucketName,
             REDIRECT_URI: `https://${domainName}/api/login`,
             PORT: "80",
             JOB_QUEUE: bots.jobQueue.jobQueueArn,

@@ -4,7 +4,7 @@ use actix_web::HttpResponse;
 use actix_web::Result;
 use serde_json::json;
 
-#[get("/api/signout")]
+#[get("/signout")]
 pub async fn signout(session: Session) -> Result<HttpResponse> {
     session.remove("me");
     Ok(HttpResponse::Ok().json(json!({

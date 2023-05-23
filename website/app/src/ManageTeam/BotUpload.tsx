@@ -1,9 +1,42 @@
 import React, { useState } from "react";
 import Box from "@mui/system/Box";
 import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
+import { apiUrl } from "../state";
+import { CircularProgress, LinearProgress } from "@mui/material";
+import { useSnackbar } from "notistack";
 
 export function BotUpload() {
+  const { enqueueSnackbar } = useSnackbar();
   const [drag, setDrag] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const handleUpload = (file: File) => {
+    setUploading(true);
+    fetch(`${apiUrl}/upload-bot`, {
+      method: "POST",
+      body: file,
+    })
+      .then(async (res) => {
+        const json = await res.json();
+        console.log(json);
+        if (res.status !== 200) {
+          enqueueSnackbar({
+            message: json.error,
+            variant: "error",
+          });
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+        enqueueSnackbar({
+          message: err.toString(),
+          variant: "error",
+        });
+      })
+      .finally(() => {
+        console.log("finally");
+        setUploading(false);
+      });
+  };
 
   return (
     <Box
@@ -11,15 +44,16 @@ export function BotUpload() {
         borderRadius: "8px",
         backgroundColor: "white",
         transition: "ease-out 0.2s",
-        border: `#c4b7ff solid ${2}px`,
-        width: "188px",
+        border: `#999 dashed ${2}px`,
+        //width: "188px",
         height: "98px",
         display: "flex",
         padding: "16px",
         gap: "16px",
-        flexDirection: "column",
+        //flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
+        mb: 2,
         ...(drag && {
           backgroundColor: "#c4b7ff",
         }),
@@ -38,44 +72,45 @@ export function BotUpload() {
       }}
       onDrop={(e) => {
         e.preventDefault();
-        console.log(e.dataTransfer.files);
+        handleUpload(e.dataTransfer.files[0]);
         setDrag(false);
         console.log("file dragged");
       }}
     >
+      {/*
+        <CloudUploadOutlinedIcon />
+    */}
       <Box
         style={{
           color: "black",
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
         }}
       >
-        <CloudUploadOutlinedIcon /> Upload bots
-      </Box>
-      <Box
-        style={{
-          color: "black",
-          fontSize: "12px",
-        }}
-      >
-        Drag and drop files here or{" "}
-        <label
-          style={{
-            color: "#392889",
-            border: "none",
-            textDecoration: "none",
-            cursor: "pointer",
-          }}
-        >
-          click to select files
-          <input
-            style={{ display: "none" }}
-            type="file"
-            id="bot-file-input"
-            name="bot-file-input"
-          />
-        </label>
+        {uploading ? (
+          <CircularProgress />
+        ) : (
+          <>
+            Drag and drop a zipped bot here or{" "}
+            <label
+              style={{
+                color: "#392889",
+                border: "none",
+                textDecoration: "none",
+                cursor: "pointer",
+              }}
+            >
+              click to select files
+              <input
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  handleUpload(e.target.files[0]);
+                }}
+                type="file"
+                id="bot-file-input"
+                name="bot-file-input"
+              />
+            </label>
+          </>
+        )}
       </Box>
     </Box>
   );

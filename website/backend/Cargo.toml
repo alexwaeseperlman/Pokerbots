@@ -12,7 +12,7 @@ actix-service = "2.0.2"
 actix-session = {version = "0.7.2", features=["cookie-session"]}
 log = "0.4"
 env_logger = "0.10.0"
-diesel = { version = "2.0.3", features = ["postgres", "r2d2", "with-deprecated"], default-features=false }
+diesel = { version = "2.0.3", features = ["postgres", "r2d2", "with-deprecated"]}
 dotenvy = "0.15"
 lazy_static = "1.4.0"
 r2d2 = "0.8.10"
@@ -31,6 +31,7 @@ diesel_migrations = {version= "2.0.0", features=["postgres"]}
 lapin = "2.1.1"
 shared = { path = "../../shared" }
 tokio = "1.28.1"
+zip = "0.6.6"
 
 [dev-dependencies]
 cargo-watch = "8.4.0"

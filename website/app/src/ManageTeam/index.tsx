@@ -1,5 +1,14 @@
 import React, { useCallback, useEffect } from "react";
-import { Game, apiUrl, useTeam, useUser, Team, pfpEndpoint } from "../state";
+import {
+  Game,
+  apiUrl,
+  useMyTeam,
+  useUser,
+  Team,
+  pfpEndpoint,
+  fillInGames,
+  useTeam,
+} from "../state";
 import CreateTeam from "./CreateTeam";
 import Login from "../Login";
 import Box from "@mui/system/Box";
@@ -7,11 +16,13 @@ import { Container } from "@mui/system";
 import { team_member_table_row } from "./styles.module.css";
 import MuiTableCell from "@mui/material/TableCell";
 import { styled } from "@mui/material/styles";
-import Button from "@mui/material/Button";
+import Button, { ButtonProps } from "@mui/material/Button";
 
 import { secondary_background } from "../styles.module.css";
 import { TeamBar } from "./TeamBar";
-import { Avatar, Chip } from "@mui/material";
+import { Avatar, Chip, Typography } from "@mui/material";
+import BotTable from "./BotTable";
+import { BotUpload } from "./BotUpload";
 
 const DataGrid = React.lazy(() =>
   import("@mui/x-data-grid").then((mod) => ({ default: mod.DataGrid }))
@@ -20,20 +31,22 @@ const DataGrid = React.lazy(() =>
 export const TableCell = styled(MuiTableCell)({
   borderBottom: "none",
 });
-export const TableButton = styled((props) => (
-  <Button {...props} disableRipple />
-))({
+export const TableButton = styled((props: ButtonProps) => (
+  <Button {...props} color="secondary" />
+))(() => ({
   fontSize: "12px",
   fontWeight: 300,
   textAlign: "left",
   justifyContent: "left",
   textTransform: "none",
-  padding: 0,
   cursor: "pointer",
-});
+  padding: 0,
+  paddingLeft: "8px",
+  paddingRight: "8px",
+}));
 
-function GameTable() {
-  const team = useTeam()[0];
+function GameTable({ readonly }: { readonly?: boolean }) {
+  const [team, fetchTeam] = useTeam();
   const [games, setGames] = React.useState<Game[]>([]);
   const [gameCount, setGameCount] = React.useState(0);
   const [paginationModel, setPaginationModel] = React.useState({
@@ -52,32 +65,9 @@ function GameTable() {
       .then((res) => res.json())
       .then(async (data) => {
         // swap teama and teamb if teama is not the user's team
-        const games = data.map((game) =>
-          game.teama != team?.id
-            ? game
-            : {
-                ...game,
-                teama: game.teamb,
-                teamb: game.teama,
-                score_change:
-                  game.score_change === null ? null : -game.score_change,
-              }
-        );
-        // replace team ids with their objects
-        const teamIds = new Set<number>([team?.id ?? 0]);
-        for (const game of games) teamIds.add(game.teamb);
-        const teams = await fetch(
-          `${apiUrl}/teams?id=${[...teamIds].join(",")}`
-        ).then((res) => res.json());
-        const teamMap = new Map(teams.map((team) => [team.id, team]));
+        const games = data;
         setLoading(false);
-        setGames(
-          games.map((game) => ({
-            ...game,
-            teama: teamMap.get(game.teama),
-            teamb: teamMap.get(game.teamb),
-          }))
-        );
+        setGames(await fillInGames(games));
       });
   }, [team?.id, paginationModel.page, paginationModel.pageSize]);
   //TODO: only poll active games
@@ -86,7 +76,7 @@ function GameTable() {
     getGames();
     const int = setInterval(() => {
       getGames();
-    }, 1000);
+    }, 5000);
     return () => clearInterval(int);
   }, [getGames, paginationModel]);
   const renderTeam = (params) => (
@@ -97,9 +87,15 @@ function GameTable() {
           height: 24,
           marginRight: 2,
         }}
-        src={`${pfpEndpoint}${params.value?.id}`}
+        src={`${pfpEndpoint}${params.value?.team.id}`}
       />
-      {params.value?.team_name}
+      <Box flexDirection={"column"}>
+        <Typography>{params.value?.team.team_name}</Typography>
+
+        <Typography fontSize="small" color={"text.secondary"}>
+          {params.value?.name}
+        </Typography>
+      </Box>
     </>
   );
 
@@ -119,20 +115,23 @@ function GameTable() {
           },
           minWidth: 100,
           flex: 1,
+          sortable: false,
         },
         {
-          field: "teama",
-          headerName: "Team A",
+          field: "bot_a",
+          headerName: "Defender",
           renderCell: renderTeam,
           minWidth: 200,
           flex: 1,
+          sortable: false,
         },
         {
-          field: "teamb",
-          headerName: "Team B",
+          field: "bot_b",
+          headerName: "Challenger",
           renderCell: renderTeam,
           minWidth: 200,
           flex: 1,
+          sortable: false,
         },
       ]}
       loading={loading}
@@ -143,21 +142,41 @@ function GameTable() {
       paginationModel={paginationModel}
       rowCount={gameCount}
       onPaginationModelChange={setPaginationModel}
+      disableColumnFilter
+      disableColumnMenu
+      disableColumnSelector
+      disableDensitySelector
+      disableRowSelectionOnClick
     />
   );
 }
 
-export default function ManageTeam() {
-  const user = useUser()[0];
-  const team = useTeam()[0];
+function NoTeam() {
+  return (
+    <Box
+      className={secondary_background}
+      sx={{
+        width: "100%",
+        flexGrow: 1,
+        padding: "20px",
+      }}
+    >
+      <Container>There is no team at this URL.</Container>
+    </Box>
+  );
+}
 
+export default function ManageTeam({ readonly }: { readonly: boolean }) {
+  const user = useUser()[0];
+
+  const team = useTeam()[0];
   if (user === undefined) {
     return <div style={{ flexGrow: 1 }}></div>;
   }
   if (team && user) {
     return (
       <>
-        <TeamBar />
+        <TeamBar readonly={readonly} />
         <Box
           className={secondary_background}
           sx={{
@@ -168,35 +187,17 @@ export default function ManageTeam() {
         >
           <Container>
             <h2>Bots</h2>
-            <DataGrid
-              columns={[
-                { field: "bot-name", headerName: "Bot name", width: 130 },
-                { field: "uploaded", headerName: "Uploaded", width: 130 },
-                { field: "uploaded-by", headerName: "Uploaded by", width: 130 },
-              ]}
-              rows={[
-                {
-                  id: 1,
-                  "bot-name": "Bot 1",
-                  uploaded: "2021-10-01",
-                  "uploaded-by": "User 1",
-                },
-                {
-                  id: 2,
-                  "bot-name": "Bot 2",
-                  uploaded: "2021-10-02",
-                  "uploaded-by": "User 2",
-                },
-              ]}
-            ></DataGrid>
+            {!readonly && <BotUpload />}
+
+            <BotTable readonly={readonly} />
             <h2>Games</h2>
-            <GameTable />
+            <GameTable readonly={readonly} />
           </Container>
         </Box>
       </>
     );
   } else if (user) {
-    return <CreateTeam />;
+    return readonly ? <NoTeam /> : <CreateTeam />;
   } else {
     return <Login />;
   }

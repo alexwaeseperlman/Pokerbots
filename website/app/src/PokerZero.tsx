@@ -1,14 +1,16 @@
 import React from "react";
-import { Route, Routes, useNavigate } from "react-router-dom";
+import { Route, Routes, useNavigate, useParams } from "react-router-dom";
 import HomePage from "./HomePage";
 import ManageTeam from "./ManageTeam";
-import { useUser } from "./state";
+import { Team, useMyTeam, useTeam, useUser } from "./state";
 
 import logoImage from "../static/assets/logo.webp";
 import { TopBar, BottomBar } from "./components/AppBar";
 import { Box, Container } from "@mui/system";
 import Leaderboard from "./Leaderboard";
 import { primary_background } from "./styles.module.css";
+import { CircularProgress, LinearProgress } from "@mui/material";
+import { useAtom } from "jotai";
 
 function HeaderFooter(props: React.PropsWithChildren<{}>) {
   const user = useUser()[0];
@@ -29,6 +31,19 @@ function HeaderFooter(props: React.PropsWithChildren<{}>) {
   );
 }
 
+function TeamDashboard() {
+  const params = useParams();
+
+  const [myTeam] = useMyTeam();
+  const [team, fetchTeam, setTeam] = useTeam();
+
+  //TODO: Use suspense here
+  React.useEffect(() => {
+    setTeam(params.teamId);
+  }, [params.teamId]);
+  return <ManageTeam readonly={team?.id !== myTeam?.id} />;
+}
+
 export default function PokerZero() {
   return (
     <Routes>
@@ -45,7 +60,7 @@ export default function PokerZero() {
           path="manage-team"
           element={
             <HeaderFooter>
-              <ManageTeam />
+              <TeamDashboard />
             </HeaderFooter>
           }
         />
@@ -57,6 +72,16 @@ export default function PokerZero() {
             </HeaderFooter>
           }
         />
+        <Route path="team">
+          <Route
+            path=":teamId"
+            element={
+              <HeaderFooter>
+                <TeamDashboard />
+              </HeaderFooter>
+            }
+          />
+        </Route>
       </Route>
     </Routes>
   );

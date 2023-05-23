@@ -1,5 +1,6 @@
 version: "3.9"
 services:
+  # Postgres database
   db:
     healthcheck:
       test: ["CMD-SHELL", "pg_isready"]
@@ -16,8 +17,11 @@ services:
       - POSTGRES_DB=postgres
     volumes:
       - ./.volumes/database:/var/lib/postgresql/data
+  # Frontend and backend
   website:
-    build: .
+    build:
+      context: .
+      dockerfile: ./Dockerfile.website
     depends_on:
       db:
         condition: service_healthy
@@ -27,11 +31,11 @@ services:
       - DB_URL=db:5432/postgres
       - DB_USER=postgres
       - DB_PASSWORD=${DB_PASSWORD}
-      - MICROSOFT_CLIENT_ID=b3bd7104-3006-4f15-99a3-14d09d6e4b45
-      - MICROSOFT_TENANT_ID=368f60b5-2a6e-428d-88e3-ce3975068888
+      - MICROSOFT_CLIENT_ID=${MICROSOFT_CLIENT_ID}
+      - MICROSOFT_TENANT_ID=${MICROSOFT_TENANT_ID}
       - REDIRECT_URI=http://localhost:3000/api/login
 
-      - APP_PFP_S3_BUCKET=pokerbots-pfp
+      - PFP_S3_BUCKET=pokerbots-pfp
       - BOT_S3_BUCKET=pokerbots-bots
       - BOT_SIZE=5000000
       - APP_PFP_ENDPOINT=https://pokerbots-pfp.s3.us-east-1.amazonaws.com
@@ -39,15 +43,22 @@ services:
       - AZURE_SECRET=${AZURE_SECRET}
       - SECRET_KEY=${SECRET_KEY}
 
-      - RABBITMQ_URL=amqp://rabbitmq
+      - AMQP_URL=amqp://rabbitmq
+      - RUST_LOG=debug
+
+      - APP_PFP_ENDPOINT=https://loremflickr.com/128/128?lock=
   worker:
-    build: ./pokergame
+    build:
+      context: .
+      dockerfile: ./Dockerfile.worker
     restart: always
     depends_on:
       rabbitmq:
         condition: service_healthy
     environment:
-      - RABBITMQ_URL=amqp://rabbitmq
+      - AMQP_URL=amqp://rabbitmq
+      - RUST_LOG=debug
+  # nginx reverse proxy and load balancer
   nginx:
     image: nginx:latest
     depends_on:
@@ -56,6 +67,8 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     ports:
       - 3000:3000
+
+  # RabbitMQ message broker
   rabbitmq:
     healthcheck:
       test: rabbitmq-diagnostics -q ping
@@ -67,4 +80,5 @@ services:
       - 5672:5672
       - 15672:15672
     volumes:
-      - ./.volumes/rabbitmq:/data
+      - ./.volumes/rabbitmq/data:/var/lib/rabbitmq
+      - ./.volumes/rabbitmq/log:/var/log/rabbitmq
