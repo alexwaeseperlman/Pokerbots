@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::schema::{bots, games, team_invites, teams, users};
+use crate::schema::{bots, games, sql_types::GameError, team_invites, teams, users};
 
 #[derive(Serialize, Deserialize, diesel::Queryable, Debug)]
 pub struct Team {
@@ -74,6 +74,9 @@ pub struct Game {
     pub bot_b: i32,
     pub score_change: Option<i32>,
     pub created: i64,
+
+    pub error_type: Option<String>,
+    pub error_message: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, diesel::Queryable)]

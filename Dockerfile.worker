@@ -25,10 +25,10 @@ RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 RUN echo 'source $HOME/.cargo/env' >> $HOME/.bashrc
 
 RUN pip install numpy pandas scipy scikit-learn
+RUN apt-get install -y iptables
 
 WORKDIR /usr/src/worker
 COPY --from=builder /usr/src/worker/target/release/pokergame /usr/local/bin/pokergame
 
-#CMD ls -la 
 RUN chmod +x /usr/local/bin/pokergame
-ENTRYPOINT ["pokergame"]
+ENTRYPOINT ["worker"]

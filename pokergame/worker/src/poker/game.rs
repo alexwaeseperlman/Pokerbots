@@ -298,10 +298,9 @@ impl GameState {
         }
         Ok(out)
     }
-}
-pub struct Game {
-    pub state: GameState,
-    pub stacks: Vec<u32>,
+    pub fn get_stack(&self, player: bool) -> u32 {
+        self.player_states[player as usize].stack
+    }
 }
 #[cfg(test)]
 mod tests {

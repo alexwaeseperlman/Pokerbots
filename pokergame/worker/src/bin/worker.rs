@@ -1,7 +1,5 @@
 use std::process::Command;
 
-pub mod bots;
-pub mod poker;
 use futures_lite::stream::StreamExt;
 use lapin::options::{BasicAckOptions, BasicRejectOptions};
 use shared::{GameResult, PlayTask};
@@ -45,6 +43,10 @@ async fn main() {
         )
         .await
         .unwrap();
+
+    let aws_config = aws_config::load_from_env().await;
+    let s3_client = aws_sdk_s3::Client::new(&aws_config);
+
     while let Some(msg) = consumer.next().await {
         let msg = msg.expect("Error while receiving message");
         if let Ok(payload) = serde_json::from_slice::<PlayTask>(&msg.data) {
@@ -53,17 +55,15 @@ async fn main() {
             msg.ack(BasicAckOptions::default())
                 .await
                 .expect("Error while acknowledging message");
-
+            let result: GameResult =
+                pokergame::bots::run_game(payload.bot_a, payload.bot_b, &s3_client, payload.id)
+                    .await;
             channel_b
                 .basic_publish(
                     "",
                     "game_results",
                     lapin::options::BasicPublishOptions::default(),
-                    &serde_json::to_vec(&GameResult {
-                        id: payload.id.clone(),
-                        score_change: rand::thread_rng().gen_range(-50..=50),
-                    })
-                    .unwrap(),
+                    &serde_json::to_vec(&result).unwrap(),
                     lapin::BasicProperties::default(),
                 )
                 .await
