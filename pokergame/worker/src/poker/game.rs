@@ -7,6 +7,7 @@ use std::{
 
 use itertools::Itertools;
 use rand::{seq::SliceRandom, Rng};
+use shared::GameActionError;
 
 use super::hands::{self, Card, Suite};
 
@@ -64,13 +65,6 @@ pub struct GameState {
 pub enum RoundResult {
     Accept,
     End { payouts: Vec<u32> },
-}
-
-#[derive(Debug, PartialEq)]
-pub enum GameError {
-    InvalidCheck,
-    Raise0,
-    GameOver,
 }
 
 impl GameState {
@@ -210,21 +204,21 @@ impl GameState {
         out
     }
 
-    pub fn post_action(self, action: Action) -> Result<GameState, GameError> {
+    pub fn post_action(self, action: Action) -> Result<GameState, GameActionError> {
         if self.round == Round::End {
-            return Err(GameError::GameOver);
+            return Err(GameActionError::GameOver);
         }
         let mut out: GameState = self;
         let turn = out.whose_turn();
         if let Some(turn) = turn {
             // If a check is not possible then revert to folding
             if action == Action::Check && out.target_push > out.player_states[turn].pushed {
-                return Err(GameError::InvalidCheck);
+                return Err(GameActionError::InvalidCheck);
             }
             // Raise amount must be positive
             if let Action::Raise { amt } = action {
                 if amt == 0 {
-                    return Err(GameError::Raise0);
+                    return Err(GameActionError::Raise0);
                 }
             }
             match action {
@@ -293,7 +287,7 @@ impl GameState {
                     out.round = Round::End;
                     out = out.showdown()
                 }
-                Round::End => return Err(GameError::GameOver),
+                Round::End => return Err(GameActionError::GameOver),
             }
         }
         Ok(out)

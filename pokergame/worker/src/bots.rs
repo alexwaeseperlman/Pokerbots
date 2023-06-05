@@ -6,7 +6,7 @@ use std::{
     path::{Path, PathBuf},
     process::{self, Command},
 };
-use tokio::net::UnixStream;
+use tokio::{io::AsyncReadExt, net::UnixStream};
 
 use crate::poker::game::GameState;
 
@@ -97,7 +97,7 @@ impl Game {
             runner_b,
             stacks: [50, 50],
             initial_stacks: [50, 50],
-            button: false,
+            button: 0,
             id,
         }
     }
@@ -148,16 +148,44 @@ impl Game {
             }
             // write current game state to the bots stream
 
-            // read and parse line from bot
-            let mut buf = [0; 1024];
-            let mut read = target_stream.read(&mut buf).await?;
+            // TODO: We should use buffered reader for this but it isn't
+            // important since messages are only a few bytes
+            let mut line: String = "".to_owned();
+            let mut end = std::time::Instant::now() + std::time::Duration::from_millis(1000);
+            loop {
+                let byte = tokio::time::timeout(
+                    end.duration_since(std::time::Instant::now()),
+                    target_stream.read_u8(),
+                )
+                .await
+                .map_err(|e| {
+                    shared::GameError::TimeoutError(format!("{}", e), whose_turn.clone())
+                })?;
+                let byte = byte.map_err(|e| {
+                    shared::GameError::RunTimeError(format!("{}", e), whose_turn.clone())
+                })?;
+                if byte == b'\n' {
+                    break;
+                }
+                line.push(byte as char);
+            }
+
+            state
+                .post_action(parse_action(&line).map_err(|e| {
+                    shared::GameError::InvalidActionError(
+                        shared::GameActionError::CouldNotParse,
+                        whose_turn.clone(),
+                    )
+                })?)
+                .map_err(|e| shared::GameError::InvalidActionError(e, whose_turn.clone()))?;
         }
 
         Ok(())
     }
     pub async fn play(&mut self, rounds: usize, task_id: String) -> shared::GameResult {
-        for i in 0..rounds {
+        for _ in 0..rounds {
             self.play_round().await?;
+            self.button = 1 - self.button;
         }
         Ok(GameMessage {
             score: shared::ScoringResult::ScoreChanged(
@@ -167,4 +195,21 @@ impl Game {
             id: task_id,
         })
     }
+}
+
+fn parse_action(line: &String) -> Result<crate::poker::game::Action, shared::GameActionError> {
+    Ok(match line.as_ref() {
+        "X" => crate::poker::game::Action::Check,
+        "F" => crate::poker::game::Action::Fold,
+        "C" => crate::poker::game::Action::Call,
+        _ => {
+            if line.chars().nth(0) != Some('R') {
+                Err(shared::GameActionError::CouldNotParse)?;
+            }
+            let amount = line[1..]
+                .parse::<u32>()
+                .map_err(|_| shared::GameActionError::CouldNotParse)?;
+            crate::poker::game::Action::Raise { amt: amount }
+        }
+    })
 }

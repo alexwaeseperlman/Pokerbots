@@ -16,12 +16,21 @@ pub enum WhichBot {
     BotB,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum GameActionError {
+    InvalidCheck,
+    Raise0,
+    GameOver,
+    CouldNotParse,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum GameError {
     RunTimeError(String, WhichBot),
     CompileError(String, WhichBot),
     TimeoutError(String, WhichBot),
     MemoryError(String, WhichBot),
+    InvalidActionError(GameActionError, WhichBot),
     InternalError(String),
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -31,8 +40,8 @@ pub enum ScoringResult {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GameMessage {
-    score: ScoringResult,
-    id: String,
+    pub score: ScoringResult,
+    pub id: String,
 }
 
 pub type GameResult = Result<GameMessage, GameError>;
