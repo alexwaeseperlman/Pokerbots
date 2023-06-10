@@ -22,6 +22,7 @@ pub async fn my_account(session: Session) -> ApiResult {
 
 #[get("/my-team")]
 pub async fn my_team(session: Session) -> ApiResult {
+    log::debug!("my-team");
     Ok(HttpResponse::Ok().json(login::get_team_data(&session)))
 }
 

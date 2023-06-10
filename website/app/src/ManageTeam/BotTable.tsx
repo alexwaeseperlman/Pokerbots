@@ -159,7 +159,9 @@ export default function BotTable({ readonly }: { readonly?: boolean }) {
                             enqueueSnackbar("Set active", {
                               variant: "success",
                             });
-                            fetchTeam();
+                            setTimeout(() => {
+                              fetchTeam();
+                            }, 100);
                           });
                       }}
                     >

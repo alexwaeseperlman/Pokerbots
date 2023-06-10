@@ -1,11 +1,5 @@
 // @generated automatically by Diesel CLI.
 
-pub mod sql_types {
-    #[derive(diesel::sql_types::SqlType)]
-    #[diesel(postgres_type(name = "game_error"))]
-    pub struct GameError;
-}
-
 diesel::table! {
     bots (id) {
         id -> Int4,
@@ -19,16 +13,13 @@ diesel::table! {
 }
 
 diesel::table! {
-    use diesel::sql_types::*;
-    use super::sql_types::GameError;
-
     games (id) {
         id -> Text,
         bot_a -> Int4,
         bot_b -> Int4,
         score_change -> Nullable<Int4>,
         created -> Int8,
-        error_type -> Nullable<GameError>,
+        error_type -> Nullable<Text>,
         error_message -> Nullable<Text>,
     }
 }

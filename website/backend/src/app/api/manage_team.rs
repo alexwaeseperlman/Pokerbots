@@ -282,7 +282,7 @@ pub async fn upload_bot(
         .map_err(|e| actix_web::error::ErrorBadRequest(format!("{}", e)))?;
     // TODO: if the zip file is one big folder, we should change it to be the root.
     let mut bot_file = archive
-        .by_name("bot.json")
+        .by_name("bot/bot.json")
         .map_err(|e| actix_web::error::ErrorBadRequest(format!("{}", e)))?;
     if bot_file.is_dir() {
         return Err(actix_web::error::ErrorBadRequest("bot.json is a directory").into());
@@ -309,7 +309,7 @@ pub async fn upload_bot(
     if let Err(e) = s3_client
         .put_object()
         .bucket(&*BOT_S3_BUCKET)
-        .key(format!("{}.zip", id))
+        .key(format!("{}", id))
         .body(body.to_vec().into())
         .send()
         .await

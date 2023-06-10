@@ -2,7 +2,7 @@ use std::process::Command;
 
 use futures_lite::stream::StreamExt;
 use lapin::options::{BasicAckOptions, BasicRejectOptions};
-use shared::{GameResult, PlayTask};
+use shared::{GameMessage, GameResult, PlayTask};
 
 use rand::Rng;
 #[tokio::main]
@@ -55,9 +55,17 @@ async fn main() {
             msg.ack(BasicAckOptions::default())
                 .await
                 .expect("Error while acknowledging message");
-            let result: GameResult =
-                pokergame::bots::run_game(payload.bot_a, payload.bot_b, &s3_client, payload.id)
-                    .await;
+            let result: GameResult = pokergame::bots::run_game(
+                payload.bot_a,
+                payload.bot_b,
+                &s3_client,
+                payload.id.clone(),
+            )
+            .await;
+            let result: GameMessage = GameMessage {
+                result,
+                id: payload.id,
+            };
             channel_b
                 .basic_publish(
                     "",

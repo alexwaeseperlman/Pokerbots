@@ -7,7 +7,7 @@ edition = "2021"
 rand = "0.8.5"
 log = "0.4"
 itertools = "0.10.5"
-tokio = {version = "1.28.1", features=["rt", "macros", "rt-multi-thread", "time"]}
+tokio = {version = "1.28.1", features=["rt", "macros", "rt-multi-thread", "time", "process"]}
 lapin = "2.1.1"
 serde = "1.0.163"
 serde_json = "1.0.96"
@@ -18,10 +18,6 @@ aws-config = "0.55.2"
 aws-sdk-s3 = "0.27.0"
 # cgroups-rs="0.3.2"
 clap = {version="4.3.0", features=["derive"]}
-
-[[bin]]
-name = "runner"
-path = "src/bin/runner.rs"
 
 [[bin]]
 name = "worker"

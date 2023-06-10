@@ -36,7 +36,7 @@ pub enum Round {
 }
 pub enum EngineResponse {}
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct PlayerState {
     stack: u32,
     hole_cards: Vec<Card>,
@@ -45,7 +45,7 @@ pub struct PlayerState {
     acted: bool,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 
 pub struct GameState {
     // Cards in the deck

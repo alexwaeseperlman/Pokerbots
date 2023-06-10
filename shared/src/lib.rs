@@ -38,13 +38,12 @@ pub enum ScoringResult {
     ScoreChanged(i32),
 }
 
+pub type GameResult = Result<ScoringResult, GameError>;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GameMessage {
-    pub score: ScoringResult,
+    pub result: GameResult,
     pub id: String,
 }
-
-pub type GameResult = Result<GameMessage, GameError>;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Bot {

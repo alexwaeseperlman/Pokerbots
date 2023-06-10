@@ -4,13 +4,19 @@ use shared::{GameMessage, GameResult, WhichBot};
 use std::{
     fs,
     path::{Path, PathBuf},
-    process::{self, Command},
+    process::Stdio,
 };
-use tokio::{io::AsyncReadExt, net::UnixStream};
+use tokio::{
+    io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader, BufWriter},
+    join,
+    net::UnixStream,
+    process, try_join,
+};
 
-use crate::poker::game::GameState;
+use crate::{bots::runner::run_bot, poker::game::GameState};
 
 pub mod bot;
+pub mod runner;
 pub mod sandbox;
 
 pub async fn run_game(
@@ -23,6 +29,8 @@ pub async fn run_game(
     // doesn't have the same id as the task
     let game_id = format!("{:x}", rand::thread_rng().gen::<u32>());
     let tmp_dir = Path::new("/tmp").join(&game_id);
+    log::debug!("Playing {} against {}", bot_a, bot_b);
+    log::debug!("Running game {} with local id {}.", task_id, game_id);
     fs::create_dir(&tmp_dir)
         .map_err(|e| shared::GameError::InternalError("Unable to make tmp dir".to_owned()))?;
 
@@ -30,71 +38,39 @@ pub async fn run_game(
         .map_err(|e| shared::GameError::InternalError("Unable to get BOT_S3_BUCKET".to_owned()))?;
 
     // download bots from s3
+    log::debug!("Making bot directories");
     let bot_a_path = tmp_dir.join("bot_a");
     fs::create_dir(&bot_a_path)
         .map_err(|e| shared::GameError::InternalError("Unable to make bot_a dir".to_owned()))?;
     let bot_b_path = tmp_dir.join("bot_b");
     fs::create_dir(&bot_b_path)
         .map_err(|e| shared::GameError::InternalError("Unable to make bot_b dir".to_owned()))?;
-    let bot_a = bot::download_bot(&bot_a, &bot_a_path, &bot_bucket, s3_client.clone()).await?;
-    let bot_b = bot::download_bot(&bot_b, &bot_b_path, &bot_bucket, s3_client.clone()).await?;
-
-    // make a server and socket files
-    let socket_path_a = tmp_dir.join("a.sock");
-    let socket_path_b = tmp_dir.join("b.sock");
+    log::debug!("Downloading bots from aws");
+    try_join!(
+        bot::download_bot(&bot_a, &bot_a_path, &bot_bucket, s3_client.clone()),
+        bot::download_bot(&bot_b, &bot_b_path, &bot_bucket, s3_client.clone())
+    )?;
+    log::debug!("Bots downloaded");
 
     // run game
-    let runner_a = Command::new("runner")
-        .arg("--socket-path")
-        .arg(&socket_path_a)
-        .arg("--bot-path")
-        .arg("bot.zip")
-        .current_dir(bot_a_path)
-        .spawn()?;
-    let runner_b = Command::new("runner")
-        .arg("--socket-path")
-        .arg(&socket_path_b)
-        .arg("--bot-path")
-        .arg("bot.zip")
-        .current_dir(bot_b_path)
-        .spawn()?;
+    let mut game = Game::new(bot_a_path, bot_b_path, game_id);
 
-    let game = Game::new(
-        socket_path_a.to_path_buf(),
-        socket_path_b.to_path_buf(),
-        runner_a,
-        runner_b,
-        game_id,
-    );
-
-    GameResult::Err(shared::GameError::InternalError(
-        "This hasn't been implement yet".to_owned(),
-    ))
+    game.play(100, task_id).await
 }
 
 pub struct Game {
-    pub socket_path_a: PathBuf,
-    pub socket_path_b: PathBuf,
-    pub runner_a: process::Child,
-    pub runner_b: process::Child,
-    pub stacks: [u32; 2],
-    pub initial_stacks: [u32; 2],
-    pub button: usize,
-    pub id: String,
+    bot_a_path: PathBuf,
+    bot_b_path: PathBuf,
+    stacks: [u32; 2],
+    initial_stacks: [u32; 2],
+    button: usize,
+    id: String,
 }
 impl Game {
-    pub fn new(
-        socket_path_a: PathBuf,
-        socket_path_b: PathBuf,
-        runner_a: process::Child,
-        runner_b: process::Child,
-        id: String,
-    ) -> Self {
+    pub fn new<A: AsRef<Path>, B: AsRef<Path>>(bot_a_path: A, bot_b_path: B, id: String) -> Self {
         Self {
-            socket_path_a,
-            socket_path_b,
-            runner_a,
-            runner_b,
+            bot_a_path: PathBuf::from(bot_a_path.as_ref()),
+            bot_b_path: PathBuf::from(bot_b_path.as_ref()),
             stacks: [50, 50],
             initial_stacks: [50, 50],
             button: 0,
@@ -102,7 +78,13 @@ impl Game {
         }
     }
 
-    async fn play_round(&mut self) -> Result<(), shared::GameError> {
+    async fn play_round(
+        &mut self,
+        reader_a: &mut BufReader<process::ChildStdout>,
+        reader_b: &mut BufReader<process::ChildStdout>,
+        writer_a: &mut BufWriter<process::ChildStdin>,
+        writer_b: &mut BufWriter<process::ChildStdin>,
+    ) -> Result<(), shared::GameError> {
         let mut rng = thread_rng();
         let mut stacks = self.stacks;
         if self.button == 1 {
@@ -110,8 +92,8 @@ impl Game {
         }
         let mut state =
             crate::poker::game::GameState::new(&stacks, GameState::get_shuffled_deck(&mut rng));
-        let mut stream_a = UnixStream::connect(&self.socket_path_a).await?;
-        let mut stream_b = UnixStream::connect(&self.socket_path_b).await?;
+
+        log::debug!("Game state: {:?}. ", state);
 
         loop {
             self.stacks = if self.button == 1 {
@@ -128,49 +110,24 @@ impl Game {
             } else {
                 WhichBot::BotB
             };
-            let target_stream = if state.whose_turn() == Some(self.button) {
-                &mut stream_a
+            let (target_reader, target_writer) = if state.whose_turn() == Some(self.button) {
+                (&mut *reader_a, &mut *writer_a)
             } else {
-                &mut stream_b
+                (&mut *reader_b, &mut *writer_b)
             };
 
-            let target_process = if state.whose_turn() == Some(self.button) {
-                &mut self.runner_a
-            } else {
-                &mut self.runner_b
-            };
-
-            if target_process.try_wait()?.is_some() {
-                return Err(shared::GameError::RunTimeError(
-                    "Bot process exited early".to_owned(),
-                    whose_turn,
-                ));
-            }
             // write current game state to the bots stream
+            //writer_b.write_all()
 
-            // TODO: We should use buffered reader for this but it isn't
-            // important since messages are only a few bytes
-            let mut line: String = "".to_owned();
-            let mut end = std::time::Instant::now() + std::time::Duration::from_millis(1000);
-            loop {
-                let byte = tokio::time::timeout(
-                    end.duration_since(std::time::Instant::now()),
-                    target_stream.read_u8(),
-                )
-                .await
-                .map_err(|e| {
-                    shared::GameError::TimeoutError(format!("{}", e), whose_turn.clone())
-                })?;
-                let byte = byte.map_err(|e| {
-                    shared::GameError::RunTimeError(format!("{}", e), whose_turn.clone())
-                })?;
-                if byte == b'\n' {
-                    break;
-                }
-                line.push(byte as char);
-            }
-
-            state
+            let mut line: String = Default::default();
+            let len = tokio::time::timeout(
+                std::time::Duration::from_millis(1000),
+                target_reader.read_line(&mut line),
+            )
+            .await
+            .map_err(|e| shared::GameError::TimeoutError(format!("{}", e), whose_turn.clone()))?
+            .map_err(|e| shared::GameError::RunTimeError(format!("{}", e), whose_turn.clone()))?;
+            state = state
                 .post_action(parse_action(&line).map_err(|e| {
                     shared::GameError::InvalidActionError(
                         shared::GameActionError::CouldNotParse,
@@ -182,18 +139,43 @@ impl Game {
 
         Ok(())
     }
+    /// Play a game of poker, returning a [shared::GameResult]
     pub async fn play(&mut self, rounds: usize, task_id: String) -> shared::GameResult {
+        log::debug!("Playing game {} with {} rounds", self.id, rounds);
+        let mut proc_a = run_bot(self.bot_a_path.clone(), |command| {
+            command.stdin(Stdio::piped()).stdout(Stdio::piped())
+        })
+        .await
+        .map_err(|e| shared::GameError::InternalError("Failed to start bot".to_owned()))?;
+        let mut reader_a = BufReader::new(proc_a.stdout.take().ok_or(
+            shared::GameError::InternalError("Failed to get stdout of bot a".to_owned()),
+        )?);
+        let mut writer_a = BufWriter::new(proc_a.stdin.take().ok_or(
+            shared::GameError::InternalError("Failed to get stdin of bot a".to_owned()),
+        )?);
+
+        let mut proc_b = run_bot(self.bot_b_path.clone(), |command| {
+            command.stdin(Stdio::piped()).stdout(Stdio::piped())
+        })
+        .await
+        .map_err(|e| shared::GameError::InternalError("Failed to start bot".to_owned()))?;
+
+        let mut reader_b = BufReader::new(proc_b.stdout.take().ok_or(
+            shared::GameError::InternalError("Failed to get stdout of bot b".to_owned()),
+        )?);
+        let mut writer_b = BufWriter::new(proc_b.stdin.take().ok_or(
+            shared::GameError::InternalError("Failed to get stdin of bot b".to_owned()),
+        )?);
+        log::info!("Clients connected for {}", self.id);
         for _ in 0..rounds {
-            self.play_round().await?;
+            log::debug!("Playing round. Current stacks: {:?}.", self.stacks);
+            self.play_round(&mut reader_a, &mut reader_b, &mut writer_a, &mut writer_b)
+                .await?;
             self.button = 1 - self.button;
         }
-        Ok(GameMessage {
-            score: shared::ScoringResult::ScoreChanged(
-                i32::try_from(self.stacks[0]).unwrap()
-                    - i32::try_from(self.initial_stacks[0]).unwrap(),
-            ),
-            id: task_id,
-        })
+        Ok(shared::ScoringResult::ScoreChanged(
+            i32::try_from(self.stacks[0]).unwrap() - i32::try_from(self.initial_stacks[0]).unwrap(),
+        ))
     }
 }
 

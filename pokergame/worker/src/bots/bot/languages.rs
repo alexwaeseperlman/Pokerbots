@@ -1,7 +1,5 @@
-use std::{
-    io,
-    process::{self, Child, Command},
-};
+use std::io;
+use tokio::process::{Child, Command};
 
 pub mod python;
 pub mod rust;
@@ -18,11 +16,8 @@ pub enum RunResult {
 }
 
 pub trait Language {
-    fn build(&self) -> BuildResult;
-    fn run(
-        &self,
-        configure: fn(command: &mut Command) -> &mut Command,
-    ) -> io::Result<process::Child>;
+    fn build(&self) -> io::Result<()>;
+    fn run(&self, configure: fn(command: &mut Command) -> &mut Command) -> io::Result<Child>;
 }
 
 pub fn detect_language(name: &str) -> Box<dyn Language> {
