@@ -45,8 +45,8 @@ pub async fn listen_for_game_results(channel: Channel) {
                                 error_type = Some("COMPILE".into());
                                 message = err;
                                 score_change = match which_bot {
-                                    shared::WhichBot::BotA => -100,
-                                    shared::WhichBot::BotB => 100,
+                                    shared::WhichBot::BotA => 0,
+                                    shared::WhichBot::BotB => 0,
                                 };
                             }
                             GameError::InternalError(err) => {

@@ -111,7 +111,16 @@ function GameTable({ readonly }: { readonly?: boolean }) {
             let color = "success";
             if (params.value < 0) color = "error";
             else if (params.value == 0) color = "default";
-            return <Chip label={params.value} color={color} />;
+            console.log(params.row);
+            if (params.row.error_type) {
+              color = "warning";
+            }
+            return (
+              <Chip
+                label={params.row.error_message ?? params.value}
+                color={color}
+              />
+            );
           },
           minWidth: 100,
           flex: 1,

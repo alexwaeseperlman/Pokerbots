@@ -54,6 +54,10 @@ pub fn microsoft_login_url(return_to: &str) -> String {
         url_encode(return_to)
     )
 }
+/*
+These have camel case names so they can correspond to
+the fields in the JSON response from the Microsoft Graph API
+*/
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AzureMeResponse {
     pub displayName: Option<String>,

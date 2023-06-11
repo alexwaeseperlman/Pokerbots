@@ -125,7 +125,12 @@ impl Game {
                 target_reader.read_line(&mut line),
             )
             .await
-            .map_err(|e| shared::GameError::TimeoutError(format!("{}", e), whose_turn.clone()))?
+            .map_err(|e| {
+                shared::GameError::TimeoutError(
+                    format!("Time limit exceeded by {:?}.", whose_turn),
+                    whose_turn.clone(),
+                )
+            })?
             .map_err(|e| shared::GameError::RunTimeError(format!("{}", e), whose_turn.clone()))?;
             state = state
                 .post_action(parse_action(&line).map_err(|e| {
