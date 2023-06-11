@@ -142,11 +142,12 @@ impl Game {
     /// Play a game of poker, returning a [shared::GameResult]
     pub async fn play(&mut self, rounds: usize, task_id: String) -> shared::GameResult {
         log::debug!("Playing game {} with {} rounds", self.id, rounds);
-        let mut proc_a = run_bot(self.bot_a_path.clone(), |command| {
-            command.stdin(Stdio::piped()).stdout(Stdio::piped())
-        })
-        .await
-        .map_err(|e| shared::GameError::InternalError("Failed to start bot".to_owned()))?;
+        let mut proc_a = run_bot(
+            self.bot_a_path.clone(),
+            |command| command.stdin(Stdio::piped()).stdout(Stdio::piped()),
+            WhichBot::BotA,
+        )
+        .await?;
         let mut reader_a = BufReader::new(proc_a.stdout.take().ok_or(
             shared::GameError::InternalError("Failed to get stdout of bot a".to_owned()),
         )?);
@@ -154,11 +155,12 @@ impl Game {
             shared::GameError::InternalError("Failed to get stdin of bot a".to_owned()),
         )?);
 
-        let mut proc_b = run_bot(self.bot_b_path.clone(), |command| {
-            command.stdin(Stdio::piped()).stdout(Stdio::piped())
-        })
-        .await
-        .map_err(|e| shared::GameError::InternalError("Failed to start bot".to_owned()))?;
+        let mut proc_b = run_bot(
+            self.bot_b_path.clone(),
+            |command| command.stdin(Stdio::piped()).stdout(Stdio::piped()),
+            WhichBot::BotB,
+        )
+        .await?;
 
         let mut reader_b = BufReader::new(proc_b.stdout.take().ok_or(
             shared::GameError::InternalError("Failed to get stdout of bot b".to_owned()),

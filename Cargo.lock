@@ -3237,6 +3237,7 @@ dependencies = [
 name = "pokergame"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "aws-config",
  "aws-sdk-s3",
  "clap 4.3.2",

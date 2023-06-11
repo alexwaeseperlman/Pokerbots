@@ -1,3 +1,4 @@
+use shared::{GameError, WhichBot};
 use std::{
     io::{self, Read, Write},
     path::PathBuf,
@@ -14,7 +15,8 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 pub async fn run_bot(
     bot_folder: PathBuf,
     configure: fn(command: &mut Command) -> &mut Command,
-) -> io::Result<Child> {
+    which_bot: WhichBot,
+) -> Result<Child, GameError> {
     let cwd = std::env::current_dir()?;
     std::env::set_current_dir(&bot_folder)?;
     log::debug!("Running bot in {:?}", std::env::current_dir()?);
@@ -29,7 +31,11 @@ pub async fn run_bot(
     let bot = crate::bots::bot::Bot::new(std::path::PathBuf::from(".")).await?;
     // serialize errors
     // TODO: Sandbox all of this since it is untrusted code
-    bot.language.build()?;
+    bot.language
+        .build()
+        .await
+        .map_err(|e| GameError::CompileError(e.to_string(), which_bot))?;
+    log::info!("Built bot");
     let proc = bot.language.run(configure)?;
 
     std::env::set_current_dir(cwd)?;
@@ -57,9 +63,11 @@ mod tests {
         )
         .await
         .unwrap();
-        let mut proc = run_bot(format!("/tmp/{}", test_id).into(), |command| {
-            command.stdin(Stdio::piped()).stdout(Stdio::piped())
-        })
+        let mut proc = run_bot(
+            format!("/tmp/{}", test_id).into(),
+            |command| command.stdin(Stdio::piped()).stdout(Stdio::piped()),
+            WhichBot::BotA,
+        )
         .await
         .unwrap();
         let mut stdout = proc.stdout.take().unwrap();

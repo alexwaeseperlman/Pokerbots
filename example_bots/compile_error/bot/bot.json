@@ -1,0 +1,4 @@
+{
+    "name": "Compile error bot",
+    "build": "c++"
+}
