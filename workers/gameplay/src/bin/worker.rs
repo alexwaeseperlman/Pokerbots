@@ -9,7 +9,7 @@ use rand::Rng;
 async fn main() {
     env_logger::init();
     log::info!("Starting worker");
-    let addr = std::env::var("AMQP_URL").expect("AMQP_URL must be set");
+    let addr = std::env::var("AMQP_ADDRESS").expect("AMQP_ADDRESS must be set");
     let conn = lapin::Connection::connect(&addr, lapin::ConnectionProperties::default())
         .await
         .expect("Connection error");

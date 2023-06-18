@@ -47,7 +47,7 @@ async fn main() -> std::io::Result<()> {
     let aws_config = aws_config::load_from_env().await;
     let s3_client = web::Data::new(aws_sdk_s3::Client::new(&aws_config));
 
-    let addr = std::env::var("AMQP_URL").expect("AMQP_URL must be set");
+    let addr = std::env::var("AMQP_ADDRESS").expect("AMQP_ADDRESS must be set");
     let conn = lapin::Connection::connect(&addr, lapin::ConnectionProperties::default())
         .await
         .expect("Connection error");

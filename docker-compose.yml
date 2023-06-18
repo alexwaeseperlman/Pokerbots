@@ -43,7 +43,7 @@ services:
       - AZURE_SECRET=${AZURE_SECRET}
       - SECRET_KEY=${SECRET_KEY}
 
-      - AMQP_URL=amqp://rabbitmq
+      - AMQP_ADDRESS=amqp://rabbitmq
       - RUST_LOG=debug
 
       - APP_PFP_ENDPOINT=https://loremflickr.com/128/128?lock=
@@ -56,7 +56,7 @@ services:
       rabbitmq:
         condition: service_healthy
     environment:
-      - AMQP_URL=amqp://rabbitmq
+      - AMQP_ADDRESS=amqp://rabbitmq
       - RUST_LOG=debug
   # nginx reverse proxy and load balancer
   nginx:
