@@ -1,5 +1,9 @@
 while True:
-    s = input()
+    try:
+        s = input()
+    except EOFError:
+        break
+
     if s == 'ping':
         print('pong')
     else:

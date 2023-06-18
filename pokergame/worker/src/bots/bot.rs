@@ -2,41 +2,129 @@ pub mod languages;
 
 use tokio::{
     io,
-    process::{Child, Command},
+    process::{Child, ChildStdin, ChildStdout, Command},
+    sync::Mutex,
+    task::JoinHandle,
 };
+
+use std::{
+    fs,
+    os::{self, unix::process::ExitStatusExt},
+    path::PathBuf,
+    process::{ExitStatus, Stdio},
+    sync::Arc,
+};
+
+use shared::{GameError, WhichBot};
+
+use crate::bots::bot;
+
+use self::languages::detect_language;
+
+#[derive(Debug)]
 pub struct Bot {
-    pub path: PathBuf,
-    pub language: Box<dyn languages::Language>,
+    pub status: Arc<Mutex<Option<ExitStatus>>>,
+    pub output: tokio::io::BufReader<ChildStdout>,
+    pub input: tokio::io::BufWriter<ChildStdin>,
+    proc: Arc<Mutex<Child>>,
+    listener: JoinHandle<()>,
 }
 
 impl Bot {
-    pub async fn new(path: PathBuf) -> io::Result<Bot> {
-        std::env::set_current_dir(&path)?;
+    pub async fn new(
+        bot_folder: PathBuf,
+        configure: fn(command: &mut Command) -> &mut Command,
+        which_bot: WhichBot,
+    ) -> Result<Bot, GameError> {
+        let cwd = std::env::current_dir()?;
+        std::env::set_current_dir(&bot_folder)?;
+        log::debug!("Constructing bot in {:?}", std::env::current_dir()?);
+        //TODO: run this in a cgroup this to protect against zip bombs
         // We leave the bot.zip in the directory cause why not
-        Command::new("unzip")
+        tokio::process::Command::new("unzip")
             .arg("-o")
             .arg("bot.zip")
             .spawn()?
             .wait()
             .await?;
+
+        // This fails if the bot folder is not named bot.
+        // This should be guaranteed by the server.
+        std::env::set_current_dir("./bot")?;
+
         // Read language from bot.json
-        let language = match fs::read_to_string(path.join("bot.json")) {
+        let language = match fs::read_to_string("bot.json") {
             Ok(s) => {
-                let json: serde_json::Value = serde_json::from_str(&s).unwrap();
-                let language = json["build"].as_str().unwrap();
-                detect_language(language)
+                let json: serde_json::Value = serde_json::from_str(&s).map_err(|e| {
+                    GameError::CompileError(format!("Failed to parse bot.json: {}", e), which_bot)
+                })?;
+                let language = json["build"].as_str().ok_or(GameError::CompileError(
+                    "Failed to read language from bot.json.".into(),
+                    which_bot,
+                ))?;
+                detect_language(language).ok_or(GameError::CompileError(
+                    format!("{} is not a supported language.", json["build"]),
+                    which_bot,
+                ))?
             }
             Err(e) => panic!("Failed to read bot.json: {}", e),
         };
-        Ok(Self { path, language })
+        let build_result = language
+            .build()
+            .await
+            .map_err(|e| GameError::CompileError(e.to_string(), which_bot))?;
+
+        if !build_result.success() {
+            return Err(GameError::CompileError(
+                "Failed to build bot.".into(),
+                which_bot,
+            ));
+        }
+
+        let proc = Arc::new(Mutex::new(language.run(configure)?));
+        let p = proc.clone();
+        let mut p = p.lock().await;
+        let status: Arc<Mutex<Option<ExitStatus>>> = Arc::new(Mutex::new(None));
+        let bot = Bot {
+            status: status.clone(),
+            output: tokio::io::BufReader::new(
+                p.stdout
+                    .take()
+                    .ok_or(GameError::InternalError("Unable to get stdout".into()))?,
+            ),
+            input: tokio::io::BufWriter::new(
+                p.stdin
+                    .take()
+                    .ok_or(GameError::InternalError("Unable to get stdin".into()))?,
+            ),
+            proc: proc.clone(),
+            listener: tokio::spawn(async move {
+                let proc = proc.clone();
+                let mut proc = proc.lock().await;
+                let status = status.clone();
+                let mut status = status.lock().await;
+                *status = Some(proc.wait().await.unwrap_or(ExitStatus::from_raw(1)));
+            }),
+        };
+        Ok(bot)
+    }
+    pub async fn kill(&mut self) -> io::Result<()> {
+        self.proc.lock().await.kill().await
     }
 }
 
-use std::{fs, os, path::PathBuf, process::Stdio};
-
-use shared::GameError;
-
-use self::languages::{detect_language, RunResult};
+impl Drop for Bot {
+    // Kill the bot if it is still running
+    fn drop(&mut self) {
+        let proc = self.proc.clone();
+        tokio::spawn(async move {
+            let mut proc = proc.lock().await;
+            if let Err(e) = proc.kill().await {
+                log::error!("Failed to kill bot: {}", e);
+            }
+        });
+    }
+}
 
 pub async fn download_bot(
     key: &str,
@@ -60,74 +148,67 @@ pub async fn download_bot(
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        cell::LazyCell,
-        fs,
-        sync::{Mutex, OnceLock},
-    };
+    use std::{assert_matches::assert_matches, process::Stdio};
 
-    static TEST_BUCKET: &str = "pokerbots-test-bucket";
-    pub async fn setup() {
-        let aws_config = aws_config::load_from_env().await;
-        let client = aws_sdk_s3::Client::new(&aws_config);
-        client
-            .create_bucket()
-            .bucket(TEST_BUCKET)
-            .send()
+    use rand::Rng;
+    use shared::{GameError, WhichBot};
+    use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
+
+    use crate::bots::bot::Bot;
+
+    #[tokio::test]
+    // Unzips the bot.zip file and runs the bot in a tmp dir
+    pub async fn python_ping() {
+        let test_id = format!("{:x}", rand::thread_rng().gen::<u32>());
+        println!("Test id: {}", test_id);
+        tokio::fs::create_dir(format!("/tmp/{}", test_id))
             .await
             .unwrap();
-        client
-            .put_object()
-            .bucket(TEST_BUCKET)
-            .key("error_bot.zip")
-            .body(
-                std::fs::read("../../example-bots/error_bot.zip")
-                    .unwrap()
-                    .into(),
-            )
-            .send()
-            .await
-            .unwrap();
-        let path = std::path::Path::new("/tmp/pokerbots_test").to_path_buf();
-        fs::create_dir(&path).unwrap_or(());
-        fs::remove_file(path.join("bot.zip")).unwrap_or(());
-    }
-    pub async fn teardown() {
-        let aws_config = aws_config::load_from_env().await;
-        let client = aws_sdk_s3::Client::new(&aws_config);
-        client
-            .delete_bucket()
-            .bucket(TEST_BUCKET)
-            .send()
-            .await
-            .unwrap();
+        tokio::fs::copy(
+            "./runner_tests/python_ping/bot.zip",
+            format!("/tmp/{}/bot.zip", test_id),
+        )
+        .await
+        .unwrap();
+        let mut bot = Bot::new(
+            format!("/tmp/{}", test_id).into(),
+            |command| command.stdin(Stdio::piped()).stdout(Stdio::piped()),
+            WhichBot::BotA,
+        )
+        .await
+        .expect("Failed to create bot");
+        bot.input.write(b"ping\n").await.unwrap();
+        bot.input.flush().await.unwrap();
+        let mut str: String = String::new();
+        bot.output.read_line(&mut str).await.unwrap();
+        assert_eq!(str, "pong\n");
     }
 
-    /*#[tokio::test]
-    async fn download() {
-        setup().await;
-        let aws_config = aws_config::load_from_env().await;
-        let client = aws_sdk_s3::Client::new(&aws_config);
-        let key = "error_bot.zip".to_owned();
-        let path = std::path::Path::new("/tmp/pokerbots_test").to_path_buf();
-        fs::create_dir(&path).unwrap_or(());
-        fs::remove_file(path.join("bot.zip")).unwrap_or(());
-        let res = super::download_bot(&key, path.clone(), TEST_BUCKET, client).await;
-        res.unwrap();
-        assert!(path.join("bot.zip").exists());
-        teardown().await;
-    }*/
-
-    /*#[tokio::test]
-    async fn make_bot() {
-        let path = std::path::Path::new("/tmp/pokerbots_test").to_path_buf();
-        fs::remove_dir_all(&path).unwrap_or(());
-        fs::create_dir(&path).unwrap_or(());
-        fs::remove_file(path.join("bot.zip")).unwrap_or(());
-        fs::copy("../../example-bots/error_bot.zip", path.join("bot.zip")).unwrap();
-        let bot = super::Bot::new(path.clone()).await.unwrap();
-        bot.build();
-        bot.run().await.unwrap().wait().await.unwrap();
-        assert!(path.join("bot.zip").exists());
-    }*/
+    #[tokio::test]
+    // Unzips the bot.zip file and runs the bot in a tmp dir
+    pub async fn cpp_compile_error() {
+        let test_id = format!("{:x}", rand::thread_rng().gen::<u32>());
+        println!("Test id: {}", test_id);
+        tokio::fs::create_dir(format!("/tmp/{}", test_id))
+            .await
+            .unwrap();
+        tokio::fs::copy(
+            "./runner_tests/cpp_compile_error/bot.zip",
+            format!("/tmp/{}/bot.zip", test_id),
+        )
+        .await
+        .unwrap();
+        let mut bot = Bot::new(
+            format!("/tmp/{}", test_id).into(),
+            |command| command.stdin(Stdio::piped()).stdout(Stdio::piped()),
+            WhichBot::BotA,
+        )
+        .await;
+        match bot {
+            Ok(mut b) => {
+                panic!("Expected compile error, got {:?}", b)
+            }
+            Err(e) => assert_matches!(e, GameError::CompileError(_, WhichBot::BotA)),
+        }
+    }
 }

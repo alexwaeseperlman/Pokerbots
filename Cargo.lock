@@ -1150,6 +1150,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "builder"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "aws-config",
+ "aws-sdk-s3",
+ "clap 4.3.2",
+ "env_logger",
+ "futures-lite",
+ "itertools",
+ "lapin",
+ "log",
+ "rand",
+ "serde",
+ "serde_json",
+ "shared",
+ "tokio",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

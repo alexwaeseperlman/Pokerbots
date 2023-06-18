@@ -10,7 +10,7 @@ pub struct PlayTask {
     pub date: i64,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub enum WhichBot {
     BotA,
     BotB,

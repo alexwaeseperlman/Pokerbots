@@ -2,7 +2,8 @@
 members = [
     "pokergame/worker",
     "website/backend",
-    "shared"
+    "shared",
+    "builder"
 ]
 default-members = [
     "website/backend",

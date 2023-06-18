@@ -13,10 +13,11 @@ use tokio::{
     process, try_join,
 };
 
-use crate::{bots::runner::run_bot, poker::game::GameState};
+use crate::poker::game::GameState;
+
+use self::bot::Bot;
 
 pub mod bot;
-pub mod runner;
 pub mod sandbox;
 
 pub async fn run_game(
@@ -80,10 +81,8 @@ impl Game {
 
     async fn play_round(
         &mut self,
-        reader_a: &mut BufReader<process::ChildStdout>,
-        reader_b: &mut BufReader<process::ChildStdout>,
-        writer_a: &mut BufWriter<process::ChildStdin>,
-        writer_b: &mut BufWriter<process::ChildStdin>,
+        bot_a: &mut Bot,
+        bot_b: &mut Bot,
     ) -> Result<(), shared::GameError> {
         let mut rng = thread_rng();
         let mut stacks = self.stacks;
@@ -110,10 +109,10 @@ impl Game {
             } else {
                 WhichBot::BotB
             };
-            let (target_reader, target_writer) = if state.whose_turn() == Some(self.button) {
-                (&mut *reader_a, &mut *writer_a)
+            let target_bot = if state.whose_turn() == Some(self.button) {
+                &mut *bot_a
             } else {
-                (&mut *reader_b, &mut *writer_b)
+                &mut *bot_b
             };
 
             // write current game state to the bots stream
@@ -122,7 +121,7 @@ impl Game {
             let mut line: String = Default::default();
             let len = tokio::time::timeout(
                 std::time::Duration::from_millis(1000),
-                target_reader.read_line(&mut line),
+                target_bot.output.read_line(&mut line),
             )
             .await
             .map_err(|e| {
@@ -147,37 +146,24 @@ impl Game {
     /// Play a game of poker, returning a [shared::GameResult]
     pub async fn play(&mut self, rounds: usize, task_id: String) -> shared::GameResult {
         log::debug!("Playing game {} with {} rounds", self.id, rounds);
-        let mut proc_a = run_bot(
+        let mut bot_a = Bot::new(
             self.bot_a_path.clone(),
             |command| command.stdin(Stdio::piped()).stdout(Stdio::piped()),
             WhichBot::BotA,
         )
         .await?;
-        let mut reader_a = BufReader::new(proc_a.stdout.take().ok_or(
-            shared::GameError::InternalError("Failed to get stdout of bot a".to_owned()),
-        )?);
-        let mut writer_a = BufWriter::new(proc_a.stdin.take().ok_or(
-            shared::GameError::InternalError("Failed to get stdin of bot a".to_owned()),
-        )?);
 
-        let mut proc_b = run_bot(
+        let mut bot_b = Bot::new(
             self.bot_b_path.clone(),
             |command| command.stdin(Stdio::piped()).stdout(Stdio::piped()),
             WhichBot::BotB,
         )
         .await?;
 
-        let mut reader_b = BufReader::new(proc_b.stdout.take().ok_or(
-            shared::GameError::InternalError("Failed to get stdout of bot b".to_owned()),
-        )?);
-        let mut writer_b = BufWriter::new(proc_b.stdin.take().ok_or(
-            shared::GameError::InternalError("Failed to get stdin of bot b".to_owned()),
-        )?);
         log::info!("Clients connected for {}", self.id);
         for _ in 0..rounds {
             log::debug!("Playing round. Current stacks: {:?}.", self.stacks);
-            self.play_round(&mut reader_a, &mut reader_b, &mut writer_a, &mut writer_b)
-                .await?;
+            self.play_round(&mut bot_a, &mut bot_b).await?;
             self.button = 1 - self.button;
         }
         Ok(shared::ScoringResult::ScoreChanged(

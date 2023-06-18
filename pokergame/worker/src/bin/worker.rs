@@ -15,9 +15,9 @@ async fn main() {
         .expect("Connection error");
 
     // listen for messages
-    let channel = conn.create_channel().await.unwrap();
-    let channel_b = conn.create_channel().await.unwrap();
-    channel_b
+    let games_channel = conn.create_channel().await.unwrap();
+    let results_channel = conn.create_channel().await.unwrap();
+    results_channel
         .queue_declare(
             "game_results",
             lapin::options::QueueDeclareOptions::default(),
@@ -25,7 +25,7 @@ async fn main() {
         )
         .await
         .unwrap();
-    channel
+    games_channel
         .queue_declare(
             "poker",
             lapin::options::QueueDeclareOptions::default(),
@@ -34,7 +34,7 @@ async fn main() {
         .await
         .unwrap();
 
-    let mut consumer = channel
+    let mut consumer = games_channel
         .basic_consume(
             "poker",
             "worker",
@@ -66,7 +66,7 @@ async fn main() {
                 result,
                 id: payload.id,
             };
-            channel_b
+            results_channel
                 .basic_publish(
                     "",
                     "game_results",
