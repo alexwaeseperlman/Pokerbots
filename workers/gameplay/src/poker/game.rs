@@ -17,7 +17,7 @@ pub trait Player {
     fn post_action(&self, state: GameState, action: Action, player: usize);
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub enum Action {
     // Call and check are the same
     Call,

@@ -188,3 +188,69 @@ fn parse_action(line: &String) -> Result<crate::poker::game::Action, shared::Gam
         }
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::parse_action;
+    #[test]
+    fn parse_action_check() {
+        assert_eq!(
+            parse_action(&"X".to_owned()).unwrap(),
+            crate::poker::game::Action::Check
+        );
+    }
+
+    #[test]
+    fn parse_action_fold() {
+        assert_eq!(
+            parse_action(&"F".to_owned()).unwrap(),
+            crate::poker::game::Action::Fold
+        );
+    }
+
+    #[test]
+    fn parse_action_call() {
+        assert_eq!(
+            parse_action(&"C".to_owned()).unwrap(),
+            crate::poker::game::Action::Call
+        );
+    }
+
+    #[test]
+    fn parse_action_raise() {
+        assert_eq!(
+            parse_action(&"R1234".to_owned()).unwrap(),
+            crate::poker::game::Action::Raise { amt: 1234 }
+        );
+    }
+
+    #[test]
+    fn parse_action_raise_invalid() {
+        assert!(parse_action(&"R".to_owned()).is_err());
+    }
+
+    #[test]
+    fn parse_action_raise_invalid2() {
+        assert!(parse_action(&"R1234a".to_owned()).is_err());
+    }
+
+    #[test]
+    fn parse_action_raise_invalid3() {
+        assert!(parse_action(&"R-1234".to_owned()).is_err());
+    }
+
+    #[test]
+    fn parse_action_raise_invalid4() {
+        assert!(parse_action(&"R-1".to_owned()).is_err());
+    }
+
+    #[test]
+    fn parse_action_raise_invalid5() {
+        assert!(parse_action(&"R1234.0".to_owned()).is_err());
+    }
+
+    #[test]
+    fn parse_action_raise_invalid6() {
+        assert!(parse_action(&"B".to_owned()).is_err());
+    }
+}
