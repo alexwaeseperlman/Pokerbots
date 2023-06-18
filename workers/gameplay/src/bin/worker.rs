@@ -55,7 +55,7 @@ async fn main() {
             msg.ack(BasicAckOptions::default())
                 .await
                 .expect("Error while acknowledging message");
-            let result: GameResult = pokergame::bots::run_game(
+            let result: GameResult = gameplay::bots::run_game(
                 payload.bot_a,
                 payload.bot_b,
                 &s3_client,
