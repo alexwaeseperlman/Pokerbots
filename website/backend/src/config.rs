@@ -9,7 +9,6 @@ use std::{env, fs};
 // Build a database connection pool for server functions
 lazy_static! {
     pub static ref DB_CONNECTION: Pool<ConnectionManager<PgConnection>> = {
-        dotenv().ok();
         let db_url = env::var("DB_URL").expect("DB_URL must be set");
         let db_password = env::var("DB_PASSWORD").unwrap_or_else(|_| {
             fs::read_to_string("/run/secrets/db-password")

@@ -15,9 +15,11 @@ shared = { path = "../../shared" }
 futures-lite = "1.13.0"
 env_logger = "0.10.0"
 aws-config = "0.55.2"
-aws-sdk-s3 = "0.27.0"
+aws-sdk-s3 = "0.28.0"
 clap = {version="4.3.0", features=["derive"]}
 async-trait = "0.1.68"
+aws-sdk-sqs = "0.28.0"
+dotenvy = "0.15.7"
 
 [[bin]]
 name = "worker"

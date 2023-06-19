@@ -2,14 +2,13 @@ use std::sync::Arc;
 
 use diesel::*;
 use futures_util::StreamExt;
-use lapin::Channel;
 use shared::{GameError, GameMessage, GameResult, ScoringResult};
 
 use crate::{
     config::DB_CONNECTION,
     schema::{self, games},
 };
-
+/*
 pub async fn listen_for_game_results(channel: Channel) {
     let mut consumer = channel
         .basic_consume(
@@ -127,3 +126,4 @@ pub async fn listen_for_game_results(channel: Channel) {
         }
     }
 }
+*/

@@ -2,13 +2,17 @@ use std::sync::Arc;
 
 use crate::{
     app::login,
-    app::{api::ApiResult, login::microsoft_login_url},
+    app::{
+        api::{ApiError, ApiResult},
+        login::microsoft_login_url,
+    },
     config::{BOT_S3_BUCKET, DB_CONNECTION, PFP_S3_BUCKET},
     models::{Bot, Game, TeamInvite, User},
     schema,
 };
 use actix_session::Session;
 use actix_web::{
+    error::InternalError,
     get, put,
     web::{self, Bytes},
     HttpResponse,
@@ -19,6 +23,7 @@ use chrono;
 use diesel::{prelude::*, query_builder::SelectQuery};
 use futures_util::FutureExt;
 use rand::{self, Rng};
+use reqwest::StatusCode;
 use serde::Deserialize;
 use serde_json::json;
 use shared::PlayTask;
@@ -33,7 +38,7 @@ pub struct MakeGameQuery {
 pub async fn make_game(
     session: Session,
     web::Query::<MakeGameQuery>(MakeGameQuery { bot_a, bot_b }): web::Query<MakeGameQuery>,
-    amqp_channel: web::Data<Arc<lapin::Channel>>,
+    sqs_client: web::Data<aws_sdk_sqs::Client>,
 ) -> ApiResult {
     // generate a random code and insert it into the database
     // also push a batch job to the queue
@@ -47,19 +52,27 @@ pub async fn make_game(
         })
         .get_result::<Game>(conn)?;
     // push a batch job to the queue
-    let job = amqp_channel
-        .basic_publish(
-            "",
-            "poker",
-            lapin::options::BasicPublishOptions::default(),
-            &serde_json::to_vec(&PlayTask {
-                bot_a: game.bot_a.to_string(),
-                bot_b: game.bot_b.to_string(),
-                id: game.id.clone(),
-                date: game.created,
-            })?,
-            lapin::BasicProperties::default(),
+    let job = sqs_client
+        .send_message()
+        .queue_url(
+            sqs_client
+                .get_queue_url()
+                .queue_name("new_games")
+                .send()
+                .await?
+                .queue_url()
+                .ok_or(ApiError {
+                    message: "no queue url".into(),
+                    status_code: StatusCode::INTERNAL_SERVER_ERROR,
+                })?,
         )
+        .message_body(&serde_json::to_string(&PlayTask {
+            bot_a: game.bot_a.to_string(),
+            bot_b: game.bot_b.to_string(),
+            id: game.id.clone(),
+            date: game.created,
+        })?)
+        .send()
         .await;
     if let Err(e) = job {
         // Remove the game from the database

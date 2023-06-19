@@ -1,0 +1,85 @@
+#!/usr/bin/python3
+from argparse import ArgumentParser
+import os
+import secrets
+
+parser = ArgumentParser()
+
+generated_vars = {'DB_PASSWORD': secrets.token_urlsafe(8),
+                  'S3_ACCESS_KEY': secrets.token_urlsafe(8),
+                  'S3_SECRET_KEY': secrets.token_urlsafe(8),
+                  # must be all lowercase
+                  'PFP_S3_BUCKET': secrets.token_hex(8),
+                  # must be all lowercase
+                  'BOT_S3_BUCKET': secrets.token_hex(8),
+                  'SECRET_KEY': secrets.token_urlsafe(86),
+                  # must be all lowercase
+                  'COMPILED_BOT_S3_BUCKET': secrets.token_hex(8)}
+required_vars = ['MICROSOFT_CLIENT_ID', 'MICROSOFT_TENANT_ID', 'AZURE_SECRET']
+fixed_vars = {
+    'S3_ADDRESS': f'http://{generated_vars["S3_ACCESS_KEY"]}:{generated_vars["S3_SECRET_KEY"]}@localhost:9000',
+    'SQS_ADDRESS': 'http://localhost:9324',
+    'DB_USER': 'postgres',
+    'DB_URL': 'localhost:5432',
+    'RUST_LOG': 'debug'
+
+}
+
+# Check if we're in the root directory
+files = os.listdir()
+
+if '.github' not in files:
+    print("It looks like you aren't running this in the project root directory.")
+    print("Would you like to continue?", end='')
+    if not input(' [Yn] ').lower().startswith('y'):
+        exit(0)
+
+# Read existing .env
+env = {}
+if '.env' in files:
+    with open('.env', 'r') as f:
+        for line in f.readlines():
+            line = line.strip()
+            if len(line) == 0:
+                continue
+            if line.startswith('#'):
+                continue
+            l = line.split('=')
+            env[l[0]] = '='.join(l[1:])
+
+for var in required_vars:
+    # Check if it's already in the .env
+    required = env.get(var) == None
+    parser.add_argument(f'-{var}', required=required)
+
+
+args = parser.parse_args()
+
+out = fixed_vars
+for i in generated_vars:
+    out[i] = generated_vars[i]
+for var in required_vars:
+    val = args.__dict__.get(var)
+    if val is None and env.get(var) is not None:
+        val = env.get(var)
+        print(f'Getting {var} from existing .env.')
+    elif val is None:
+        print(f'{var} is not defined')
+        exit(1)
+    out[var] = val
+
+lines = []
+for i in out:
+    lines.append(f"{i}={out[i]}")
+
+out_text = '\n'.join(lines)
+
+if '.env' in files:
+    print('About to overwrite an existing .env file.')
+    print('This is the new file:')
+    print(out_text)
+    print('Would you like to continue?', end='')
+    if not input(' [Yn] ').lower().startswith('y'):
+        exit(0)
+with open('.env', 'w') as f:
+    f.write(out_text)

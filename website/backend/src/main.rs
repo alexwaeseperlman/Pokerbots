@@ -1,4 +1,4 @@
-use std::{fs, sync::Arc};
+use std::fs;
 
 use actix_files::NamedFile;
 use actix_service::{fn_service, Service};
@@ -6,19 +6,11 @@ use actix_session::{storage::CookieSessionStore, SessionExt, SessionMiddleware};
 use actix_web::{
     cookie,
     dev::{ServiceRequest, ServiceResponse},
-    get,
-    http::header::{ContentDisposition, DispositionType},
     middleware::Logger,
-    web, App, HttpMessage, HttpRequest, HttpServer,
-};
-use aws_config;
-use aws_sdk_s3::types::{
-    builders::CreateBucketConfigurationBuilder, CreateBucketConfiguration, ObjectOwnership,
-    OwnershipControls, OwnershipControlsRule, PublicAccessBlockConfiguration,
+    web, App, HttpMessage, HttpServer,
 };
 use diesel_migrations::*;
-use futures_util::{future::FutureExt, StreamExt};
-use lapin::options::ConfirmSelectOptions;
+use futures_util::future::FutureExt;
 use pokerbots::{
     app::{api, login},
     config::DB_CONNECTION,
@@ -44,34 +36,10 @@ async fn main() -> std::io::Result<()> {
 
     let conn = &mut (*DB_CONNECTION).get().unwrap();
     conn.run_pending_migrations(MIGRATIONS).unwrap();
-    let aws_config = aws_config::load_from_env().await;
-    let s3_client = web::Data::new(aws_sdk_s3::Client::new(&aws_config));
+    let aws_config = shared::aws_config().await;
+    let s3_client = web::Data::new(shared::s3_client(&aws_config).await);
+    let sqs_client = web::Data::new(shared::sqs_client(&aws_config).await);
 
-    let addr = std::env::var("AMQP_ADDRESS").expect("AMQP_ADDRESS must be set");
-    let conn = lapin::Connection::connect(&addr, lapin::ConnectionProperties::default())
-        .await
-        .expect("Connection error");
-
-    // listen for messages
-    let channel = conn.create_channel().await.unwrap();
-    let channel_b = conn.create_channel().await.unwrap();
-    let mut queue = channel
-        .queue_declare(
-            "poker",
-            lapin::options::QueueDeclareOptions::default(),
-            lapin::types::FieldTable::default(),
-        )
-        .await
-        .unwrap();
-
-    let mut queue_b = channel_b
-        .queue_declare(
-            "game_results",
-            lapin::options::QueueDeclareOptions::default(),
-            lapin::types::FieldTable::default(),
-        )
-        .await
-        .unwrap();
     /*
     s3_client
         .create_bucket()
@@ -121,8 +89,10 @@ async fn main() -> std::io::Result<()> {
         .await
         .unwrap();
     */
-    let amqp_channel = web::Data::new(Arc::new(channel));
-    tokio::spawn(async { pokerbots::games::listen_for_game_results(channel_b).await });
+
+    //let amqp_channel = web::Data::new(Arc::new(channel));
+    //tokio::spawn(async { pokerbots::games::listen_for_game_results(channel_b).await });
+
     // Generate the list of routes in your App
     HttpServer::new(move || {
         let session_middleware =
@@ -138,8 +108,9 @@ async fn main() -> std::io::Result<()> {
                 log::debug!("{}", req.uri());
                 srv.call(req).map(|res| res)
             })
-            .app_data(amqp_channel.clone())
+            //.app_data(amqp_channel.clone())
             .app_data(s3_client.clone())
+            .app_data(sqs_client.clone())
             .wrap(Logger::new("%a %{User-Agent}i"))
             .wrap(session_middleware)
             .route("/api/login", web::get().to(login::handle_login))

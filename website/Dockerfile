@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install pkg-config libssl-dev libpq-dev curl build
 # Copy dependency information first so we can cache the build
 ENV CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
 COPY website/backend/Cargo.toml .
-COPY website/backend/Cargo.lock .
+#COPY website/backend/Cargo.lock .
 
 COPY shared /usr/shared
 

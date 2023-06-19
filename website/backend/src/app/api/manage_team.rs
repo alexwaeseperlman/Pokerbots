@@ -187,8 +187,15 @@ pub async fn join_team(
     web::Query::<JoinTeamQuery>(JoinTeamQuery { invite_code }): web::Query<JoinTeamQuery>,
     req: actix_web::HttpRequest,
 ) -> ApiResult {
-    let user = login::get_user_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+    let user = match login::get_user_data(&session) {
+        Some(user) => user,
+        None => {
+            return Ok(HttpResponse::Found()
+                //TODO: Redirect to a general login page
+                .append_header(("Location", microsoft_login_url(&req.uri().to_string())))
+                .finish());
+        }
+    };
     let team = login::get_team_data(&session);
     // You can't join a team if you are already on one or if you aren't logged in
 
@@ -289,6 +296,7 @@ pub async fn upload_bot(
     }
     let mut bot_json = String::new();
     bot_file.read_to_string(&mut bot_json)?;
+    log::debug!("bot.json: {}", bot_json);
 
     let bot: shared::Bot = serde_json::from_str(&bot_json)?;
 

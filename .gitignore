@@ -25,7 +25,7 @@ playwright/.cache/
 backend/style/output.css
 
 # api keys
-.env
+.env*
 backend/.env
 
 # database

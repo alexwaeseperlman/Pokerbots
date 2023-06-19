@@ -7,9 +7,57 @@ use shared::{GameMessage, GameResult, PlayTask};
 use rand::Rng;
 #[tokio::main]
 async fn main() {
+    dotenvy::dotenv().ok();
     env_logger::init();
     log::info!("Starting worker");
-    let addr = std::env::var("AMQP_ADDRESS").expect("AMQP_ADDRESS must be set");
+
+    let config = shared::aws_config().await;
+    let sqs_client = shared::sqs_client(&config).await;
+    println!("{:?}", sqs_client.list_queues().send().await.unwrap());
+    let new_game_queue_url = sqs_client
+        .get_queue_url()
+        .queue_name("new_games")
+        .send()
+        .await
+        .expect("Error getting queue url")
+        .queue_url
+        .unwrap();
+    let game_result_queue_url = sqs_client
+        .get_queue_url()
+        .queue_name("game_results")
+        .send()
+        .await
+        .expect("Error getting queue url")
+        .queue_url
+        .unwrap();
+
+    loop {
+        let message = sqs_client
+            .receive_message()
+            .queue_url(&new_game_queue_url)
+            .send()
+            .await;
+        if let Some(payload) = match message.map(|m| m.messages) {
+            Ok(Some(result)) => result,
+            Err(e) => {
+                log::error!("Error receiving message {}", e);
+                continue;
+            }
+            _ => {
+                log::debug!("No messages");
+                continue;
+            }
+        }
+        .first()
+        {
+            log::info!("Message received {:?}", payload.body());
+        } else {
+            log::debug!("No messages");
+            continue;
+        }
+    }
+
+    /*let addr = std::env::var("AMQP_ADDRESS").expect("AMQP_ADDRESS must be set");
     let conn = lapin::Connection::connect(&addr, lapin::ConnectionProperties::default())
         .await
         .expect("Connection error");
@@ -83,5 +131,5 @@ async fn main() {
                 .await
                 .expect("Error while parsing message");
         }
-    }
+    }*/
 }

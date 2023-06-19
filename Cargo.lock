@@ -770,9 +770,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-s3"
-version = "0.27.0"
+version = "0.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37c77060408d653d3efa6ea7b66c1389bc35a0342352984c8bf8bcb814a8fc27"
+checksum = "fba197193cbb4bcb6aad8d99796b2291f36fa89562ded5d4501363055b0de89f"
 dependencies = [
  "aws-credential-types",
  "aws-endpoint",
@@ -799,6 +799,33 @@ dependencies = [
  "tower",
  "tracing",
  "url",
+]
+
+[[package]]
+name = "aws-sdk-sqs"
+version = "0.28.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9f7ccf241049b36e4684e5ea643e4f6e510f050b28581dc5ded8d3c5d39ab147"
+dependencies = [
+ "aws-credential-types",
+ "aws-endpoint",
+ "aws-http",
+ "aws-sig-auth",
+ "aws-smithy-async",
+ "aws-smithy-client",
+ "aws-smithy-http",
+ "aws-smithy-http-tower",
+ "aws-smithy-json",
+ "aws-smithy-query",
+ "aws-smithy-types",
+ "aws-smithy-xml",
+ "aws-types",
+ "bytes",
+ "http",
+ "regex",
+ "tokio-stream",
+ "tower",
+ "tracing",
 ]
 
 [[package]]
@@ -2103,7 +2130,9 @@ dependencies = [
  "async-trait",
  "aws-config",
  "aws-sdk-s3",
+ "aws-sdk-sqs",
  "clap 4.3.4",
+ "dotenvy",
  "env_logger",
  "futures-lite",
  "itertools",
@@ -3194,6 +3223,7 @@ dependencies = [
  "actix-web",
  "aws-config",
  "aws-sdk-s3",
+ "aws-sdk-sqs",
  "cargo-watch",
  "chrono",
  "diesel",
@@ -3202,7 +3232,6 @@ dependencies = [
  "env_logger",
  "futures",
  "futures-util",
- "lapin",
  "lazy_static",
  "log",
  "r2d2",
@@ -3738,7 +3767,9 @@ dependencies = [
 name = "shared"
 version = "0.1.0"
 dependencies = [
- "lapin",
+ "aws-config",
+ "aws-sdk-s3",
+ "aws-sdk-sqs",
  "serde",
 ]
 

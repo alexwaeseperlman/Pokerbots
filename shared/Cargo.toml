@@ -4,5 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-lapin = "2.1.1"
+aws-config = "0.55.2"
+aws-sdk-s3 = "0.28.0"
 serde = { version = "1.0.152", features = ["derive"] }
+aws-sdk-sqs = "0.28.0"
