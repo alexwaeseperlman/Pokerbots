@@ -1,5 +1,4 @@
 use diesel::backend::Backend;
-use diesel::PgConnection;
 use diesel_migrations::MigrationHarness;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations};
 

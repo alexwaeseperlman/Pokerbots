@@ -8,6 +8,7 @@ use crate::{
 use actix_session::Session;
 use actix_web::{get, post, put, web, HttpResponse};
 use aws_sdk_s3 as s3;
+use aws_sdk_sqs as sqs;
 use chrono;
 use diesel::prelude::*;
 use futures_util::StreamExt;
@@ -269,6 +270,7 @@ pub async fn upload_pfp(
 #[post("/upload-bot")]
 pub async fn upload_bot(
     s3_client: actix_web::web::Data<s3::Client>,
+    sqs_client: actix_web::web::Data<sqs::Client>,
     session: Session,
     mut payload: web::Payload,
 ) -> ApiResult {
@@ -330,6 +332,23 @@ pub async fn upload_bot(
         return Err(e.into());
     }
 
+    // push the bot to the 'bot_uploads' queue
+    if let Some(s) = sqs_client
+        .get_queue_url()
+        .queue_name("bot_uploads")
+        .send()
+        .await?
+        .queue_url()
+    {
+        sqs_client
+            .send_message()
+            .queue_url(s)
+            .message_body(serde_json::to_string(&shared::BuildTask {
+                bot: id.to_string(),
+            })?)
+            .send()
+            .await?;
+    }
     Ok(HttpResponse::Ok().json(json!({ "id": id })))
 }
 

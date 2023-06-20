@@ -1,4 +1,4 @@
-use std::{error::Error, time::Duration};
+use std::{error::Error, process::Stdio, time::Duration};
 
 use builder::bots::{build_bot, download_bot};
 use shared::{BuildStatus, BuildTask};
@@ -10,6 +10,7 @@ async fn process(
 ) -> Result<(), Box<dyn Error>> {
     let bot_bucket = std::env::var("BOT_S3_BUCKET")?;
     let compiled_bot_bucket = std::env::var("COMPILED_BOT_S3_BUCKET")?;
+    fs::create_dir_all(format!("/tmp/{}", bot)).await?;
     let bot_path = std::path::Path::new("/tmp").join(&bot);
     download_bot(&bot, &bot_path, &bot_bucket, &s3).await?;
     build_bot(bot_path).await?;
@@ -18,6 +19,8 @@ async fn process(
         .arg("-r")
         .arg(format!("{}.zip", bot))
         .arg(&bot)
+        .stderr(Stdio::null())
+        .stdout(Stdio::null())
         .current_dir("/tmp")
         .status()
         .await?;
@@ -95,6 +98,7 @@ async fn main() {
                     continue;
                 }
             };
+            log::info!("Received build task for {}", task.bot);
             // TODO: send a message when the build starts
             // right now we just send a message when it finishes
             let result = process(task.clone(), s3.clone()).await;
@@ -111,6 +115,7 @@ async fn main() {
                     None
                 },
             };
+            log::info!("Completed build: {:?}", message);
             let body = serde_json::to_string(&message);
             if let Ok(s) = body {
                 if let Err(e) = sqs

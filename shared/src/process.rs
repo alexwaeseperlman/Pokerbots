@@ -9,7 +9,7 @@ use tokio::{
     io,
     process::{Child, ChildStderr, ChildStdin, ChildStdout, Command},
     sync::{oneshot::channel, Mutex},
-    task::{JoinError, JoinHandle},
+    task::JoinHandle,
     time::sleep,
 };
 
