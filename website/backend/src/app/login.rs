@@ -5,13 +5,13 @@ use log::error;
 use serde::{Deserialize, Serialize};
 use std::env;
 
-use crate::{
-    config::{CLIENT_ID, DB_CONNECTION, REDIRECT_URI},
+use crate::config::{CLIENT_ID, DB_CONNECTION, REDIRECT_URI};
+
+use super::api::ServerMessage;
+use shared::db::{
     models::{NewUser, Team, TeamInvite, User},
     schema::{team_invites, teams, users},
 };
-
-use super::api::ServerMessage;
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct UserData {

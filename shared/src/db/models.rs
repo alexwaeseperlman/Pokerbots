@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::schema::{bots, games, team_invites, teams, users};
+use crate::{
+    db::schema::{bots, games, team_invites, teams, users},
+    BuildStatus,
+};
 
 #[derive(Serialize, Deserialize, diesel::Queryable, Debug)]
 pub struct Team {
@@ -88,6 +91,8 @@ pub struct Bot {
     pub score: f32,
     pub created: i64,
     pub uploaded_by: String,
+    pub build_status: i32,
+    pub build_error: Option<String>,
 }
 
 #[derive(Debug, diesel::Insertable)]

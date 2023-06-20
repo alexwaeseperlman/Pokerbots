@@ -5,6 +5,9 @@ use aws_config::SdkConfig;
 use aws_sdk_s3::config::Credentials;
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "db")]
+pub mod db;
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BuildTask {
     pub bot: String,

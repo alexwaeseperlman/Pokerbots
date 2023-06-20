@@ -1,19 +1,19 @@
 use actix_session::Session;
 use actix_web::{get, web, HttpResponse};
 use diesel::*;
-use s3::presigning::PresigningConfig;
 use serde::Deserialize;
 use serde_json::json;
 
 use crate::{
     app::{api::ApiResult, login},
-    config::{DB_CONNECTION, PFP_S3_BUCKET},
+    config::DB_CONNECTION,
+};
+use shared::db::{
     models::{Bot, Team, TeamInvite, TeamWithMembers, User},
     schema,
 };
 
 use super::ServerMessage;
-use aws_sdk_s3 as s3;
 
 #[get("/my-account")]
 pub async fn my_account(session: Session) -> ApiResult {

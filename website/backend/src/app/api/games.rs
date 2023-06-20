@@ -1,31 +1,22 @@
-use std::sync::Arc;
-
 use crate::{
-    app::login,
-    app::{
-        api::{ApiError, ApiResult},
-        login::microsoft_login_url,
-    },
-    config::{BOT_S3_BUCKET, DB_CONNECTION, PFP_S3_BUCKET},
-    models::{Bot, Game, TeamInvite, User},
-    schema,
+    app::api::{ApiError, ApiResult},
+    config::DB_CONNECTION,
 };
 use actix_session::Session;
 use actix_web::{
-    error::InternalError,
-    get, put,
-    web::{self, Bytes},
+    get,
+    web::{self},
     HttpResponse,
 };
-use aws_sdk_s3 as s3;
-use aws_sdk_s3::presigning::PresigningConfig;
-use chrono;
-use diesel::{prelude::*, query_builder::SelectQuery};
-use futures_util::FutureExt;
+use diesel::prelude::*;
 use rand::{self, Rng};
 use reqwest::StatusCode;
 use serde::Deserialize;
 use serde_json::json;
+use shared::db::{
+    models::{Game, NewGame},
+    schema,
+};
 use shared::PlayTask;
 #[derive(Deserialize)]
 pub struct MakeGameQuery {
@@ -45,7 +36,7 @@ pub async fn make_game(
     let id = format!("{:02x}", rand::thread_rng().gen::<u128>());
     let conn = &mut (*DB_CONNECTION).get()?;
     let game = diesel::insert_into(schema::games::dsl::games)
-        .values(crate::models::NewGame {
+        .values(NewGame {
             bot_a,
             bot_b,
             id: id.clone(),

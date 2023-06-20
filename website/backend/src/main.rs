@@ -9,7 +9,6 @@ use actix_web::{
     middleware::Logger,
     web, App, HttpMessage, HttpServer,
 };
-use diesel_migrations::*;
 use futures_util::future::FutureExt;
 use pokerbots::{
     app::{api, login},
@@ -28,14 +27,13 @@ fn get_secret_key() -> cookie::Key {
     cookie::Key::from(key.as_bytes())
 }
 
-pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     env_logger::init();
     dotenvy::dotenv().ok();
 
     let conn = &mut (*DB_CONNECTION).get().unwrap();
-    conn.run_pending_migrations(MIGRATIONS).unwrap();
+    shared::db::run_pending_migrations(conn);
     let aws_config = shared::aws_config().await;
     let s3_client = web::Data::new(shared::s3_client(&aws_config).await);
     let sqs_client = web::Data::new(shared::sqs_client(&aws_config).await);

@@ -4,19 +4,20 @@ use crate::{
     app::login,
     app::{api::ApiResult, login::microsoft_login_url},
     config::{BOT_S3_BUCKET, BOT_SIZE, DB_CONNECTION, PFP_S3_BUCKET},
-    models::{NewBot, TeamInvite, User},
-    schema::{bots, team_invites, teams, users},
 };
 use actix_session::Session;
 use actix_web::{get, post, put, web, HttpResponse};
 use aws_sdk_s3 as s3;
-use aws_sdk_s3::presigning::PresigningConfig;
 use chrono;
 use diesel::prelude::*;
 use futures_util::StreamExt;
 use rand::{self, Rng};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::json;
+use shared::db::{
+    models::{NewBot, NewInvite, NewTeam, TeamInvite, User},
+    schema::{bots, team_invites, teams, users},
+};
 
 #[derive(Deserialize)]
 pub struct CreateTeamQuery {
@@ -50,7 +51,7 @@ pub async fn create_team(
     }
     let conn = &mut (*DB_CONNECTION).get()?;
     let new_id = diesel::insert_into(teams::dsl::teams)
-        .values(crate::models::NewTeam {
+        .values(NewTeam {
             team_name,
             owner: user.clone().email,
         })
@@ -146,7 +147,7 @@ pub async fn make_invite(session: Session) -> ApiResult {
     let now: i64 = chrono::offset::Utc::now().timestamp();
     let conn = &mut (*DB_CONNECTION).get()?;
     let out = diesel::insert_into(team_invites::dsl::team_invites)
-        .values(crate::models::NewInvite {
+        .values(NewInvite {
             expires: now + day,
             invite_code: format!("{:02x}", rand::thread_rng().gen::<u128>()),
             teamid: team.clone().id,

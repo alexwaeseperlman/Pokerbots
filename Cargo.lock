@@ -3228,7 +3228,6 @@ dependencies = [
  "cargo-watch",
  "chrono",
  "diesel",
- "diesel_migrations",
  "dotenvy",
  "env_logger",
  "futures",
@@ -3771,6 +3770,8 @@ dependencies = [
  "aws-config",
  "aws-sdk-s3",
  "aws-sdk-sqs",
+ "diesel",
+ "diesel_migrations",
  "serde",
  "tokio",
 ]

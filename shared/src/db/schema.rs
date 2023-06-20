@@ -9,6 +9,8 @@ diesel::table! {
         score -> Float4,
         created -> Int8,
         uploaded_by -> Text,
+        build_status -> Int4,
+        build_error -> Nullable<Text>,
     }
 }
 

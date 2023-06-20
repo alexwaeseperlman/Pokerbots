@@ -4,10 +4,7 @@ use diesel::*;
 use futures_util::StreamExt;
 use shared::{GameError, GameResult, GameResultMessage, ScoringResult};
 
-use crate::{
-    config::DB_CONNECTION,
-    schema::{self, games},
-};
+use crate::config::DB_CONNECTION;
 /*
 pub async fn listen_for_game_results(channel: Channel) {
     let mut consumer = channel
