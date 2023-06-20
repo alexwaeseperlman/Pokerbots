@@ -1195,6 +1195,7 @@ dependencies = [
  "async-trait",
  "aws-config",
  "aws-sdk-s3",
+ "dotenvy",
  "env_logger",
  "futures-lite",
  "itertools",
@@ -3771,6 +3772,7 @@ dependencies = [
  "aws-sdk-s3",
  "aws-sdk-sqs",
  "serde",
+ "tokio",
 ]
 
 [[package]]

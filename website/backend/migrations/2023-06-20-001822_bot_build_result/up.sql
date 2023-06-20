@@ -1,0 +1,2 @@
+ALTER TABLE bots ADD COLUMN build_status NUMBER NOT NULL DEFAULT(-1);
+ALTER TABLE bots ADD COLUMN build_error_message TEXT;

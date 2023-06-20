@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use diesel::*;
 use futures_util::StreamExt;
-use shared::{GameError, GameMessage, GameResult, ScoringResult};
+use shared::{GameError, GameResult, GameResultMessage, ScoringResult};
 
 use crate::{
     config::DB_CONNECTION,

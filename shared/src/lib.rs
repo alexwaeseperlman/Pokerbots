@@ -1,8 +1,31 @@
+pub mod process;
 use std::io;
 
 use aws_config::SdkConfig;
 use aws_sdk_s3::config::Credentials;
 use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct BuildTask {
+    pub bot: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum BuildStatus {
+    Unqueued = -1,
+    Queued = 0,
+    BuildSucceeded = 1,
+    TestGameSucceeded = 2,
+    BuildFailed = 3,
+    TestGameFailed = 4,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct BuildResultMessage {
+    pub status: BuildStatus,
+    pub bot: String,
+    pub error: Option<String>,
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PlayTask {
@@ -29,7 +52,6 @@ pub enum GameActionError {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum GameError {
     RunTimeError(String, WhichBot),
-    CompileError(String, WhichBot),
     TimeoutError(String, WhichBot),
     MemoryError(String, WhichBot),
     InvalidActionError(GameActionError, WhichBot),
@@ -42,7 +64,7 @@ pub enum ScoringResult {
 
 pub type GameResult = Result<ScoringResult, GameError>;
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct GameMessage {
+pub struct GameResultMessage {
     pub result: GameResult,
     pub id: String,
 }

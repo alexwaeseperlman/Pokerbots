@@ -1,0 +1,4 @@
+{
+    "name": "Create file at build",
+    "build": "echo Hello, World! | cat >> file.txt"
+}

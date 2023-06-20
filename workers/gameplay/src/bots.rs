@@ -1,6 +1,6 @@
 use aws_sdk_s3::operation::get_object::builders::GetObjectFluentBuilder;
 use rand::{thread_rng, Rng};
-use shared::{GameMessage, GameResult, WhichBot};
+use shared::{GameResult, GameResultMessage, WhichBot};
 use std::{
     fs,
     path::{Path, PathBuf},
