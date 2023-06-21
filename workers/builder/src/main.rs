@@ -1,12 +1,12 @@
 use std::{error::Error, process::Stdio, time::Duration};
 
 use builder::bots::{build_bot, download_bot};
-use shared::{BuildStatus, BuildTask};
+use shared::{sqs::listen_on_queue, BuildStatus, BuildTask};
 use tokio::{fs, process::Command, time::sleep};
 
 async fn process(
     BuildTask { bot }: BuildTask,
-    s3: aws_sdk_s3::Client,
+    s3: &aws_sdk_s3::Client,
 ) -> Result<(), Box<dyn Error>> {
     let bot_bucket = std::env::var("BOT_S3_BUCKET")?;
     let compiled_bot_bucket = std::env::var("COMPILED_BOT_S3_BUCKET")?;
@@ -48,45 +48,14 @@ async fn main() {
     let sqs = shared::sqs_client(&config).await;
 
     log::info!("Listening for messages.");
-    loop {
-        let message = match std::env::var("BOT_UPLOADS_QUEUE_URL") {
-            Ok(val) => sqs.receive_message().queue_url(val).send().await,
-            Err(_) => {
-                continue;
-            }
-        };
-        if let Some(payload) = match message.map(|m| m.messages) {
-            Ok(Some(result)) => result,
-            Err(e) => {
-                log::info!("Error receiving message {}", e);
-                continue;
-            }
-            _ => {
-                log::debug!("No messages");
-                sleep(Duration::from_secs(1)).await;
-                continue;
-            }
-        }
-        .first()
-        {
-            let task = match payload
-                .body()
-                .map(|b| serde_json::from_str::<BuildTask>(&b))
-            {
-                Some(Ok(task)) => task,
-                Some(Err(e)) => {
-                    log::error!("Error parsing message {}", e);
-                    continue;
-                }
-                None => {
-                    log::error!("Empty payload");
-                    continue;
-                }
-            };
-            log::info!("Received build task for {}", task.bot);
+    listen_on_queue(
+        std::env::var("BOT_UPLOADS_QUEUE_URL").unwrap(),
+        &sqs,
+        |task: BuildTask| async {
+            log::warn!("Received build task for {}", task.bot);
             // TODO: send a message when the build starts
             // right now we just send a message when it finishes
-            let result = process(task.clone(), s3.clone()).await;
+            let result = process(task.clone(), &s3).await;
 
             let message = shared::BuildResultMessage {
                 bot: task.bot,
@@ -120,11 +89,11 @@ async fn main() {
                 }
             } else if let Err(e) = body {
                 log::error!("Error serializing message {}", e);
-                continue;
             }
-        } else {
-            log::info!("No messages");
-            continue;
-        }
-    }
+        },
+        |e| {
+            log::error!("Error receiving message {}", e);
+        },
+    )
+    .await;
 }

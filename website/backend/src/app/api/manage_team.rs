@@ -3,7 +3,7 @@ use std::io::Read;
 use crate::{
     app::login,
     app::{api::ApiResult, login::microsoft_login_url},
-    config::{BOT_S3_BUCKET, BOT_SIZE, DB_CONNECTION, PFP_S3_BUCKET},
+    config::{BOT_S3_BUCKET, BOT_SIZE, PFP_S3_BUCKET},
 };
 use actix_session::Session;
 use actix_web::{get, post, put, web, HttpResponse};
@@ -15,6 +15,7 @@ use futures_util::StreamExt;
 use rand::{self, Rng};
 use serde::Deserialize;
 use serde_json::json;
+use shared::db::conn::DB_CONNECTION;
 use shared::db::{
     models::{NewBot, NewInvite, NewTeam, TeamInvite, User},
     schema::{bots, team_invites, teams, users},

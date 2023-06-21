@@ -2,7 +2,7 @@ use std::process::Command;
 
 use futures_lite::stream::StreamExt;
 use lapin::options::{BasicAckOptions, BasicRejectOptions};
-use shared::{GameResult, GameResultMessage, PlayTask};
+use shared::{GameResult, GameResultMessage, GameTask};
 
 use rand::Rng;
 #[tokio::main]

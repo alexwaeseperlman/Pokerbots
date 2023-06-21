@@ -10,10 +10,8 @@ use actix_web::{
     web, App, HttpMessage, HttpServer,
 };
 use futures_util::future::FutureExt;
-use pokerbots::{
-    app::{api, login},
-    config::DB_CONNECTION,
-};
+use pokerbots::app::{api, login};
+use shared::db::conn::DB_CONNECTION;
 
 fn get_secret_key() -> cookie::Key {
     let key = std::env::var("SECRET_KEY").unwrap_or_else(|_| {

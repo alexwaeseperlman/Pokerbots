@@ -25,9 +25,10 @@ pub async fn build_bot<T: AsRef<Path>>(bot_folder: T) -> Result<(), io::Error> {
         let json = fs::read_to_string(path.join("bot/bot.json")).await?;
         serde_json::from_str::<Bot>(&json)?
     };
-    let build_result = shared::process::Process::sh_configured(bot_json.build, move |command| {
-        command.current_dir(path.join("bot"))
-    })
+    let build_result = shared::process::Process::sh_configured(
+        bot_json.build.unwrap_or_default(),
+        move |command| command.current_dir(path.join("bot")),
+    )
     .await?
     .wait()
     .await?;

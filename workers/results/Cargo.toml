@@ -1,5 +1,5 @@
 [package]
-name = "builder"
+name = "results"
 version = "0.1.0"
 edition = "2021"
 
@@ -10,10 +10,11 @@ itertools = "0.10.5"
 tokio = {version = "1.28.1", features=["rt", "macros", "rt-multi-thread", "time", "process"]}
 serde = "1.0.163"
 serde_json = "1.0.96"
-shared = { path = "../../shared" }
+shared = { path = "../../shared", features = ["db"] }
 futures-lite = "1.13.0"
 env_logger = "0.10.0"
 aws-config = "0.55.2"
 aws-sdk-s3 = "0.28.0"
 async-trait = "0.1.68"
 dotenvy = "0.15.7"
+diesel = { version = "2.0.3", features = ["postgres", "r2d2", "with-deprecated"]}

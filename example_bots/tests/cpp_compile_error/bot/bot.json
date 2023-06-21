@@ -1,4 +1,5 @@
 {
     "name": "CPP compile error",
-    "build": "g++ main.cpp -o main"
+    "build": "g++ main.cpp -o main",
+    "run": "./main"
 }

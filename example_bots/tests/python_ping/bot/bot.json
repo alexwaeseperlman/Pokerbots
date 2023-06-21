@@ -1,4 +1,4 @@
 {
     "name": "Python ping",
-    "build": "python"
+    "run": "python main.py"
 }

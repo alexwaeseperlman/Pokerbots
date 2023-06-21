@@ -1,50 +1,63 @@
 pub mod process;
+pub mod sqs;
 use std::io;
 
 use aws_config::SdkConfig;
 use aws_sdk_s3::config::Credentials;
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 #[cfg(feature = "db")]
 pub mod db;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, TS)]
 pub struct BuildTask {
     pub bot: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, TS)]
+#[ts(export)]
 pub enum BuildStatus {
     Unqueued = -1,
     Queued = 0,
-    BuildSucceeded = 1,
-    TestGameSucceeded = 2,
-    BuildFailed = 3,
-    TestGameFailed = 4,
+    Building = 1,
+    BuildSucceeded = 2,
+    PlayingTestGame = 3,
+    TestGameSucceeded = 4,
+    BuildFailed = 5,
+    TestGameFailed = 6,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, TS)]
 pub struct BuildResultMessage {
     pub status: BuildStatus,
     pub bot: String,
     pub error: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct PlayTask {
-    pub bot_a: String,
-    pub bot_b: String,
-    pub id: String,
-    pub date: i64,
+#[derive(Serialize, Deserialize, Debug, Clone, TS)]
+pub enum GameTask {
+    Game {
+        bot_a: String,
+        bot_b: String,
+        id: String,
+        date: i64,
+        rounds: i32,
+    },
+    TestGame {
+        bot: String,
+        id: String,
+        date: i64,
+    },
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, TS)]
 pub enum WhichBot {
     BotA,
     BotB,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub enum GameActionError {
     InvalidCheck,
     Raise0,
@@ -52,7 +65,7 @@ pub enum GameActionError {
     CouldNotParse,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, TS)]
 pub enum GameError {
     RunTimeError(String, WhichBot),
     TimeoutError(String, WhichBot),
@@ -60,7 +73,7 @@ pub enum GameError {
     InvalidActionError(GameActionError, WhichBot),
     InternalError(String),
 }
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, TS)]
 pub enum ScoringResult {
     ScoreChanged(i32),
 }
@@ -72,11 +85,12 @@ pub struct GameResultMessage {
     pub id: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, TS)]
 pub struct Bot {
     pub name: String,
     pub description: Option<String>,
-    pub build: String,
+    pub build: Option<String>,
+    pub run: String,
 }
 
 impl From<io::Error> for GameError {

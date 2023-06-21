@@ -4,10 +4,8 @@ use diesel::*;
 use serde::Deserialize;
 use serde_json::json;
 
-use crate::{
-    app::{api::ApiResult, login},
-    config::DB_CONNECTION,
-};
+use crate::app::{api::ApiResult, login};
+use shared::db::conn::DB_CONNECTION;
 use shared::db::{
     models::{Bot, Team, TeamInvite, TeamWithMembers, User},
     schema,

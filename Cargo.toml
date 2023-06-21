@@ -2,6 +2,7 @@
 members = [
     "workers/gameplay",
     "workers/builder",
+    "workers/results",
     "website/backend",
     "shared",
 ]

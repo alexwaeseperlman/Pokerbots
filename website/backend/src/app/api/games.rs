@@ -1,7 +1,4 @@
-use crate::{
-    app::api::{ApiError, ApiResult},
-    config::DB_CONNECTION,
-};
+use crate::app::api::ApiResult;
 use actix_session::Session;
 use actix_web::{
     get,
@@ -10,14 +7,14 @@ use actix_web::{
 };
 use diesel::prelude::*;
 use rand::{self, Rng};
-use reqwest::StatusCode;
 use serde::Deserialize;
 use serde_json::json;
+use shared::db::conn::DB_CONNECTION;
 use shared::db::{
     models::{Game, NewGame},
     schema,
 };
-use shared::PlayTask;
+use shared::GameTask;
 #[derive(Deserialize)]
 pub struct MakeGameQuery {
     pub bot_a: i32,
@@ -46,11 +43,13 @@ pub async fn make_game(
     let job = sqs_client
         .send_message()
         .queue_url(std::env::var("NEW_GAMES_QUEUE_URL")?)
-        .message_body(&serde_json::to_string(&PlayTask {
+        .message_body(&serde_json::to_string(&GameTask::Game {
             bot_a: game.bot_a.to_string(),
             bot_b: game.bot_b.to_string(),
             id: game.id.clone(),
             date: game.created,
+            // TODO: Choose a number of rounds
+            rounds: 100,
         })?)
         .send()
         .await;

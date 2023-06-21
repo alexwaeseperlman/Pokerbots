@@ -50,6 +50,7 @@ export type Bot = {
   team: Team;
   uploaded_by: string;
   date_uploaded: number;
+  build_status: number;
 };
 
 export type Game = {

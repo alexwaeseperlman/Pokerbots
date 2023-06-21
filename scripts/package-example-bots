@@ -1,0 +1,8 @@
+#!/bin/bash
+for i in $(find ~+ -type d); do
+    if [[ -f $i/bot/bot.json ]]; then
+        echo "Zipping $i"
+        cd $i
+        zip -r bot.zip bot > /dev/null
+    fi
+done

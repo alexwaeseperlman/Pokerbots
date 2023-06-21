@@ -1,8 +1,10 @@
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 use crate::db::schema::{bots, games, team_invites, teams, users};
 
-#[derive(Serialize, Deserialize, diesel::Queryable, Debug)]
+#[derive(Serialize, Deserialize, diesel::Queryable, Debug, TS)]
+
 pub struct Team {
     pub id: i32,
     pub team_name: String,
@@ -11,7 +13,8 @@ pub struct Team {
     pub active_bot: Option<i32>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, TS)]
+#[ts(export)]
 pub struct TeamWithMembers {
     pub id: i32,
     pub team_name: String,
@@ -29,7 +32,8 @@ pub struct NewTeam {
     pub owner: String,
 }
 
-#[derive(Serialize, Deserialize, diesel::Queryable, Debug, Clone)]
+#[derive(Serialize, Deserialize, diesel::Queryable, Debug, Clone, TS)]
+#[ts(export)]
 pub struct User {
     pub email: String,
     pub display_name: String,
@@ -52,7 +56,8 @@ pub struct NewInvite {
     pub teamid: i32,
 }
 
-#[derive(Serialize, Deserialize, diesel::Queryable, Debug, Clone)]
+#[derive(Serialize, Deserialize, diesel::Queryable, Debug, Clone, TS)]
+#[ts(export)]
 pub struct TeamInvite {
     pub invite_code: String,
     pub teamid: i32,
@@ -67,7 +72,8 @@ pub struct NewGame {
     pub bot_b: i32,
 }
 
-#[derive(Serialize, Deserialize, diesel::Queryable, Debug)]
+#[derive(Serialize, Deserialize, diesel::Queryable, Debug, TS)]
+#[ts(export)]
 pub struct Game {
     pub id: String,
     pub bot_a: i32,
@@ -79,7 +85,8 @@ pub struct Game {
     pub error_message: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, diesel::Queryable)]
+#[derive(Serialize, Deserialize, Debug, diesel::Queryable, TS)]
+#[ts(export)]
 pub struct Bot {
     pub id: i32,
     pub team: i32,
