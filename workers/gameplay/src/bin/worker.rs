@@ -12,31 +12,15 @@ async fn main() {
     log::info!("Starting worker");
 
     let config = shared::aws_config().await;
-    let sqs_client = shared::sqs_client(&config).await;
-    println!("{:?}", sqs_client.list_queues().send().await.unwrap());
-    let new_game_queue_url = sqs_client
-        .get_queue_url()
-        .queue_name("new_games")
-        .send()
-        .await
-        .expect("Error getting queue url")
-        .queue_url
-        .unwrap();
-    let game_result_queue_url = sqs_client
-        .get_queue_url()
-        .queue_name("game_results")
-        .send()
-        .await
-        .expect("Error getting queue url")
-        .queue_url
-        .unwrap();
+    let sqs = shared::sqs_client(&config).await;
 
     loop {
-        let message = sqs_client
-            .receive_message()
-            .queue_url(&new_game_queue_url)
-            .send()
-            .await;
+        let message = match std::env::var("NEW_GAMES_QUEUE_URL") {
+            Ok(url) => sqs.receive_message().queue_url(url).send().await,
+            Err(_) => {
+                continue;
+            }
+        };
         if let Some(payload) = match message.map(|m| m.messages) {
             Ok(Some(result)) => result,
             Err(e) => {

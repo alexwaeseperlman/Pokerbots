@@ -45,18 +45,7 @@ pub async fn make_game(
     // push a batch job to the queue
     let job = sqs_client
         .send_message()
-        .queue_url(
-            sqs_client
-                .get_queue_url()
-                .queue_name("new_games")
-                .send()
-                .await?
-                .queue_url()
-                .ok_or(ApiError {
-                    message: "no queue url".into(),
-                    status_code: StatusCode::INTERNAL_SERVER_ERROR,
-                })?,
-        )
+        .queue_url(std::env::var("NEW_GAMES_QUEUE_URL")?)
         .message_body(&serde_json::to_string(&PlayTask {
             bot_a: game.bot_a.to_string(),
             bot_b: game.bot_b.to_string(),

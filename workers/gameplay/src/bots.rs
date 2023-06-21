@@ -15,9 +15,6 @@ use tokio::{
 
 use crate::poker::game::GameState;
 
-use self::bot::Bot;
-
-pub mod bot;
 pub mod sandbox;
 
 pub async fn run_game(
@@ -35,7 +32,7 @@ pub async fn run_game(
     fs::create_dir(&tmp_dir)
         .map_err(|e| shared::GameError::InternalError("Unable to make tmp dir".to_owned()))?;
 
-    let bot_bucket = std::env::var("BOT_S3_BUCKET")
+    let bot_bucket = std::env::var("COMPILED_BOT_S3_BUCKET")
         .map_err(|e| shared::GameError::InternalError("Unable to get BOT_S3_BUCKET".to_owned()))?;
 
     // download bots from s3

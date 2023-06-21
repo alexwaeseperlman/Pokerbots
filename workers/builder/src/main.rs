@@ -46,30 +46,15 @@ async fn main() {
     let config = shared::aws_config().await;
     let s3 = shared::s3_client(&config).await;
     let sqs = shared::sqs_client(&config).await;
-    let bot_uploads_queue_url = sqs
-        .get_queue_url()
-        .queue_name("bot_uploads")
-        .send()
-        .await
-        .expect("Error getting queue url")
-        .queue_url
-        .unwrap();
-    let build_results_queue_url = sqs
-        .get_queue_url()
-        .queue_name("build_results")
-        .send()
-        .await
-        .expect("Error getting queue url")
-        .queue_url
-        .unwrap();
 
     log::info!("Listening for messages.");
     loop {
-        let message = sqs
-            .receive_message()
-            .queue_url(&bot_uploads_queue_url)
-            .send()
-            .await;
+        let message = match std::env::var("BOT_UPLOADS_QUEUE_URL") {
+            Ok(val) => sqs.receive_message().queue_url(val).send().await,
+            Err(_) => {
+                continue;
+            }
+        };
         if let Some(payload) = match message.map(|m| m.messages) {
             Ok(Some(result)) => result,
             Err(e) => {
@@ -102,6 +87,7 @@ async fn main() {
             // TODO: send a message when the build starts
             // right now we just send a message when it finishes
             let result = process(task.clone(), s3.clone()).await;
+
             let message = shared::BuildResultMessage {
                 bot: task.bot,
                 status: if result.is_ok() {
@@ -118,15 +104,20 @@ async fn main() {
             log::info!("Completed build: {:?}", message);
             let body = serde_json::to_string(&message);
             if let Ok(s) = body {
-                if let Err(e) = sqs
-                    .send_message()
-                    .queue_url(&build_results_queue_url)
-                    .message_body(s)
-                    .send()
-                    .await
-                {
-                    log::error!("Error sending message {}", e);
-                };
+                if match std::env::var("BUILD_RESULTS_QUEUE_URL") {
+                    Ok(url) => sqs
+                        .send_message()
+                        .queue_url(url)
+                        .message_body(s)
+                        .send()
+                        .await
+                        .is_err(),
+                    Err(e) => true,
+                } {
+                    log::error!("Error sending message.");
+                } else {
+                    log::info!("Message sent.");
+                }
             } else if let Err(e) = body {
                 log::error!("Error serializing message {}", e);
                 continue;

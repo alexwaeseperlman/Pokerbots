@@ -40,6 +40,9 @@ services:
       - AZURE_SECRET=${AZURE_SECRET}
       - SECRET_KEY=${SECRET_KEY}
 
+      - BOT_UPLOADS_QUEUE_URL=http://sqs:9324/queue/bot_uploads
+      - NEW_GAMES_QUEUE_URL=http://sqs:9324/queue/new_games
+
       - RUST_LOG=debug
 
       - APP_PFP_ENDPOINT=https://loremflickr.com/128/128?lock=
@@ -53,6 +56,10 @@ services:
       - RUST_LOG=debug
       - S3_ACCESS_KEY=${S3_ACCESS_KEY}
       - S3_SECRET_KEY=${S3_SECRET_KEY}
+
+      - NEW_GAMES_QUEUE_URL=http://sqs:9324/queue/new_games
+      - GAME_RESULTS_QUEUE_URL=http://sqs:9324/queue/game_results
+
       - S3_ADDRESS=http://${S3_ACCESS_KEY}:${S3_SECRET_KEY}@s3:9000
       - SQS_ADDRESS=http://sqs:9324
   builder:
@@ -64,6 +71,10 @@ services:
       - RUST_LOG=debug
       - COMPILED_BOT_S3_BUCKET=${COMPILED_BOT_S3_BUCKET}
       - BOT_S3_BUCKET=${BOT_S3_BUCKET}
+
+      - BOT_UPLOADS_QUEUE_URL=http://sqs:9324/queue/bot_uploads
+      - BUILD_RESULTS_QUEUE_URL=http://sqs:9324/queue/build_results
+
       - S3_ACCESS_KEY=${S3_ACCESS_KEY}
       - S3_SECRET_KEY=${S3_SECRET_KEY}
       - S3_ADDRESS=http://${S3_ACCESS_KEY}:${S3_SECRET_KEY}@s3:9000

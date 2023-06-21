@@ -89,7 +89,6 @@ pub struct Bot {
     pub created: i64,
     pub uploaded_by: String,
     pub build_status: i32,
-    pub build_error: Option<String>,
 }
 
 #[derive(Debug, diesel::Insertable)]
@@ -100,4 +99,5 @@ pub struct NewBot {
     pub description: Option<String>,
     pub score: f32,
     pub uploaded_by: String,
+    pub build_status: i32,
 }

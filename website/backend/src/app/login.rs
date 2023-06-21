@@ -148,6 +148,7 @@ pub async fn handle_login(
 ) -> Result<HttpResponse, Box<dyn std::error::Error>> {
     let code = req.code.clone().unwrap_or_default();
     // TODO: Is it bad to make a new client for every login?
+    // => Yes, it is.
     let client = reqwest::Client::new();
 
     let response: AzureAuthTokenResopnse = client
@@ -216,6 +217,7 @@ pub struct LoginProvider {
     state: Option<String>,
 }
 //TODO: instead of state being a parameter here, we should have state in the session
+// Should we?
 #[get("/api/login-provider")]
 pub async fn login_provider(
     web::Query::<LoginProvider>(LoginProvider { provider, state }): web::Query<LoginProvider>,

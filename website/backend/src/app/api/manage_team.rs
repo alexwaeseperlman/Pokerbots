@@ -313,6 +313,7 @@ pub async fn upload_bot(
             description: bot.description,
             score: 0.0,
             uploaded_by: user.email,
+            build_status: 0,
         })
         .returning(bots::dsl::id)
         .get_result::<i32>(conn)?;
@@ -333,22 +334,15 @@ pub async fn upload_bot(
     }
 
     // push the bot to the 'bot_uploads' queue
-    if let Some(s) = sqs_client
-        .get_queue_url()
-        .queue_name("bot_uploads")
+    // TODO: Handle errors by deleting the bot from the database
+    sqs_client
+        .send_message()
+        .queue_url(std::env::var("BOT_UPLOADS_QUEUE_URL")?)
+        .message_body(serde_json::to_string(&shared::BuildTask {
+            bot: id.to_string(),
+        })?)
         .send()
-        .await?
-        .queue_url()
-    {
-        sqs_client
-            .send_message()
-            .queue_url(s)
-            .message_body(serde_json::to_string(&shared::BuildTask {
-                bot: id.to_string(),
-            })?)
-            .send()
-            .await?;
-    }
+        .await?;
     Ok(HttpResponse::Ok().json(json!({ "id": id })))
 }
 

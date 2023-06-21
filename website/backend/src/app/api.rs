@@ -120,3 +120,4 @@ define_api_error!(
 define_api_error!(r2d2::Error, StatusCode::INTERNAL_SERVER_ERROR);
 define_api_error!(serde_json::Error, StatusCode::INTERNAL_SERVER_ERROR);
 define_api_error!(diesel::result::Error, StatusCode::INTERNAL_SERVER_ERROR);
+define_api_error!(std::env::VarError, StatusCode::INTERNAL_SERVER_ERROR);

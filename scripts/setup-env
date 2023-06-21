@@ -21,8 +21,11 @@ fixed_vars = {
     'SQS_ADDRESS': 'http://localhost:9324',
     'DB_USER': 'postgres',
     'DB_URL': 'localhost:5432',
-    'RUST_LOG': 'debug'
-
+    'RUST_LOG': 'debug',
+    'BOT_UPLOADS_QUEUE_URL': 'http://localhost:9324/000000000000/bot_uploads',
+    'NEW_GAMES_QUEUE_URL': 'http://localhost:9324/000000000000/new_games',
+    'GAME_RESULTS_QUEUE_URL': 'http://localhost:9324/000000000000/game_results',
+    'BUILD_RESULTS_QUEUE_URL': 'http://localhost:9324/000000000000/build_results'
 }
 
 # Check if we're in the root directory
