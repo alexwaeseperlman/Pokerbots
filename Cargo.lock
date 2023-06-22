@@ -3248,6 +3248,7 @@ dependencies = [
  "async-trait",
  "aws-config",
  "aws-sdk-s3",
+ "aws-sdk-sqs",
  "diesel",
  "dotenvy",
  "env_logger",

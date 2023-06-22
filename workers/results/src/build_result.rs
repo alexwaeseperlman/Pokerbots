@@ -7,7 +7,10 @@ use shared::{BuildResultMessage, BuildStatus, GameTask};
 ///
 /// If the build result is successful (BuildStatus::BuildSucceeded), it should also queue a test game
 /// for the bot.
-pub async fn handle_build_result(result: BuildResultMessage) -> Result<(), ()> {
+pub async fn handle_build_result(
+    result: BuildResultMessage,
+    sqs: &aws_sdk_sqs::Client,
+) -> Result<(), ()> {
     use shared::db::schema::bots::dsl::*;
     let conn = &mut (*shared::db::conn::DB_CONNECTION.get().map_err(|_| ())?);
     // update bot with build result
@@ -26,6 +29,12 @@ pub async fn handle_build_result(result: BuildResultMessage) -> Result<(), ()> {
         BuildStatus::BuildSucceeded => {
             // Queue a test game
             let task = GameTask::TestGame { bot: result.bot };
+            sqs.send_message()
+                .queue_url(std::env::var("NEW_GAMES_QUEUE_URL").unwrap())
+                .message_body(serde_json::to_string(&task).unwrap())
+                .send()
+                .await
+                .map_err(|_| ())?;
         }
         _ => {}
     }

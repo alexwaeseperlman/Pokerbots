@@ -1,11 +1,12 @@
 use diesel::prelude::*;
-use shared::{GameError, GameResult, GameStatus};
+use shared::{GameError, GameResult, GameStatus, GameStatusMessage};
 
-pub async fn handle_game_result(result: GameResult) -> Result<(), ()> {
+pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
     use shared::db::schema::{bots, games};
     let db_conn = &mut (*shared::db::conn::DB_CONNECTION.get().map_err(|_| ())?);
     let mut error_type: Option<String> = None;
     let mut score_change: i32 = 0;
+    let GameStatusMessage { id, result } = status;
     match result {
         Ok(GameStatus::ScoreChanged(score_change)) => {
             diesel::update(games::table.find(&id))
@@ -62,15 +63,13 @@ pub async fn handle_game_result(result: GameResult) -> Result<(), ()> {
                     };
                 }
             }
-            diesel::update(games::table.find(res.id))
+            diesel::update(games::table.find(id))
                 .set((
                     games::dsl::score_change.eq(score_change),
                     games::dsl::error_type.eq(error_type),
                 ))
-                .execute(db_conn);
-        }
-        _ => {
-            log::error!("Unexpected game result {:?}", payload.result);
+                .execute(db_conn)
+                .map_err(|_| ())?;
         }
     };
     Ok(())

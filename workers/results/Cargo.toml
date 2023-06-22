@@ -15,6 +15,7 @@ futures-lite = "1.13.0"
 env_logger = "0.10.0"
 aws-config = "0.55.2"
 aws-sdk-s3 = "0.28.0"
+aws-sdk-sqs = "0.28.0"
 async-trait = "0.1.68"
 dotenvy = "0.15.7"
 diesel = { version = "2.0.3", features = ["postgres", "r2d2", "with-deprecated"]}

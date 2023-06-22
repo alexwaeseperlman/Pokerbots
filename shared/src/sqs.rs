@@ -1,4 +1,6 @@
-use std::{error::Error, future::Future};
+use std::{error::Error, future::Future, time::Duration};
+
+use tokio::time::sleep;
 
 pub async fn listen_on_queue<
     T: AsRef<str>,
@@ -13,6 +15,8 @@ pub async fn listen_on_queue<
     err_cb: V,
 ) {
     loop {
+        sleep(Duration::from_secs(2)).await;
+
         let message = sqs
             .receive_message()
             .wait_time_seconds(10)

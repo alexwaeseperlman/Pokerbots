@@ -20,6 +20,7 @@ async fn main() {
         std::env::var("NEW_GAMES_QUEUE_URL").unwrap(),
         &sqs,
         |message: GameTask| async {
+            log::info!("Received message: {:?}", message);
             let result = match message.clone() {
                 GameTask::Game {
                     bot_a,
