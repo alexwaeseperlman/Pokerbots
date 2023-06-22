@@ -19,7 +19,4 @@ clap = {version="4.3.0", features=["derive"]}
 async-trait = "0.1.68"
 aws-sdk-sqs = "0.28.0"
 dotenvy = "0.15.7"
-
-[[bin]]
-name = "worker"
-path = "src/bin/worker.rs"
+anyhow = "1.0.71"

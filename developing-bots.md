@@ -50,18 +50,18 @@ For example:
 
 ## Communicating with the engine
 Pokerbots get the game state and make their moves by communicating through stdin and stdout. Every round is given by
-1. A line `2 B` to indicate the beginning of the betting round. 
+1. A line containing `B` or `F`. `B` indicates the beginning of the betting round and `F` indicates the end of the game. 
 2. A betting round.
-3. A line `2 E` to indicate the end of the betting round.
+3. A line `E` to indicate the end of the betting round.
 
 This is what a round looks like:
-1. A line `2 n` where `n = 0` or `1` to indicate your position. Player number `0` is always the button.
+1. A line `n` where `n = 0` or `1` to indicate your position. Player number `0` is always the button.
 2. A line with two cards, which are your starting hand. 
 3. A round where the first line of the betting round is `0 1 2 S_0 S_1`, and player `0` bets first. Note the `0 1 2` due to blinds.
 7. One line containing 3 cards. This is this flop.
-8. A round where the first line of the betting round is `P 0 0 S_0 S_1`, and player `1` bets first.
+8. A round where the first line of the betting round is `0 0 0 S_0 S_1`, and player `1` bets first.
 10. A line containing a single card. This is the turn.
-11. A round where the first line of the betting round is `P 0 0 S_0 S_1`, and player `1` bets first.
+11. A round where the first line of the betting round is `0 0 0 S_0 S_1`, and player `1` bets first.
 12. A line containing a single card. This is the river.
 13. There is a final round, and the game ends.
 14. Your bot has the option to play another round against this opponent by outputting

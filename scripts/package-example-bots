@@ -1,4 +1,5 @@
 #!/bin/bash
+start_dir=$(pwd)
 for i in $(find ~+ -type d); do
     if [[ -f $i/bot/bot.json ]]; then
         echo "Zipping $i"
@@ -6,3 +7,4 @@ for i in $(find ~+ -type d); do
         zip -r bot.zip bot > /dev/null
     fi
 done
+cd $start_dir

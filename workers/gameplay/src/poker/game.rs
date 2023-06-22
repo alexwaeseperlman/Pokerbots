@@ -26,7 +26,7 @@ pub enum Action {
     Fold,
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Copy)]
 pub enum Round {
     PreFlop,
     Flop,
@@ -38,11 +38,11 @@ pub enum EngineResponse {}
 
 #[derive(Clone, Debug)]
 pub struct PlayerState {
-    stack: u32,
-    hole_cards: Vec<Card>,
-    pushed: u32,
+    pub stack: u32,
+    pub hole_cards: Vec<Card>,
+    pub pushed: u32,
     // Did the player act yet in the current betting round
-    acted: bool,
+    pub acted: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -50,16 +50,16 @@ pub struct PlayerState {
 pub struct GameState {
     // Cards in the deck
     pub deck: Vec<Card>,
-    player_states: [PlayerState; 2],
+    pub player_states: [PlayerState; 2],
     // Amount of money each player has bet in the current round
-    community_cards: Vec<Card>,
-    round: Round,
+    pub community_cards: Vec<Card>,
+    pub round: Round,
     // The index of the player who was the last aggressor
     // If no player has raised then this is the non-button player
     // Using bool instead of usize because there are only 2 players
-    last_aggressor: bool,
+    pub last_aggressor: bool,
     // The amount of money the next player to act must push to call
-    target_push: u32,
+    pub target_push: u32,
 }
 
 pub enum RoundResult {

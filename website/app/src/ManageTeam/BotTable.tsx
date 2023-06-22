@@ -68,7 +68,7 @@ export default function BotTable({ readonly }: { readonly?: boolean }) {
               return <Chip color="default" label={"Playing test game"}></Chip>;
             // 4 means the bot succeeded in the test game, so we show its score
             if (params.row.build_status === 4)
-              return <Chip label={params.value} color={"default"} />;
+              return <Chip label={"Ready to play"} color={"success"} />;
             if (params.row.build_status === 5)
               return <Chip color="error" label={"Build failed"}></Chip>;
             if (params.row.build_status == 6)

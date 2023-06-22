@@ -1,10 +1,10 @@
 use std::process::Command;
 
 use futures_lite::stream::StreamExt;
-use lapin::options::{BasicAckOptions, BasicRejectOptions};
-use shared::{GameResult, GameResultMessage, GameTask};
-
+use gameplay::bots::run_game;
 use rand::Rng;
+use shared::{GameResult, GameStatus, GameStatusMessage, GameTask};
+
 #[tokio::main]
 async fn main() {
     dotenvy::dotenv().ok();
@@ -13,33 +13,50 @@ async fn main() {
 
     let config = shared::aws_config().await;
     let sqs = shared::sqs_client(&config).await;
+    let s3 = shared::s3_client(&config).await;
+    let game_results_queue = std::env::var("GAME_RESULTS_QUEUE_URL").unwrap();
 
-    loop {
-        let message = match std::env::var("NEW_GAMES_QUEUE_URL") {
-            Ok(url) => sqs.receive_message().queue_url(url).send().await,
-            Err(_) => {
-                continue;
-            }
-        };
-        if let Some(payload) = match message.map(|m| m.messages) {
-            Ok(Some(result)) => result,
-            Err(e) => {
-                log::error!("Error receiving message {}", e);
-                continue;
-            }
-            _ => {
-                log::debug!("No messages");
-                continue;
-            }
-        }
-        .first()
-        {
-            log::info!("Message received {:?}", payload.body());
-        } else {
-            log::debug!("No messages");
-            continue;
-        }
-    }
+    shared::sqs::listen_on_queue(
+        std::env::var("NEW_GAMES_QUEUE_URL").unwrap(),
+        &sqs,
+        |message: GameTask| async {
+            let result = match message.clone() {
+                GameTask::Game {
+                    bot_a,
+                    bot_b,
+                    id,
+                    date,
+                    rounds,
+                } => run_game(&bot_a, &bot_b, &s3, &id, rounds).await,
+                GameTask::TestGame { bot } => {
+                    if let Err(e) = run_game(&bot, &bot, &s3, &bot, 5).await {
+                        Ok(GameStatus::TestGameFailed)
+                    } else {
+                        Ok(GameStatus::TestGameSucceeded)
+                    }
+                }
+            };
+            sqs.send_message()
+                .queue_url(&game_results_queue)
+                .message_body(
+                    serde_json::to_string::<GameStatusMessage>(&GameStatusMessage {
+                        id: match message {
+                            GameTask::Game { id, .. } => id,
+                            GameTask::TestGame { bot } => bot,
+                        },
+                        result,
+                    })
+                    .unwrap(),
+                )
+                .send()
+                .await
+                .unwrap();
+        },
+        |err| {
+            log::error!("Error receiving message: {}", err);
+        },
+    )
+    .await;
 
     /*let addr = std::env::var("AMQP_ADDRESS").expect("AMQP_ADDRESS must be set");
     let conn = lapin::Connection::connect(&addr, lapin::ConnectionProperties::default())

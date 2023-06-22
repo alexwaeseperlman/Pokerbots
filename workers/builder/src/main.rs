@@ -12,7 +12,7 @@ async fn process(
     let compiled_bot_bucket = std::env::var("COMPILED_BOT_S3_BUCKET")?;
     fs::create_dir_all(format!("/tmp/{}", bot)).await?;
     let bot_path = std::path::Path::new("/tmp").join(&bot);
-    download_bot(&bot, &bot_path, &bot_bucket, &s3).await?;
+    shared::s3::download_file(&bot, &bot_path.join("bot.zip"), &bot_bucket, &s3).await?;
     build_bot(bot_path).await?;
     // zip up the bot
     Command::new("zip")

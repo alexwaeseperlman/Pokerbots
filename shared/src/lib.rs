@@ -1,4 +1,5 @@
 pub mod process;
+pub mod s3;
 pub mod sqs;
 use std::io;
 
@@ -16,6 +17,7 @@ pub struct BuildTask {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, TS)]
+#[repr(i32)]
 #[ts(export)]
 pub enum BuildStatus {
     Unqueued = -1,
@@ -42,19 +44,18 @@ pub enum GameTask {
         bot_b: String,
         id: String,
         date: i64,
-        rounds: i32,
+        rounds: usize,
     },
     TestGame {
         bot: String,
-        id: String,
-        date: i64,
     },
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, TS)]
+#[repr(i32)]
 pub enum WhichBot {
-    BotA,
-    BotB,
+    BotA = 0,
+    BotB = 1,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
@@ -66,21 +67,25 @@ pub enum GameActionError {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, TS)]
+#[ts(export)]
 pub enum GameError {
-    RunTimeError(String, WhichBot),
-    TimeoutError(String, WhichBot),
-    MemoryError(String, WhichBot),
-    InvalidActionError(GameActionError, WhichBot),
-    InternalError(String),
-}
-#[derive(Serialize, Deserialize, Debug, Clone, TS)]
-pub enum ScoringResult {
-    ScoreChanged(i32),
+    RunTimeError(WhichBot),
+    TimeoutError(WhichBot),
+    MemoryError(WhichBot),
+    InvalidActionError(WhichBot),
+    InternalError,
 }
 
-pub type GameResult = Result<ScoringResult, GameError>;
+#[derive(Serialize, Deserialize, Debug, Clone, TS)]
+pub enum GameStatus {
+    ScoreChanged(i32),
+    TestGameFailed,
+    TestGameSucceeded,
+}
+
+pub type GameResult = Result<GameStatus, GameError>;
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct GameResultMessage {
+pub struct GameStatusMessage {
     pub result: GameResult,
     pub id: String,
 }
@@ -95,7 +100,7 @@ pub struct Bot {
 
 impl From<io::Error> for GameError {
     fn from(e: io::Error) -> Self {
-        Self::InternalError(format!("IO Error: {}", e))
+        Self::InternalError
     }
 }
 

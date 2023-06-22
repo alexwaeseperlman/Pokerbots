@@ -1,5 +1,5 @@
 use diesel::prelude::*;
-use shared::{BuildResultMessage, BuildStatus};
+use shared::{BuildResultMessage, BuildStatus, GameTask};
 
 /// Handle a build result message.
 /// This function should update the database with the build result
@@ -23,7 +23,10 @@ pub async fn handle_build_result(result: BuildResultMessage) -> Result<(), ()> {
     );
 
     match result.status {
-        BuildStatus::BuildSucceeded => {}
+        BuildStatus::BuildSucceeded => {
+            // Queue a test game
+            let task = GameTask::TestGame { bot: result.bot };
+        }
         _ => {}
     }
     Ok(())

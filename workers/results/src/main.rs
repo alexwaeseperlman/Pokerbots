@@ -1,7 +1,7 @@
 use results::build_result::handle_build_result;
 use results::game_result::handle_game_result;
 use shared::sqs::listen_on_queue;
-use shared::{BuildResultMessage, GameResultMessage};
+use shared::{BuildResultMessage, GameResult};
 
 #[tokio::main]
 async fn main() {
@@ -25,7 +25,7 @@ async fn main() {
         listen_on_queue(
             std::env::var("GAME_RESULTS_QUEUE_URL").unwrap(),
             &sqs,
-            |task: GameResultMessage| async move {
+            |task: GameResult| async move {
                 log::info!("Received game result: {:?}", task);
                 handle_game_result(task).await;
             },

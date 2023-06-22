@@ -2,8 +2,6 @@ use std::sync::Arc;
 
 use diesel::*;
 use futures_util::StreamExt;
-use shared::{GameError, GameResult, GameResultMessage, ScoringResult};
-
 use shared::db::conn::DB_CONNECTION;
 /*
 pub async fn listen_for_game_results(channel: Channel) {

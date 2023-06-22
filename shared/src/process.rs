@@ -16,9 +16,9 @@ use tokio::{
 #[derive(Debug)]
 pub struct Process {
     pub status: Arc<Mutex<Option<ExitStatus>>>,
-    pub output: Option<tokio::io::BufReader<ChildStdout>>,
-    pub input: Option<tokio::io::BufWriter<ChildStdin>>,
-    pub err: Option<tokio::io::BufReader<ChildStderr>>,
+    pub output: tokio::io::BufReader<ChildStdout>,
+    pub input: tokio::io::BufWriter<ChildStdin>,
+    pub err: tokio::io::BufReader<ChildStderr>,
     pub child: Arc<Mutex<Child>>,
     listener: JoinHandle<()>,
     kill_channel: Option<tokio::sync::oneshot::Sender<()>>,
@@ -40,15 +40,21 @@ impl Process {
         let status: Arc<Mutex<Option<ExitStatus>>> = Arc::new(Mutex::new(None));
         let out = Ok(Process {
             status: status.clone(),
-            output: Some(tokio::io::BufReader::new(p.stdout.take().ok_or(
-                io::Error::new(io::ErrorKind::Other, "Unable to get stdout"),
-            )?)),
-            input: Some(tokio::io::BufWriter::new(p.stdin.take().ok_or(
-                io::Error::new(io::ErrorKind::Other, "Unable to get stdin"),
-            )?)),
-            err: Some(tokio::io::BufReader::new(p.stderr.take().ok_or(
-                io::Error::new(io::ErrorKind::Other, "Unable to get stderr"),
-            )?)),
+            output: tokio::io::BufReader::new(
+                p.stdout
+                    .take()
+                    .ok_or(io::Error::new(io::ErrorKind::Other, "Unable to get stdout"))?,
+            ),
+            input: tokio::io::BufWriter::new(
+                p.stdin
+                    .take()
+                    .ok_or(io::Error::new(io::ErrorKind::Other, "Unable to get stdin"))?,
+            ),
+            err: tokio::io::BufReader::new(
+                p.stderr
+                    .take()
+                    .ok_or(io::Error::new(io::ErrorKind::Other, "Unable to get stderr"))?,
+            ),
             child: child.clone(),
             listener: tokio::spawn(async move {
                 let child = child.clone();
@@ -130,7 +136,7 @@ mod test {
     #[tokio::test]
     async fn test_process() {
         let mut p = Process::sh("echo hello").await.unwrap();
-        let mut output = p.output.take().unwrap();
+        let output = &mut p.output;
         let mut s = String::new();
         output.read_line(&mut s).await.unwrap();
         assert_eq!(s, "hello\n");
@@ -155,7 +161,7 @@ mod test {
         sleep(std::time::Duration::from_millis(10)).await;
         p.kill();
 
-        let mut out = p.output.take().unwrap();
+        let out = &mut p.output;
         let mut buf: Vec<u8> = vec![];
         // TODO: figure out why this waits 3 seconds even though the process is killed
         out.read_to_end(&mut buf).await.unwrap();
