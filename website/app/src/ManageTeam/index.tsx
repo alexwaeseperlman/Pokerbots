@@ -117,7 +117,7 @@ function GameTable({ readonly }: { readonly?: boolean }) {
             }
             return (
               <Chip
-                label={params.row.error_message ?? params.value}
+                label={params.row.error_type ?? params.value}
                 color={color}
               />
             );

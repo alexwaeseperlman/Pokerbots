@@ -60,7 +60,7 @@ pub async fn make_game(
             .execute(conn)?;
         return Err(e.into());
     }
-    log::debug!("message sent {:?}", job);
+    log::info!("Game created {:?}", job);
     Ok(HttpResponse::Ok().json(game))
 }
 

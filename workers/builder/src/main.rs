@@ -18,10 +18,10 @@ async fn process(
     Command::new("zip")
         .arg("-r")
         .arg(format!("{}.zip", bot))
-        .arg(&bot)
+        .arg("bot")
         .stderr(Stdio::null())
         .stdout(Stdio::null())
-        .current_dir("/tmp")
+        .current_dir(format!("/tmp/{}/", bot))
         .status()
         .await?;
     // upload the file to s3
@@ -29,7 +29,7 @@ async fn process(
         .put_object()
         .bucket(compiled_bot_bucket)
         .key(format!("{}", &bot))
-        .body(fs::read(format!("/tmp/{}.zip", &bot)).await?.into())
+        .body(fs::read(format!("/tmp/{}/bot.zip", &bot)).await?.into())
         .send()
         .await
     {
@@ -84,12 +84,15 @@ async fn main() {
                     Err(e) => true,
                 } {
                     log::error!("Error sending message.");
+                    return false;
                 } else {
                     log::info!("Message sent.");
                 }
             } else if let Err(e) = body {
                 log::error!("Error serializing message {}", e);
+                return false;
             }
+            true
         },
         |e| {
             log::error!("Error receiving message {}", e);

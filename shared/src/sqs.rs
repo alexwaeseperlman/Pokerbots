@@ -6,7 +6,7 @@ pub async fn listen_on_queue<
     T: AsRef<str>,
     PayloadType: serde::de::DeserializeOwned,
     U: Fn(PayloadType) -> Fut,
-    Fut: Future<Output = ()>,
+    Fut: Future<Output = bool>,
     V: Fn(Box<dyn Error>) -> (),
 >(
     queue: T,
@@ -15,15 +15,15 @@ pub async fn listen_on_queue<
     err_cb: V,
 ) {
     loop {
-        sleep(Duration::from_secs(2)).await;
-
         let message = sqs
             .receive_message()
-            .wait_time_seconds(10)
             .queue_url(queue.as_ref())
+            .wait_time_seconds(10)
+            //.max_number_of_messages(1)
             .send()
             .await;
-        if let Some(payload) = match message.map(|m| m.messages) {
+        log::debug!("Message: {:?}", message);
+        let messages = match message.map(|m| m.messages) {
             Ok(Some(result)) => result,
             Err(e) => {
                 err_cb(Box::new(e));
@@ -32,9 +32,8 @@ pub async fn listen_on_queue<
             _ => {
                 continue;
             }
-        }
-        .first()
-        {
+        };
+        for payload in messages {
             let task = match payload
                 .body()
                 .map(|b| serde_json::from_str::<PayloadType>(&b))
@@ -45,10 +44,21 @@ pub async fn listen_on_queue<
                     continue;
                 }
                 None => {
+                    log::info!("No message body.");
                     continue;
                 }
             };
-            cb(task).await;
+            if cb(task).await {
+                log::info!("Ack.");
+                sqs.delete_message()
+                    .queue_url(queue.as_ref())
+                    .receipt_handle(payload.receipt_handle().unwrap())
+                    .send()
+                    .await
+                    .unwrap();
+            } else {
+                log::info!("Nack.");
+            }
         }
     }
 }

@@ -51,7 +51,7 @@ async fn main() {
                 )
                 .send()
                 .await
-                .unwrap();
+                .is_ok()
         },
         |err| {
             log::error!("Error receiving message: {}", err);

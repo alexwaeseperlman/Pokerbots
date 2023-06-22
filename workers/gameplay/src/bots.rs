@@ -29,12 +29,14 @@ pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>
     )
     .await?;
 
+    log::debug!("Bot downloaded");
     Command::new("unzip")
         .arg(&bot_path.join("bot.zip"))
         .current_dir(&bot_path)
         .spawn()?
         .wait()
         .await?;
+    log::debug!("Bot unzipped to {:?}", bot_path);
 
     let bot_json: Bot = async {
         let json = fs::read_to_string(&bot_path.join("bot/bot.json")).await?;
@@ -47,6 +49,7 @@ pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>
         ))
     }
     .await?;
+    log::debug!("Read json");
 
     shared::process::Process::sh_configured(bot_json.run, move |command| {
         command.current_dir(&bot_path.join("bot"))
@@ -68,9 +71,9 @@ pub async fn run_game(
     let tmp_dir = Path::new("/tmp").join(&game_id);
     log::debug!("Playing {} against {}", bot_a, bot_b);
     log::debug!("Running game {} with local id {}.", task_id, game_id);
-
     let bot_bucket =
         std::env::var("COMPILED_BOT_S3_BUCKET").map_err(|e| GameError::InternalError)?;
+    log::debug!("Bot bucket: {}", bot_bucket);
 
     // download bots from s3
     log::debug!("Making bot directories");
@@ -116,6 +119,38 @@ impl Game {
         }
     }
 
+    async fn print_round_end(&mut self, bot: WhichBot) -> Result<(), shared::GameError> {
+        let bot = match bot {
+            WhichBot::BotA => &mut self.bot_a,
+            WhichBot::BotB => &mut self.bot_b,
+        };
+
+        bot.input.write(b"E\n").await?;
+        bot.input.flush().await?;
+        Ok(())
+    }
+
+    async fn print_community_cards(
+        &mut self,
+        bot: WhichBot,
+        state: &GameState,
+    ) -> Result<(), shared::GameError> {
+        let bot = match bot {
+            WhichBot::BotA => &mut self.bot_a,
+            WhichBot::BotB => &mut self.bot_b,
+        };
+
+        bot.input.write(b"C").await?;
+
+        for card in state.community_cards.iter() {
+            bot.input.write(format!(" {}", card).as_bytes()).await?;
+        }
+        bot.input.write(b"\n").await?;
+        bot.input.flush().await?;
+
+        Ok(())
+    }
+
     async fn play_round(&mut self) -> Result<(), shared::GameError> {
         let mut rng = thread_rng();
         let mut stacks = self.stacks;
@@ -131,36 +166,34 @@ impl Game {
 
         loop {
             if state.round_over() {
-                self.bot_a.input.write(b"E\n").await?;
-                self.bot_b.input.write(b"E\n").await?;
-                self.bot_a.input.flush().await?;
-                self.bot_b.input.flush().await?;
+                log::debug!("Round ended.");
+                self.print_round_end(WhichBot::BotA).await.map_err(|_| {
+                    log::info!("Failed to print round end to bot A.");
+                    GameError::RunTimeError(WhichBot::BotA)
+                })?;
+
+                self.print_round_end(WhichBot::BotB).await.map_err(|_| {
+                    log::info!("Failed to print round end to bot B.");
+                    GameError::RunTimeError(WhichBot::BotB)
+                })?;
                 break;
             }
             // Print community cards to both bots
             if round != Some(state.round) {
+                log::debug!("Printing community cards.");
                 round = Some(state.round);
-                self.bot_a.input.write(b"C").await?;
-                self.bot_b.input.write(b"C").await?;
-                // Print community cards, space separated
-                for card in 0..state.community_cards.len() {
-                    self.bot_a
-                        .input
-                        .write(format!("{}", card).as_bytes())
-                        .await?;
-                    self.bot_b
-                        .input
-                        .write(format!("{}", card).as_bytes())
-                        .await?;
-                    if card != state.community_cards.len() - 1 {
-                        self.bot_a.input.write(b" ").await?;
-                        self.bot_b.input.write(b" ").await?;
-                    }
-                }
-                self.bot_a.input.write(b"\n").await?;
-                self.bot_b.input.write(b"\n").await?;
-                self.bot_a.input.flush().await?;
-                self.bot_b.input.flush().await?;
+                self.print_community_cards(WhichBot::BotA, &state)
+                    .await
+                    .map_err(|_| {
+                        log::info!("Failed to print community cards to bot A.");
+                        GameError::RunTimeError(WhichBot::BotA)
+                    })?;
+                self.print_community_cards(WhichBot::BotB, &state)
+                    .await
+                    .map_err(|_| {
+                        log::info!("Failed to print community cards to bot B.");
+                        GameError::RunTimeError(WhichBot::BotB)
+                    })?;
             }
 
             self.stacks = if self.button == 1 {
@@ -183,11 +216,12 @@ impl Game {
             };
 
             // write current game state to the bots stream
+            log::debug!("Writing current state.");
             target_bot
                 .input
                 .write(
                     format!(
-                        "S {} {} {} {} {}",
+                        "S {} {} {} {} {}\n",
                         state.target_push,
                         state.player_states[0].pushed,
                         state.player_states[1].pushed,
@@ -196,7 +230,11 @@ impl Game {
                     )
                     .as_bytes(),
                 )
-                .await?;
+                .await
+                .map_err(|_| {
+                    log::info!("Failed to write current state to bot {:?}.", whose_turn);
+                    GameError::RunTimeError(whose_turn)
+                })?;
 
             {
                 let status = target_bot.status.clone();
@@ -205,6 +243,7 @@ impl Game {
                     return Err(shared::GameError::RunTimeError(whose_turn.clone()));
                 }
             }
+            log::debug!("Reading action from {:?}.", whose_turn);
             let mut line: String = Default::default();
             let len = tokio::time::timeout(self.timeout, target_bot.output.read_line(&mut line))
                 .await

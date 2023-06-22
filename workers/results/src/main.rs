@@ -18,7 +18,7 @@ async fn main() {
             &sqs,
             |task: BuildResultMessage| async {
                 log::info!("Received build result: {:?}", task);
-                handle_build_result(task, &sqs).await;
+                handle_build_result(task, &sqs).await.is_ok()
             },
             |err| log::error!("Error receiving build result: {}", err),
         ),
@@ -27,7 +27,7 @@ async fn main() {
             &sqs,
             |task: GameStatusMessage| async move {
                 log::info!("Received game result: {:?}", task);
-                handle_game_result(task).await;
+                handle_game_result(task).await.is_ok()
             },
             |err| log::error!("Error receiving game result: {}", err),
         )
