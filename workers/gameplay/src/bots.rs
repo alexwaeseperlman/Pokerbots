@@ -316,7 +316,7 @@ impl Game {
 
         log::info!("Clients connected for {}", self.id);
         for _ in 0..rounds {
-            log::info!("Playing round. Current stacks: {:?}.", self.stacks);
+            log::debug!("Playing round. Current stacks: {:?}.", self.stacks);
             if self.stacks[0] == 0 || self.stacks[1] == 0 {
                 break;
             }
