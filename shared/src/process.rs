@@ -18,7 +18,7 @@ pub struct Process {
     pub status: Arc<Mutex<Option<ExitStatus>>>,
     pub output: tokio::io::BufReader<ChildStdout>,
     pub input: tokio::io::BufWriter<ChildStdin>,
-    pub err: tokio::io::BufReader<ChildStderr>,
+    //pub err: tokio::io::BufReader<ChildStderr>,
     pub child: Arc<Mutex<Child>>,
     listener: JoinHandle<()>,
     kill_channel: Option<tokio::sync::oneshot::Sender<()>>,
@@ -32,7 +32,7 @@ impl Process {
             command
                 .stdout(Stdio::piped())
                 .stdin(Stdio::piped())
-                .stderr(Stdio::piped())
+                //.stderr(Stdio::piped())
                 .spawn()?,
         ));
         let p = child.clone();
@@ -50,11 +50,11 @@ impl Process {
                     .take()
                     .ok_or(io::Error::new(io::ErrorKind::Other, "Unable to get stdin"))?,
             ),
-            err: tokio::io::BufReader::new(
+            /*err: tokio::io::BufReader::new(
                 p.stderr
                     .take()
                     .ok_or(io::Error::new(io::ErrorKind::Other, "Unable to get stderr"))?,
-            ),
+            ),*/
             child: child.clone(),
             listener: tokio::spawn(async move {
                 let child = child.clone();

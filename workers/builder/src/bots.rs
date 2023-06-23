@@ -8,7 +8,7 @@ pub async fn build_bot<T: AsRef<Path>>(bot_folder: T) -> Result<(), io::Error> {
     //TODO: run this in a cgroup this to protect against zip bombs
     // We leave the bot.zip in the directory cause why not
     let path = bot_folder.as_ref();
-    log::debug!("Constructing bot in {:?}", path);
+    log::info!("Constructing bot in {:?}", path);
 
     shared::process::Process::sh_configured("unzip -o bot.zip", move |command| {
         command.current_dir(path)

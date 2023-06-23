@@ -18,7 +18,7 @@ pub async fn listen_on_queue<
         let message = sqs
             .receive_message()
             .queue_url(queue.as_ref())
-            .wait_time_seconds(10)
+            .wait_time_seconds(20)
             //.max_number_of_messages(1)
             .send()
             .await;

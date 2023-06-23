@@ -17,7 +17,7 @@ async fn process(
     // zip up the bot
     Command::new("zip")
         .arg("-r")
-        .arg(format!("{}.zip", bot))
+        .arg("bot.zip")
         .arg("bot")
         .stderr(Stdio::null())
         .stdout(Stdio::null())
