@@ -34,106 +34,12 @@ export class PFPS3Construct extends Construct {
 
   constructor(scope: Construct, id: string) {
     super(scope, id);
-
-    this.bucket = new s3.Bucket(this, "pfp", {
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-      objectOwnership: s3.ObjectOwnership.BUCKET_OWNER_PREFERRED,
-    });
-    this.bucket.addCorsRule({
-      allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT],
-      allowedOrigins: ["*"],
-      allowedHeaders: ["*"],
-    });
-  }
-}
-
-export class BotConstruct extends Construct {
-  public readonly bucket: s3.Bucket;
-  public readonly onCreationLambda: lambda.Function;
-  public readonly playJobDefn: batch_alpha.EcsJobDefinition;
-  public readonly jobQueue: batch_alpha.JobQueue;
-
-  constructor(scope: Construct, id: string, vpc: ec2.Vpc) {
-    super(scope, id);
-
-    this.bucket = new s3.Bucket(this, "bot", {
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-      objectOwnership: s3.ObjectOwnership.BUCKET_OWNER_ENFORCED,
-    });
-    this.onCreationLambda = new lambda.Function(this, "onCreationLambda", {
-      runtime: lambda.Runtime.NODEJS_18_X,
-      handler: "index.handler",
-      code: lambda.Code.fromAsset("../lambdas/bot-uploaded"),
-      environment: {
-        BOT_SIZE: process.env.BOT_SIZE ?? "1000000",
-      },
-    });
-    this.bucket.addObjectCreatedNotification(
-      new s3_notify.LambdaDestination(this.onCreationLambda),
-      {
-        prefix: "upload/",
-      }
-    );
-
-    // batch queue for building bots
-    const env = new batch_alpha.FargateComputeEnvironment(this, "batch-env", {
-      vpc,
-      spot: true,
-    });
-
-    /*const buildImage = ecs.ContainerImage.fromDockerImageAsset(
-      new DockerImageAsset(this, "bots-container", {
-        directory: "../bots/buildenv",
-      })
-    );*/
-    const playImage = ecs.ContainerImage.fromDockerImageAsset(
-      new DockerImageAsset(this, "bots-container", {
-        directory: "../bots",
-      })
-    );
-    /*const buildJobDefn = new batch_alpha.EcsJobDefinition(this, "build-job", {
-      container: new batch_alpha.EcsFargateContainerDefinition(
-        this,
-        "build-container",
-        {
-          cpu: 256,
-          memory: cdk.Size.mebibytes(512),
-          image: buildImage,
-        }
-      ),
-    });*/
-    this.playJobDefn = new batch_alpha.EcsJobDefinition(this, "play-job", {
-      container: new batch_alpha.EcsFargateContainerDefinition(
-        this,
-        "play-container",
-        {
-          cpu: 0.25,
-          memory: cdk.Size.mebibytes(512),
-          image: playImage,
-          command: ["Ref::botA", "Ref::botB", "Ref::id"],
-          environment: {
-            API_URL: process.env.APP_DOMAIN_NAME ?? "",
-          },
-          logging: new ecs.AwsLogDriver({
-            streamPrefix: "play",
-            logRetention: cdk.aws_logs.RetentionDays.ONE_DAY,
-          }),
-        }
-      ),
-    });
-    this.jobQueue = new batch_alpha.JobQueue(this, "queue", {
-      computeEnvironments: [
-        {
-          computeEnvironment: env,
-          order: 1,
-        },
-      ],
-    });
   }
 }
 
 export class ScalingAPIConstruct extends Construct {
   readonly loadBalancer: ecs_patterns.ApplicationLoadBalancedFargateService;
+  readonly pfp_s3: s3.Bucket;
   constructor(
     scope: Construct,
     id: string,
@@ -142,10 +48,19 @@ export class ScalingAPIConstruct extends Construct {
     vpc: ec2.Vpc,
     password: sman.Secret,
     cert: certManager.Certificate,
-    domainName: string,
-    bots: BotConstruct
+    domainName: string
   ) {
     super(scope, id);
+
+    this.pfp_s3 = new s3.Bucket(this, "pfp", {
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      objectOwnership: s3.ObjectOwnership.BUCKET_OWNER_PREFERRED,
+    });
+    this.pfp_s3.addCorsRule({
+      allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT],
+      allowedOrigins: ["*"],
+      allowedHeaders: ["*"],
+    });
 
     const cluster = new ecs.Cluster(this, "api-cluster", {
       vpc,
@@ -189,9 +104,6 @@ export class ScalingAPIConstruct extends Construct {
             MICROSOFT_TENANT_ID: process.env.MICROSOFT_TENANT_ID ?? "",
             PFP_S3_BUCKET: pfp_s3_bucket.bucketName,
             REDIRECT_URI: `https://${domainName}/api/login`,
-            PORT: "80",
-            JOB_QUEUE: bots.jobQueue.jobQueueArn,
-            PLAY_JOB_DEFINITION: bots.playJobDefn.jobDefinitionArn,
           },
           secrets: {
             SECRET_KEY: secretKey,
@@ -218,26 +130,6 @@ export class ScalingAPIConstruct extends Construct {
       this.loadBalancer.service.taskDefinition.taskRole
     );
     pfp_s3_bucket.grantPut(this.loadBalancer.service.taskDefinition.taskRole);
-    bots.bucket.grantPut(this.loadBalancer.service.taskDefinition.taskRole);
-    this.loadBalancer.service.taskDefinition.taskRole.addToPrincipalPolicy(
-      new iam.PolicyStatement({
-        resources: [
-          cdk.Stack.of(this).formatArn({
-            service: "batch",
-            resource: "job-definition",
-            resourceName: "*",
-          }),
-          bots.jobQueue.jobQueueArn,
-        ],
-        actions: ["batch:SubmitJob"],
-      })
-    );
-    new cdk.CfnOutput(this, "api-url", {
-      value: this.loadBalancer.loadBalancer.loadBalancerDnsName,
-    });
-    new cdk.CfnOutput(this, "api-task-role", {
-      value: this.loadBalancer.service.taskDefinition.taskRole.roleArn,
-    });
   }
 }
 
@@ -264,7 +156,6 @@ export class ResourcesStack extends cdk.Stack {
       natGateways: 1,
     });
     const pfp_s3 = new PFPS3Construct(this, "pfp_s3");
-    const bots = new BotConstruct(this, "bots", vpc);
 
     const dbPassword = new sman.Secret(this, "db-password", {
       generateSecretString: {
@@ -294,45 +185,7 @@ export class ResourcesStack extends cdk.Stack {
       vpc,
       dbPassword,
       cert,
-      process.env.APP_DOMAIN_NAME as string,
-      bots
+      process.env.APP_DOMAIN_NAME as string
     );
-    /*const cf = new cloudfront.Distribution(this, "cdnDistribution", {
-      defaultBehavior: {
-        origin: new origins.LoadBalancerV2Origin(api.loadBalancer.loadBalancer),
-        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-      },
-      additionalBehaviors: {
-        "/api/*": {
-          origin: new origins.LoadBalancerV2Origin(
-            api.loadBalancer.loadBalancer
-          ),
-          viewerProtocolPolicy:
-            cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-          cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
-        },
-      },
-      domainNames: [process.env.APP_DOMAIN_NAME as string],
-      certificate: cert,
-    });*/
-    /*api.loadBalancer.taskDefinition.defaultContainer?.addEnvironment(
-      "REDIRECT_URI",
-      `https://${cf.domainName}/api/login`
-    );*/
-
-    /*cf.addBehavior("/api/*", new origins.LoadBalancerV2Origin(
-        api.service.loadBalancer.loadBalancer
-      ))*/
-
-    /*new route53.ARecord(this, "CDNARecord", {
-      zone,
-      target: route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(cf)),
-    });
-
-    new route53.AaaaRecord(this, "AliasRecord", {
-      zone,
-      target: route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(cf)),
-    });*/
-    // build the frontend and upload it to s3
   }
 }

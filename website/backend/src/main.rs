@@ -134,7 +134,7 @@ async fn main() -> std::io::Result<()> {
         std::env::var("PORT")
             .ok()
             .and_then(|s| s.parse::<u16>().ok())
-            .unwrap_or(3000),
+            .unwrap_or(80),
     ))?
     .run()
     .await

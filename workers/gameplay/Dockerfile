@@ -1,6 +1,6 @@
 FROM --platform=linux/arm64 rust:alpine3.17 as builder
 
-WORKDIR /usr/src/worker
+WORKDIR /usr/src/gameplay
 
 COPY shared /usr/shared
 
@@ -20,7 +20,7 @@ RUN cargo build --release
 
 # Install python3 and pip so people can use common packages in their bots
 FROM --platform=linux/arm64 ubuntu:22.04
-RUN apt-get update && apt-get install -y python3 pip
+RUN apt-get update && apt-get install -y python3 pip ca-certificates
 
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 RUN echo 'source $HOME/.cargo/env' >> $HOME/.bashrc
@@ -29,8 +29,8 @@ RUN echo 'source $HOME/.cargo/env' >> $HOME/.bashrc
 RUN pip install numpy pandas scipy scikit-learn
 RUN apt-get install -y iptables
 
-WORKDIR /usr/src/worker
-COPY --from=builder /usr/src/worker/target/release/gameplay /usr/local/bin/gameplay
+WORKDIR /usr/src/gameplay
+COPY --from=builder /usr/src/gameplay/target/release/gameplay /usr/local/bin/gameplay
 
 RUN chmod +x /usr/local/bin/gameplay
-ENTRYPOINT ["worker"]
+ENTRYPOINT ["gameplay"]

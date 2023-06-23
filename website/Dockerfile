@@ -8,7 +8,7 @@ RUN npm ci
 COPY website/app .
 RUN npm run build
 
-FROM --platform=linux/arm64 rust:1.69 as backend
+FROM --platform=linux/arm64 rust:1.70 as backend
 WORKDIR /usr/src/backend
 RUN apt-get update && apt-get install pkg-config libssl-dev libpq-dev curl build-essential -y
 
@@ -29,17 +29,17 @@ RUN touch src/main.rs
 RUN cargo build --release
 
 # Copy files and build
-FROM --platform=linux/arm64 debian:stable
+FROM --platform=linux/arm64 debian:bullseye
 
 WORKDIR /usr/src/website
 
 RUN mkdir app
 WORKDIR /usr/src/website
-COPY --from=backend /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-RUN apt-get update && apt-get install libssl-dev libpq-dev -y
 
 COPY --from=frontend /usr/src/app/dist ./app/dist
 COPY --from=backend /usr/src/backend/target/release/pokerbots ./pokerbots
+
+RUN apt-get update && apt-get install -y libssl-dev ca-certificates libpq-dev openssl
 
 CMD ["./pokerbots"]
 

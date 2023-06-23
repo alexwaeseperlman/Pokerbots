@@ -1,12 +1,10 @@
-FROM --platform=linux/arm64 rust:alpine3.17 as builder
+FROM --platform=linux/arm64 rust:1.70 as builder
 
 WORKDIR /usr/src/results
 
 COPY shared /usr/shared
 
 COPY workers/results/Cargo.toml .
-
-RUN apk add musl-dev
 
 # create a dummy main.rs to cache dependencies
 RUN mkdir src && echo "fn main() {println!(\"wawaweewa\")}" > src/main.rs
@@ -25,6 +23,7 @@ RUN echo 'source $HOME/.cargo/env' >> $HOME/.bashrc
 
 WORKDIR /usr/src/results
 COPY --from=builder /usr/src/results/target/release/results /usr/local/bin/results
+RUN apt-get update && apt-get install libssl-dev libpq-dev ca-certificates -y
 
 RUN chmod +x /usr/local/bin/results
 ENTRYPOINT ["results"]

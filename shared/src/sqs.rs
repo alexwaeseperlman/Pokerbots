@@ -1,7 +1,5 @@
 use std::{error::Error, future::Future, time::Duration};
 
-use tokio::time::sleep;
-
 pub async fn listen_on_queue<
     T: AsRef<str>,
     PayloadType: serde::de::DeserializeOwned,

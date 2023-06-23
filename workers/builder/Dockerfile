@@ -19,7 +19,7 @@ RUN cargo build --release
 
 # Install python3 and pip so people can use common packages in their bots
 FROM --platform=linux/arm64 ubuntu:22.04
-RUN apt-get update && apt-get install -y python3 pip
+RUN apt-get update && apt-get install -y python3 pip ca-certificates
 
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 RUN echo 'source $HOME/.cargo/env' >> $HOME/.bashrc
