@@ -5,13 +5,14 @@ use log::error;
 use serde::{Deserialize, Serialize};
 use std::env;
 
-use crate::{
-    config::{CLIENT_ID, DB_CONNECTION, REDIRECT_URI},
+use crate::config::{CLIENT_ID, REDIRECT_URI};
+use shared::db::conn::DB_CONNECTION;
+
+use super::api::ServerMessage;
+use shared::db::{
     models::{NewUser, Team, TeamInvite, User},
     schema::{team_invites, teams, users},
 };
-
-use super::api::ServerMessage;
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct UserData {
@@ -54,6 +55,10 @@ pub fn microsoft_login_url(return_to: &str) -> String {
         url_encode(return_to)
     )
 }
+/*
+These have camel case names so they can correspond to
+the fields in the JSON response from the Microsoft Graph API
+*/
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AzureMeResponse {
     pub displayName: Option<String>,
@@ -144,6 +149,7 @@ pub async fn handle_login(
 ) -> Result<HttpResponse, Box<dyn std::error::Error>> {
     let code = req.code.clone().unwrap_or_default();
     // TODO: Is it bad to make a new client for every login?
+    // => Yes, it is.
     let client = reqwest::Client::new();
 
     let response: AzureAuthTokenResopnse = client
@@ -212,6 +218,7 @@ pub struct LoginProvider {
     state: Option<String>,
 }
 //TODO: instead of state being a parameter here, we should have state in the session
+// Should we?
 #[get("/api/login-provider")]
 pub async fn login_provider(
     web::Query::<LoginProvider>(LoginProvider { provider, state }): web::Query<LoginProvider>,

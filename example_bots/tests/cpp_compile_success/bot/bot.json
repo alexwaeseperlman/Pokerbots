@@ -1,0 +1,5 @@
+{
+    "name": "CPP compile success",
+    "build": "g++ main.cpp -o main",
+    "run": "./main"
+}

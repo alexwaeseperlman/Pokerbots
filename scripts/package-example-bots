@@ -1,0 +1,10 @@
+#!/bin/bash
+start_dir=$(pwd)
+for i in $(find ~+ -type d); do
+    if [[ -f $i/bot/bot.json ]]; then
+        echo "Zipping $i"
+        cd $i
+        zip -r bot.zip bot > /dev/null
+    fi
+done
+cd $start_dir

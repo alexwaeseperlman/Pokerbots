@@ -20,7 +20,7 @@ import Button, { ButtonProps } from "@mui/material/Button";
 
 import { secondary_background } from "../styles.module.css";
 import { TeamBar } from "./TeamBar";
-import { Avatar, Chip, Typography } from "@mui/material";
+import { Avatar, Chip, ChipProps, Typography } from "@mui/material";
 import BotTable from "./BotTable";
 import { BotUpload } from "./BotUpload";
 
@@ -108,10 +108,19 @@ function GameTable({ readonly }: { readonly?: boolean }) {
           renderCell: (params) => {
             if (params.value === null)
               return <Chip color="default" label={"Running"}></Chip>;
-            let color = "success";
+            let color: ChipProps["color"] = "success";
             if (params.value < 0) color = "error";
             else if (params.value == 0) color = "default";
-            return <Chip label={params.value} color={color} />;
+            console.log(params.row);
+            if (params.row.error_type) {
+              color = "warning";
+            }
+            return (
+              <Chip
+                label={params.row.error_type ?? params.value}
+                color={color}
+              />
+            );
           },
           minWidth: 100,
           flex: 1,

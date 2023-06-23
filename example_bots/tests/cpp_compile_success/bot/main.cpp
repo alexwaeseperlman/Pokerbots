@@ -1,0 +1,3 @@
+int main() {
+  // do nothing
+}

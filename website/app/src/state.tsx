@@ -50,6 +50,7 @@ export type Bot = {
   team: Team;
   uploaded_by: string;
   date_uploaded: number;
+  build_status: number;
 };
 
 export type Game = {
@@ -58,6 +59,7 @@ export type Game = {
   bot_b: Bot;
   score_change: number;
   time: number;
+  error_type: string | null;
 };
 
 // take a list of games that have bot ids and replace them with bot objects

@@ -56,12 +56,23 @@ export default function BotTable({ readonly }: { readonly?: boolean }) {
           field: "score",
           headerName: "Result",
           renderCell: (params) => {
-            if (params.value === null)
-              return <Chip color="default" label={"Running"}></Chip>;
-            let color = "success";
-            if (params.value < 0) color = "error";
-            else if (params.value == 0) color = "default";
-            return <Chip label={params.value} color={color} />;
+            if (params.row.build_status === -1)
+              return <Chip color="warning" label={"Not in queue"}></Chip>;
+            if (params.row.build_status === 0)
+              return <Chip color="default" label={"In queue"}></Chip>;
+            if (params.row.build_status === 1)
+              return <Chip color="default" label={"Building"}></Chip>;
+            if (params.row.build_status === 2)
+              return <Chip color="default" label={"Built successfully"}></Chip>;
+            if (params.row.build_status === 3)
+              return <Chip color="default" label={"Playing test game"}></Chip>;
+            // 4 means the bot succeeded in the test game, so we show its score
+            if (params.row.build_status === 4)
+              return <Chip label={"Ready to play"} color={"success"} />;
+            if (params.row.build_status === 5)
+              return <Chip color="error" label={"Build failed"}></Chip>;
+            if (params.row.build_status == 6)
+              return <Chip color="error" label={"Test game failed"}></Chip>;
           },
           minWidth: 100,
           flex: 1,
@@ -159,7 +170,9 @@ export default function BotTable({ readonly }: { readonly?: boolean }) {
                             enqueueSnackbar("Set active", {
                               variant: "success",
                             });
-                            fetchTeam();
+                            setTimeout(() => {
+                              fetchTeam();
+                            }, 100);
                           });
                       }}
                     >

@@ -1,0 +1,19 @@
+[package]
+name = "builder"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rand = "0.8.5"
+log = "0.4"
+itertools = "0.10.5"
+tokio = {version = "1.28.1", features=["rt", "macros", "rt-multi-thread", "time", "process"]}
+serde = "1.0.163"
+serde_json = "1.0.96"
+shared = { path = "../../shared" }
+futures-lite = "1.13.0"
+env_logger = "0.10.0"
+aws-config = "0.55.2"
+aws-sdk-s3 = "0.28.0"
+async-trait = "0.1.68"
+dotenvy = "0.15.7"

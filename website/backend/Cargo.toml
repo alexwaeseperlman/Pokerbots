@@ -14,7 +14,6 @@ log = "0.4"
 env_logger = "0.10.0"
 diesel = { version = "2.0.3", features = ["postgres", "r2d2", "with-deprecated"]}
 dotenvy = "0.15"
-lazy_static = "1.4.0"
 r2d2 = "0.8.10"
 reqwest = { version = "0.11", features = ["json"] }
 futures-util = "0.3.26"
@@ -26,12 +25,12 @@ serde = { version = "1.0.152", features = ["derive"] }
 serde_json = "1.0.93"
 serde_yaml = "0.9.19"
 aws-config = "0.55.2"
-aws-sdk-s3 = "0.27.0"
-diesel_migrations = {version= "2.0.0", features=["postgres"]}
-lapin = "2.1.1"
-shared = { path = "../../shared" }
+aws-sdk-s3 = "0.28.0"
+aws-sdk-sqs = "0.28.0"
+shared = { path = "../../shared", features=["db"] }
 tokio = "1.28.1"
 zip = "0.6.6"
+lazy_static="1.4.0"
 
 [dev-dependencies]
 cargo-watch = "8.4.0"

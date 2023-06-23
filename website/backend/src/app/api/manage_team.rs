@@ -3,20 +3,23 @@ use std::io::Read;
 use crate::{
     app::login,
     app::{api::ApiResult, login::microsoft_login_url},
-    config::{BOT_S3_BUCKET, BOT_SIZE, DB_CONNECTION, PFP_S3_BUCKET},
-    models::{NewBot, TeamInvite, User},
-    schema::{bots, team_invites, teams, users},
+    config::{BOT_S3_BUCKET, BOT_SIZE, PFP_S3_BUCKET},
 };
 use actix_session::Session;
 use actix_web::{get, post, put, web, HttpResponse};
 use aws_sdk_s3 as s3;
-use aws_sdk_s3::presigning::PresigningConfig;
+use aws_sdk_sqs as sqs;
 use chrono;
 use diesel::prelude::*;
 use futures_util::StreamExt;
 use rand::{self, Rng};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::json;
+use shared::db::conn::DB_CONNECTION;
+use shared::db::{
+    models::{NewBot, NewInvite, NewTeam, TeamInvite, User},
+    schema::{bots, team_invites, teams, users},
+};
 
 #[derive(Deserialize)]
 pub struct CreateTeamQuery {
@@ -50,7 +53,7 @@ pub async fn create_team(
     }
     let conn = &mut (*DB_CONNECTION).get()?;
     let new_id = diesel::insert_into(teams::dsl::teams)
-        .values(crate::models::NewTeam {
+        .values(NewTeam {
             team_name,
             owner: user.clone().email,
         })
@@ -146,7 +149,7 @@ pub async fn make_invite(session: Session) -> ApiResult {
     let now: i64 = chrono::offset::Utc::now().timestamp();
     let conn = &mut (*DB_CONNECTION).get()?;
     let out = diesel::insert_into(team_invites::dsl::team_invites)
-        .values(crate::models::NewInvite {
+        .values(NewInvite {
             expires: now + day,
             invite_code: format!("{:02x}", rand::thread_rng().gen::<u128>()),
             teamid: team.clone().id,
@@ -187,8 +190,15 @@ pub async fn join_team(
     web::Query::<JoinTeamQuery>(JoinTeamQuery { invite_code }): web::Query<JoinTeamQuery>,
     req: actix_web::HttpRequest,
 ) -> ApiResult {
-    let user = login::get_user_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+    let user = match login::get_user_data(&session) {
+        Some(user) => user,
+        None => {
+            return Ok(HttpResponse::Found()
+                //TODO: Redirect to a general login page
+                .append_header(("Location", microsoft_login_url(&req.uri().to_string())))
+                .finish());
+        }
+    };
     let team = login::get_team_data(&session);
     // You can't join a team if you are already on one or if you aren't logged in
 
@@ -261,6 +271,7 @@ pub async fn upload_pfp(
 #[post("/upload-bot")]
 pub async fn upload_bot(
     s3_client: actix_web::web::Data<s3::Client>,
+    sqs_client: actix_web::web::Data<sqs::Client>,
     session: Session,
     mut payload: web::Payload,
 ) -> ApiResult {
@@ -282,13 +293,14 @@ pub async fn upload_bot(
         .map_err(|e| actix_web::error::ErrorBadRequest(format!("{}", e)))?;
     // TODO: if the zip file is one big folder, we should change it to be the root.
     let mut bot_file = archive
-        .by_name("bot.json")
+        .by_name("bot/bot.json")
         .map_err(|e| actix_web::error::ErrorBadRequest(format!("{}", e)))?;
     if bot_file.is_dir() {
         return Err(actix_web::error::ErrorBadRequest("bot.json is a directory").into());
     }
     let mut bot_json = String::new();
     bot_file.read_to_string(&mut bot_json)?;
+    log::debug!("bot.json: {}", bot_json);
 
     let bot: shared::Bot = serde_json::from_str(&bot_json)?;
 
@@ -302,6 +314,7 @@ pub async fn upload_bot(
             description: bot.description,
             score: 0.0,
             uploaded_by: user.email,
+            build_status: 0,
         })
         .returning(bots::dsl::id)
         .get_result::<i32>(conn)?;
@@ -309,7 +322,7 @@ pub async fn upload_bot(
     if let Err(e) = s3_client
         .put_object()
         .bucket(&*BOT_S3_BUCKET)
-        .key(format!("{}.zip", id))
+        .key(format!("{}", id))
         .body(body.to_vec().into())
         .send()
         .await
@@ -321,6 +334,16 @@ pub async fn upload_bot(
         return Err(e.into());
     }
 
+    // push the bot to the 'bot_uploads' queue
+    // TODO: Handle errors by deleting the bot from the database
+    sqs_client
+        .send_message()
+        .queue_url(std::env::var("BOT_UPLOADS_QUEUE_URL")?)
+        .message_body(serde_json::to_string(&shared::BuildTask {
+            bot: id.to_string(),
+        })?)
+        .send()
+        .await?;
     Ok(HttpResponse::Ok().json(json!({ "id": id })))
 }
 

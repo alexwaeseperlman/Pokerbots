@@ -1,27 +1,20 @@
-use std::sync::Arc;
-
-use crate::{
-    app::login,
-    app::{api::ApiResult, login::microsoft_login_url},
-    config::{BOT_S3_BUCKET, DB_CONNECTION, PFP_S3_BUCKET},
-    models::{Bot, Game, TeamInvite, User},
-    schema,
-};
+use crate::app::api::ApiResult;
 use actix_session::Session;
 use actix_web::{
-    get, put,
-    web::{self, Bytes},
+    get,
+    web::{self},
     HttpResponse,
 };
-use aws_sdk_s3 as s3;
-use aws_sdk_s3::presigning::PresigningConfig;
-use chrono;
-use diesel::{prelude::*, query_builder::SelectQuery};
-use futures_util::FutureExt;
+use diesel::prelude::*;
 use rand::{self, Rng};
 use serde::Deserialize;
 use serde_json::json;
-use shared::PlayTask;
+use shared::db::conn::DB_CONNECTION;
+use shared::db::{
+    models::{Game, NewGame},
+    schema,
+};
+use shared::GameTask;
 #[derive(Deserialize)]
 pub struct MakeGameQuery {
     pub bot_a: i32,
@@ -33,33 +26,32 @@ pub struct MakeGameQuery {
 pub async fn make_game(
     session: Session,
     web::Query::<MakeGameQuery>(MakeGameQuery { bot_a, bot_b }): web::Query<MakeGameQuery>,
-    amqp_channel: web::Data<Arc<lapin::Channel>>,
+    sqs_client: web::Data<aws_sdk_sqs::Client>,
 ) -> ApiResult {
     // generate a random code and insert it into the database
     // also push a batch job to the queue
     let id = format!("{:02x}", rand::thread_rng().gen::<u128>());
     let conn = &mut (*DB_CONNECTION).get()?;
     let game = diesel::insert_into(schema::games::dsl::games)
-        .values(crate::models::NewGame {
+        .values(NewGame {
             bot_a,
             bot_b,
             id: id.clone(),
         })
         .get_result::<Game>(conn)?;
     // push a batch job to the queue
-    let job = amqp_channel
-        .basic_publish(
-            "",
-            "poker",
-            lapin::options::BasicPublishOptions::default(),
-            &serde_json::to_vec(&PlayTask {
-                bot_a: game.bot_a.to_string(),
-                bot_b: game.bot_b.to_string(),
-                id: game.id.clone(),
-                date: game.created,
-            })?,
-            lapin::BasicProperties::default(),
-        )
+    let job = sqs_client
+        .send_message()
+        .queue_url(std::env::var("NEW_GAMES_QUEUE_URL")?)
+        .message_body(&serde_json::to_string(&GameTask::Game {
+            bot_a: game.bot_a.to_string(),
+            bot_b: game.bot_b.to_string(),
+            id: game.id.clone(),
+            date: game.created,
+            // TODO: Choose a number of rounds
+            rounds: 100,
+        })?)
+        .send()
         .await;
     if let Err(e) = job {
         // Remove the game from the database
@@ -68,7 +60,7 @@ pub async fn make_game(
             .execute(conn)?;
         return Err(e.into());
     }
-    log::debug!("message sent {:?}", job);
+    log::info!("Game created {:?}", job);
     Ok(HttpResponse::Ok().json(game))
 }
 

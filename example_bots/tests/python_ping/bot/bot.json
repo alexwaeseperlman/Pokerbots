@@ -1,0 +1,4 @@
+{
+    "name": "Python ping",
+    "run": "python main.py"
+}

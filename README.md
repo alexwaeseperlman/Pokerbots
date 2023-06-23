@@ -1,4 +1,4 @@
-# Pokerzero, compete with poker algorithms
+# Compete with poker algorithms
 
 To get it running, first start install diesel, run the database, and run the migrations.
 
