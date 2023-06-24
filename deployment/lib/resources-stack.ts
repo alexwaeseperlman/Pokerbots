@@ -23,17 +23,147 @@ import * as pipelines from "aws-cdk-lib/pipelines";
 import * as s3_notify from "aws-cdk-lib/aws-s3-notifications";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as batch from "aws-cdk-lib/aws-batch";
+import * as sqs from "aws-cdk-lib/aws-sqs";
 import * as batch_alpha from "@aws-cdk/aws-batch-alpha";
 import { exec, execSync } from "child_process";
 import * as elb from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { FckNatInstanceProvider } from "cdk-fck-nat";
 
-export class PFPS3Construct extends Construct {
-  public readonly bucket: s3.Bucket;
-
-  constructor(scope: Construct, id: string) {
+export class BuilderWorkerConstruct extends Construct {
+  readonly ecs: ecs.Cluster;
+  constructor(
+    scope: Construct,
+    id: string,
+    vpc: ec2.Vpc,
+    bot_s3: s3.Bucket,
+    compiled_bot_s3: s3.Bucket,
+    bot_uploads_sqs: sqs.Queue,
+    build_results_sqs: sqs.Queue
+  ) {
     super(scope, id);
+    this.ecs = new ecs.Cluster(scope, "builder-worker-cluster", {
+      vpc,
+    });
+
+    const image = ecs.ContainerImage.fromDockerImageAsset(
+      new DockerImageAsset(this, "api-image", {
+        file: "workers/builder/Dockerfile",
+        directory: "..",
+        networkMode: NetworkMode.DEFAULT,
+      })
+    );
+
+    const task = new ecs.FargateTaskDefinition(this, "builder-task", {
+      cpu: 256,
+      memoryLimitMiB: 512,
+    });
+
+    const container = task.addContainer("builder-container", {
+      image,
+      environment: {
+        BOT_S3_BUCKET: bot_s3.bucketName,
+        COMPILED_BOT_S3_BUCKET: compiled_bot_s3.bucketName,
+        BOT_UPLOADS_QUEUE_URL: bot_uploads_sqs.queueArn,
+        BUILD_RESULTS_QUEUE_URL: build_results_sqs.queueArn,
+      },
+    });
+
+    // TODO: restrict these permissions
+
+    bot_s3.grantRead(task.taskRole);
+    compiled_bot_s3.grantWrite(task.taskRole);
+
+    bot_uploads_sqs.grantConsumeMessages(task.taskRole);
+    build_results_sqs.grantSendMessages(task.taskRole);
+  }
+}
+
+export class GameplayWorkerConstruct extends Construct {
+  readonly ecs: ecs.Cluster;
+  constructor(
+    scope: Construct,
+    id: string,
+    vpc: ec2.Vpc,
+    compiled_bot_s3: s3.Bucket,
+    new_games_sqs: sqs.Queue,
+    game_results_sqs: sqs.Queue
+  ) {
+    super(scope, id);
+    this.ecs = new ecs.Cluster(scope, "gameplay-worker-cluster", {
+      vpc,
+    });
+
+    const image = ecs.ContainerImage.fromDockerImageAsset(
+      new DockerImageAsset(this, "api-image", {
+        directory: "..",
+        file: "workers/gameplay/Dockerfile",
+        networkMode: NetworkMode.DEFAULT,
+      })
+    );
+
+    const task = new ecs.FargateTaskDefinition(this, "gameplay-task", {
+      cpu: 256,
+      memoryLimitMiB: 512,
+    });
+
+    const container = task.addContainer("gameplay-container", {
+      image,
+      environment: {
+        BOT_S3_BUCKET: compiled_bot_s3.bucketName,
+        GAME_RESULTS_QUEUE_URL: game_results_sqs.queueArn,
+        NEW_GAMES_QUEUE_URL: new_games_sqs.queueArn,
+      },
+    });
+
+    compiled_bot_s3.grantRead(task.taskRole);
+
+    new_games_sqs.grantConsumeMessages(task.taskRole);
+    game_results_sqs.grantSendMessages(task.taskRole);
+  }
+}
+
+export class ResultsWorkerConstruct extends Construct {
+  readonly ecs: ecs.Cluster;
+  constructor(
+    scope: Construct,
+    id: string,
+    vpc: ec2.Vpc,
+    password: sman.Secret,
+    game_results_sqs: sqs.Queue,
+    build_results_sqs: sqs.Queue,
+    db: rds.DatabaseInstance
+  ) {
+    super(scope, id);
+    this.ecs = new ecs.Cluster(scope, "results-worker-cluster", {
+      vpc,
+    });
+
+    const image = ecs.ContainerImage.fromDockerImageAsset(
+      new DockerImageAsset(this, "api-image", {
+        directory: "..",
+        file: "workers/results/Dockerfile",
+        networkMode: NetworkMode.DEFAULT,
+      })
+    );
+
+    const task = new ecs.FargateTaskDefinition(this, "results-task", {
+      cpu: 256,
+      memoryLimitMiB: 512,
+    });
+
+    const container = task.addContainer("results-container", {
+      image,
+      environment: {
+        DB_USER: "postgres",
+        DB_URL: db.instanceEndpoint.socketAddress,
+        GAME_RESULTS_QUEUE_URL: game_results_sqs.queueArn,
+        BUILD_RESULTS_QUEUE_URL: build_results_sqs.queueArn,
+      },
+      secrets: {
+        DB_PASSWORD: ecs.Secret.fromSecretsManager(password),
+      },
+    });
   }
 }
 
@@ -43,12 +173,14 @@ export class ScalingAPIConstruct extends Construct {
   constructor(
     scope: Construct,
     id: string,
-    pfp_s3_bucket: s3.Bucket,
     db: rds.DatabaseInstance,
     vpc: ec2.Vpc,
     password: sman.Secret,
     cert: certManager.Certificate,
-    domainName: string
+    domainName: string,
+    bot_s3: s3.Bucket,
+    bot_uploads_sqs: sqs.Queue,
+    new_games_sqs: sqs.Queue
   ) {
     super(scope, id);
 
@@ -68,7 +200,8 @@ export class ScalingAPIConstruct extends Construct {
 
     const image = ecs.ContainerImage.fromDockerImageAsset(
       new DockerImageAsset(this, "api-image", {
-        directory: "../website",
+        directory: "..",
+        file: "website/Dockerfile",
         networkMode: NetworkMode.HOST,
       })
     );
@@ -102,7 +235,14 @@ export class ScalingAPIConstruct extends Construct {
             DB_URL: db.instanceEndpoint.socketAddress,
             MICROSOFT_CLIENT_ID: process.env.MICROSOFT_CLIENT_ID ?? "",
             MICROSOFT_TENANT_ID: process.env.MICROSOFT_TENANT_ID ?? "",
-            PFP_S3_BUCKET: pfp_s3_bucket.bucketName,
+            PFP_S3_BUCKET: this.pfp_s3.bucketName,
+            BOT_S3_BUCKET: bot_s3.bucketName,
+            BOT_SIZE: "5000000",
+            APP_PFP_ENDPOINT: this.pfp_s3.urlForObject(),
+            BOT_UPLOADS_QUEUE_URL: bot_uploads_sqs.queueArn,
+            NEW_GAMES_QUEUE_URL: new_games_sqs.queueArn,
+            RUST_LOG: "info",
+            PORT: "80",
             REDIRECT_URI: `https://${domainName}/api/login`,
           },
           secrets: {
@@ -123,13 +263,20 @@ export class ScalingAPIConstruct extends Construct {
     );
     //db.grantConnect(this.loadBalancer.service.taskDefinition.taskRole);
     db.connections.allowDefaultPortFrom(this.loadBalancer.service);
-    pfp_s3_bucket.grantReadWrite(
+    this.pfp_s3.grantReadWrite(
       this.loadBalancer.service.taskDefinition.taskRole
     );
-    pfp_s3_bucket.grantPutAcl(
+    this.pfp_s3.grantPutAcl(this.loadBalancer.service.taskDefinition.taskRole);
+    this.pfp_s3.grantPut(this.loadBalancer.service.taskDefinition.taskRole);
+
+    bot_s3.grantReadWrite(this.loadBalancer.service.taskDefinition.taskRole);
+
+    bot_uploads_sqs.grantSendMessages(
       this.loadBalancer.service.taskDefinition.taskRole
     );
-    pfp_s3_bucket.grantPut(this.loadBalancer.service.taskDefinition.taskRole);
+    new_games_sqs.grantSendMessages(
+      this.loadBalancer.service.taskDefinition.taskRole
+    );
   }
 }
 
@@ -155,7 +302,6 @@ export class ResourcesStack extends cdk.Stack {
       }),
       natGateways: 1,
     });
-    const pfp_s3 = new PFPS3Construct(this, "pfp_s3");
 
     const dbPassword = new sman.Secret(this, "db-password", {
       generateSecretString: {
@@ -177,15 +323,53 @@ export class ResourcesStack extends cdk.Stack {
       },
     });
 
+    const bot_s3 = new s3.Bucket(this, "bot");
+    const compiled_bot_s3 = new s3.Bucket(this, "compiled-bot");
+
+    const bot_uploads_sqs = new sqs.Queue(this, "bot-uploads");
+    const new_games_sqs = new sqs.Queue(this, "new-games");
+    const game_results_sqs = new sqs.Queue(this, "game-results");
+    const build_results_sqs = new sqs.Queue(this, "build-results");
+
     const api = new ScalingAPIConstruct(
       this,
       "api",
-      pfp_s3.bucket,
       db,
       vpc,
       dbPassword,
       cert,
-      process.env.APP_DOMAIN_NAME as string
+      process.env.APP_DOMAIN_NAME as string,
+      bot_s3,
+      bot_uploads_sqs,
+      new_games_sqs
+    );
+
+    const builderWorker = new BuilderWorkerConstruct(
+      this,
+      "builder-worker",
+      vpc,
+      bot_s3,
+      compiled_bot_s3,
+      bot_uploads_sqs,
+      build_results_sqs
+    );
+    const gameplayWorker = new GameplayWorkerConstruct(
+      this,
+      "gameplay-worker",
+      vpc,
+      compiled_bot_s3,
+      new_games_sqs,
+      game_results_sqs
+    );
+
+    const resultsWorker = new ResultsWorkerConstruct(
+      this,
+      "results-worker",
+      vpc,
+      dbPassword,
+      game_results_sqs,
+      build_results_sqs,
+      db
     );
   }
 }

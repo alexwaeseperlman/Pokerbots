@@ -73,7 +73,9 @@ mod tests {
     #[tokio::test]
     pub async fn create_file() {
         let test_id = format!("{:x}", rand::thread_rng().gen::<u32>());
-        fs::create_dir(format!("/tmp/{}", test_id)).await.unwrap();
+        fs::create_dir_all(format!("/tmp/{}", test_id))
+            .await
+            .unwrap();
         fs::copy(
             "../../example_bots/tests/create_file_at_build/bot.zip",
             format!("/tmp/{}/bot.zip", test_id),
@@ -91,7 +93,9 @@ mod tests {
     #[tokio::test]
     pub async fn cpp_compile_error() {
         let test_id = format!("{:x}", rand::thread_rng().gen::<u32>());
-        fs::create_dir(format!("/tmp/{}", test_id)).await.unwrap();
+        fs::create_dir_all(format!("/tmp/{}", test_id))
+            .await
+            .unwrap();
         fs::copy(
             "../../example_bots/tests/cpp_compile_error/bot.zip",
             format!("/tmp/{}/bot.zip", test_id),
@@ -106,7 +110,9 @@ mod tests {
     #[tokio::test]
     pub async fn cpp_compile_success() {
         let test_id = format!("{:x}", rand::thread_rng().gen::<u32>());
-        fs::create_dir(format!("/tmp/{}", test_id)).await.unwrap();
+        fs::create_dir_all(format!("/tmp/{}", test_id))
+            .await
+            .unwrap();
         fs::copy(
             "../../example_bots/tests/cpp_compile_success/bot.zip",
             format!("/tmp/{}/bot.zip", test_id),
