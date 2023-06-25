@@ -11,6 +11,7 @@ import * as origins from "aws-cdk-lib/aws-cloudfront-origins";
 import * as route53 from "aws-cdk-lib/aws-route53";
 import * as targets from "aws-cdk-lib/aws-route53-targets";
 import * as ecs from "aws-cdk-lib/aws-ecs";
+import * as ecr from "aws-cdk-lib/aws-ecr";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import { DockerImageAsset, NetworkMode } from "aws-cdk-lib/aws-ecr-assets";
@@ -29,9 +30,9 @@ import { exec, execSync } from "child_process";
 import * as elb from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { FckNatInstanceProvider } from "cdk-fck-nat";
+import cluster from "cluster";
 
 export class BuilderWorkerConstruct extends Construct {
-  readonly ecs: ecs.Cluster;
   constructor(
     scope: Construct,
     id: string,
@@ -39,12 +40,10 @@ export class BuilderWorkerConstruct extends Construct {
     bot_s3: s3.Bucket,
     compiled_bot_s3: s3.Bucket,
     bot_uploads_sqs: sqs.Queue,
-    build_results_sqs: sqs.Queue
+    build_results_sqs: sqs.Queue,
+    cluster: ecs.Cluster
   ) {
     super(scope, id);
-    this.ecs = new ecs.Cluster(scope, "builder-worker-cluster", {
-      vpc,
-    });
 
     const image = ecs.ContainerImage.fromDockerImageAsset(
       new DockerImageAsset(this, "api-image", {
@@ -57,6 +56,11 @@ export class BuilderWorkerConstruct extends Construct {
     const task = new ecs.FargateTaskDefinition(this, "builder-task", {
       cpu: 256,
       memoryLimitMiB: 512,
+
+      runtimePlatform: {
+        cpuArchitecture: ecs.CpuArchitecture.ARM64,
+        operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
+      },
     });
 
     const container = task.addContainer("builder-container", {
@@ -64,9 +68,12 @@ export class BuilderWorkerConstruct extends Construct {
       environment: {
         BOT_S3_BUCKET: bot_s3.bucketName,
         COMPILED_BOT_S3_BUCKET: compiled_bot_s3.bucketName,
-        BOT_UPLOADS_QUEUE_URL: bot_uploads_sqs.queueArn,
-        BUILD_RESULTS_QUEUE_URL: build_results_sqs.queueArn,
+        BOT_UPLOADS_QUEUE_URL: bot_uploads_sqs.queueUrl,
+        BUILD_RESULTS_QUEUE_URL: build_results_sqs.queueUrl,
       },
+      logging: new ecs.AwsLogDriver({
+        streamPrefix: "builder",
+      }),
     });
 
     // TODO: restrict these permissions
@@ -76,23 +83,25 @@ export class BuilderWorkerConstruct extends Construct {
 
     bot_uploads_sqs.grantConsumeMessages(task.taskRole);
     build_results_sqs.grantSendMessages(task.taskRole);
+
+    const service = new ecs.FargateService(this, "results-service", {
+      cluster,
+      taskDefinition: task,
+    });
   }
 }
 
 export class GameplayWorkerConstruct extends Construct {
-  readonly ecs: ecs.Cluster;
   constructor(
     scope: Construct,
     id: string,
     vpc: ec2.Vpc,
     compiled_bot_s3: s3.Bucket,
     new_games_sqs: sqs.Queue,
-    game_results_sqs: sqs.Queue
+    game_results_sqs: sqs.Queue,
+    cluster: ecs.Cluster
   ) {
     super(scope, id);
-    this.ecs = new ecs.Cluster(scope, "gameplay-worker-cluster", {
-      vpc,
-    });
 
     const image = ecs.ContainerImage.fromDockerImageAsset(
       new DockerImageAsset(this, "api-image", {
@@ -105,26 +114,37 @@ export class GameplayWorkerConstruct extends Construct {
     const task = new ecs.FargateTaskDefinition(this, "gameplay-task", {
       cpu: 256,
       memoryLimitMiB: 512,
+
+      runtimePlatform: {
+        cpuArchitecture: ecs.CpuArchitecture.ARM64,
+        operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
+      },
     });
 
     const container = task.addContainer("gameplay-container", {
       image,
       environment: {
-        BOT_S3_BUCKET: compiled_bot_s3.bucketName,
-        GAME_RESULTS_QUEUE_URL: game_results_sqs.queueArn,
-        NEW_GAMES_QUEUE_URL: new_games_sqs.queueArn,
+        COMPILED_BOT_S3_BUCKET: compiled_bot_s3.bucketName,
+        GAME_RESULTS_QUEUE_URL: game_results_sqs.queueUrl,
+        NEW_GAMES_QUEUE_URL: new_games_sqs.queueUrl,
       },
+      logging: new ecs.AwsLogDriver({
+        streamPrefix: "worker",
+      }),
     });
 
     compiled_bot_s3.grantRead(task.taskRole);
 
     new_games_sqs.grantConsumeMessages(task.taskRole);
     game_results_sqs.grantSendMessages(task.taskRole);
+    const service = new ecs.FargateService(this, "results-service", {
+      cluster,
+      taskDefinition: task,
+    });
   }
 }
 
 export class ResultsWorkerConstruct extends Construct {
-  readonly ecs: ecs.Cluster;
   constructor(
     scope: Construct,
     id: string,
@@ -132,12 +152,11 @@ export class ResultsWorkerConstruct extends Construct {
     password: sman.Secret,
     game_results_sqs: sqs.Queue,
     build_results_sqs: sqs.Queue,
-    db: rds.DatabaseInstance
+    new_games_sqs: sqs.Queue,
+    db: rds.DatabaseInstance,
+    cluster: ecs.Cluster
   ) {
     super(scope, id);
-    this.ecs = new ecs.Cluster(scope, "results-worker-cluster", {
-      vpc,
-    });
 
     const image = ecs.ContainerImage.fromDockerImageAsset(
       new DockerImageAsset(this, "api-image", {
@@ -150,6 +169,11 @@ export class ResultsWorkerConstruct extends Construct {
     const task = new ecs.FargateTaskDefinition(this, "results-task", {
       cpu: 256,
       memoryLimitMiB: 512,
+
+      runtimePlatform: {
+        cpuArchitecture: ecs.CpuArchitecture.ARM64,
+        operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
+      },
     });
 
     const container = task.addContainer("results-container", {
@@ -157,13 +181,27 @@ export class ResultsWorkerConstruct extends Construct {
       environment: {
         DB_USER: "postgres",
         DB_URL: db.instanceEndpoint.socketAddress,
-        GAME_RESULTS_QUEUE_URL: game_results_sqs.queueArn,
-        BUILD_RESULTS_QUEUE_URL: build_results_sqs.queueArn,
+        GAME_RESULTS_QUEUE_URL: game_results_sqs.queueUrl,
+        BUILD_RESULTS_QUEUE_URL: build_results_sqs.queueUrl,
+        NEW_GAMES_QUEUE_URL: new_games_sqs.queueUrl,
       },
       secrets: {
         DB_PASSWORD: ecs.Secret.fromSecretsManager(password),
       },
+      logging: new ecs.AwsLogDriver({
+        streamPrefix: "results",
+      }),
     });
+    const service = new ecs.FargateService(this, "results-service", {
+      cluster,
+      taskDefinition: task,
+    });
+
+    game_results_sqs.grantConsumeMessages(task.taskRole);
+    build_results_sqs.grantConsumeMessages(task.taskRole);
+    new_games_sqs.grantSendMessages(task.taskRole);
+
+    db.connections.allowDefaultPortFrom(service);
   }
 }
 
@@ -180,7 +218,8 @@ export class ScalingAPIConstruct extends Construct {
     domainName: string,
     bot_s3: s3.Bucket,
     bot_uploads_sqs: sqs.Queue,
-    new_games_sqs: sqs.Queue
+    new_games_sqs: sqs.Queue,
+    cluster: ecs.Cluster
   ) {
     super(scope, id);
 
@@ -192,10 +231,6 @@ export class ScalingAPIConstruct extends Construct {
       allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT],
       allowedOrigins: ["*"],
       allowedHeaders: ["*"],
-    });
-
-    const cluster = new ecs.Cluster(this, "api-cluster", {
-      vpc,
     });
 
     const image = ecs.ContainerImage.fromDockerImageAsset(
@@ -239,8 +274,8 @@ export class ScalingAPIConstruct extends Construct {
             BOT_S3_BUCKET: bot_s3.bucketName,
             BOT_SIZE: "5000000",
             APP_PFP_ENDPOINT: this.pfp_s3.urlForObject(),
-            BOT_UPLOADS_QUEUE_URL: bot_uploads_sqs.queueArn,
-            NEW_GAMES_QUEUE_URL: new_games_sqs.queueArn,
+            BOT_UPLOADS_QUEUE_URL: bot_uploads_sqs.queueUrl,
+            NEW_GAMES_QUEUE_URL: new_games_sqs.queueUrl,
             RUST_LOG: "info",
             PORT: "80",
             REDIRECT_URI: `https://${domainName}/api/login`,
@@ -310,7 +345,7 @@ export class ResourcesStack extends cdk.Stack {
     });
     const db = new rds.DatabaseInstance(this, "db", {
       engine: rds.DatabaseInstanceEngine.postgres({
-        version: rds.PostgresEngineVersion.VER_13_3,
+        version: rds.PostgresEngineVersion.VER_15,
       }),
       vpc,
       instanceType: ec2.InstanceType.of(
@@ -331,6 +366,10 @@ export class ResourcesStack extends cdk.Stack {
     const game_results_sqs = new sqs.Queue(this, "game-results");
     const build_results_sqs = new sqs.Queue(this, "build-results");
 
+    const cluster = new ecs.Cluster(this, "cluster", {
+      vpc,
+    });
+
     const api = new ScalingAPIConstruct(
       this,
       "api",
@@ -341,7 +380,8 @@ export class ResourcesStack extends cdk.Stack {
       process.env.APP_DOMAIN_NAME as string,
       bot_s3,
       bot_uploads_sqs,
-      new_games_sqs
+      new_games_sqs,
+      cluster
     );
 
     const builderWorker = new BuilderWorkerConstruct(
@@ -351,7 +391,8 @@ export class ResourcesStack extends cdk.Stack {
       bot_s3,
       compiled_bot_s3,
       bot_uploads_sqs,
-      build_results_sqs
+      build_results_sqs,
+      cluster
     );
     const gameplayWorker = new GameplayWorkerConstruct(
       this,
@@ -359,7 +400,8 @@ export class ResourcesStack extends cdk.Stack {
       vpc,
       compiled_bot_s3,
       new_games_sqs,
-      game_results_sqs
+      game_results_sqs,
+      cluster
     );
 
     const resultsWorker = new ResultsWorkerConstruct(
@@ -369,7 +411,9 @@ export class ResourcesStack extends cdk.Stack {
       dbPassword,
       game_results_sqs,
       build_results_sqs,
-      db
+      new_games_sqs,
+      db,
+      cluster
     );
   }
 }

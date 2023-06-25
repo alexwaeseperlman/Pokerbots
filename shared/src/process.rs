@@ -7,7 +7,7 @@ use std::{
 
 use tokio::{
     io,
-    process::{Child, ChildStderr, ChildStdin, ChildStdout, Command},
+    process::{Child, ChildStdin, ChildStdout, Command},
     sync::{oneshot::channel, Mutex},
     task::JoinHandle,
     time::sleep,

@@ -29,7 +29,7 @@ RUN touch src/main.rs
 RUN cargo build --release
 
 # Copy files and build
-FROM --platform=linux/arm64 ubuntu:22.04
+FROM --platform=linux/arm64 debian:bullseye
 
 WORKDIR /usr/src/website
 
