@@ -16,7 +16,7 @@ services:
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=postgres
     volumes:
-      - ./.volumes/database:/var/lib/postgresql/data
+      - database:/var/lib/postgresql/data
 
   # Frontend and backend
   website:
@@ -47,15 +47,17 @@ services:
       - BOT_UPLOADS_QUEUE_URL=http://sqs:9324/queue/bot_uploads
       - NEW_GAMES_QUEUE_URL=http://sqs:9324/queue/new_games
 
-      - RUST_LOG=info
+      - RUST_LOG=debug
 
       - APP_PFP_ENDPOINT=https://loremflickr.com/128/128?lock=
-      - S3_ADDRESS=http://${S3_ACCESS_KEY}:${S3_SECRET_KEY}@s3:9000
+      - S3_ADDRESS=http://s3:9000
       - SQS_ADDRESS=http://sqs:9324
       - PORT=3000
 
       - S3_ACCESS_KEY=${S3_ACCESS_KEY}
       - S3_SECRET_KEY=${S3_SECRET_KEY}
+    ports:
+      - 3000:3000
   gameplay:
     build:
       context: .
@@ -66,14 +68,14 @@ services:
     volumes:
       - ~/.aws/:/root/.aws:ro
     environment:
-      - RUST_LOG=info
+      - RUST_LOG=debug
       - S3_ACCESS_KEY=${S3_ACCESS_KEY}
       - S3_SECRET_KEY=${S3_SECRET_KEY}
 
       - NEW_GAMES_QUEUE_URL=http://sqs:9324/queue/new_games
       - GAME_RESULTS_QUEUE_URL=http://sqs:9324/queue/game_results
 
-      - S3_ADDRESS=http://${S3_ACCESS_KEY}:${S3_SECRET_KEY}@s3:9000
+      - S3_ADDRESS=http://s3:9000
       - SQS_ADDRESS=http://sqs:9324
 
       - COMPILED_BOT_S3_BUCKET=${COMPILED_BOT_S3_BUCKET}
@@ -87,7 +89,7 @@ services:
     volumes:
       - ~/.aws/:/root/.aws:ro
     environment:
-      - RUST_LOG=info
+      - RUST_LOG=debug
       - COMPILED_BOT_S3_BUCKET=${COMPILED_BOT_S3_BUCKET}
       - BOT_S3_BUCKET=${BOT_S3_BUCKET}
 
@@ -96,7 +98,7 @@ services:
 
       - S3_ACCESS_KEY=${S3_ACCESS_KEY}
       - S3_SECRET_KEY=${S3_SECRET_KEY}
-      - S3_ADDRESS=http://${S3_ACCESS_KEY}:${S3_SECRET_KEY}@s3:9000
+      - S3_ADDRESS=http://s3:9000
       - SQS_ADDRESS=http://sqs:9324
   results:
     build:
@@ -110,6 +112,7 @@ services:
     environment:
       - BUILD_RESULTS_QUEUE_URL=http://sqs:9324/queue/build_results
       - GAME_RESULTS_QUEUE_URL=http://sqs:9324/queue/game_results
+      - NEW_GAMES_QUEUE_URL=http://sqs:9324/queue/new_games
 
       - DB_URL=db:5432/postgres
       - DB_USER=postgres
@@ -117,8 +120,8 @@ services:
 
       - S3_ACCESS_KEY=${S3_ACCESS_KEY}
       - S3_SECRET_KEY=${S3_SECRET_KEY}
-      - RUST_LOG=info
-      - S3_ADDRESS=http://${S3_ACCESS_KEY}:${S3_SECRET_KEY}@s3:9000
+      - RUST_LOG=debug
+      - S3_ADDRESS=http://s3:9000
       - SQS_ADDRESS=http://sqs:9324
   s3:
     image: minio/minio
@@ -126,7 +129,7 @@ services:
       - 9000:9000
       - 9999:9999
     volumes:
-      - ./.volumes/minio:/data
+      - minio:/data
       - ~/.aws/:/root/.aws:ro
     environment:
       MINIO_ROOT_USER: ${S3_ACCESS_KEY}
@@ -162,12 +165,8 @@ services:
     volumes:
       - ./elasticmq.conf:/opt/elasticmq.conf:ro
 
-  # nginx reverse proxy and load balancer
-  nginx:
-    image: nginx:latest
-    depends_on:
-      - website
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-    ports:
-      - 3000:3000
+volumes:
+  database:
+    external: false
+  minio:
+    external: false
