@@ -5,27 +5,30 @@ import secrets
 
 parser = ArgumentParser()
 
-generated_vars = {'DB_PASSWORD': secrets.token_urlsafe(8),
-                  'S3_ACCESS_KEY': secrets.token_urlsafe(8),
-                  'S3_SECRET_KEY': secrets.token_urlsafe(8),
-                  # must be all lowercase
-                  'PFP_S3_BUCKET': secrets.token_hex(8),
-                  # must be all lowercase
-                  'BOT_S3_BUCKET': secrets.token_hex(8),
-                  'SECRET_KEY': secrets.token_urlsafe(86),
-                  # must be all lowercase
-                  'COMPILED_BOT_S3_BUCKET': secrets.token_hex(8)}
+generated_vars = {
+    'DB_PASSWORD': secrets.token_urlsafe(8),
+    'S3_ACCESS_KEY': secrets.token_hex(8),
+    'S3_SECRET_KEY': secrets.token_hex(8),
+    # must be all lowercase
+    'PFP_S3_BUCKET': secrets.token_hex(8),
+    # must be all lowercase
+    'BOT_S3_BUCKET': secrets.token_hex(8),
+    'SECRET_KEY': secrets.token_urlsafe(86),
+    # must be all lowercase
+    'COMPILED_BOT_S3_BUCKET': secrets.token_hex(8)
+}
 required_vars = ['MICROSOFT_CLIENT_ID', 'MICROSOFT_TENANT_ID', 'AZURE_SECRET']
 fixed_vars = {
-    'S3_ADDRESS': f'http://{generated_vars["S3_ACCESS_KEY"]}:{generated_vars["S3_SECRET_KEY"]}@localhost:9000',
+    'S3_ADDRESS': 'http://localhost:9000',
     'SQS_ADDRESS': 'http://localhost:9324',
     'DB_USER': 'postgres',
     'DB_URL': 'localhost:5432',
-    'RUST_LOG': 'debug',
+    'RUST_LOG': 'info',
     'BOT_UPLOADS_QUEUE_URL': 'http://localhost:9324/000000000000/bot_uploads',
     'NEW_GAMES_QUEUE_URL': 'http://localhost:9324/000000000000/new_games',
     'GAME_RESULTS_QUEUE_URL': 'http://localhost:9324/000000000000/game_results',
-    'BUILD_RESULTS_QUEUE_URL': 'http://localhost:9324/000000000000/build_results'
+    'BUILD_RESULTS_QUEUE_URL': 'http://localhost:9324/000000000000/build_results',
+    'REDIRECT_URI': 'http://localhost:5173/api/login'
 }
 
 # Check if we're in the root directory
