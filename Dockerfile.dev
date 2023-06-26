@@ -1,5 +1,5 @@
 # Base dockerfile for other services to inherit from
-FROM --platform=arm64 rust:1.70
+FROM --platform=$BUILDARCH rust:1.70
 
 ENV NODE_VERSION=20.3.1
 RUN apt install -y curl
@@ -11,3 +11,4 @@ RUN . "$NVM_DIR/nvm.sh" && nvm alias default v${NODE_VERSION}
 ENV PATH="/root/.nvm/versions/node/v${NODE_VERSION}/bin/:${PATH}"
 
 RUN cargo install cargo-watch
+ENV CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
