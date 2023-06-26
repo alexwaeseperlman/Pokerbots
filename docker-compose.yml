@@ -53,8 +53,9 @@ services:
     extends:
       file: common-compose.yml
       service: s3
-  
   createbuckets:
+    depends_on:
+      - s3
     extends:
       file: common-compose.yml
       service: createbuckets

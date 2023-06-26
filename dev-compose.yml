@@ -1,19 +1,8 @@
 services:
-  frontend:
-    build:
-      context: .
-      dockerfile: ./Dockerfile.dev
-    volumes:
-      - .:/usr/src/pokerbots
-    command: sh -c "cd /usr/src/pokerbots/website/app && npm install && npm run dev"
-    environment:
-      - BACKEND_URL=http://backend:3000
-    ports:
-      - 5173:5173
-    extends:
-      file: common-compose.yml
-      service: website
   backend:
+    depends_on:
+      - db
+      - sqs
     build:
       context: .
       dockerfile: ./Dockerfile.dev
@@ -26,6 +15,8 @@ services:
       file: common-compose.yml
       service: website
   builder:
+    depends_on:
+      - sqs
     build:
       context: .
       dockerfile: ./Dockerfile.dev
@@ -36,6 +27,8 @@ services:
       file: common-compose.yml
       service: builder
   gameplay:
+    depends_on:
+      - sqs
     build:
       context: .
       dockerfile: ./Dockerfile.dev
@@ -46,6 +39,8 @@ services:
       file: common-compose.yml
       service: gameplay
   results:
+    depends_on:
+      - sqs
     build:
       context: .
       dockerfile: ./Dockerfile.dev
@@ -76,6 +71,8 @@ services:
       file: common-compose.yml
       service: sqs
   createbuckets:
+    depends_on:
+      - s3
     extends:
       file: common-compose.yml
       service: createbuckets
