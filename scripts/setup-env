@@ -28,7 +28,8 @@ fixed_vars = {
     'NEW_GAMES_QUEUE_URL': 'http://localhost:9324/queue/new_games',
     'GAME_RESULTS_QUEUE_URL': 'http://localhost:9324/queue/game_results',
     'BUILD_RESULTS_QUEUE_URL': 'http://localhost:9324/queue/build_results',
-    'REDIRECT_URI': 'http://localhost:5173/api/login'
+    'REDIRECT_URI': 'http://localhost:5173/api/login',
+    'PORT': '3000'
 }
 
 # Check if we're in the root directory
