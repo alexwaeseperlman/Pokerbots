@@ -427,11 +427,10 @@ export class ResourcesStack extends cdk.Stack {
     );
 
     const workerQueueMetric = new cloudwatch.MathExpression({
-      expression: "m1 + m2 + m3",
+      expression: "m1 + m2",
       usingMetrics: {
         m1: bot_uploads_sqs.metricApproximateNumberOfMessagesVisible(),
         m2: new_games_sqs.metricApproximateNumberOfMessagesVisible(),
-        m3: game_results_sqs.metricApproximateNumberOfMessagesVisible(),
       },
     });
     autoscalingGroup.scaleOnMetric("worker-queue-length", {
