@@ -29,8 +29,10 @@ import * as batch_alpha from "@aws-cdk/aws-batch-alpha";
 import { exec, execSync } from "child_process";
 import * as elb from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import * as iam from "aws-cdk-lib/aws-iam";
+import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { FckNatInstanceProvider } from "cdk-fck-nat";
 import cluster from "cluster";
+import { AdjustmentType } from "aws-cdk-lib/aws-autoscaling";
 
 export class BuilderWorkerConstruct extends Construct {
   constructor(
@@ -53,18 +55,13 @@ export class BuilderWorkerConstruct extends Construct {
       })
     );
 
-    const task = new ecs.FargateTaskDefinition(this, "builder-task", {
-      cpu: 256,
-      memoryLimitMiB: 512,
-
-      runtimePlatform: {
-        cpuArchitecture: ecs.CpuArchitecture.ARM64,
-        operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
-      },
-    });
+    const task = new ecs.Ec2TaskDefinition(this, "builder-task");
 
     const container = task.addContainer("builder-container", {
+      cpu: 512,
+      memoryLimitMiB: 1024,
       image,
+      privileged: true,
       environment: {
         BOT_S3_BUCKET: bot_s3.bucketName,
         COMPILED_BOT_S3_BUCKET: compiled_bot_s3.bucketName,
@@ -84,10 +81,25 @@ export class BuilderWorkerConstruct extends Construct {
     bot_uploads_sqs.grantConsumeMessages(task.taskRole);
     build_results_sqs.grantSendMessages(task.taskRole);
 
-    const service = new ecs.FargateService(this, "results-service", {
+    const service = new ecs.Ec2Service(this, "builder-service", {
       cluster,
       taskDefinition: task,
+      desiredCount: 0,
     });
+
+    service
+      .autoScaleTaskCount({
+        minCapacity: 0,
+        maxCapacity: 1,
+      })
+      .scaleOnMetric("bot-queue-size", {
+        metric: bot_uploads_sqs.metricApproximateNumberOfMessagesVisible(),
+        scalingSteps: [
+          { upper: 0, change: 0 },
+          { lower: 1, change: 1 },
+        ],
+        adjustmentType: AdjustmentType.EXACT_CAPACITY,
+      });
   }
 }
 
@@ -111,18 +123,13 @@ export class GameplayWorkerConstruct extends Construct {
       })
     );
 
-    const task = new ecs.FargateTaskDefinition(this, "gameplay-task", {
-      cpu: 256,
-      memoryLimitMiB: 512,
-
-      runtimePlatform: {
-        cpuArchitecture: ecs.CpuArchitecture.ARM64,
-        operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
-      },
-    });
+    const task = new ecs.Ec2TaskDefinition(this, "gameplay-task");
 
     const container = task.addContainer("gameplay-container", {
       image,
+      cpu: 256,
+      memoryLimitMiB: 512,
+      privileged: true,
       environment: {
         COMPILED_BOT_S3_BUCKET: compiled_bot_s3.bucketName,
         GAME_RESULTS_QUEUE_URL: game_results_sqs.queueUrl,
@@ -137,10 +144,25 @@ export class GameplayWorkerConstruct extends Construct {
 
     new_games_sqs.grantConsumeMessages(task.taskRole);
     game_results_sqs.grantSendMessages(task.taskRole);
-    const service = new ecs.FargateService(this, "results-service", {
+    const service = new ecs.Ec2Service(this, "results-service", {
       cluster,
       taskDefinition: task,
+      desiredCount: 0,
     });
+
+    service
+      .autoScaleTaskCount({
+        minCapacity: 0,
+        maxCapacity: 1,
+      })
+      .scaleOnMetric("game-queue-size", {
+        metric: new_games_sqs.metricApproximateNumberOfMessagesVisible(),
+        scalingSteps: [
+          { upper: 0, change: 0 },
+          { lower: 1, change: 1 },
+        ],
+        adjustmentType: AdjustmentType.EXACT_CAPACITY,
+      });
   }
 }
 
@@ -195,6 +217,7 @@ export class ResultsWorkerConstruct extends Construct {
     const service = new ecs.FargateService(this, "results-service", {
       cluster,
       taskDefinition: task,
+      desiredCount: 0,
     });
 
     game_results_sqs.grantConsumeMessages(task.taskRole);
@@ -202,6 +225,20 @@ export class ResultsWorkerConstruct extends Construct {
     new_games_sqs.grantSendMessages(task.taskRole);
 
     db.connections.allowDefaultPortFrom(service);
+
+    service
+      .autoScaleTaskCount({
+        minCapacity: 0,
+        maxCapacity: 1,
+      })
+      .scaleOnMetric("results-queue-size", {
+        metric: new_games_sqs.metricApproximateNumberOfMessagesVisible(),
+        scalingSteps: [
+          { upper: 0, change: 0 },
+          { lower: 1, change: 1 },
+        ],
+        adjustmentType: AdjustmentType.EXACT_CAPACITY,
+      });
   }
 }
 
@@ -370,6 +407,42 @@ export class ResourcesStack extends cdk.Stack {
       vpc,
     });
 
+    const workerCluster = new ecs.Cluster(this, "unsafe-worker-cluster", {
+      vpc,
+    });
+
+    const autoscalingGroup = workerCluster.addCapacity(
+      "unsafe-worker-capacity",
+      {
+        instanceType: ec2.InstanceType.of(
+          ec2.InstanceClass.C6G,
+          ec2.InstanceSize.MEDIUM
+        ),
+        machineImage: ecs.EcsOptimizedImage.amazonLinux2(
+          ecs.AmiHardwareType.ARM
+        ),
+        minCapacity: 0,
+        maxCapacity: 1,
+      }
+    );
+
+    const workerQueueMetric = new cloudwatch.MathExpression({
+      expression: "m1 + m2 + m3",
+      usingMetrics: {
+        m1: bot_uploads_sqs.metricApproximateNumberOfMessagesVisible(),
+        m2: new_games_sqs.metricApproximateNumberOfMessagesVisible(),
+        m3: game_results_sqs.metricApproximateNumberOfMessagesVisible(),
+      },
+    });
+    autoscalingGroup.scaleOnMetric("worker-queue-length", {
+      metric: workerQueueMetric,
+      scalingSteps: [
+        { upper: 0, change: 0 },
+        { lower: 1, change: 1 },
+      ],
+      adjustmentType: AdjustmentType.EXACT_CAPACITY,
+      cooldown: cdk.Duration.minutes(1),
+    });
     const api = new ScalingAPIConstruct(
       this,
       "api",
@@ -392,7 +465,7 @@ export class ResourcesStack extends cdk.Stack {
       compiled_bot_s3,
       bot_uploads_sqs,
       build_results_sqs,
-      cluster
+      workerCluster
     );
     const gameplayWorker = new GameplayWorkerConstruct(
       this,
@@ -401,7 +474,7 @@ export class ResourcesStack extends cdk.Stack {
       compiled_bot_s3,
       new_games_sqs,
       game_results_sqs,
-      cluster
+      workerCluster
     );
 
     const resultsWorker = new ResultsWorkerConstruct(
