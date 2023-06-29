@@ -20,7 +20,7 @@ export default createTheme({
       main: "#CD3939",
     },
     secondary: {
-      main: "#C8BDFE",
+      main: "#281f5f",
       contrastText: "#000",
     },
     background: {

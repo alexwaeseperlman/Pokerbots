@@ -1,46 +1,80 @@
 import React, { useState } from "react";
 import { useUser } from "../state";
 import randomTeamName from "./random-name";
+import {
+  Box,
+  Button,
+  Container,
+  IconButton,
+  Input,
+  InputLabel,
+  TextField,
+  Typography,
+} from "@mui/material";
+import CasinoIcon from "@mui/icons-material/Casino";
+import { Form } from "react-router-dom";
 
 export default function CreateTeam() {
   const user = useUser()[0];
   const [teamName, setTeamName] = useState("");
   return (
-    <>
-      <div className="greetings">
-        <span>Hi {user?.display_name}</span> {"👋"}
-      </div>
-      <p>
-        You do not have a team. Create one below or join one by pasting an
-        invitation link into your browser.
-      </p>
-      <form action="/api/create-team">
-        <div className="email-container">
-          <input
-            value={teamName}
-            type="text"
-            className="team-name"
-            id="team-name-input"
-            name="team_name"
-            placeholder="Team Name"
-            onChange={(e) => setTeamName(e.target.value)}
-          />
-          <button
-            type="submit"
-            value="Create Team"
-            className="submit-name-button"
-          >
-            Submit
-          </button>
-        </div>
-      </form>
-      <button
-        className="random-button"
-        onClick={() => setTeamName(randomTeamName())}
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        height: "100%",
+      }}
+    >
+      <Container
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "left",
+          justifyContent: "center",
+          width: "500px",
+          background: "white",
+          p: 2,
+          borderRadius: 2,
+        }}
       >
-        {" "}
-        &#x1F3B2; Random
-      </button>
-    </>
+        <form action="/api/create-team">
+          <Box sx={{ display: "flex", flexDirection: "column" }}>
+            <Typography variant="body1">
+              Hi {user?.display_name.split(" ")[0]}. You don't have a team yet.
+            </Typography>
+            <TextField
+              sx={{
+                mt: 4,
+              }}
+              label="Team Name"
+              id="team-name"
+              variant="standard"
+              color="secondary"
+              name="team_name"
+              value={teamName}
+              onChange={(e) => setTeamName(e.target.value)}
+              placeholder={randomTeamName()}
+              InputProps={{
+                endAdornment: (
+                  <IconButton onClick={() => setTeamName(randomTeamName())}>
+                    <CasinoIcon />
+                  </IconButton>
+                ),
+              }}
+            />
+            <Button
+              color="secondary"
+              variant="text"
+              sx={{ mt: 4 }}
+              type="submit"
+            >
+              Create
+            </Button>
+          </Box>
+        </form>
+      </Container>
+    </Box>
   );
 }
