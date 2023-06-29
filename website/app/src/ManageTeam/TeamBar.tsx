@@ -151,13 +151,16 @@ export function TeamBar({ readonly }: { readonly: boolean }) {
       }}
     >
       <Container
-        sx={{
+        sx={(theme) => ({
           flexDirection: "row",
           display: "flex",
           alignItems: "center",
           gap: "16px",
           height: "100%",
-        }}
+          [theme.breakpoints.down("sm")]: {
+            flexDirection: "column",
+          },
+        })}
       >
         <PfpUpload team={team} readonly={readonly} />
         <Box
@@ -165,7 +168,16 @@ export function TeamBar({ readonly }: { readonly: boolean }) {
             flexDirection: "column",
           }}
         >
-          <Box display="flex" flexDirection="row" alignItems={"baseline"}>
+          <Box
+            sx={(theme) => ({
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "baseline",
+              [theme.breakpoints.down("sm")]: {
+                flexDirection: "column",
+              },
+            })}
+          >
             <h1
               ref={headerRef}
               contentEditable={editing}
@@ -205,9 +217,6 @@ export function TeamBar({ readonly }: { readonly: boolean }) {
             {readonly || editing || (
               <Box>
                 <TableButton
-                  sx={{
-                    margin: 2,
-                  }}
                   onClick={() => {
                     if (!readonly) setEditing(true);
                     // set a timeout so that the focus happens after the contenteditable is enabled
