@@ -36,9 +36,9 @@ function TeamDashboard() {
 
   const [myTeam] = useMyTeam();
   const [team, fetchTeam, setTeam] = useTeam();
-  console.log(team, myTeam);
 
   const user = useUser()[0];
+  console.log(team, myTeam, user);
 
   //TODO: Use suspense here
   React.useEffect(() => {

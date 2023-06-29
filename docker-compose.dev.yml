@@ -1,0 +1,78 @@
+version: "3.9"
+services:
+  # Postgres database
+  db:
+    extends:
+      file: common-compose.yml
+      service: db
+    ports:
+      - 5432:5432
+  # Frontend and backend
+  website:
+    build:
+      context: .
+      dockerfile: ./website/Dockerfile
+    depends_on:
+      - db
+      - sqs
+    extends:
+      file: common-compose.yml
+      service: website
+    ports:
+      - 3000:3000
+  gameplay:
+    build:
+      context: .
+      dockerfile: ./workers/gameplay/Dockerfile
+    depends_on:
+      - sqs
+    restart: always
+    extends:
+      file: common-compose.yml
+      service: gameplay
+  builder:
+    build:
+      context: .
+      dockerfile: ./workers/builder/Dockerfile
+    depends_on:
+      - sqs
+    restart: always
+    extends:
+      file: common-compose.yml
+      service: builder
+  results:
+    build:
+      context: .
+      dockerfile: ./workers/results/Dockerfile
+    depends_on:
+      - db
+      - sqs
+    restart: always
+    extends:
+      file: common-compose.yml
+      service: results
+  s3:
+    extends:
+      file: common-compose.yml
+      service: s3
+    ports:
+      - 9000:9000
+  createbuckets:
+    depends_on:
+      - s3
+    extends:
+      file: common-compose.yml
+      service: createbuckets
+
+  sqs:
+    extends:
+      file: common-compose.yml
+      service: sqs
+    ports:
+      - 9324:9324
+
+volumes:
+  database:
+    external: false
+  minio:
+    external: false

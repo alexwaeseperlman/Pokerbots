@@ -51,6 +51,14 @@ pub async fn create_team(
     if login::get_team_data(&session).is_some() {
         return Err(actix_web::error::ErrorConflict("You are already on a team.").into());
     }
+
+    if !validate_team_name(&team_name) {
+        return Err(actix_web::error::ErrorNotAcceptable(
+            "Invalid team name. It must be at most 20 characters and cannot contain consecutive spaces.",
+        )
+        .into()).into();
+    }
+
     let conn = &mut (*DB_CONNECTION).get()?;
     let new_id = diesel::insert_into(teams::dsl::teams)
         .values(NewTeam {

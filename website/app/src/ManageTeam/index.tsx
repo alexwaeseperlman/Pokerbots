@@ -33,7 +33,7 @@ export const TableCell = styled(MuiTableCell)({
   borderBottom: "none",
 });
 export const TableButton = styled((props: ButtonProps) => (
-  <Button {...props} color="secondary" />
+  <Button {...props} />
 ))(() => ({
   fontSize: "12px",
   fontWeight: 300,
@@ -44,6 +44,7 @@ export const TableButton = styled((props: ButtonProps) => (
   padding: 0,
   paddingLeft: "8px",
   paddingRight: "8px",
+  color: "#bbb",
 }));
 
 function GameTable({ readonly }: { readonly?: boolean }) {
@@ -206,7 +207,8 @@ export function DisplayTeam({ readonly }: { readonly?: boolean }) {
 export default function ManageTeam() {
   const [team, fetchTeam] = useTeam();
   const [user, fetchUser] = useUser();
-  if (team) {
+  console.log(team, user);
+  if (team && user) {
     return <DisplayTeam readonly={false} />;
   } else if (user) {
     return <CreateTeam />;

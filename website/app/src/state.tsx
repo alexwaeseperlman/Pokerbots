@@ -1,5 +1,5 @@
 import { atom, useAtom, useAtomValue, useSetAtom, WritableAtom } from "jotai";
-import { atomFamily } from "jotai/utils";
+import { atomFamily, atomWithStorage } from "jotai/utils";
 import { useEffect } from "react";
 import { matchPath } from "react-router-dom";
 
@@ -9,9 +9,9 @@ export type User = {
   display_name: string;
 };
 const userAtom = atom<Promise<User | null>>(
-  Promise.resolve(
-    JSON.parse(localStorage.getItem("user") || "null") as User | null
-  )
+  fetch(`${apiUrl}/my-account`)
+    .then((res) => res.json())
+    .catch(() => null)
 );
 
 export const useUser = () => {
@@ -90,11 +90,7 @@ export async function fillInGames(
   }));
 }
 
-const myTeamAtom = atom<Promise<Team | null>>(
-  fetch(`${apiUrl}/my-team`)
-    .then((res) => res.json())
-    .catch(() => null)
-);
+const myTeamAtom = atom<Promise<Team | null>>(Promise.resolve(null));
 
 export const useMyTeam = () => {
   const [team, setTeam] = useAtom(myTeamAtom);
@@ -105,6 +101,11 @@ export const useMyTeam = () => {
         .catch(() => null)
     );
   };
+
+  useEffect(() => {
+    fetchTeam();
+  }, []);
+
   return [team, fetchTeam] as const;
 };
 

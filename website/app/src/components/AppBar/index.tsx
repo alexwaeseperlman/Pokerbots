@@ -47,6 +47,7 @@ function BarItem(props: {
 
 export function TopBar() {
   const [user, fetchUser] = useUser();
+  const [team, fetchTeam] = useUser();
   return (
     <Box className={`${menu_bar} ${primary_background}`}>
       <IconButton
@@ -85,6 +86,7 @@ export function TopBar() {
             command={() => {
               fetch(`${apiUrl}/signout`).then(() => {
                 fetchUser();
+                console.log("signed out");
               });
             }}
           />
