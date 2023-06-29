@@ -29,6 +29,16 @@ export default createTheme({
       active: "#f5f5f5",
     },
   },
+  typography: {
+    fontFamily: "Figtree",
+    h1: {
+      fontWeight: 700,
+    },
+
+    h2: {
+      fontWeight: 700,
+    },
+  },
   shape: {
     borderRadius: 2,
   },

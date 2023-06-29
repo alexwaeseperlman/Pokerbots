@@ -7,6 +7,7 @@ import {
   FormGroup,
   Input,
   TextField,
+  Typography,
 } from "@mui/material";
 import { signup_input, signup_button } from "./styles.module.css";
 import Container from "@mui/system/Container";
@@ -43,6 +44,7 @@ export default function HomePage() {
           minHeight: "90%",
           color: "white",
           zIndex: 1,
+          p: 4,
         }}
       >
         <Box
@@ -53,11 +55,13 @@ export default function HomePage() {
             backgroundPosition: "center",
             position: "absolute",
             top: 0,
+            left: 0,
             backgroundSize: "contain",
             zIndex: -1,
             backgroundRepeat: "no-repeat",
             mixBlendMode: "screen",
             width: "100%",
+            maxWidth: "100vw",
             height: "100%",
             display: "block",
             overflow: "hidden",
@@ -82,6 +86,7 @@ export default function HomePage() {
               flexDirection: "column",
               alignItems: "center",
               marginTop: "50px",
+              textAlign: "center",
             }}
           >
             <Logo
@@ -90,13 +95,14 @@ export default function HomePage() {
                 height: "100px",
               }}
             />
-            <h1>Poker Bot League</h1>
+            <Typography variant="h2">Poker Bot League</Typography>
           </Box>
           <Box
             sx={{
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
+              width: "100%",
             }}
           >
             <Box
@@ -122,12 +128,12 @@ export default function HomePage() {
           >
             <Container
               sx={{
-                width: "600px",
+                maxWidth: "600px",
                 textAlign: "center",
               }}
             >
-              The competition begins on November 1, 2023. For sponsorship
-              inquiries, please contact pokerbotleague@mcgill.ca.
+              The competition will start in 2024. For sponsorship inquiries,
+              please contact pokerbotleague@mcgill.ca.
             </Container>
           </Box>
           <Box />

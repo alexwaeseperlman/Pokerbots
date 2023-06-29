@@ -49,7 +49,16 @@ export function TopBar() {
   const [user, fetchUser] = useUser();
   const [team, fetchTeam] = useUser();
   return (
-    <Box className={`${menu_bar} ${primary_background}`}>
+    <Box
+      className={`${menu_bar} ${primary_background}`}
+      sx={(theme) => ({
+        // small screen
+        [theme.breakpoints.down("sm")]: {
+          flexDirection: "column",
+          alignItems: "center",
+        },
+      })}
+    >
       <IconButton
         onClick={() => {
           window.location.href = "/";
@@ -57,41 +66,42 @@ export function TopBar() {
       >
         <Logo />
       </IconButton>
+      <BarItem
+        label="MANAGE TEAM"
+        selected={window.location.pathname === "/manage-team"}
+        command={() => {
+          window.location.href = "/manage-team";
+        }}
+      />
+      <BarItem
+        label="LEADERBOARD"
+        selected={window.location.pathname === "/leaderboard"}
+        command={() => {
+          window.location.href = "/leaderboard";
+        }}
+      />
+
       <Box
         className={nav_group}
-        style={{
+        sx={(theme) => ({
+          [theme.breakpoints.down("sm")]: {
+            display: "none",
+          },
           flexGrow: 1,
-        }}
-      >
+        })}
+      ></Box>
+      <BarItem label="DOCUMENTATION" />
+      {user && (
         <BarItem
-          label="MANAGE TEAM"
-          selected={window.location.pathname === "/manage-team"}
+          label="SIGN OUT"
           command={() => {
-            window.location.href = "/manage-team";
+            fetch(`${apiUrl}/signout`).then(() => {
+              fetchUser();
+              console.log("signed out");
+            });
           }}
         />
-        <BarItem
-          label="LEADERBOARD"
-          selected={window.location.pathname === "/leaderboard"}
-          command={() => {
-            window.location.href = "/leaderboard";
-          }}
-        />
-      </Box>
-      <Box className={nav_group}>
-        <BarItem label="DOCUMENTATION" />
-        {user && (
-          <BarItem
-            label="SIGN OUT"
-            command={() => {
-              fetch(`${apiUrl}/signout`).then(() => {
-                fetchUser();
-                console.log("signed out");
-              });
-            }}
-          />
-        )}
-      </Box>
+      )}
     </Box>
   );
 }
@@ -107,10 +117,7 @@ export function BottomBar() {
       >
         <BarItem label="© Poker Bot League 2023" />
       </Box>
-      <Box className={nav_group}>
-        <BarItem label="REPORT AN ISSUE" command={() => {}} />
-        <BarItem label="REQUEST A FEATURE" command={() => {}} />
-      </Box>
+      <BarItem label="REPORT AN ISSUE" command={() => {}} />
     </Box>
   );
 }

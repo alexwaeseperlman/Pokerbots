@@ -27,6 +27,7 @@ export default function CreateTeam() {
         alignItems: "center",
         justifyContent: "center",
         height: "100%",
+        p: 2,
       }}
     >
       <Container
@@ -35,7 +36,7 @@ export default function CreateTeam() {
           flexDirection: "column",
           alignItems: "left",
           justifyContent: "center",
-          width: "500px",
+          maxWidth: "600px !important",
           background: "white",
           p: 2,
           borderRadius: 2,
