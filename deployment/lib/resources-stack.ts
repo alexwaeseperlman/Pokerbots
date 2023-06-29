@@ -6,32 +6,15 @@ import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as certManager from "aws-cdk-lib/aws-certificatemanager";
-import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
-import * as origins from "aws-cdk-lib/aws-cloudfront-origins";
-import * as route53 from "aws-cdk-lib/aws-route53";
-import * as targets from "aws-cdk-lib/aws-route53-targets";
 import * as ecs from "aws-cdk-lib/aws-ecs";
-import * as ecr from "aws-cdk-lib/aws-ecr";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import { DockerImageAsset, NetworkMode } from "aws-cdk-lib/aws-ecr-assets";
 import * as rds from "aws-cdk-lib/aws-rds";
-import * as crypto from "crypto";
 import * as sman from "aws-cdk-lib/aws-secretsmanager";
-import * as ssm from "aws-cdk-lib/aws-ssm";
-import * as s3deploy from "aws-cdk-lib/aws-s3-deployment";
-import * as pipelines from "aws-cdk-lib/pipelines";
-import * as s3_notify from "aws-cdk-lib/aws-s3-notifications";
-import * as lambda from "aws-cdk-lib/aws-lambda";
-import * as batch from "aws-cdk-lib/aws-batch";
 import * as sqs from "aws-cdk-lib/aws-sqs";
-import * as batch_alpha from "@aws-cdk/aws-batch-alpha";
-import { exec, execSync } from "child_process";
 import * as elb from "aws-cdk-lib/aws-elasticloadbalancingv2";
-import * as iam from "aws-cdk-lib/aws-iam";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
-import { FckNatInstanceProvider } from "cdk-fck-nat";
-import cluster from "cluster";
 import { AdjustmentType } from "aws-cdk-lib/aws-autoscaling";
 
 export class BuilderWorkerConstruct extends Construct {
@@ -55,7 +38,9 @@ export class BuilderWorkerConstruct extends Construct {
       })
     );
 
-    const task = new ecs.Ec2TaskDefinition(this, "builder-task");
+    const task = new ecs.Ec2TaskDefinition(this, "builder-task", {
+      networkMode: ecs.NetworkMode.HOST,
+    });
 
     const container = task.addContainer("builder-container", {
       cpu: 512,
@@ -123,7 +108,9 @@ export class GameplayWorkerConstruct extends Construct {
       })
     );
 
-    const task = new ecs.Ec2TaskDefinition(this, "gameplay-task");
+    const task = new ecs.Ec2TaskDefinition(this, "gameplay-task", {
+      networkMode: ecs.NetworkMode.HOST,
+    });
 
     const container = task.addContainer("gameplay-container", {
       image,
@@ -191,7 +178,6 @@ export class ResultsWorkerConstruct extends Construct {
     const task = new ecs.FargateTaskDefinition(this, "results-task", {
       cpu: 256,
       memoryLimitMiB: 512,
-
       runtimePlatform: {
         cpuArchitecture: ecs.CpuArchitecture.ARM64,
         operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
@@ -226,19 +212,27 @@ export class ResultsWorkerConstruct extends Construct {
 
     db.connections.allowDefaultPortFrom(service);
 
-    service
-      .autoScaleTaskCount({
-        minCapacity: 0,
-        maxCapacity: 1,
-      })
-      .scaleOnMetric("results-queue-size", {
-        metric: new_games_sqs.metricApproximateNumberOfMessagesVisible(),
-        scalingSteps: [
-          { upper: 0, change: 0 },
-          { lower: 1, change: 1 },
-        ],
-        adjustmentType: AdjustmentType.EXACT_CAPACITY,
-      });
+    const autoscalingGroup = service.autoScaleTaskCount({
+      minCapacity: 0,
+      maxCapacity: 1,
+    });
+
+    const workerQueueMetric = new cloudwatch.MathExpression({
+      expression: "m1 + m2",
+      usingMetrics: {
+        m1: game_results_sqs.metricApproximateNumberOfMessagesVisible(),
+        m2: build_results_sqs.metricApproximateNumberOfMessagesVisible(),
+      },
+    });
+
+    autoscalingGroup.scaleOnMetric("results-queue-size", {
+      metric: workerQueueMetric,
+      scalingSteps: [
+        { upper: 0, change: 0 },
+        { lower: 1, change: 1 },
+      ],
+      adjustmentType: AdjustmentType.EXACT_CAPACITY,
+    });
   }
 }
 
