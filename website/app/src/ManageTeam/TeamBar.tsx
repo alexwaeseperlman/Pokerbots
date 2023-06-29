@@ -130,13 +130,12 @@ function PfpUpload({ team, readonly }: { team: Team; readonly: boolean }) {
 }
 
 export function TeamBar({ readonly }: { readonly: boolean }) {
-  const [team, fetchTeam] = useTeam();
+  const [team, fetchTeam, setTeam] = useTeam();
   const [editing, setEditing] = useState(false);
   const theme = useTheme();
-  const user = useUser()[0];
+  const [user, fetchUser] = useUser();
   const headerRef = React.useRef<HTMLHeadingElement>(null);
-  if (!user || !team)
-    throw new Error("Cannot render team bar when not logged in with a team");
+  if (!team) throw new Error("Cannot render team bar without a team");
 
   useEffect(() => {
     if (team.team_name) {
@@ -245,8 +244,8 @@ export function TeamBar({ readonly }: { readonly: boolean }) {
                         >
                           {member.display_name}
                         </TableCell>
-                        {(team.owner == user.email ||
-                          member.email == user.email) && (
+                        {(team.owner === user?.email ||
+                          member.email === user?.email) && (
                           <TableCell
                             sx={{
                               color: "white",
@@ -289,8 +288,8 @@ export function TeamBar({ readonly }: { readonly: boolean }) {
                                   }
                                 }}
                               >
-                                {member.email == user.email
-                                  ? team.owner == user.email
+                                {member.email === user.email
+                                  ? team.owner === user.email
                                     ? "Delete team"
                                     : "Leave"
                                   : "Kick"}
@@ -336,7 +335,7 @@ export function TeamBar({ readonly }: { readonly: boolean }) {
                               fontSize="small"
                             />
                           </TableCell>
-                          {team.owner == user.email && (
+                          {team.owner === user?.email && (
                             <TableCell
                               sx={{
                                 color: "white",
@@ -355,28 +354,32 @@ export function TeamBar({ readonly }: { readonly: boolean }) {
                           )}
                         </TableRow>
                       ))}
-                    {readonly || (
-                      <TableRow>
-                        <TableCell
-                          sx={{
-                            alignItems: "center",
-                            justifyContent: "left",
-                            display: "flex",
-                          }}
-                        >
-                          <TableButton
-                            startIcon={<AddIcon />}
-                            onClick={() =>
-                              fetch(`${apiUrl}/make-invite`).then(async (a) => {
-                                fetchTeam();
-                              })
-                            }
+                    {readonly ||
+                      (team.invites?.length ?? 0) + team.members.length >=
+                        5 || (
+                        <TableRow>
+                          <TableCell
+                            sx={{
+                              alignItems: "center",
+                              justifyContent: "left",
+                              display: "flex",
+                            }}
                           >
-                            Add a member
-                          </TableButton>
-                        </TableCell>
-                      </TableRow>
-                    )}
+                            <TableButton
+                              startIcon={<AddIcon />}
+                              onClick={() =>
+                                fetch(`${apiUrl}/make-invite`).then(
+                                  async (a) => {
+                                    fetchTeam();
+                                  }
+                                )
+                              }
+                            >
+                              Add a member
+                            </TableButton>
+                          </TableCell>
+                        </TableRow>
+                      )}
                   </TableBody>
                 </Table>
               </TableContainer>

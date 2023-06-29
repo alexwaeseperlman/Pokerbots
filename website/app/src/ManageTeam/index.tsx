@@ -8,6 +8,7 @@ import {
   pfpEndpoint,
   fillInGames,
   useTeam,
+  User,
 } from "../state";
 import CreateTeam from "./CreateTeam";
 import Login from "../Login";
@@ -175,38 +176,40 @@ function NoTeam() {
   );
 }
 
-export default function ManageTeam({ readonly }: { readonly: boolean }) {
-  const user = useUser()[0];
-
+export function DisplayTeam({ readonly }: { readonly?: boolean }) {
   const team = useTeam()[0];
-  if (user === undefined) {
-    return <div style={{ flexGrow: 1 }}></div>;
-  }
-  if (team && user) {
-    return (
-      <>
-        <TeamBar readonly={readonly} />
-        <Box
-          className={secondary_background}
-          sx={{
-            width: "100%",
-            flexGrow: 1,
-            padding: "20px",
-          }}
-        >
-          <Container>
-            <h2>Bots</h2>
-            {!readonly && <BotUpload />}
+  if (!team) return <NoTeam />;
+  return (
+    <>
+      <TeamBar readonly={readonly ?? true} />
+      <Box
+        className={secondary_background}
+        sx={{
+          width: "100%",
+          flexGrow: 1,
+          padding: "20px",
+        }}
+      >
+        <Container>
+          <h2>Bots</h2>
+          {!(readonly ?? true) && <BotUpload />}
 
-            <BotTable readonly={readonly} />
-            <h2>Games</h2>
-            <GameTable readonly={readonly} />
-          </Container>
-        </Box>
-      </>
-    );
+          <BotTable readonly={readonly ?? true} />
+          <h2>Games</h2>
+          <GameTable readonly={readonly ?? true} />
+        </Container>
+      </Box>
+    </>
+  );
+}
+
+export default function ManageTeam() {
+  const [team, fetchTeam] = useTeam();
+  const [user, fetchUser] = useUser();
+  if (team) {
+    return <DisplayTeam readonly={false} />;
   } else if (user) {
-    return readonly ? <NoTeam /> : <CreateTeam />;
+    return <CreateTeam />;
   } else {
     return <Login />;
   }

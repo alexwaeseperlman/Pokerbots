@@ -1,7 +1,7 @@
 import React from "react";
 import { Route, Routes, useNavigate, useParams } from "react-router-dom";
 import HomePage from "./HomePage";
-import ManageTeam from "./ManageTeam";
+import ManageTeam, { DisplayTeam } from "./ManageTeam";
 import { Team, useMyTeam, useTeam, useUser } from "./state";
 
 import logoImage from "../static/assets/logo.webp";
@@ -36,12 +36,15 @@ function TeamDashboard() {
 
   const [myTeam] = useMyTeam();
   const [team, fetchTeam, setTeam] = useTeam();
+  console.log(team, myTeam);
+
+  const user = useUser()[0];
 
   //TODO: Use suspense here
   React.useEffect(() => {
-    setTeam(params.teamId);
+    setTeam(params.teamId ?? null);
   }, [params.teamId]);
-  return <ManageTeam readonly={team?.id !== myTeam?.id} />;
+  return <DisplayTeam readonly={myTeam?.id !== team?.id} />;
 }
 
 export default function PokerZero() {
@@ -60,7 +63,7 @@ export default function PokerZero() {
           path="manage-team"
           element={
             <HeaderFooter>
-              <TeamDashboard />
+              <ManageTeam />
             </HeaderFooter>
           }
         />

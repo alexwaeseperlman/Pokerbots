@@ -3,26 +3,26 @@ import { atomFamily } from "jotai/utils";
 import { useEffect } from "react";
 import { matchPath } from "react-router-dom";
 
+export const apiUrl = window.location.origin + "/api";
 export type User = {
   email: string;
   display_name: string;
 };
-const userAtom = atom<User | null | undefined>(
-  (JSON.parse(localStorage.getItem("user") || "null") ?? undefined) as
-    | User
-    | null
-    | undefined
+const userAtom = atom<Promise<User | null>>(
+  Promise.resolve(
+    JSON.parse(localStorage.getItem("user") || "null") as User | null
+  )
 );
 
 export const useUser = () => {
   const [user, setUser] = useAtom(userAtom);
   const [team, fetchTeam] = useMyTeam();
   const fetchUser = async () => {
-    const data: User = (await (
-      await fetch(`${apiUrl}/my-account`)
-    ).json()) as unknown as User;
-    localStorage.setItem("user", JSON.stringify(data));
-    setUser(data);
+    setUser(
+      fetch(`${apiUrl}/my-account`)
+        .then((res) => res.json())
+        .catch(() => null)
+    );
     fetchTeam();
   };
   // fetch user
@@ -42,7 +42,6 @@ export type Team = {
   active_bot?: number;
 };
 export const pfpEndpoint = import.meta.env.APP_PFP_ENDPOINT;
-export const apiUrl = window.location.origin + "/api";
 
 export type Bot = {
   id: number;
@@ -76,9 +75,9 @@ export async function fillInGames(
 
   const teamIds = new Set<number>([]);
   for (const bot of bots) teamIds.add(bot.team);
-  const teams = await fetch(
-    `${apiUrl}/teams?ids=${[...teamIds].join(",")}`
-  ).then((res) => res.json());
+  const teams = await fetch(`${apiUrl}/teams?ids=${[...teamIds].join(",")}`)
+    .then((res) => res.json())
+    .catch(() => []);
 
   const teamMap = new Map(teams.map((team) => [team.id, team]));
   const botMap = new Map(
@@ -92,13 +91,19 @@ export async function fillInGames(
 }
 
 const myTeamAtom = atom<Promise<Team | null>>(
-  fetch(`${apiUrl}/my-team`).then((res) => res.json())
+  fetch(`${apiUrl}/my-team`)
+    .then((res) => res.json())
+    .catch(() => null)
 );
 
 export const useMyTeam = () => {
   const [team, setTeam] = useAtom(myTeamAtom);
   const fetchTeam = () => {
-    setTeam(fetch(`${apiUrl}/my-team`).then((res) => res.json()));
+    setTeam(
+      fetch(`${apiUrl}/my-team`)
+        .then((res) => res.json())
+        .catch(() => null)
+    );
   };
   return [team, fetchTeam] as const;
 };
@@ -114,7 +119,10 @@ const teamAtom = atom<Promise<Team | null>>(
     ? fetch(`${apiUrl}/teams?ids=${selectedTeam ?? ""}&fill_members=true`)
         .then((res) => res.json())
         .then((teams) => teams[0])
-    : fetch(`${apiUrl}/my-team`).then((res) => res.json())
+        .catch(() => null)
+    : fetch(`${apiUrl}/my-team`)
+        .then((res) => res.json())
+        .catch(() => null)
 );
 
 export const useTeam = () => {
@@ -122,12 +130,17 @@ export const useTeam = () => {
   const [team, setTeam] = useAtom(teamAtom);
   const fetchTeam = () => {
     if (!selectedTeam)
-      return setTeam(fetch(`${apiUrl}/my-team`).then((res) => res.json()));
+      return setTeam(
+        fetch(`${apiUrl}/my-team`)
+          .then((res) => res.json())
+          .catch(() => null)
+      );
     else {
       setTeam(
         fetch(`${apiUrl}/teams?ids=${selectedTeam}&fill_members=true`)
           .then((res) => res.json())
           .then((teams) => teams[0])
+          .catch(() => null)
       );
     }
   };
