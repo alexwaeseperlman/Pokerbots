@@ -32,6 +32,7 @@ const SignupButton = styled(Button)(({ theme }) => ({
   },
   display: "flex",
   opacity: 1,
+  whiteSpace: "nowrap",
 }));
 
 export default function HomePage() {
