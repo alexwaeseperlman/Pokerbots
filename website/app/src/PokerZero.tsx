@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { Route, Routes, useNavigate, useParams } from "react-router-dom";
 import HomePage from "./HomePage";
 import ManageTeam, { DisplayTeam } from "./ManageTeam";
@@ -24,7 +24,24 @@ function HeaderFooter(props: React.PropsWithChildren<{}>) {
       className={primary_background}
     >
       <TopBar />
-      {props.children}
+      <Suspense
+        fallback={
+          <>
+            <Box
+              sx={{
+                flexGrow: 1,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <CircularProgress />
+            </Box>
+          </>
+        }
+      >
+        {props.children}
+      </Suspense>
 
       <BottomBar />
     </Box>

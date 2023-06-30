@@ -11,7 +11,8 @@ import {
 } from "@mui/material";
 import { signup_input, signup_button } from "./styles.module.css";
 import Container from "@mui/system/Container";
-import bot_poker_image from "./bot_poker.png";
+import graphic from "./graphic.png";
+import graphic_small from "./graphic_small.png";
 import styled from "@mui/system/styled";
 import { primary_background } from "../styles.module.css";
 
@@ -54,7 +55,7 @@ export default function HomePage() {
       >
         <Box
           sx={{
-            backgroundImage: `url(${bot_poker_image})`,
+            backgroundImage: `url(${graphic_small})`,
             filter: "grayscale(100%)",
             opacity: 0.4,
             backgroundPosition: "center",
