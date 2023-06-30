@@ -87,7 +87,7 @@ export default function Login() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          width: "500px",
+          maxWidth: "500px",
           color: "white",
           textAlign: "center",
         }}

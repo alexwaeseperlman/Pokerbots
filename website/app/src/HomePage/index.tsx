@@ -42,10 +42,14 @@ export default function HomePage() {
         className={`${primary_background}`}
         sx={{
           width: "100%",
-          minHeight: "90%",
           color: "white",
-          zIndex: 1,
           p: 4,
+          pb: 16,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100%",
         }}
       >
         <Box
@@ -58,7 +62,6 @@ export default function HomePage() {
             top: 0,
             left: 0,
             backgroundSize: "contain",
-            zIndex: -1,
             backgroundRepeat: "no-repeat",
             mixBlendMode: "screen",
             width: "100%",
@@ -71,14 +74,7 @@ export default function HomePage() {
         ></Box>
         <Box
           sx={{
-            zIndex: 3,
-            marginTop: "20px",
             width: "100%",
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "space-around",
           }}
         >
           <Box
@@ -86,7 +82,6 @@ export default function HomePage() {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              marginTop: "50px",
               textAlign: "center",
             }}
           >
@@ -100,47 +95,33 @@ export default function HomePage() {
           </Box>
           <Box
             sx={{
+              mt: 6,
               display: "flex",
-              flexDirection: "column",
+              flexDirection: "row",
               alignItems: "center",
+              justifyContent: "center",
               width: "100%",
             }}
           >
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-                width: "100%",
-              }}
-            >
-              <input
-                placeholder="Join our mailing list"
-                className={signup_input}
-              ></input>
-              <SignupButton>Join now</SignupButton>
-            </Box>
+            <input
+              placeholder="Join our mailing list"
+              className={signup_input}
+            ></input>
+            <SignupButton>Join now</SignupButton>
           </Box>
-          <Box
+
+          <Container
             sx={{
-              marginTop: "50px",
+              maxWidth: "700px !important",
+              textAlign: "center",
+              mt: 6,
             }}
           >
-            <Container
-              sx={{
-                maxWidth: "600px",
-                textAlign: "center",
-              }}
-            >
-              The competition will start in 2024. For sponsorship inquiries,
-              please contact pokerbotleague@mcgill.ca.
-            </Container>
-          </Box>
-          <Box />
+            The competition will start in 2024. For sponsorship inquiries,
+            please contact pokerbotleague@mcgill.ca.
+          </Container>
         </Box>
       </Box>
-      <Box flexGrow={1}></Box>
     </>
   );
 }
