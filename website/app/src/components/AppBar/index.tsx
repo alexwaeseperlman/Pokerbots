@@ -12,6 +12,7 @@ import Logo from "../Logo";
 import IconButton from "@mui/material/IconButton";
 
 import { primary_background } from "../../styles.module.css";
+import { useNavigate } from "react-router-dom";
 
 function BarItem(props: {
   label: string;
@@ -48,6 +49,8 @@ function BarItem(props: {
 export function TopBar() {
   const [user, fetchUser] = useUser();
   const [team, fetchTeam] = useUser();
+  const navigate = useNavigate();
+
   return (
     <Box
       className={`${menu_bar} ${primary_background}`}
@@ -61,7 +64,7 @@ export function TopBar() {
     >
       <IconButton
         onClick={() => {
-          window.location.href = "/";
+          navigate("/");
         }}
       >
         <Logo />
@@ -70,14 +73,14 @@ export function TopBar() {
         label="MANAGE TEAM"
         selected={window.location.pathname === "/manage-team"}
         command={() => {
-          window.location.href = "/manage-team";
+          navigate("/manage-team");
         }}
       />
       <BarItem
         label="LEADERBOARD"
         selected={window.location.pathname === "/leaderboard"}
         command={() => {
-          window.location.href = "/leaderboard";
+          navigate("/leaderboard");
         }}
       />
 
