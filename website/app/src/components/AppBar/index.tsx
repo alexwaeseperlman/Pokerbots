@@ -63,6 +63,9 @@ export function TopBar() {
       })}
     >
       <IconButton
+        sx={{
+          padding: 0,
+        }}
         onClick={() => {
           navigate("/");
         }}

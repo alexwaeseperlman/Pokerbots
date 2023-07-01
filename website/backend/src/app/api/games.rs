@@ -22,8 +22,8 @@ pub struct MakeGameQuery {
 }
 
 //TODO: restrict who can make games
-#[get("/make-game")]
-pub async fn make_game(
+#[get("/create-game")]
+pub async fn create_game(
     session: Session,
     web::Query::<MakeGameQuery>(MakeGameQuery { bot_a, bot_b }): web::Query<MakeGameQuery>,
     sqs_client: web::Data<aws_sdk_sqs::Client>,

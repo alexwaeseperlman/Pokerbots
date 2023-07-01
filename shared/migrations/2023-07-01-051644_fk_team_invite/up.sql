@@ -1,0 +1,2 @@
+DELETE FROM team_invites WHERE NOT EXISTS (SELECT 1 FROM teams WHERE id = teamID);
+ALTER TABLE team_invites ADD CONSTRAINT teamID_fk_teams_id FOREIGN KEY (teamID) REFERENCES teams(id) ON DELETE CASCADE;

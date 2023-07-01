@@ -11,6 +11,7 @@ import Leaderboard from "./Leaderboard";
 import { primary_background } from "./styles.module.css";
 import { CircularProgress, LinearProgress } from "@mui/material";
 import { useAtom } from "jotai";
+import JoinTeam from "./JoinTeam";
 
 function HeaderFooter(props: React.PropsWithChildren<{}>) {
   const user = useUser()[0];
@@ -18,10 +19,12 @@ function HeaderFooter(props: React.PropsWithChildren<{}>) {
 
   return (
     <Box
-      display={"flex"}
       flexDirection={"column"}
-      height="100%"
+      minHeight="100vh"
+      position="relative"
+      display={"flex"}
       className={primary_background}
+      pb={4}
     >
       <TopBar />
       <Suspense
@@ -43,7 +46,15 @@ function HeaderFooter(props: React.PropsWithChildren<{}>) {
         {props.children}
       </Suspense>
 
-      <BottomBar />
+      <Box
+        sx={{
+          position: "absolute",
+          bottom: 0,
+          width: "100%",
+        }}
+      >
+        <BottomBar />
+      </Box>
     </Box>
   );
 }
@@ -104,6 +115,15 @@ export default function PokerZero() {
             }
           />
         </Route>
+
+        <Route
+          path="join-team"
+          element={
+            <HeaderFooter>
+              <JoinTeam />
+            </HeaderFooter>
+          }
+        />
       </Route>
     </Routes>
   );

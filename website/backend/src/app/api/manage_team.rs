@@ -134,8 +134,8 @@ pub async fn leave_team(session: Session) -> ApiResult {
         .append_header(("Location", "/manage-team"))
         .finish())
 }
-#[get("/make-invite")]
-pub async fn make_invite(session: Session) -> ApiResult {
+#[get("/create-invite")]
+pub async fn create_invite(session: Session) -> ApiResult {
     let user = login::get_user_data(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
     let team = login::get_team_data(&session)
@@ -148,9 +148,9 @@ pub async fn make_invite(session: Session) -> ApiResult {
         return Err(actix_web::error::ErrorNotAcceptable("Team is full.").into());
     }
 
-    if user.email != team.clone().owner {
+    /*if user.email != team.clone().owner {
         return Err(actix_web::error::ErrorNotAcceptable("Not able to make invite.").into());
-    }
+    }*/
     // Insert an invite with expiry date 100 years from now
     // We are not using expiry dates for invites
     let day: i64 = 24 * 3600 * 1000 * 365 * 100;
@@ -186,7 +186,7 @@ pub async fn cancel_invite(
     let conn = &mut (*DB_CONNECTION).get()?;
     let out = diesel::delete(team_invites::dsl::team_invites)
         .filter(team_invites::dsl::invite_code.eq(&invite_code))
-        .filter(team_invites::dsl::teamid.eq(team.clone().id))
+        .filter(team_invites::dsl::teamid.eq(team.id))
         .returning(team_invites::dsl::invite_code)
         .get_result::<String>(conn)?;
     Ok(HttpResponse::Ok().body(out))
@@ -198,15 +198,8 @@ pub async fn join_team(
     web::Query::<JoinTeamQuery>(JoinTeamQuery { invite_code }): web::Query<JoinTeamQuery>,
     req: actix_web::HttpRequest,
 ) -> ApiResult {
-    let user = match login::get_user_data(&session) {
-        Some(user) => user,
-        None => {
-            return Ok(HttpResponse::Found()
-                //TODO: Redirect to a general login page
-                .append_header(("Location", microsoft_login_url(&req.uri().to_string())))
-                .finish());
-        }
-    };
+    let user = login::get_user_data(&session)
+        .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
     let team = login::get_team_data(&session);
     // You can't join a team if you are already on one or if you aren't logged in
 
@@ -236,9 +229,7 @@ pub async fn join_team(
             return Err(actix_web::error::ErrorNotAcceptable("Invalid code.").into());
         }
     }
-    Ok(HttpResponse::Found()
-        .append_header(("Location", "/manage-team"))
-        .finish())
+    Ok(HttpResponse::Ok().body("{}"))
 }
 
 #[put("/upload-pfp")]

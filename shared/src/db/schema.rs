@@ -52,6 +52,7 @@ diesel::table! {
     }
 }
 
+diesel::joinable!(team_invites -> teams (teamid));
 diesel::joinable!(teams -> bots (active_bot));
 
 diesel::allow_tables_to_appear_in_same_query!(

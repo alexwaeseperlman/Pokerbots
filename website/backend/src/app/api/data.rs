@@ -162,3 +162,19 @@ pub async fn bots(
     let result: Vec<Bot> = base.load::<Bot>(conn)?.into_iter().collect();
     Ok(HttpResponse::Ok().json(result))
 }
+
+#[derive(Deserialize)]
+pub struct InviteCodeQuery {
+    pub code: String,
+}
+#[get("/invite-code")]
+pub async fn invite_code(
+    web::Query::<InviteCodeQuery>(InviteCodeQuery { code }): web::Query<InviteCodeQuery>,
+) -> ApiResult {
+    let conn = &mut (*DB_CONNECTION).get()?;
+    let invite = schema::team_invites::dsl::team_invites
+        .inner_join(schema::teams::dsl::teams)
+        .filter(schema::team_invites::dsl::invite_code.eq(code))
+        .first::<(TeamInvite, Team)>(conn)?;
+    Ok(HttpResponse::Ok().json(invite))
+}

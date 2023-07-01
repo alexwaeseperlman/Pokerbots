@@ -79,6 +79,7 @@ export default function Login() {
         alignItems: "center",
         justifyContent: "center",
         height: "100%",
+        flexGrow: 1,
       }}
     >
       <Container

@@ -201,7 +201,7 @@ export default function BotTable({
                 }}
                 onClick={() => {
                   fetch(
-                    `${apiUrl}/make-game?bot_a=${myTeam?.active_bot}&bot_b=${params.id}`
+                    `${apiUrl}/create-game?bot_a=${myTeam?.active_bot}&bot_b=${params.id}`
                   ).then(async (r) => {
                     const data = await r.json();
                     if (data.error) {

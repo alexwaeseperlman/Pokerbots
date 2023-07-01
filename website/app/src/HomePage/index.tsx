@@ -38,91 +38,89 @@ const SignupButton = styled(Button)(({ theme }) => ({
 
 export default function HomePage() {
   return (
-    <>
+    <Box
+      className={`${primary_background}`}
+      sx={{
+        width: "100%",
+        color: "white",
+        p: 4,
+        pb: 16,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        flexGrow: 1,
+      }}
+    >
       <Box
-        className={`${primary_background}`}
+        sx={{
+          backgroundImage: `url(${graphic_small})`,
+          filter: "grayscale(100%)",
+          opacity: 0.4,
+          backgroundPosition: "center",
+          position: "absolute",
+          top: 0,
+          left: 0,
+          backgroundSize: "contain",
+          backgroundRepeat: "no-repeat",
+          mixBlendMode: "screen",
+          width: "100%",
+          maxWidth: "100vw",
+          height: "100%",
+          display: "block",
+          overflow: "hidden",
+          pointerEvents: "none",
+        }}
+      ></Box>
+      <Box
         sx={{
           width: "100%",
-          color: "white",
-          p: 4,
-          pb: 16,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          height: "100%",
         }}
       >
         <Box
           sx={{
-            backgroundImage: `url(${graphic_small})`,
-            filter: "grayscale(100%)",
-            opacity: 0.4,
-            backgroundPosition: "center",
-            position: "absolute",
-            top: 0,
-            left: 0,
-            backgroundSize: "contain",
-            backgroundRepeat: "no-repeat",
-            mixBlendMode: "screen",
-            width: "100%",
-            maxWidth: "100vw",
-            height: "100%",
-            display: "block",
-            overflow: "hidden",
-            pointerEvents: "none",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            textAlign: "center",
           }}
-        ></Box>
+        >
+          <Logo
+            sx={{
+              width: "100px",
+              height: "100px",
+            }}
+          />
+          <Typography variant="h2">Poker Bot League</Typography>
+        </Box>
         <Box
           sx={{
+            mt: 6,
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
             width: "100%",
           }}
         >
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              textAlign: "center",
-            }}
-          >
-            <Logo
-              sx={{
-                width: "100px",
-                height: "100px",
-              }}
-            />
-            <Typography variant="h2">Poker Bot League</Typography>
-          </Box>
-          <Box
-            sx={{
-              mt: 6,
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "100%",
-            }}
-          >
-            <input
-              placeholder="Join our mailing list"
-              className={signup_input}
-            ></input>
-            <SignupButton>Join now</SignupButton>
-          </Box>
-
-          <Container
-            sx={{
-              maxWidth: "700px !important",
-              textAlign: "center",
-              mt: 6,
-            }}
-          >
-            The competition will start in 2024. For sponsorship inquiries,
-            please contact pokerbotleague@mcgill.ca.
-          </Container>
+          <input
+            placeholder="Join our mailing list"
+            className={signup_input}
+          ></input>
+          <SignupButton>Join now</SignupButton>
         </Box>
+
+        <Container
+          sx={{
+            maxWidth: "700px !important",
+            textAlign: "center",
+            mt: 6,
+          }}
+        >
+          The competition will start in 2024. For sponsorship inquiries, please
+          contact pokerbotleague@mcgill.ca.
+        </Container>
       </Box>
-    </>
+    </Box>
   );
 }

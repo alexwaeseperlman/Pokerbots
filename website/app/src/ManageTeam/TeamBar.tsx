@@ -321,7 +321,7 @@ export function TeamBar({
                                   }}
                                 >
                                   <input
-                                    value={`${apiUrl}/join-team?invite_code=${invite}`}
+                                    value={`${window.location.origin}/join-team?invite_code=${invite}`}
                                     readOnly
                                     style={{
                                       background: "none",
@@ -351,7 +351,7 @@ export function TeamBar({
                                     fontSize="small"
                                   />*/}
                                 </TableCell>
-                                {team.owner === user?.email && (
+                                {!readonly && (
                                   <TableCell
                                     sx={{
                                       color: "white",
@@ -377,7 +377,7 @@ export function TeamBar({
                             5 ? (
                           []
                         ) : (
-                          <TableRow key="make-invite">
+                          <TableRow key="create-invite">
                             <TableCell
                               sx={{
                                 alignItems: "center",
@@ -388,7 +388,7 @@ export function TeamBar({
                               <TableButton
                                 startIcon={<AddIcon />}
                                 onClick={() =>
-                                  fetch(`${apiUrl}/make-invite`).then(
+                                  fetch(`${apiUrl}/create-invite`).then(
                                     async (a) => {
                                       fetchTeam();
                                     }

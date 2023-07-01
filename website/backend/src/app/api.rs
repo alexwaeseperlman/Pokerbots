@@ -25,7 +25,7 @@ pub fn api_service() -> actix_web::Scope {
         .service(manage_team::create_team)
         .service(manage_team::delete_team)
         .service(manage_team::leave_team)
-        .service(manage_team::make_invite)
+        .service(manage_team::create_invite)
         .service(manage_team::upload_pfp)
         .service(manage_team::upload_bot)
         .service(manage_team::join_team)
@@ -39,7 +39,8 @@ pub fn api_service() -> actix_web::Scope {
         .service(data::my_team)
         .service(data::teams)
         .service(data::bots)
-        .service(games::make_game)
+        .service(data::invite_code)
+        .service(games::create_game)
         .service(games::games)
         .service(signout::signout)
 }
