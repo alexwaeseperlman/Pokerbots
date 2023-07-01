@@ -27,7 +27,6 @@ export const useUser = () => {
   const [user, setUser] = useAtom(userAtom);
   const [team, fetchTeam] = useMyTeam();
   const fetchUser = async () => {
-    setUser(Promise.resolve(null));
     setUser(
       fetch(`${apiUrl}/my-account`)
         .then((res) => res.json())
@@ -133,7 +132,6 @@ const teamAtom = atomFamily<string | null, PrimitiveAtom<Promise<Team | null>>>(
 export const useTeam = (selectedTeam: string | null) => {
   const [team, setTeam] = useAtom(teamAtom(selectedTeam));
   const fetchTeam = () => {
-    setTeam(Promise.resolve(null));
     if (!selectedTeam)
       setTeam(
         fetch(`${apiUrl}/my-team`)

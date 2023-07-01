@@ -102,7 +102,7 @@ export function BotUpload() {
               <input
                 style={{ display: "none" }}
                 onChange={(e) => {
-                  handleUpload(e.target.files[0]);
+                  if (e.target.files) handleUpload(e.target.files[0]);
                 }}
                 type="file"
                 id="bot-file-input"
