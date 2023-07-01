@@ -1,12 +1,5 @@
 import React, { useState, useLayoutEffect, useEffect } from "react";
-import {
-  Team,
-  apiUrl,
-  pfpEndpoint,
-  useMyTeam,
-  useTeam,
-  useUser,
-} from "../state";
+import { Team, apiUrl, pfpEndpoint, useTeam, useUser } from "../state";
 import Box from "@mui/system/Box";
 import { Container } from "@mui/system";
 import AddIcon from "@mui/icons-material/Add";
@@ -26,7 +19,7 @@ import { enqueueSnackbar } from "notistack";
 
 function PfpUpload({ team, readonly }: { team: Team; readonly: boolean }) {
   const [drag, setDrag] = useState(false);
-  const fetchTeam = useMyTeam()[1];
+  const fetchTeam = useTeam(null)[1];
 
   const [boxWidth, setBoxWidth] = useState(0);
   const [uploading, setUploading] = useState(false);

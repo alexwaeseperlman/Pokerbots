@@ -24,7 +24,6 @@ const userAtom = atom<Promise<User | null>>(
 
 export const useUser = () => {
   const [user, setUser] = useAtom(userAtom);
-  const [team, fetchTeam] = useMyTeam();
   const fetchUser = async () => {
     setUser(
       fetch(`${apiUrl}/my-account`)
@@ -92,25 +91,6 @@ export async function fillInGames(
     bot_b: botMap.get(game.bot_b) as Bot,
   }));
 }
-
-const myTeamAtom = atom<Promise<Team | null>>(Promise.resolve(null));
-
-export const useMyTeam = () => {
-  const [team, setTeam] = useAtom(myTeamAtom);
-  const fetchTeam = () => {
-    setTeam(
-      fetch(`${apiUrl}/my-team`)
-        .then((res) => res.json())
-        .catch(() => null)
-    );
-  };
-
-  useEffect(() => {
-    fetchTeam();
-  }, []);
-
-  return [team, fetchTeam] as const;
-};
 
 // choose default value based on route
 const teamAtom = atomFamily<string | null, PrimitiveAtom<Promise<Team | null>>>(

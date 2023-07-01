@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect } from "react";
-import { Bot, Team, apiUrl, pfpEndpoint, useMyTeam, useTeam } from "../state";
+import { Bot, Team, apiUrl, pfpEndpoint, useTeam } from "../state";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/system/Box";
 import Typography from "@mui/material/Typography";
@@ -19,7 +19,7 @@ export default function BotTable({
   const [team, fetchTeam] = useTeam(teamId ?? null);
   const [bots, setBots] = React.useState<(Bot & { active: boolean })[]>([]);
   const [botCount, setBotCount] = React.useState(0);
-  const [myTeam, fetchMyTeam] = useMyTeam();
+  const [myTeam, fetchMyTeam] = useTeam(null);
   const [paginationModel, setPaginationModel] = React.useState({
     page: 0,
     pageSize: 10,
