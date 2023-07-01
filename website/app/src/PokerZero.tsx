@@ -49,19 +49,21 @@ function HeaderFooter(props: React.PropsWithChildren<{}>) {
 }
 
 function TeamDashboard() {
-  const params = useParams();
+  const myTeam = useTeam(null)[0];
 
-  const [myTeam] = useMyTeam();
-  const [team, fetchTeam, setTeam] = useTeam();
+  const teamId = useParams().teamId ?? null;
 
   const user = useUser()[0];
-  console.log(team, myTeam, user);
 
   //TODO: Use suspense here
-  React.useEffect(() => {
-    setTeam(params.teamId ?? null);
-  }, [params.teamId]);
-  return <DisplayTeam readonly={myTeam?.id !== team?.id} />;
+  console.log(teamId);
+
+  return (
+    <ManageTeam
+      readonly={teamId !== null && myTeam?.id !== parseInt(teamId)}
+      teamId={teamId}
+    />
+  );
 }
 
 export default function PokerZero() {
@@ -80,7 +82,7 @@ export default function PokerZero() {
           path="manage-team"
           element={
             <HeaderFooter>
-              <ManageTeam />
+              <TeamDashboard />
             </HeaderFooter>
           }
         />

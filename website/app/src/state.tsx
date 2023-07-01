@@ -1,4 +1,12 @@
-import { atom, useAtom, useAtomValue, useSetAtom, WritableAtom } from "jotai";
+import {
+  Atom,
+  atom,
+  PrimitiveAtom,
+  useAtom,
+  useAtomValue,
+  useSetAtom,
+  WritableAtom,
+} from "jotai";
 import { atomFamily, atomWithStorage } from "jotai/utils";
 import { useEffect } from "react";
 import { matchPath } from "react-router-dom";
@@ -8,7 +16,8 @@ export type User = {
   email: string;
   display_name: string;
 };
-const userAtom = atom<Promise<User | null>>(
+const userAtom = atomWithStorage<Promise<User | null>>(
+  "user",
   fetch(`${apiUrl}/my-account`)
     .then((res) => res.json())
     .catch(() => null)
@@ -18,17 +27,13 @@ export const useUser = () => {
   const [user, setUser] = useAtom(userAtom);
   const [team, fetchTeam] = useMyTeam();
   const fetchUser = async () => {
+    setUser(Promise.resolve(null));
     setUser(
       fetch(`${apiUrl}/my-account`)
         .then((res) => res.json())
         .catch(() => null)
     );
-    fetchTeam();
   };
-  // fetch user
-  useEffect(() => {
-    fetchUser();
-  }, []);
   return [user, fetchUser] as const;
 };
 
@@ -109,29 +114,28 @@ export const useMyTeam = () => {
   return [team, fetchTeam] as const;
 };
 
-let pathTeam = matchPath("/team/:id", window.location.pathname)?.params.id;
-let selectedTeam;
-if (pathTeam) selectedTeam = parseInt(pathTeam);
-else selectedTeam = null;
-const selectedTeamAtom = atom<number | null>(selectedTeam);
 // choose default value based on route
-const teamAtom = atom<Promise<Team | null>>(
-  pathTeam
-    ? fetch(`${apiUrl}/teams?ids=${selectedTeam ?? ""}&fill_members=true`)
-        .then((res) => res.json())
-        .then((teams) => teams[0])
-        .catch(() => null)
-    : fetch(`${apiUrl}/my-team`)
-        .then((res) => res.json())
-        .catch(() => null)
+const teamAtom = atomFamily<string | null, PrimitiveAtom<Promise<Team | null>>>(
+  (param) =>
+    atomWithStorage(
+      param ?? "my-team",
+      param
+        ? fetch(`${apiUrl}/teams?ids=${param ?? ""}&fill_members=true`)
+            .then((res) => res.json())
+            .then((teams) => teams[0])
+            .catch(() => null)
+        : fetch(`${apiUrl}/my-team`)
+            .then((res) => res.json())
+            .catch(() => null)
+    )
 );
 
-export const useTeam = () => {
-  const [selectedTeam, setSelectedTeam] = useAtom(selectedTeamAtom);
-  const [team, setTeam] = useAtom(teamAtom);
+export const useTeam = (selectedTeam: string | null) => {
+  const [team, setTeam] = useAtom(teamAtom(selectedTeam));
   const fetchTeam = () => {
+    setTeam(Promise.resolve(null));
     if (!selectedTeam)
-      return setTeam(
+      setTeam(
         fetch(`${apiUrl}/my-team`)
           .then((res) => res.json())
           .catch(() => null)
@@ -145,8 +149,5 @@ export const useTeam = () => {
       );
     }
   };
-  useEffect(() => {
-    fetchTeam();
-  }, [selectedTeam]);
-  return [team, fetchTeam, setSelectedTeam] as const;
+  return [team, fetchTeam] as const;
 };

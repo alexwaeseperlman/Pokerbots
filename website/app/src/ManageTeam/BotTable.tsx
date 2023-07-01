@@ -9,8 +9,14 @@ import { TableButton } from ".";
 import Button from "@mui/material/Button";
 import { enqueueSnackbar } from "notistack";
 
-export default function BotTable({ readonly }: { readonly?: boolean }) {
-  const [team, fetchTeam] = useTeam();
+export default function BotTable({
+  readonly,
+  teamId,
+}: {
+  readonly?: boolean;
+  teamId: string | null;
+}) {
+  const [team, fetchTeam] = useTeam(teamId ?? null);
   const [bots, setBots] = React.useState<(Bot & { active: boolean })[]>([]);
   const [botCount, setBotCount] = React.useState(0);
   const [myTeam, fetchMyTeam] = useMyTeam();

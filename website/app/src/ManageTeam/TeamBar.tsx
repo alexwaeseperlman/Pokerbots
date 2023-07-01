@@ -129,8 +129,14 @@ function PfpUpload({ team, readonly }: { team: Team; readonly: boolean }) {
   );
 }
 
-export function TeamBar({ readonly }: { readonly: boolean }) {
-  const [team, fetchTeam, setTeam] = useTeam();
+export function TeamBar({
+  readonly,
+  teamId,
+}: {
+  readonly: boolean;
+  teamId: string | null;
+}) {
+  const [team, fetchTeam] = useTeam(teamId);
   const [editing, setEditing] = useState(false);
   const theme = useTheme();
   const [user, fetchUser] = useUser();

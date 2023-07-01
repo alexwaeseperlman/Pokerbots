@@ -47,8 +47,14 @@ export const TableButton = styled((props: ButtonProps) => (
   color: "#bbb",
 }));
 
-function GameTable({ readonly }: { readonly?: boolean }) {
-  const [team, fetchTeam] = useTeam();
+function GameTable({
+  readonly,
+  teamId,
+}: {
+  readonly?: boolean;
+  teamId: string | null;
+}) {
+  const [team, fetchTeam] = useTeam(teamId ?? null);
   const [games, setGames] = React.useState<Game[]>([]);
   const [gameCount, setGameCount] = React.useState(0);
   const [paginationModel, setPaginationModel] = React.useState({
@@ -177,12 +183,18 @@ function NoTeam() {
   );
 }
 
-export function DisplayTeam({ readonly }: { readonly?: boolean }) {
-  const team = useTeam()[0];
+export function DisplayTeam({
+  readonly,
+  teamId,
+}: {
+  readonly: boolean;
+  teamId: string | null;
+}) {
+  const team = useTeam(teamId)[0];
   if (!team) return <NoTeam />;
   return (
     <>
-      <TeamBar readonly={readonly ?? true} />
+      <TeamBar readonly={readonly} teamId={teamId} />
       <Box
         className={secondary_background}
         sx={{
@@ -193,23 +205,29 @@ export function DisplayTeam({ readonly }: { readonly?: boolean }) {
       >
         <Container>
           <h2>Bots</h2>
-          {!(readonly ?? true) && <BotUpload />}
+          {!readonly && <BotUpload />}
 
-          <BotTable readonly={readonly ?? true} />
+          <BotTable readonly={readonly} teamId={teamId} />
           <h2>Games</h2>
-          <GameTable readonly={readonly ?? true} />
+          <GameTable readonly={readonly} teamId={teamId} />
         </Container>
       </Box>
     </>
   );
 }
 
-export default function ManageTeam() {
-  const [team, fetchTeam] = useTeam();
+export default function ManageTeam({
+  teamId,
+  readonly,
+}: {
+  teamId: string | null;
+  readonly: boolean;
+}) {
+  const [team, fetchTeam] = useTeam(teamId);
   const [user, fetchUser] = useUser();
   console.log(team, user);
-  if (team && user) {
-    return <DisplayTeam readonly={false} />;
+  if (readonly || (team && user)) {
+    return <DisplayTeam readonly={readonly} teamId={teamId} />;
   } else if (user) {
     return <CreateTeam />;
   } else {

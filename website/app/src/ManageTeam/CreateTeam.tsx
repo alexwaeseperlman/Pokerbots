@@ -18,7 +18,7 @@ import { enqueueSnackbar } from "notistack";
 export default function CreateTeam() {
   const user = useUser()[0];
   const [teamName, setTeamName] = useState("");
-  const [team, fetchTeam] = useTeam();
+  const [team, fetchTeam] = useTeam(null);
   return (
     <Box
       sx={{
