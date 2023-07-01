@@ -7,7 +7,7 @@ import {
   useSetAtom,
   WritableAtom,
 } from "jotai";
-import { atomFamily, atomWithStorage } from "jotai/utils";
+import { atomFamily } from "jotai/utils";
 import { useEffect } from "react";
 import { matchPath } from "react-router-dom";
 
@@ -16,8 +16,7 @@ export type User = {
   email: string;
   display_name: string;
 };
-const userAtom = atomWithStorage<Promise<User | null>>(
-  "user",
+const userAtom = atom<Promise<User | null>>(
   fetch(`${apiUrl}/my-account`)
     .then((res) => res.json())
     .catch(() => null)
@@ -116,8 +115,7 @@ export const useMyTeam = () => {
 // choose default value based on route
 const teamAtom = atomFamily<string | null, PrimitiveAtom<Promise<Team | null>>>(
   (param) =>
-    atomWithStorage(
-      param ?? "my-team",
+    atom(
       param
         ? fetch(`${apiUrl}/teams?ids=${param ?? ""}&fill_members=true`)
             .then((res) => res.json())
