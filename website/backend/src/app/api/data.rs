@@ -169,7 +169,7 @@ pub struct InviteCodeQuery {
     pub code: String,
 }
 #[get("/invite-code")]
-pub async fn invite_codes(
+pub async fn invite_code(
     web::Query::<InviteCodeQuery>(InviteCodeQuery { code }): web::Query<InviteCodeQuery>,
 ) -> ApiResult {
     let conn = &mut (*DB_CONNECTION).get()?;

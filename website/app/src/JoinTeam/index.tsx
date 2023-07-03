@@ -1,14 +1,16 @@
-import { Button, Card, TextField, Typography } from "@mui/material";
+import { Button, Card, Skeleton, TextField, Typography } from "@mui/material";
 import { Box, Container } from "@mui/system";
 import React, { useState } from "react";
-import { Team, apiUrl, useTeam } from "../state";
+import { Team, apiUrl, useTeam, useUser } from "../state";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { enqueueSnackbar } from "notistack";
+import Login from "../Login";
 
 export default function JoinTeam() {
   const navigate = useNavigate();
   const code = useSearchParams()[0].get("invite_code");
 
+  const [user, fetchUser] = useUser();
   const [team, setTeam] = useState<Team | null>(null);
 
   // TODO: Is it actually valid to use an atom family like this?
@@ -22,9 +24,18 @@ export default function JoinTeam() {
     }
     fetch(`${apiUrl}/invite-code?code=${code}`)
       .then((res) => res.json())
-      .catch((e) => null)
-      .then((data) => setTeam(data[1]));
+      .then((data) => {
+        if (data.error) {
+          navigate("/");
+          enqueueSnackbar(data.error, { variant: "error" });
+        }
+        setTeam(data[1]);
+      });
   }, [code]);
+
+  if (!user) {
+    return <Login />;
+  }
 
   return (
     <Box
@@ -43,7 +54,15 @@ export default function JoinTeam() {
         }}
       >
         <Typography variant="h3">
-          You are invited to join "{team?.team_name}"
+          {team?.team_name ? (
+            `You are invited to join "${team?.team_name}"`
+          ) : (
+            <Skeleton
+              sx={{
+                width: "70vw",
+              }}
+            />
+          )}
         </Typography>
         <Button
           variant="contained"
