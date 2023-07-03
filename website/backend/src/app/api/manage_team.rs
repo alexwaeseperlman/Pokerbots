@@ -255,7 +255,7 @@ pub async fn upload_pfp(
     s3_client
         .put_object()
         .bucket(&*PFP_S3_BUCKET)
-        .key(format!("{}.png", team.id))
+        .key(format!("{}", team.id))
         .body(body.to_vec().into())
         .acl(s3::types::ObjectCannedAcl::PublicRead)
         .send()

@@ -7,7 +7,7 @@ import {
   useSetAtom,
   WritableAtom,
 } from "jotai";
-import { atomFamily } from "jotai/utils";
+import { atomFamily, atomWithStorage } from "jotai/utils";
 import { useEffect } from "react";
 import { matchPath } from "react-router-dom";
 
@@ -43,7 +43,25 @@ export type Team = {
   score: number | null;
   active_bot?: number;
 };
-export const pfpEndpoint = import.meta.env.APP_PFP_ENDPOINT;
+export const pfpEndpointAtom = atomWithStorage<string | null>(
+  "pfpEndpoint",
+  null
+);
+
+export const usePfpEndpoint = () => {
+  const [pfpEndpoint, setPfpEndpoint] = useAtom(pfpEndpointAtom);
+  const fetchPfpEndpoint = async () => {
+    setPfpEndpoint(
+      await fetch(`${apiUrl}/pfp-endpoint`)
+        .then((res) => res.json())
+        .catch(() => null)
+    );
+  };
+  useEffect(() => {
+    fetchPfpEndpoint();
+  });
+  return [pfpEndpoint, fetchPfpEndpoint] as const;
+};
 
 export type Bot = {
   id: number;

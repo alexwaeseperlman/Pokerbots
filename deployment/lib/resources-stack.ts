@@ -259,8 +259,9 @@ export class ScalingAPIConstruct extends Construct {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       objectOwnership: s3.ObjectOwnership.BUCKET_OWNER_PREFERRED,
     });
+    //this.pfp_s3.grantPublicAccess();
     this.pfp_s3.addCorsRule({
-      allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT],
+      allowedMethods: [s3.HttpMethods.GET],
       allowedOrigins: ["*"],
       allowedHeaders: ["*"],
     });
@@ -305,7 +306,7 @@ export class ScalingAPIConstruct extends Construct {
             PFP_S3_BUCKET: this.pfp_s3.bucketName,
             BOT_S3_BUCKET: bot_s3.bucketName,
             BOT_SIZE: "5000000",
-            APP_PFP_ENDPOINT: this.pfp_s3.urlForObject(),
+            APP_PFP_ENDPOINT: this.pfp_s3.urlForObject() + "/",
             BOT_UPLOADS_QUEUE_URL: bot_uploads_sqs.queueUrl,
             NEW_GAMES_QUEUE_URL: new_games_sqs.queueUrl,
             RUST_LOG: "info",
@@ -382,7 +383,7 @@ export class ResourcesStack extends cdk.Stack {
       vpc,
       instanceType: ec2.InstanceType.of(
         ec2.InstanceClass.T4G,
-        ec2.InstanceSize.NANO
+        ec2.InstanceSize.MICRO
       ),
       credentials: {
         username: "postgres",

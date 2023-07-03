@@ -4,7 +4,7 @@ import {
   apiUrl,
   useUser,
   Team,
-  pfpEndpoint,
+  usePfpEndpoint,
   fillInGames,
   useTeam,
   User,
@@ -56,6 +56,7 @@ function GameTable({
   const [team, fetchTeam] = useTeam(teamId ?? null);
   const [games, setGames] = React.useState<Game[]>([]);
   const [gameCount, setGameCount] = React.useState(0);
+  const [pfpEndpoint, fetchPfpEndpoint] = usePfpEndpoint();
   const [paginationModel, setPaginationModel] = React.useState({
     page: 0,
     pageSize: 10,

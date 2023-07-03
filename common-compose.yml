@@ -31,7 +31,6 @@ services:
       - PFP_S3_BUCKET=${PFP_S3_BUCKET}
       - BOT_S3_BUCKET=${BOT_S3_BUCKET}
       - BOT_SIZE=5000000
-      - APP_PFP_ENDPOINT=https://pokerbots-pfp.s3.us-east-1.amazonaws.com
 
       - AZURE_SECRET=${AZURE_SECRET}
       - SECRET_KEY=${SECRET_KEY}

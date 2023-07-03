@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect } from "react";
-import { Bot, Team, apiUrl, pfpEndpoint, useTeam } from "../state";
+import { Bot, Team, apiUrl, usePfpEndpoint, useTeam } from "../state";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/system/Box";
 import Typography from "@mui/material/Typography";
@@ -24,6 +24,7 @@ export default function BotTable({
     page: 0,
     pageSize: 10,
   });
+  const [pfpEndpoint, fetchPfpEndpoint] = usePfpEndpoint();
   const [loading, setLoading] = React.useState(true);
   const getBots = () => {
     fetch(`${apiUrl}/bots?team=${team?.id}&count=true`)
