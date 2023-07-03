@@ -26,7 +26,7 @@ export default function CreateTeam() {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        height: "100%",
+        flexGrow: 1,
         p: 2,
       }}
     >

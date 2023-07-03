@@ -2,7 +2,6 @@ import React, { useCallback, useEffect } from "react";
 import {
   Game,
   apiUrl,
-  useMyTeam,
   useUser,
   Team,
   pfpEndpoint,

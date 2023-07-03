@@ -6,7 +6,7 @@ import {
   nav_group,
   bar_item_clickable,
 } from "./styles.module.css";
-import { apiUrl, useMyTeam, useUser } from "../../state";
+import { apiUrl, useUser } from "../../state";
 import Box from "@mui/system/Box";
 import Logo from "../Logo";
 import IconButton from "@mui/material/IconButton";
@@ -96,7 +96,12 @@ export function TopBar() {
           flexGrow: 1,
         })}
       ></Box>
-      <BarItem label="DOCUMENTATION" />
+      <BarItem
+        label="DOCUMENTATION"
+        command={() => {
+          window.open("https://github.com/alexwaeseperlman/Pokerbots/wiki");
+        }}
+      />
       {user && (
         <BarItem
           label="SIGN OUT"
@@ -123,7 +128,12 @@ export function BottomBar() {
       >
         <BarItem label="© Poker Bot League 2023" />
       </Box>
-      <BarItem label="REPORT AN ISSUE" command={() => {}} />
+      <BarItem
+        label="REPORT AN ISSUE"
+        command={() => {
+          window.open("https://github.com/alexwaeseperlman/Pokerbots/issues");
+        }}
+      />
     </Box>
   );
 }

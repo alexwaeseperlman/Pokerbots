@@ -53,6 +53,8 @@ services:
     extends:
       file: common-compose.yml
       service: s3
+    ports:
+      - 9000:9000
   createbuckets:
     depends_on:
       - s3
