@@ -673,33 +673,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "aws-sdk-ses"
-version = "0.28.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d235d129c4d8a716856dbbd18203212b6842cc02644d356cd4f7a107b21c2e1e"
-dependencies = [
- "aws-credential-types",
- "aws-endpoint",
- "aws-http",
- "aws-sig-auth",
- "aws-smithy-async",
- "aws-smithy-client",
- "aws-smithy-http",
- "aws-smithy-http-tower",
- "aws-smithy-json",
- "aws-smithy-query",
- "aws-smithy-types",
- "aws-smithy-xml",
- "aws-types",
- "bytes",
- "http",
- "regex",
- "tokio-stream",
- "tower",
- "tracing",
-]
-
-[[package]]
 name = "aws-sdk-sqs"
 version = "0.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2960,7 +2933,6 @@ dependencies = [
  "actix-web",
  "aws-config",
  "aws-sdk-s3",
- "aws-sdk-ses",
  "aws-sdk-sqs",
  "cargo-watch",
  "chrono",
