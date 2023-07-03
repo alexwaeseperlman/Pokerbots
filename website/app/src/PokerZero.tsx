@@ -12,6 +12,7 @@ import { primary_background } from "./styles.module.css";
 import { CircularProgress, LinearProgress } from "@mui/material";
 import { useAtom } from "jotai";
 import JoinTeam from "./JoinTeam";
+import NotFound from "./NotFound";
 
 function HeaderFooter(props: React.PropsWithChildren<{}>) {
   const user = useUser()[0];
@@ -97,14 +98,14 @@ export default function PokerZero() {
             </HeaderFooter>
           }
         />
-        <Route
+        {/*<Route
           path="leaderboard"
           element={
             <HeaderFooter>
               <Leaderboard />
             </HeaderFooter>
           }
-        />
+        />*/}
         <Route path="team">
           <Route
             path=":teamId"
@@ -125,6 +126,14 @@ export default function PokerZero() {
           }
         />
       </Route>
+      <Route
+        path="*"
+        element={
+          <HeaderFooter>
+            <NotFound />
+          </HeaderFooter>
+        }
+      />
     </Routes>
   );
 }
