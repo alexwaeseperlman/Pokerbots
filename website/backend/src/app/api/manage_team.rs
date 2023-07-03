@@ -255,7 +255,7 @@ pub async fn upload_pfp(
     s3_client
         .put_object()
         .bucket(&*PFP_S3_BUCKET)
-        .key(format!("{}.png", team.id))
+        .key(format!("{}", team.id))
         .body(body.to_vec().into())
         .acl(s3::types::ObjectCannedAcl::PublicRead)
         .send()
@@ -401,7 +401,8 @@ pub async fn rename_team(
     let conn = &mut (*DB_CONNECTION).get()?;
     diesel::update(teams::dsl::teams)
         .filter(teams::dsl::id.eq(team.clone().id))
-        .filter(teams::dsl::owner.eq(user.clone().email))
+        // Team members can change the team name
+        //.filter(teams::dsl::owner.eq(user.clone().email))
         .set(teams::dsl::team_name.eq(to))
         .execute(conn)?;
     Ok(HttpResponse::Ok().body("{}")).into()

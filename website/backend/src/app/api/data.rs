@@ -5,6 +5,7 @@ use serde::Deserialize;
 use serde_json::json;
 
 use crate::app::{api::ApiResult, login};
+use crate::config::APP_PFP_ENDPOINT;
 use shared::db::conn::DB_CONNECTION;
 use shared::db::{
     models::{Bot, Team, TeamInvite, TeamWithMembers, User},
@@ -177,4 +178,9 @@ pub async fn invite_code(
         .filter(schema::team_invites::dsl::invite_code.eq(code))
         .first::<(TeamInvite, Team)>(conn)?;
     Ok(HttpResponse::Ok().json(invite))
+}
+
+#[get("/pfp-endpoint")]
+pub async fn pfp_endpoint() -> ApiResult {
+    Ok(HttpResponse::Ok().json(&*APP_PFP_ENDPOINT))
 }

@@ -17,6 +17,7 @@ generated_vars = {
     # must be all lowercase
     'COMPILED_BOT_S3_BUCKET': secrets.token_hex(8)
 }
+generated_vars['APP_PFP_ENDPOINT'] = f"https://localhost:9000/{generated_vars['PFP_S3_BUCKET']}/"
 required_vars = ['MICROSOFT_CLIENT_ID', 'MICROSOFT_TENANT_ID', 'AZURE_SECRET']
 fixed_vars = {
     'S3_ADDRESS': 'http://localhost:9000',

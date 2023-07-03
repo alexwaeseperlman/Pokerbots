@@ -1,5 +1,5 @@
 import React, { useState, useLayoutEffect, useEffect } from "react";
-import { Team, apiUrl, pfpEndpoint, useTeam, useUser } from "../state";
+import { Team, apiUrl, usePfpEndpoint, useTeam, useUser } from "../state";
 import Box from "@mui/system/Box";
 import { Container } from "@mui/system";
 import AddIcon from "@mui/icons-material/Add";
@@ -21,25 +21,32 @@ function PfpUpload({ team, readonly }: { team: Team; readonly: boolean }) {
   const [drag, setDrag] = useState(false);
   const fetchTeam = useTeam(null)[1];
 
+  const [pfpEndpoint, fetchPfpEndpoint] = usePfpEndpoint();
   const [boxWidth, setBoxWidth] = useState(0);
   const [uploading, setUploading] = useState(false);
 
   const handleUpload = async (f: File) => {
     setUploading(true);
     // TODO: Display errors on these api calls
-    /*const uploadLink = await (
-      await fetch(`${apiUrl}/pfp-upload-url?content_length=${f.size}`)
-    ).json();*/
-    await fetch(`${apiUrl}/upload-pfp` /*uploadLink.url*/, {
+    await fetch(`${apiUrl}/upload-pfp`, {
       method: "PUT",
       body: f,
       //headers: uploadLink.headers,
-    }).finally(() => {
-      setTimeout(() => {
-        fetchTeam();
-        setUploading(false);
-      }, 1000);
-    });
+    })
+      .then(async (res) => {
+        const json = await res.json();
+        if (json.error) {
+          enqueueSnackbar(json.error, {
+            variant: "error",
+          });
+        }
+      })
+      .finally(() => {
+        setTimeout(() => {
+          fetchTeam();
+          setUploading(false);
+        }, 100);
+      });
   };
 
   return (
@@ -88,7 +95,7 @@ function PfpUpload({ team, readonly }: { team: Team; readonly: boolean }) {
         src={
           uploading
             ? ""
-            : `${pfpEndpoint}${team?.id}.png?${
+            : `${pfpEndpoint}${team?.id}?${
                 readonly
                   ? ""
                   : Math.floor(

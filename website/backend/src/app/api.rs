@@ -1,11 +1,7 @@
-use std::{error::Error, fmt, num::TryFromIntError};
+use std::{fmt, num::TryFromIntError};
 
-use actix_service::Service;
-use actix_web::dev::ServiceRequest;
 use actix_web::http::StatusCode;
-use actix_web::middleware::Compat;
 use actix_web::{error::PayloadError, HttpResponse, ResponseError};
-use futures_util::FutureExt;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -40,6 +36,7 @@ pub fn api_service() -> actix_web::Scope {
         .service(data::teams)
         .service(data::bots)
         .service(data::invite_code)
+        .service(data::pfp_endpoint)
         .service(games::create_game)
         .service(games::games)
         .service(signout::signout)
