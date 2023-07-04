@@ -98,14 +98,14 @@ export default function PokerZero() {
             </HeaderFooter>
           }
         />
-        {/*<Route
+        <Route
           path="leaderboard"
           element={
             <HeaderFooter>
               <Leaderboard />
             </HeaderFooter>
           }
-        />*/}
+        />
         <Route path="team">
           <Route
             path=":teamId"

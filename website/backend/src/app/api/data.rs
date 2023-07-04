@@ -41,12 +41,27 @@ pub async fn server_message(
     }
     Ok(msg)
 }
+
+#[derive(Deserialize)]
+pub enum TeamsQuerySort {
+    Score,
+    Created,
+}
+
+#[derive(Deserialize)]
+pub enum TeamsQuerySortDirection {
+    Asc,
+    Desc,
+}
+
 #[derive(Deserialize)]
 pub struct TeamQuery {
     pub ids: Option<String>,
     pub page_size: Option<i32>,
     pub page: Option<i32>,
     pub fill_members: Option<bool>,
+    pub sort: Option<TeamsQuerySort>,
+    pub sort_direction: Option<TeamsQuerySortDirection>,
 }
 
 #[get("/teams")]
@@ -57,6 +72,8 @@ pub async fn teams(
         page_size,
         page,
         fill_members,
+        sort,
+        sort_direction,
     }): web::Query<TeamQuery>,
 ) -> ApiResult {
     let team = login::get_team_data(&session);
@@ -64,6 +81,34 @@ pub async fn teams(
     let mut base = schema::teams::dsl::teams
         .order_by(schema::teams::dsl::score.desc())
         .into_boxed();
+    // <cringe>
+    match sort {
+        Some(TeamsQuerySort::Score) => match sort_direction {
+            Some(TeamsQuerySortDirection::Asc) => {
+                base = base.order_by(schema::teams::dsl::score.asc());
+            }
+            Some(TeamsQuerySortDirection::Desc) => {
+                base = base.order_by(schema::teams::dsl::score.desc());
+            }
+            None => {
+                base = base.order_by(schema::teams::dsl::score.desc());
+            }
+        },
+        Some(TeamsQuerySort::Created) => match sort_direction {
+            Some(TeamsQuerySortDirection::Asc) => {
+                base = base.order_by(schema::teams::dsl::id.asc());
+            }
+            Some(TeamsQuerySortDirection::Desc) => {
+                base = base.order_by(schema::teams::dsl::id.desc());
+            }
+            None => {
+                base = base.order_by(schema::teams::dsl::id.desc());
+            }
+        },
+        None => {}
+    }
+    // </cringe>
+
     if let Some(ids) = ids {
         let ids: Result<Vec<i32>, _> = ids.split(",").map(|i| i.parse()).collect();
         let ids = ids?;
