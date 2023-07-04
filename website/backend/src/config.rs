@@ -27,6 +27,4 @@ lazy_static! {
         .expect("BOT_SIZE must be set in .env")
         .parse()
         .expect("BOT_SIZE must be a number");
-    pub static ref RABBITMQ_HOST: String =
-        std::env::var("RABBITMQ_URL").expect("RABBITMQ_URL must be set in .env");
 }

@@ -1,12 +1,19 @@
 import React, { useCallback, useEffect } from "react";
-import { Game, apiUrl, usePfpEndpoint, fillInGames, useTeam } from "../state";
+import {
+  Game,
+  apiUrl,
+  usePfpEndpoint,
+  fillInGames,
+  useTeam,
+} from "../../state";
 import Box from "@mui/system/Box";
 import MuiTableCell from "@mui/material/TableCell";
 import { styled } from "@mui/material/styles";
 import Button, { ButtonProps } from "@mui/material/Button";
 import { Avatar, Chip, ChipProps, Typography } from "@mui/material";
+import { Link } from "react-router-dom";
 
-const DataGrid = React.lazy(() =>
+export const DataGrid = React.lazy(() =>
   import("@mui/x-data-grid").then((mod) => ({ default: mod.DataGrid }))
 );
 
@@ -79,9 +86,17 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
         src={`${pfpEndpoint}${params.value?.team?.id}`}
       />
       <Box flexDirection={"column"}>
-        <Typography>
-          {params.value?.team?.team_name ?? "Deleted team"}
-        </Typography>
+        <Link
+          to={`/team/${params.value?.team?.id}`}
+          style={{
+            color: "inherit",
+            textDecoration: "none",
+          }}
+        >
+          <Typography>
+            {params.value?.team?.team_name ?? "Deleted team"}
+          </Typography>
+        </Link>
 
         <Typography fontSize="small" color={"text.secondary"}>
           {params.value?.name ?? "Deleted bot"}

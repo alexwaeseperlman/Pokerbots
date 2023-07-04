@@ -62,6 +62,7 @@ pub struct TeamQuery {
     pub fill_members: Option<bool>,
     pub sort: Option<TeamsQuerySort>,
     pub sort_direction: Option<TeamsQuerySortDirection>,
+    pub count: Option<bool>,
 }
 
 #[get("/teams")]
@@ -74,6 +75,7 @@ pub async fn teams(
         fill_members,
         sort,
         sort_direction,
+        count,
     }): web::Query<TeamQuery>,
 ) -> ApiResult {
     let team = login::get_team_data(&session);
@@ -83,14 +85,11 @@ pub async fn teams(
         .into_boxed();
     // <cringe>
     match sort {
-        Some(TeamsQuerySort::Score) => match sort_direction {
+        Some(TeamsQuerySort::Score) | None => match sort_direction {
             Some(TeamsQuerySortDirection::Asc) => {
                 base = base.order_by(schema::teams::dsl::score.asc());
             }
-            Some(TeamsQuerySortDirection::Desc) => {
-                base = base.order_by(schema::teams::dsl::score.desc());
-            }
-            None => {
+            Some(TeamsQuerySortDirection::Desc) | None => {
                 base = base.order_by(schema::teams::dsl::score.desc());
             }
         },
@@ -98,14 +97,10 @@ pub async fn teams(
             Some(TeamsQuerySortDirection::Asc) => {
                 base = base.order_by(schema::teams::dsl::id.asc());
             }
-            Some(TeamsQuerySortDirection::Desc) => {
-                base = base.order_by(schema::teams::dsl::id.desc());
-            }
-            None => {
+            Some(TeamsQuerySortDirection::Desc) | None => {
                 base = base.order_by(schema::teams::dsl::id.desc());
             }
         },
-        None => {}
     }
     // </cringe>
 
@@ -119,6 +114,11 @@ pub async fn teams(
     base = base
         .limit((page_size).into())
         .offset((page * page_size).into());
+    if count.unwrap_or(false) {
+        return Ok(HttpResponse::Ok().json(json!({
+            "count": base.count().get_result::<i64>(conn)?,
+        })));
+    }
     let result: Vec<Team> = base.load::<Team>(conn)?.into_iter().collect();
     if fill_members.unwrap_or(false) {
         let users = schema::users::dsl::users

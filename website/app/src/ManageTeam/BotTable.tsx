@@ -5,7 +5,7 @@ import Box from "@mui/system/Box";
 import Typography from "@mui/material/Typography";
 import { DataGrid } from "@mui/x-data-grid/DataGrid";
 import Chip from "@mui/material/Chip";
-import { TableButton } from "./GameTable";
+import { TableButton } from "../components/Tables/GameTable";
 import Button from "@mui/material/Button";
 import { enqueueSnackbar } from "notistack";
 

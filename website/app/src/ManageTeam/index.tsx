@@ -10,7 +10,7 @@ import { secondary_background } from "../styles.module.css";
 import { TeamBar } from "./TeamBar";
 import BotTable from "./BotTable";
 import { BotUpload } from "./BotUpload";
-import { GameTable } from "./GameTable";
+import { GameTable } from "../components/Tables/GameTable";
 
 function NoTeam() {
   return (

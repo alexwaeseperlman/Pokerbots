@@ -11,7 +11,7 @@ import Avatar from "@mui/material/Avatar";
 import CircularProgress from "@mui/material/CircularProgress";
 import { primary_background } from "../styles.module.css";
 import { BotUpload } from "./BotUpload";
-import { TableCell, TableButton } from "./GameTable";
+import { TableCell, TableButton } from "../components/Tables/GameTable";
 import { Button, Icon, TextField, useTheme } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import CopyIcon from "@mui/icons-material/ContentCopy";
