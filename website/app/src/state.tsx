@@ -103,11 +103,13 @@ export async function fillInGames(
   const botMap = new Map(
     bots.map((bot) => [bot.id, { ...bot, team: teamMap.get(bot.team) }])
   );
-  return games.map((game) => ({
+  const out = games.map((game) => ({
     ...game,
     bot_a: botMap.get(game.bot_a) as Bot,
     bot_b: botMap.get(game.bot_b) as Bot,
   }));
+  console.log(out);
+  return out;
 }
 
 // choose default value based on route

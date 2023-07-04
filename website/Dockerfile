@@ -1,5 +1,5 @@
 # Build frontend in one container, backend in another, then copy the results into a third container
-FROM --platform=$BUILDARCH node:20-alpine3.17 as frontend
+FROM --platform=$BUILDARCH node:20.2.0-bullseye-slim as frontend
 WORKDIR /usr/src/app
 COPY website/app/package.json package.json
 COPY website/app/package-lock.json ./package-lock.json

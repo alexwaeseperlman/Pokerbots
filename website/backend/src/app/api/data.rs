@@ -41,12 +41,28 @@ pub async fn server_message(
     }
     Ok(msg)
 }
+
+#[derive(Deserialize)]
+pub enum TeamsQuerySort {
+    Score,
+    Created,
+}
+
+#[derive(Deserialize)]
+pub enum TeamsQuerySortDirection {
+    Asc,
+    Desc,
+}
+
 #[derive(Deserialize)]
 pub struct TeamQuery {
     pub ids: Option<String>,
     pub page_size: Option<i32>,
     pub page: Option<i32>,
     pub fill_members: Option<bool>,
+    pub sort: Option<TeamsQuerySort>,
+    pub sort_direction: Option<TeamsQuerySortDirection>,
+    pub count: Option<bool>,
 }
 
 #[get("/teams")]
@@ -57,6 +73,9 @@ pub async fn teams(
         page_size,
         page,
         fill_members,
+        sort,
+        sort_direction,
+        count,
     }): web::Query<TeamQuery>,
 ) -> ApiResult {
     let team = login::get_team_data(&session);
@@ -64,6 +83,27 @@ pub async fn teams(
     let mut base = schema::teams::dsl::teams
         .order_by(schema::teams::dsl::score.desc())
         .into_boxed();
+    // <cringe>
+    match sort {
+        Some(TeamsQuerySort::Score) | None => match sort_direction {
+            Some(TeamsQuerySortDirection::Asc) => {
+                base = base.order_by(schema::teams::dsl::score.asc());
+            }
+            Some(TeamsQuerySortDirection::Desc) | None => {
+                base = base.order_by(schema::teams::dsl::score.desc());
+            }
+        },
+        Some(TeamsQuerySort::Created) => match sort_direction {
+            Some(TeamsQuerySortDirection::Asc) => {
+                base = base.order_by(schema::teams::dsl::id.asc());
+            }
+            Some(TeamsQuerySortDirection::Desc) | None => {
+                base = base.order_by(schema::teams::dsl::id.desc());
+            }
+        },
+    }
+    // </cringe>
+
     if let Some(ids) = ids {
         let ids: Result<Vec<i32>, _> = ids.split(",").map(|i| i.parse()).collect();
         let ids = ids?;
@@ -74,6 +114,11 @@ pub async fn teams(
     base = base
         .limit((page_size).into())
         .offset((page * page_size).into());
+    if count.unwrap_or(false) {
+        return Ok(HttpResponse::Ok().json(json!({
+            "count": base.count().get_result::<i64>(conn)?,
+        })));
+    }
     let result: Vec<Team> = base.load::<Team>(conn)?.into_iter().collect();
     if fill_members.unwrap_or(false) {
         let users = schema::users::dsl::users
