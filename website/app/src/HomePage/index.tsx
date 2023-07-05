@@ -9,32 +9,13 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import { DiscordLogo } from "./Discord";
 import { signup_input, signup_button } from "./styles.module.css";
 import Container from "@mui/system/Container";
 import graphic from "./graphic.png";
 import graphic_small from "./graphic_small.png";
 import styled from "@mui/system/styled";
 import { primary_background } from "../styles.module.css";
-
-const SignupButton = styled(Button)(({ theme }) => ({
-  height: "40px",
-  fontSize: "14px",
-  padding: "0 10px",
-  color: "white",
-  width: "120px",
-  justifyContent: "center",
-  alignItems: "center",
-  borderRadius: "0px 7px 7px 0px",
-  outline: "none",
-  border: "none",
-  background: theme.palette.primary.main,
-  ":hover": {
-    background: theme.palette.primary.main,
-  },
-  display: "flex",
-  opacity: 1,
-  whiteSpace: "nowrap",
-}));
 
 export default function HomePage() {
   return (
@@ -103,11 +84,13 @@ export default function HomePage() {
             width: "100%",
           }}
         >
-          <input
-            placeholder="Join our mailing list"
-            className={signup_input}
-          ></input>
-          <SignupButton>Join now</SignupButton>
+          <Button
+            variant="contained"
+            startIcon={<DiscordLogo />}
+            href="https://discord.gg/h4GNcUkAag"
+          >
+            Join our discord
+          </Button>
         </Box>
 
         <Container
