@@ -16,7 +16,6 @@ import * as sqs from "aws-cdk-lib/aws-sqs";
 import * as elb from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { AdjustmentType } from "aws-cdk-lib/aws-autoscaling";
-import * as ses from "aws-cdk-lib/aws-ses";
 
 export class BuilderWorkerConstruct extends Construct {
   constructor(

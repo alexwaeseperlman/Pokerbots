@@ -1,19 +1,21 @@
-use crate::{app::api::ApiResult, config::GAME_LOGS_S3_BUCKET};
+use crate::{
+    app::{api::ApiResult, login},
+    config::GAME_LOGS_S3_BUCKET,
+};
 use actix_session::Session;
 use actix_web::{
     get,
     web::{self},
     HttpResponse,
 };
-use aws_sdk_s3::presigning::{self, PresigningConfig};
+use aws_sdk_s3::presigning::PresigningConfig;
 use diesel::prelude::*;
-use futures_util::future::{join, join3, try_join3};
+use futures_util::future::try_join3;
 use rand::{self, Rng};
-use reqwest::header::ToStrError;
 use serde::Deserialize;
 use serde_json::json;
 use shared::db::{
-    models::{Game, NewGame},
+    models::{Bot, Game, NewGame},
     schema,
 };
 use shared::GameTask;
@@ -160,4 +162,50 @@ pub async fn games(
         .offset((page * page_size).into());
     let result: Vec<Game> = base.load::<Game>(conn)?.into_iter().collect();
     Ok(HttpResponse::Ok().json(result))
+}
+
+#[derive(Deserialize)]
+pub struct GameLogQuery {
+    id: String,
+    bot: Option<i32>,
+}
+#[get("/game-log")]
+pub async fn game_log(
+    session: Session,
+    web::Query::<GameLogQuery>(GameLogQuery { id, bot }): web::Query<GameLogQuery>,
+    sqs_client: web::Data<aws_sdk_sqs::Client>,
+    s3_client: web::Data<aws_sdk_s3::Client>,
+) -> ApiResult {
+    let team = login::get_team_data(&session)
+        .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
+    let conn = &mut (*DB_CONNECTION).get()?;
+    // If the bot is specified, make sure it belongs to the team
+    if let Some(bot) = bot {
+        let bot: Vec<Bot> = schema::bots::dsl::bots
+            .filter(schema::bots::dsl::id.eq(bot))
+            .filter(schema::bots::dsl::team.eq(team.id))
+            .load::<Bot>(conn)?;
+        if bot.len() == 0 {
+            return Err(actix_web::error::ErrorUnauthorized(
+                "Only the owner can view a bot's logs.",
+            )
+            .into());
+        }
+    }
+    let key = format!(
+        "{}/{}",
+        bot.map(|b| b.to_string()).unwrap_or("public".into()),
+        id
+    );
+    let presign_config =
+        PresigningConfig::expires_in(std::time::Duration::from_secs(60 * 60 * 24 * 7))?;
+    let presigned = s3_client
+        .get_object()
+        .bucket(&*GAME_LOGS_S3_BUCKET)
+        .key(key)
+        .presigned(presign_config.clone())
+        .await?;
+    Ok(HttpResponse::Found()
+        .append_header(("Location", presigned.uri().to_string()))
+        .finish())
 }

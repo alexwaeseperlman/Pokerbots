@@ -32,7 +32,8 @@ fixed_vars = {
     'GAME_RESULTS_QUEUE_URL': 'http://localhost:9324/queue/game_results',
     'BUILD_RESULTS_QUEUE_URL': 'http://localhost:9324/queue/build_results',
     'REDIRECT_URI': 'http://localhost:5173/api/login',
-    'PORT': '3000'
+    'PORT': '3000',
+    'BOT_SIZE': '5000000'
 }
 
 # Check if we're in the root directory
@@ -67,9 +68,8 @@ args = parser.parse_args()
 
 out = fixed_vars
 for i in generated_vars:
-    val = generated_vars[i]
     if env.get(i) is not None:
-        val = env.get(i)
+        generated_vars[i] = env.get(i)
         print(f'Getting {i} from existing .env.')
     out[i] = generated_vars[i]
 for var in required_vars:
