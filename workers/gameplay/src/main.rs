@@ -29,9 +29,9 @@ async fn main() {
                     id,
                     date,
                     rounds,
+                    public_logs_presigned,
                     bot_a_logs_presigned,
                     bot_b_logs_presigned,
-                    public_logs_presigned,
                 } => {
                     let mut path = PathBuf::default();
                     let result = run_game(&bot_a, &bot_b, &s3, &id, rounds, &mut path).await;
@@ -59,7 +59,7 @@ async fn main() {
                             }
                         },
                         async {
-                            if let Ok(f) = tokio::fs::read(path.join("public/logs")).await {
+                            if let Ok(f) = tokio::fs::read(path.join("logs")).await {
                                 let _ = reqwest_client
                                     .put(public_logs_presigned.url)
                                     .headers(public_logs_presigned.headers.into())

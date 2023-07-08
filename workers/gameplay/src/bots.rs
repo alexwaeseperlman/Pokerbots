@@ -2,6 +2,7 @@ use rand::{thread_rng, Rng};
 use shared::{process::Process, Bot, GameError, GameResult, PresignedRequest, WhichBot};
 use std::{
     path::{Path, PathBuf},
+    process::Stdio,
     time::Duration,
 };
 use tokio::{
@@ -51,8 +52,14 @@ pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>
     .await?;
     log::debug!("Read json");
 
+    let log_file = Stdio::from(std::fs::File::create(bot_path.join("logs")).map_err(|e| {
+        io::Error::new(
+            io::ErrorKind::Other,
+            format!("Failed to create log file: {}", e),
+        )
+    })?);
     shared::process::Process::sh_configured(bot_json.run, move |command| {
-        command.current_dir(&bot_path.join("bot"))
+        command.current_dir(&bot_path.join("bot")).stderr(log_file)
     })
     .await
     .map_err(|e| {
@@ -301,6 +308,7 @@ impl Game {
                 state.player_states[0].stack,
                 state.player_states[1].stack,
             );
+            // don't print a newline because it's already in status
             self.logs
                 .write(format!("{} <<< {}", whose_turn, status).as_bytes())
                 .await?;
@@ -332,7 +340,8 @@ impl Game {
                 .map_err(|e| shared::GameError::TimeoutError(whose_turn.clone()))?
                 .map_err(|e| shared::GameError::RunTimeError(whose_turn.clone()))?;
             self.logs
-                .write(format!("{} >>> {}\n", whose_turn, line).as_bytes())
+                // don't print the newline because it's already in the line
+                .write(format!("{} >>> {}", whose_turn, line).as_bytes())
                 .await?;
             log::debug!("Reading action from {:?}.", line);
             state = state
@@ -352,7 +361,7 @@ impl Game {
         log::info!("Clients connected for {}", self.id);
         for i in 0..rounds {
             self.logs
-                .write(format!("Engine >>> round {}/{}", i + 1, rounds).as_bytes())
+                .write(format!("Engine >>> round {}/{}\n", i + 1, rounds).as_bytes())
                 .await?;
             log::debug!("Playing round. Current stacks: {:?}.", self.stacks);
             if self.stacks[0] == 0 || self.stacks[1] == 0 {

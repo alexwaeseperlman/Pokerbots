@@ -1,4 +1,4 @@
-FROM --platform=$BUILDARCH rust:alpine3.17 as builder
+FROM --platform=$BUILDARCH rust:1.70 as builder
 
 WORKDIR /usr/src/gameplay
 
@@ -6,8 +6,6 @@ COPY shared /usr/shared
 
 COPY workers/gameplay/Cargo.toml .
 #COPY workers/gameplay/Cargo.lock .
-
-RUN apk add musl-dev
 
 # create a dummy main.rs to cache dependencies
 RUN mkdir src && echo "fn main() {println!(\"wawaweewa\")}" > src/main.rs

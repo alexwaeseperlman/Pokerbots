@@ -67,6 +67,10 @@ args = parser.parse_args()
 
 out = fixed_vars
 for i in generated_vars:
+    val = generated_vars[i]
+    if env.get(i) is not None:
+        val = env.get(i)
+        print(f'Getting {i} from existing .env.')
     out[i] = generated_vars[i]
 for var in required_vars:
     val = args.__dict__.get(var)
