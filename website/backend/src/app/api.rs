@@ -7,6 +7,7 @@ use reqwest::header::ToStrError;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
+pub mod bots;
 pub mod data;
 pub mod games;
 pub mod manage_team;
@@ -25,15 +26,15 @@ pub fn api_service() -> actix_web::Scope {
         .service(manage_team::leave_team)
         .service(manage_team::create_invite)
         .service(manage_team::upload_pfp)
-        .service(manage_team::upload_bot)
         .service(manage_team::join_team)
         .service(manage_team::cancel_invite)
         .service(manage_team::kick_member)
         .service(manage_team::rename_team)
-        .service(manage_team::delete_bot)
-        .service(manage_team::set_active_bot)
+        .service(bots::upload_bot)
+        .service(bots::build_log)
+        .service(bots::delete_bot)
+        .service(bots::set_active_bot)
         .service(data::my_account)
-        .service(data::server_message)
         .service(data::my_team)
         .service(data::teams)
         .service(data::bots)

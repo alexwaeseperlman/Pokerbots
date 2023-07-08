@@ -1,8 +1,8 @@
-use std::{error::Error, process::Stdio, time::Duration};
+use std::{error::Error, process::Stdio};
 
-use builder::bots::{build_bot, download_bot};
+use builder::bots::build_bot;
 use shared::{sqs::listen_on_queue, BuildStatus, BuildTask};
-use tokio::{fs, process::Command, time::sleep};
+use tokio::{fs, process::Command};
 
 async fn process(
     BuildTask { bot, log_presigned }: BuildTask,
@@ -17,12 +17,15 @@ async fn process(
     build_bot(bot_path).await?;
     // upload the logs
     let log = fs::read(format!("/tmp/{}/logs", bot)).await?;
-    reqwest_client
+    if let Err(e) = reqwest_client
         .put(log_presigned.url)
         .headers(log_presigned.headers.into())
         .body(log)
         .send()
-        .await?;
+        .await
+    {
+        log::error!("Failed to upload logs to s3: {}", e);
+    }
     // zip up the bot
     Command::new("zip")
         .arg("-r")
@@ -34,6 +37,7 @@ async fn process(
         .status()
         .await?;
     // upload the file to s3
+    // TODO: this should use a presigned url, like the logs
     if let Err(e) = s3
         .put_object()
         .bucket(compiled_bot_bucket)
@@ -90,7 +94,7 @@ async fn main() {
                         .send()
                         .await
                         .is_err(),
-                    Err(e) => true,
+                    Err(_) => true,
                 } {
                     log::error!("Error sending message.");
                     return false;

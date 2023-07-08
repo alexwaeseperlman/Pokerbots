@@ -34,9 +34,20 @@ pub async fn build_bot<T: AsRef<Path>>(bot_folder: T) -> Result<(), io::Error> {
             format!("Failed to create log file: {}", e),
         )
     })?);
+    let err_file = Stdio::from(std::fs::File::create(path.join("logs")).map_err(|e| {
+        io::Error::new(
+            io::ErrorKind::Other,
+            format!("Failed to create log file: {}", e),
+        )
+    })?);
     let build_result = shared::process::Process::sh_configured(
         bot_json.build.unwrap_or_default(),
-        move |command| command.current_dir(path.join("bot")).stderr(log_file),
+        move |command| {
+            command
+                .current_dir(path.join("bot"))
+                .stdout(log_file)
+                .stderr(err_file)
+        },
     )
     .await?
     .wait()
@@ -93,7 +104,7 @@ mod tests {
         .unwrap();
         build_bot(format!("/tmp/{}", test_id)).await.unwrap();
         // Check that the file was created
-        let mut file = fs::read_to_string(format!("/tmp/{}/bot/file.txt", test_id))
+        let file = fs::read_to_string(format!("/tmp/{}/bot/file.txt", test_id))
             .await
             .unwrap();
         assert_eq!(file, "Hello, World!\n");

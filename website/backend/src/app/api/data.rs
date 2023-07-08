@@ -26,23 +26,6 @@ pub async fn my_team(session: Session) -> ApiResult {
 }
 
 #[derive(Deserialize)]
-pub struct ServerMessageQuery {
-    pub clear: Option<bool>,
-}
-
-#[get("/server-message")]
-pub async fn server_message(
-    session: Session,
-    web::Query::<ServerMessageQuery>(ServerMessageQuery { clear }): web::Query<ServerMessageQuery>,
-) -> ApiResult {
-    let msg = HttpResponse::Ok().json(session.get::<ServerMessage>("message")?);
-    if clear.unwrap_or(false) {
-        session.remove("message");
-    }
-    Ok(msg)
-}
-
-#[derive(Deserialize)]
 pub enum TeamsQuerySort {
     Score,
     Created,
