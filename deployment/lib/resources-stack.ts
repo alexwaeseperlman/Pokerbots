@@ -27,7 +27,8 @@ export class BuilderWorkerConstruct extends Construct {
     compiled_bot_s3: s3.Bucket,
     bot_uploads_sqs: sqs.Queue,
     build_results_sqs: sqs.Queue,
-    cluster: ecs.Cluster
+    cluster: ecs.Cluster,
+    build_logs_s3: s3.Bucket
   ) {
     super(scope, id);
 
@@ -53,6 +54,7 @@ export class BuilderWorkerConstruct extends Construct {
         COMPILED_BOT_S3_BUCKET: compiled_bot_s3.bucketName,
         BOT_UPLOADS_QUEUE_URL: bot_uploads_sqs.queueUrl,
         BUILD_RESULTS_QUEUE_URL: build_results_sqs.queueUrl,
+        BUILD_LOGS_S3_BUCKET: build_logs_s3.bucketName,
       },
       logging: new ecs.AwsLogDriver({
         streamPrefix: "builder",
@@ -97,7 +99,8 @@ export class GameplayWorkerConstruct extends Construct {
     compiled_bot_s3: s3.Bucket,
     new_games_sqs: sqs.Queue,
     game_results_sqs: sqs.Queue,
-    cluster: ecs.Cluster
+    cluster: ecs.Cluster,
+    game_logs_s3: s3.Bucket
   ) {
     super(scope, id);
 
@@ -122,6 +125,7 @@ export class GameplayWorkerConstruct extends Construct {
         COMPILED_BOT_S3_BUCKET: compiled_bot_s3.bucketName,
         GAME_RESULTS_QUEUE_URL: game_results_sqs.queueUrl,
         NEW_GAMES_QUEUE_URL: new_games_sqs.queueUrl,
+        GAME_LOGS_S3_BUCKET: game_logs_s3.bucketName,
       },
       logging: new ecs.AwsLogDriver({
         streamPrefix: "worker",
@@ -164,7 +168,9 @@ export class ResultsWorkerConstruct extends Construct {
     build_results_sqs: sqs.Queue,
     new_games_sqs: sqs.Queue,
     db: rds.DatabaseInstance,
-    cluster: ecs.Cluster
+    cluster: ecs.Cluster,
+    build_logs_s3: s3.Bucket,
+    game_logs_s3: s3.Bucket
   ) {
     super(scope, id);
 
@@ -193,6 +199,8 @@ export class ResultsWorkerConstruct extends Construct {
         GAME_RESULTS_QUEUE_URL: game_results_sqs.queueUrl,
         BUILD_RESULTS_QUEUE_URL: build_results_sqs.queueUrl,
         NEW_GAMES_QUEUE_URL: new_games_sqs.queueUrl,
+        BUILD_LOGS_S3_BUCKET: build_logs_s3.bucketName,
+        GAME_LOGS_S3_BUCKET: game_logs_s3.bucketName,
       },
       secrets: {
         DB_PASSWORD: ecs.Secret.fromSecretsManager(password),
