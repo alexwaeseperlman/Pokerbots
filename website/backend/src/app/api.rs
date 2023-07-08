@@ -2,6 +2,8 @@ use std::{fmt, num::TryFromIntError};
 
 use actix_web::http::StatusCode;
 use actix_web::{error::PayloadError, HttpResponse, ResponseError};
+use aws_sdk_s3::presigning::PresigningConfigError;
+use reqwest::header::ToStrError;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -119,3 +121,5 @@ define_api_error!(r2d2::Error, StatusCode::INTERNAL_SERVER_ERROR);
 define_api_error!(serde_json::Error, StatusCode::INTERNAL_SERVER_ERROR);
 define_api_error!(diesel::result::Error, StatusCode::INTERNAL_SERVER_ERROR);
 define_api_error!(std::env::VarError, StatusCode::INTERNAL_SERVER_ERROR);
+define_api_error!(PresigningConfigError, StatusCode::INTERNAL_SERVER_ERROR);
+define_api_error!(ToStrError, StatusCode::INTERNAL_SERVER_ERROR);

@@ -1,3 +1,4 @@
+use aws_sdk_s3::presigning::PresigningConfig;
 use results::build_result::handle_build_result;
 use results::game_result::handle_game_result;
 use shared::sqs::listen_on_queue;
@@ -18,7 +19,35 @@ async fn main() {
             &sqs,
             |task: BuildResultMessage| async {
                 log::info!("Received build result: {:?}", task);
-                handle_build_result(task, &sqs).await.is_ok()
+
+                if let Ok(presign_config) =
+                    PresigningConfig::expires_in(std::time::Duration::from_secs(60 * 60 * 24 * 7))
+                {
+                    if let Ok(log_presigned) = s3
+                        .put_object()
+                        .bucket(std::env::var("BUILD_LOGS_S3_BUCKET").unwrap())
+                        .key(format!("{}/test_game", task.bot))
+                        .presigned(presign_config.clone())
+                        .await
+                    {
+                        handle_build_result(
+                            task,
+                            &sqs,
+                            shared::PresignedRequest {
+                                url: log_presigned.uri().to_string(),
+                                headers: log_presigned.headers().into(),
+                            },
+                        )
+                        .await
+                        .is_ok()
+                    } else {
+                        log::error!("Failed to create presigned url for logs");
+                        false
+                    }
+                } else {
+                    log::error!("Failed to create presigning config for logs");
+                    false
+                }
             },
             |err| log::error!("Error receiving build result: {}", err),
         ),

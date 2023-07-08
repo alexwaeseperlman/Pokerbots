@@ -5,8 +5,9 @@ use shared::{sqs::listen_on_queue, BuildStatus, BuildTask};
 use tokio::{fs, process::Command, time::sleep};
 
 async fn process(
-    BuildTask { bot }: BuildTask,
+    BuildTask { bot, log_presigned }: BuildTask,
     s3: &aws_sdk_s3::Client,
+    reqwest_client: &reqwest::Client,
 ) -> Result<(), Box<dyn Error>> {
     let bot_bucket = std::env::var("BOT_S3_BUCKET")?;
     let compiled_bot_bucket = std::env::var("COMPILED_BOT_S3_BUCKET")?;
@@ -14,6 +15,14 @@ async fn process(
     let bot_path = std::path::Path::new("/tmp").join(&bot);
     shared::s3::download_file(&bot, &bot_path.join("bot.zip"), &bot_bucket, &s3).await?;
     build_bot(bot_path).await?;
+    // upload the logs
+    let log = fs::read(format!("/tmp/{}/logs", bot)).await?;
+    reqwest_client
+        .put(log_presigned.url)
+        .headers(log_presigned.headers.into())
+        .body(log)
+        .send()
+        .await?;
     // zip up the bot
     Command::new("zip")
         .arg("-r")
@@ -46,7 +55,7 @@ async fn main() {
     let config = shared::aws_config().await;
     let s3 = shared::s3_client(&config).await;
     let sqs = shared::sqs_client(&config).await;
-
+    let reqwest_client = reqwest::Client::new();
     log::info!("Listening for messages.");
     listen_on_queue(
         std::env::var("BOT_UPLOADS_QUEUE_URL").unwrap(),
@@ -55,7 +64,7 @@ async fn main() {
             log::warn!("Received build task for {}", task.bot);
             // TODO: send a message when the build starts
             // right now we just send a message when it finishes
-            let result = process(task.clone(), &s3).await;
+            let result = process(task.clone(), &s3, &reqwest_client).await;
 
             let message = shared::BuildResultMessage {
                 bot: task.bot,

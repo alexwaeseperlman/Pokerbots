@@ -251,7 +251,9 @@ export class ScalingAPIConstruct extends Construct {
     bot_s3: s3.Bucket,
     bot_uploads_sqs: sqs.Queue,
     new_games_sqs: sqs.Queue,
-    cluster: ecs.Cluster
+    cluster: ecs.Cluster,
+    build_logs_s3: s3.Bucket,
+    game_logs_s3: s3.Bucket
   ) {
     super(scope, id);
 
@@ -305,6 +307,8 @@ export class ScalingAPIConstruct extends Construct {
             MICROSOFT_TENANT_ID: process.env.MICROSOFT_TENANT_ID ?? "",
             PFP_S3_BUCKET: this.pfp_s3.bucketName,
             BOT_S3_BUCKET: bot_s3.bucketName,
+            BUILD_LOGS_S3_BUCKET: build_logs_s3.bucketName,
+            GAME_LOGS_S3_BUCKET: game_logs_s3.bucketName,
             BOT_SIZE: "5000000",
             APP_PFP_ENDPOINT: this.pfp_s3.urlForObject() + "/",
             BOT_UPLOADS_QUEUE_URL: bot_uploads_sqs.queueUrl,
@@ -336,6 +340,13 @@ export class ScalingAPIConstruct extends Construct {
     );
     this.pfp_s3.grantPutAcl(this.loadBalancer.service.taskDefinition.taskRole);
     this.pfp_s3.grantPut(this.loadBalancer.service.taskDefinition.taskRole);
+
+    build_logs_s3.grantReadWrite(
+      this.loadBalancer.service.taskDefinition.taskRole
+    );
+    game_logs_s3.grantReadWrite(
+      this.loadBalancer.service.taskDefinition.taskRole
+    );
 
     bot_s3.grantReadWrite(this.loadBalancer.service.taskDefinition.taskRole);
 
@@ -393,6 +404,8 @@ export class ResourcesStack extends cdk.Stack {
 
     const bot_s3 = new s3.Bucket(this, "bot");
     const compiled_bot_s3 = new s3.Bucket(this, "compiled-bot");
+    const build_logs_s3 = new s3.Bucket(this, "build-logs");
+    const game_logs_s3 = new s3.Bucket(this, "game-logs");
 
     const bot_uploads_sqs = new sqs.Queue(this, "bot-uploads");
     const new_games_sqs = new sqs.Queue(this, "new-games");
@@ -449,7 +462,9 @@ export class ResourcesStack extends cdk.Stack {
       bot_s3,
       bot_uploads_sqs,
       new_games_sqs,
-      cluster
+      cluster,
+      build_logs_s3,
+      game_logs_s3
     );
 
     const builderWorker = new BuilderWorkerConstruct(
@@ -460,7 +475,8 @@ export class ResourcesStack extends cdk.Stack {
       compiled_bot_s3,
       bot_uploads_sqs,
       build_results_sqs,
-      workerCluster
+      workerCluster,
+      build_logs_s3
     );
     const gameplayWorker = new GameplayWorkerConstruct(
       this,
@@ -469,7 +485,8 @@ export class ResourcesStack extends cdk.Stack {
       compiled_bot_s3,
       new_games_sqs,
       game_results_sqs,
-      workerCluster
+      workerCluster,
+      game_logs_s3
     );
 
     const resultsWorker = new ResultsWorkerConstruct(
@@ -481,7 +498,9 @@ export class ResourcesStack extends cdk.Stack {
       build_results_sqs,
       new_games_sqs,
       db,
-      cluster
+      cluster,
+      build_logs_s3,
+      game_logs_s3
     );
   }
 }

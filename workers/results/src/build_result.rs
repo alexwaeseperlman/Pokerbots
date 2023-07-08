@@ -10,6 +10,7 @@ use shared::{BuildResultMessage, BuildStatus, GameTask};
 pub async fn handle_build_result(
     result: BuildResultMessage,
     sqs: &aws_sdk_sqs::Client,
+    log_presigned: shared::PresignedRequest,
 ) -> Result<(), ()> {
     use shared::db::schema::bots::dsl::*;
     let conn = &mut (*shared::db::conn::DB_CONNECTION.get().map_err(|_| ())?);
@@ -24,11 +25,13 @@ pub async fn handle_build_result(
         result.bot,
         result.status
     );
-
     match result.status {
         BuildStatus::BuildSucceeded => {
             // Queue a test game
-            let task = GameTask::TestGame { bot: result.bot };
+            let task = GameTask::TestGame {
+                bot: result.bot,
+                log_presigned,
+            };
             sqs.send_message()
                 .queue_url(std::env::var("NEW_GAMES_QUEUE_URL").unwrap())
                 .message_body(serde_json::to_string(&task).unwrap())

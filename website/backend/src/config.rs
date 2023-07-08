@@ -18,6 +18,10 @@ lazy_static! {
         std::env::var("PFP_S3_BUCKET").expect("PFP_S3_BUCKET must be set in .env");
     pub static ref BOT_S3_BUCKET: String =
         std::env::var("BOT_S3_BUCKET").expect("BOT_S3_BUCKET must be set in .env");
+    pub static ref BUILD_LOGS_S3_BUCKET: String =
+        std::env::var("BOT_S3_BUCKET").expect("BOT_S3_BUCKET must be set in .env");
+    pub static ref GAME_LOGS_S3_BUCKET: String =
+        std::env::var("BOT_S3_BUCKET").expect("BOT_S3_BUCKET must be set in .env");
     pub static ref APP_PFP_ENDPOINT: String =
         std::env::var("APP_PFP_ENDPOINT").expect("APP_PFP_ENDPOINT must be set in .env");
     pub static ref AZURE_SECRET: String = std::env::var("AZURE_SECRET")

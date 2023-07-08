@@ -13,6 +13,8 @@ generated_vars = {
     'PFP_S3_BUCKET': secrets.token_hex(8),
     # must be all lowercase
     'BOT_S3_BUCKET': secrets.token_hex(8),
+    'BUILD_LOGS_S3_BUCKET': secrets.token_hex(8),
+    'GAME_LOGS_S3_BUCKET': secrets.token_hex(8),
     'SECRET_KEY': secrets.token_urlsafe(86),
     # must be all lowercase
     'COMPILED_BOT_S3_BUCKET': secrets.token_hex(8)

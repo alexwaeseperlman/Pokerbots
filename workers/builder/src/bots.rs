@@ -1,6 +1,9 @@
 use tokio::{fs, io};
 
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    process::Stdio,
+};
 
 use shared::Bot;
 
@@ -25,9 +28,15 @@ pub async fn build_bot<T: AsRef<Path>>(bot_folder: T) -> Result<(), io::Error> {
         let json = fs::read_to_string(path.join("bot/bot.json")).await?;
         serde_json::from_str::<Bot>(&json)?
     };
+    let log_file = Stdio::from(std::fs::File::create(path.join("logs")).map_err(|e| {
+        io::Error::new(
+            io::ErrorKind::Other,
+            format!("Failed to create log file: {}", e),
+        )
+    })?);
     let build_result = shared::process::Process::sh_configured(
         bot_json.build.unwrap_or_default(),
-        move |command| command.current_dir(path.join("bot")),
+        move |command| command.current_dir(path.join("bot")).stderr(log_file),
     )
     .await?
     .wait()

@@ -3,7 +3,7 @@ use std::io::Read;
 use crate::{
     app::login,
     app::{api::ApiResult, login::microsoft_login_url},
-    config::{BOT_S3_BUCKET, BOT_SIZE, PFP_S3_BUCKET},
+    config::{BOT_S3_BUCKET, BOT_SIZE, BUILD_LOGS_S3_BUCKET, GAME_LOGS_S3_BUCKET, PFP_S3_BUCKET},
 };
 use actix_session::Session;
 use actix_web::{get, post, put, web, HttpResponse};
@@ -13,13 +13,15 @@ use chrono;
 use diesel::prelude::*;
 use futures_util::StreamExt;
 use rand::{self, Rng};
+use reqwest::header::ToStrError;
+use s3::presigning::PresigningConfig;
 use serde::Deserialize;
 use serde_json::json;
-use shared::db::conn::DB_CONNECTION;
 use shared::db::{
     models::{NewBot, NewInvite, NewTeam, TeamInvite, User},
     schema::{bots, team_invites, teams, users},
 };
+use shared::{db::conn::DB_CONNECTION, PresignedRequest};
 
 #[derive(Deserialize)]
 pub struct CreateTeamQuery {
@@ -333,6 +335,18 @@ pub async fn upload_bot(
         return Err(e.into());
     }
 
+    let presign_config =
+        PresigningConfig::expires_in(std::time::Duration::from_secs(60 * 60 * 24 * 7))?;
+    let log_presigned = s3_client
+        .put_object()
+        .bucket(&*BUILD_LOGS_S3_BUCKET)
+        .key(format!("{}/build", id))
+        .presigned(presign_config.clone())
+        .await?;
+    let log_presigned = PresignedRequest {
+        url: log_presigned.uri().to_string(),
+        headers: log_presigned.headers().into(),
+    };
     // push the bot to the 'bot_uploads' queue
     // TODO: Handle errors by deleting the bot from the database
     sqs_client
@@ -340,6 +354,7 @@ pub async fn upload_bot(
         .queue_url(std::env::var("BOT_UPLOADS_QUEUE_URL")?)
         .message_body(serde_json::to_string(&shared::BuildTask {
             bot: id.to_string(),
+            log_presigned,
         })?)
         .send()
         .await?;

@@ -82,7 +82,7 @@ impl Process {
         Self::sh_configured(s, |command| command).await
     }
 
-    pub async fn sh_configured<T: AsRef<OsStr>, F: Fn(&mut Command) -> &mut Command>(
+    pub async fn sh_configured<T: AsRef<OsStr>, F: FnOnce(&mut Command) -> &mut Command>(
         s: T,
         configure: F,
     ) -> Result<Process, io::Error> {
