@@ -216,6 +216,24 @@ export default function BotTable({
             );
           },
         },
+        {
+          field: "build-log",
+          headerName: "",
+          minWidth: 150,
+          sortable: false,
+          renderCell: (params) => {
+            return (
+              <Button
+                sx={{
+                  color: "black",
+                }}
+                href={`${apiUrl}/build-log?bot=${params.id}`}
+              >
+                Get build log
+              </Button>
+            );
+          },
+        },
       ]}
       loading={loading}
       rows={bots}

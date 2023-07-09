@@ -4,12 +4,13 @@ use shared::{Bot, GameError, GameResult, WhichBot};
 use std::{
     path::{Path, PathBuf},
     process::Stdio,
-    time::Duration,
+    time::{Duration, UNIX_EPOCH},
 };
 use tokio::{
     fs,
     io::{self, AsyncBufReadExt, AsyncWriteExt, BufReader},
     process::{ChildStdout, Command},
+    time::Instant,
     try_join,
 };
 
@@ -133,6 +134,7 @@ pub struct Game {
     id: String,
     timeout: Duration,
     logs: tokio::fs::File,
+    start_time: Instant,
 }
 impl Game {
     pub fn new(
@@ -151,6 +153,7 @@ impl Game {
             timeout,
             id,
             logs,
+            start_time: Instant::now(),
         }
     }
 
@@ -161,7 +164,21 @@ impl Game {
         };
         if let Some(ref mut stdin) = bot.stdin {
             self.logs
-                .write_all(&[format!("{} <<< ", which_bot).as_bytes(), bytes, b"\n"].concat())
+                .write_all(
+                    &[
+                        format!(
+                            "{}ms {} <<< ",
+                            tokio::time::Instant::now()
+                                .duration_since(self.start_time)
+                                .as_millis(),
+                            which_bot
+                        )
+                        .as_bytes(),
+                        bytes,
+                        b"\n",
+                    ]
+                    .concat(),
+                )
                 .await?;
             stdin
                 .write_all(&[bytes, b"\n"].concat())
@@ -180,7 +197,14 @@ impl Game {
             // TODO: determine cause close
             self.logs
                 .write_all(
-                    format!("Engine >>> Ending because {} lost stdin\n", which_bot).as_bytes(),
+                    format!(
+                        "{}ms System >>> Ending because {} lost stdin\n",
+                        tokio::time::Instant::now()
+                            .duration_since(self.start_time)
+                            .as_millis(),
+                        which_bot
+                    )
+                    .as_bytes(),
                 )
                 .await?;
             return Err(GameError::RunTimeError(which_bot));
@@ -329,7 +353,17 @@ impl Game {
                 .map_err(|_| shared::GameError::RunTimeError(whose_turn))?;
             self.logs
                 // don't print the newline because it's already in the line
-                .write(format!("{} >>> {}", whose_turn, line).as_bytes())
+                .write(
+                    format!(
+                        "{}ms {} >>> {}",
+                        tokio::time::Instant::now()
+                            .duration_since(self.start_time)
+                            .as_millis(),
+                        whose_turn,
+                        line
+                    )
+                    .as_bytes(),
+                )
                 .await?;
             log::debug!("Reading action from {:?}.", line);
             state = state
@@ -362,7 +396,17 @@ impl Game {
         log::info!("Clients connected for {}", self.id);
         for i in 0..rounds {
             self.logs
-                .write(format!("Engine >>> round {}/{}\n", i + 1, rounds).as_bytes())
+                .write(
+                    format!(
+                        "{}ms System >>> round {}/{}\n",
+                        tokio::time::Instant::now()
+                            .duration_since(self.start_time)
+                            .as_millis(),
+                        i + 1,
+                        rounds
+                    )
+                    .as_bytes(),
+                )
                 .await?;
             log::debug!("Playing round. Current stacks: {:?}.", self.stacks);
             if self.stacks[0] == 0 || self.stacks[1] == 0 {

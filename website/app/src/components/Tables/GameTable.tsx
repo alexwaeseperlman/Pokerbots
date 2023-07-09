@@ -145,6 +145,24 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
           flex: 1,
           sortable: false,
         },
+        {
+          field: "game-log",
+          headerName: "",
+          minWidth: 150,
+          sortable: false,
+          renderCell: (params) => {
+            return (
+              <Button
+                sx={{
+                  color: "black",
+                }}
+                href={`${apiUrl}/game-log?id=${params.id}`}
+              >
+                Game log
+              </Button>
+            );
+          },
+        },
       ]}
       loading={loading}
       rows={games}
