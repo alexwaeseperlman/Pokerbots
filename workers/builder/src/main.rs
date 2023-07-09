@@ -14,7 +14,7 @@ async fn process(
     fs::create_dir_all(format!("/tmp/{}", bot)).await?;
     let bot_path = std::path::Path::new("/tmp").join(&bot);
     shared::s3::download_file(&bot, &bot_path.join("bot.zip"), &bot_bucket, &s3).await?;
-    build_bot(bot_path).await?;
+    let result = build_bot(bot_path).await;
     // upload the logs
     let log = fs::read(format!("/tmp/{}/logs", bot)).await?;
     if let Err(e) = reqwest_client
@@ -25,6 +25,9 @@ async fn process(
         .await
     {
         log::error!("Failed to upload logs to s3: {}", e);
+    }
+    if result.is_err() {
+        result?;
     }
     // zip up the bot
     Command::new("zip")
