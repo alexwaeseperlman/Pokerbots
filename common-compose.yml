@@ -30,6 +30,8 @@ services:
 
       - PFP_S3_BUCKET=${PFP_S3_BUCKET}
       - BOT_S3_BUCKET=${BOT_S3_BUCKET}
+      - GAME_LOGS_S3_BUCKET=${GAME_LOGS_S3_BUCKET}
+      - BUILD_LOGS_S3_BUCKET=${BUILD_LOGS_S3_BUCKET}
       - BOT_SIZE=5000000
 
       - AZURE_SECRET=${AZURE_SECRET}
@@ -62,6 +64,7 @@ services:
       - SQS_ADDRESS=http://sqs:9324
 
       - COMPILED_BOT_S3_BUCKET=${COMPILED_BOT_S3_BUCKET}
+      - GAME_LOGS_S3_BUCKET=${GAME_LOGS_S3_BUCKET}
   builder:
     volumes:
       - ~/.aws/:/root/.aws:ro
@@ -69,6 +72,7 @@ services:
       - RUST_LOG=debug
       - COMPILED_BOT_S3_BUCKET=${COMPILED_BOT_S3_BUCKET}
       - BOT_S3_BUCKET=${BOT_S3_BUCKET}
+      - BUILD_LOGS_S3_BUCKET=${BUILD_LOGS_S3_BUCKET}
 
       - BOT_UPLOADS_QUEUE_URL=http://sqs:9324/queue/bot_uploads
       - BUILD_RESULTS_QUEUE_URL=http://sqs:9324/queue/build_results
@@ -94,6 +98,8 @@ services:
       - RUST_LOG=debug
       - S3_ADDRESS=http://s3:9000
       - SQS_ADDRESS=http://sqs:9324
+      - GAME_LOGS_S3_BUCKET=${GAME_LOGS_S3_BUCKET}
+      - BUILD_LOGS_S3_BUCKET=${BUILD_LOGS_S3_BUCKET}
   s3:
     image: minio/minio
     volumes:
@@ -110,6 +116,8 @@ services:
       MINIO_SECRET_KEY: ${S3_SECRET_KEY}
       PFP_S3_BUCKET: ${PFP_S3_BUCKET}
       BOT_S3_BUCKET: ${BOT_S3_BUCKET}
+      BUILD_LOGS_S3_BUCKET: ${BUILD_LOGS_S3_BUCKET}
+      GAME_LOGS_S3_BUCKET: ${GAME_LOGS_S3_BUCKET}
       COMPILED_BOT_S3_BUCKET: ${COMPILED_BOT_S3_BUCKET}
     entrypoint: >
       /bin/sh -c "
@@ -118,6 +126,8 @@ services:
       /usr/bin/mc anonymous set public myminio/$PFP_S3_BUCKET;
       /usr/bin/mc mb myminio/$BOT_S3_BUCKET;
       /usr/bin/mc mb myminio/$COMPILED_BOT_S3_BUCKET;
+      /usr/bin/mc mb myminio/$BUILD_LOGS_S3_BUCKET;
+      /usr/bin/mc mb myminio/$GAME_LOGS_S3_BUCKET;
       exit 0;
       "
 

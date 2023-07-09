@@ -145,6 +145,34 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
           flex: 1,
           sortable: false,
         },
+        {
+          field: "game-log",
+          headerName: "",
+          minWidth: 150,
+          sortable: false,
+          renderCell: (params) => {
+            console.log(params);
+            let bot = undefined;
+            if (params.row.bot_a?.team?.id === team?.id) {
+              bot = params.row.bot_a?.id;
+            } else if (params.row.bot_b?.team?.id === team?.id) {
+              bot = params.row.bot_b?.id;
+            }
+            return (
+              <Button
+                sx={{
+                  color: "black",
+                }}
+                target="_tab"
+                href={`${apiUrl}/game-log?id=${params.id}${
+                  bot ? `&bot=${bot}` : ""
+                }`}
+              >
+                Game log
+              </Button>
+            );
+          },
+        },
       ]}
       loading={loading}
       rows={games}

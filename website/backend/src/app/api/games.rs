@@ -1,20 +1,25 @@
-use crate::app::api::ApiResult;
+use crate::{
+    app::{api::ApiResult, login},
+    config::GAME_LOGS_S3_BUCKET,
+};
 use actix_session::Session;
 use actix_web::{
     get,
     web::{self},
     HttpResponse,
 };
+use aws_sdk_s3::presigning::PresigningConfig;
 use diesel::prelude::*;
+use futures_util::future::try_join3;
 use rand::{self, Rng};
 use serde::Deserialize;
 use serde_json::json;
-use shared::db::conn::DB_CONNECTION;
 use shared::db::{
-    models::{Game, NewGame},
+    models::{Bot, Game, NewGame},
     schema,
 };
 use shared::GameTask;
+use shared::{db::conn::DB_CONNECTION, PresignedRequest};
 #[derive(Deserialize)]
 pub struct MakeGameQuery {
     pub bot_a: i32,
@@ -27,6 +32,7 @@ pub async fn create_game(
     session: Session,
     web::Query::<MakeGameQuery>(MakeGameQuery { bot_a, bot_b }): web::Query<MakeGameQuery>,
     sqs_client: web::Data<aws_sdk_sqs::Client>,
+    s3_client: web::Data<aws_sdk_s3::Client>,
 ) -> ApiResult {
     // generate a random code and insert it into the database
     // also push a batch job to the queue
@@ -40,6 +46,40 @@ pub async fn create_game(
         })
         .get_result::<Game>(conn)?;
     // push a batch job to the queue
+    let presign_config =
+        PresigningConfig::expires_in(std::time::Duration::from_secs(60 * 60 * 24 * 7))?;
+    let (public_logs, bot_a_logs, bot_b_logs) = try_join3(
+        s3_client
+            .put_object()
+            .bucket(&*GAME_LOGS_S3_BUCKET)
+            .key(format!("public/{}", game.id))
+            .presigned(presign_config.clone()),
+        s3_client
+            .put_object()
+            .bucket(&*GAME_LOGS_S3_BUCKET)
+            .key(format!("{}/{}", bot_a, game.id))
+            .presigned(presign_config.clone()),
+        s3_client
+            .put_object()
+            .bucket(&*GAME_LOGS_S3_BUCKET)
+            .key(format!("{}/{}", bot_b, game.id))
+            .presigned(presign_config.clone()),
+    )
+    .await?;
+    let (public_logs_presigned, bot_a_logs_presigned, bot_b_logs_presigned) = (
+        PresignedRequest {
+            url: public_logs.uri().to_string(),
+            headers: public_logs.headers().into(),
+        },
+        PresignedRequest {
+            url: bot_a_logs.uri().to_string(),
+            headers: bot_a_logs.headers().into(),
+        },
+        PresignedRequest {
+            url: bot_b_logs.uri().to_string(),
+            headers: bot_b_logs.headers().into(),
+        },
+    );
     let job = sqs_client
         .send_message()
         .queue_url(std::env::var("NEW_GAMES_QUEUE_URL")?)
@@ -50,17 +90,18 @@ pub async fn create_game(
             date: game.created,
             // TODO: Choose a number of rounds
             rounds: 100,
+            public_logs_presigned,
+            bot_a_logs_presigned,
+            bot_b_logs_presigned,
         })?)
-        .send()
-        .await;
-    if let Err(e) = job {
+        .send();
+    if let Err(e) = job.await {
         // Remove the game from the database
         diesel::delete(schema::games::dsl::games)
             .filter(schema::games::dsl::id.eq(id))
             .execute(conn)?;
         return Err(e.into());
     }
-    log::info!("Game created {:?}", job);
     Ok(HttpResponse::Ok().json(game))
 }
 
@@ -121,4 +162,50 @@ pub async fn games(
         .offset((page * page_size).into());
     let result: Vec<Game> = base.load::<Game>(conn)?.into_iter().collect();
     Ok(HttpResponse::Ok().json(result))
+}
+
+#[derive(Deserialize)]
+pub struct GameLogQuery {
+    id: String,
+    bot: Option<i32>,
+}
+#[get("/game-log")]
+pub async fn game_log(
+    session: Session,
+    web::Query::<GameLogQuery>(GameLogQuery { id, bot }): web::Query<GameLogQuery>,
+    sqs_client: web::Data<aws_sdk_sqs::Client>,
+    s3_client: web::Data<aws_sdk_s3::Client>,
+) -> ApiResult {
+    let team = login::get_team_data(&session)
+        .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
+    let conn = &mut (*DB_CONNECTION).get()?;
+    // If the bot is specified, make sure it belongs to the team
+    if let Some(bot) = bot {
+        let bot: Vec<Bot> = schema::bots::dsl::bots
+            .filter(schema::bots::dsl::id.eq(bot))
+            .filter(schema::bots::dsl::team.eq(team.id))
+            .load::<Bot>(conn)?;
+        if bot.len() == 0 {
+            return Err(actix_web::error::ErrorUnauthorized(
+                "Only the owner can view a bot's logs.",
+            )
+            .into());
+        }
+    }
+    let key = format!(
+        "{}/{}",
+        bot.map(|b| b.to_string()).unwrap_or("public".into()),
+        id
+    );
+    let presign_config =
+        PresigningConfig::expires_in(std::time::Duration::from_secs(60 * 60 * 24 * 7))?;
+    let presigned = s3_client
+        .get_object()
+        .bucket(&*GAME_LOGS_S3_BUCKET)
+        .key(key)
+        .presigned(presign_config.clone())
+        .await?;
+    Ok(HttpResponse::Found()
+        .append_header(("Location", presigned.uri().to_string()))
+        .finish())
 }

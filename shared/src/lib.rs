@@ -1,10 +1,10 @@
-pub mod process;
 pub mod s3;
 pub mod sqs;
-use std::io;
+use std::{fmt::Display, io, str::FromStr};
 
 use aws_config::SdkConfig;
 use aws_sdk_s3::config::Credentials;
+use reqwest::header::{HeaderMap, HeaderName};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -12,8 +12,43 @@ use ts_rs::TS;
 pub mod db;
 
 #[derive(Serialize, Deserialize, Debug, Clone, TS)]
+pub struct SerializableHeaderMap(Vec<(String, String)>);
+
+impl From<&HeaderMap> for SerializableHeaderMap {
+    fn from(map: &HeaderMap) -> Self {
+        Self(
+            map.into_iter()
+                .map(|(k, v)| (k.to_string(), v.to_str().unwrap_or_default().to_string()))
+                .filter(|(k, _v)| k != "")
+                .collect(),
+        )
+    }
+}
+
+impl Into<HeaderMap> for SerializableHeaderMap {
+    fn into(self) -> HeaderMap {
+        let mut map = HeaderMap::new();
+        for (k, v) in self.0 {
+            if let Ok(k) = HeaderName::from_str(&k) {
+                if let Ok(v) = v.parse() {
+                    map.insert(k, v);
+                }
+            }
+        }
+        map
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, TS)]
+pub struct PresignedRequest {
+    pub url: String,
+    pub headers: SerializableHeaderMap,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, TS)]
 pub struct BuildTask {
     pub bot: String,
+    pub log_presigned: PresignedRequest,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, TS)]
@@ -45,9 +80,13 @@ pub enum GameTask {
         id: String,
         date: i64,
         rounds: usize,
+        public_logs_presigned: PresignedRequest,
+        bot_a_logs_presigned: PresignedRequest,
+        bot_b_logs_presigned: PresignedRequest,
     },
     TestGame {
         bot: String,
+        log_presigned: PresignedRequest,
     },
 }
 
@@ -56,6 +95,15 @@ pub enum GameTask {
 pub enum WhichBot {
     BotA = 0,
     BotB = 1,
+}
+
+impl Display for WhichBot {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            WhichBot::BotA => write!(f, "BotA"),
+            WhichBot::BotB => write!(f, "BotB"),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]

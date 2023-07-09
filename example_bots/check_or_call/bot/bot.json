@@ -1,5 +1,5 @@
 {
     "name": "Check or call",
-    "build": "g++ main.cpp -o main",
+    "build": "echo Building... && g++ main.cpp -o main",
     "run": "./main"
 }

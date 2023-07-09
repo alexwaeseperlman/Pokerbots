@@ -16,7 +16,6 @@ import * as sqs from "aws-cdk-lib/aws-sqs";
 import * as elb from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { AdjustmentType } from "aws-cdk-lib/aws-autoscaling";
-import * as ses from "aws-cdk-lib/aws-ses";
 
 export class BuilderWorkerConstruct extends Construct {
   constructor(
@@ -27,7 +26,8 @@ export class BuilderWorkerConstruct extends Construct {
     compiled_bot_s3: s3.Bucket,
     bot_uploads_sqs: sqs.Queue,
     build_results_sqs: sqs.Queue,
-    cluster: ecs.Cluster
+    cluster: ecs.Cluster,
+    build_logs_s3: s3.Bucket
   ) {
     super(scope, id);
 
@@ -53,6 +53,7 @@ export class BuilderWorkerConstruct extends Construct {
         COMPILED_BOT_S3_BUCKET: compiled_bot_s3.bucketName,
         BOT_UPLOADS_QUEUE_URL: bot_uploads_sqs.queueUrl,
         BUILD_RESULTS_QUEUE_URL: build_results_sqs.queueUrl,
+        BUILD_LOGS_S3_BUCKET: build_logs_s3.bucketName,
       },
       logging: new ecs.AwsLogDriver({
         streamPrefix: "builder",
@@ -97,7 +98,8 @@ export class GameplayWorkerConstruct extends Construct {
     compiled_bot_s3: s3.Bucket,
     new_games_sqs: sqs.Queue,
     game_results_sqs: sqs.Queue,
-    cluster: ecs.Cluster
+    cluster: ecs.Cluster,
+    game_logs_s3: s3.Bucket
   ) {
     super(scope, id);
 
@@ -122,6 +124,7 @@ export class GameplayWorkerConstruct extends Construct {
         COMPILED_BOT_S3_BUCKET: compiled_bot_s3.bucketName,
         GAME_RESULTS_QUEUE_URL: game_results_sqs.queueUrl,
         NEW_GAMES_QUEUE_URL: new_games_sqs.queueUrl,
+        GAME_LOGS_S3_BUCKET: game_logs_s3.bucketName,
       },
       logging: new ecs.AwsLogDriver({
         streamPrefix: "worker",
@@ -164,7 +167,9 @@ export class ResultsWorkerConstruct extends Construct {
     build_results_sqs: sqs.Queue,
     new_games_sqs: sqs.Queue,
     db: rds.DatabaseInstance,
-    cluster: ecs.Cluster
+    cluster: ecs.Cluster,
+    build_logs_s3: s3.Bucket,
+    game_logs_s3: s3.Bucket
   ) {
     super(scope, id);
 
@@ -193,6 +198,8 @@ export class ResultsWorkerConstruct extends Construct {
         GAME_RESULTS_QUEUE_URL: game_results_sqs.queueUrl,
         BUILD_RESULTS_QUEUE_URL: build_results_sqs.queueUrl,
         NEW_GAMES_QUEUE_URL: new_games_sqs.queueUrl,
+        BUILD_LOGS_S3_BUCKET: build_logs_s3.bucketName,
+        GAME_LOGS_S3_BUCKET: game_logs_s3.bucketName,
       },
       secrets: {
         DB_PASSWORD: ecs.Secret.fromSecretsManager(password),
@@ -251,7 +258,9 @@ export class ScalingAPIConstruct extends Construct {
     bot_s3: s3.Bucket,
     bot_uploads_sqs: sqs.Queue,
     new_games_sqs: sqs.Queue,
-    cluster: ecs.Cluster
+    cluster: ecs.Cluster,
+    build_logs_s3: s3.Bucket,
+    game_logs_s3: s3.Bucket
   ) {
     super(scope, id);
 
@@ -305,6 +314,8 @@ export class ScalingAPIConstruct extends Construct {
             MICROSOFT_TENANT_ID: process.env.MICROSOFT_TENANT_ID ?? "",
             PFP_S3_BUCKET: this.pfp_s3.bucketName,
             BOT_S3_BUCKET: bot_s3.bucketName,
+            BUILD_LOGS_S3_BUCKET: build_logs_s3.bucketName,
+            GAME_LOGS_S3_BUCKET: game_logs_s3.bucketName,
             BOT_SIZE: "5000000",
             APP_PFP_ENDPOINT: this.pfp_s3.urlForObject() + "/",
             BOT_UPLOADS_QUEUE_URL: bot_uploads_sqs.queueUrl,
@@ -336,6 +347,13 @@ export class ScalingAPIConstruct extends Construct {
     );
     this.pfp_s3.grantPutAcl(this.loadBalancer.service.taskDefinition.taskRole);
     this.pfp_s3.grantPut(this.loadBalancer.service.taskDefinition.taskRole);
+
+    build_logs_s3.grantReadWrite(
+      this.loadBalancer.service.taskDefinition.taskRole
+    );
+    game_logs_s3.grantReadWrite(
+      this.loadBalancer.service.taskDefinition.taskRole
+    );
 
     bot_s3.grantReadWrite(this.loadBalancer.service.taskDefinition.taskRole);
 
@@ -393,6 +411,8 @@ export class ResourcesStack extends cdk.Stack {
 
     const bot_s3 = new s3.Bucket(this, "bot");
     const compiled_bot_s3 = new s3.Bucket(this, "compiled-bot");
+    const build_logs_s3 = new s3.Bucket(this, "build-logs");
+    const game_logs_s3 = new s3.Bucket(this, "game-logs");
 
     const bot_uploads_sqs = new sqs.Queue(this, "bot-uploads");
     const new_games_sqs = new sqs.Queue(this, "new-games");
@@ -449,7 +469,9 @@ export class ResourcesStack extends cdk.Stack {
       bot_s3,
       bot_uploads_sqs,
       new_games_sqs,
-      cluster
+      cluster,
+      build_logs_s3,
+      game_logs_s3
     );
 
     const builderWorker = new BuilderWorkerConstruct(
@@ -460,7 +482,8 @@ export class ResourcesStack extends cdk.Stack {
       compiled_bot_s3,
       bot_uploads_sqs,
       build_results_sqs,
-      workerCluster
+      workerCluster,
+      build_logs_s3
     );
     const gameplayWorker = new GameplayWorkerConstruct(
       this,
@@ -469,7 +492,8 @@ export class ResourcesStack extends cdk.Stack {
       compiled_bot_s3,
       new_games_sqs,
       game_results_sqs,
-      workerCluster
+      workerCluster,
+      game_logs_s3
     );
 
     const resultsWorker = new ResultsWorkerConstruct(
@@ -481,7 +505,9 @@ export class ResourcesStack extends cdk.Stack {
       build_results_sqs,
       new_games_sqs,
       db,
-      cluster
+      cluster,
+      build_logs_s3,
+      game_logs_s3
     );
   }
 }
