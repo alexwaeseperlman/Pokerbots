@@ -1,9 +1,7 @@
-use std::{path::PathBuf, process::Command};
+use std::path::PathBuf;
 
-use futures_lite::stream::StreamExt;
 use gameplay::bots::run_game;
-use rand::Rng;
-use shared::{GameResult, GameStatus, GameStatusMessage, GameTask};
+use shared::{GameStatus, GameStatusMessage, GameTask};
 
 #[tokio::main]
 async fn main() {
@@ -27,7 +25,7 @@ async fn main() {
                     bot_a,
                     bot_b,
                     id,
-                    date,
+                    date: _,
                     rounds,
                     public_logs_presigned,
                     bot_a_logs_presigned,
@@ -73,7 +71,7 @@ async fn main() {
                 }
                 GameTask::TestGame { bot, log_presigned } => {
                     let mut path = PathBuf::default();
-                    if let Err(e) = run_game(&bot, &bot, &s3, &bot, 5, &mut path).await {
+                    if let Err(_) = run_game(&bot, &bot, &s3, &bot, 5, &mut path).await {
                         Ok(GameStatus::TestGameFailed)
                     } else {
                         Ok(GameStatus::TestGameSucceeded)

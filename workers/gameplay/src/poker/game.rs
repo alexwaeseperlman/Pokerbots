@@ -2,10 +2,8 @@ use core::panic;
 use std::{
     cmp::{min, Ordering},
     future::Future,
-    path::PathBuf,
 };
 
-use itertools::Itertools;
 use rand::{seq::SliceRandom, Rng};
 use shared::GameActionError;
 
@@ -567,7 +565,7 @@ mod tests {
     #[test]
     pub fn better_hand_wins_showdown() {
         let mut rng = StdRng::from_seed(core::array::from_fn(|i| i as u8 + 1));
-        for i in 0..1000 {
+        for _ in 0..1000 {
             let mut state = GameState::new(&[20, 50], GameState::get_shuffled_deck(&mut rng));
             state = state.post_action(Action::Raise { amt: 49 }).unwrap();
             state = state.post_action(Action::Call).unwrap();

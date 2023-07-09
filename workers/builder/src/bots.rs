@@ -1,24 +1,31 @@
+use subprocess::PopenConfig;
 use tokio::{fs, io};
 
-use std::{
-    path::{Path, PathBuf},
-    process::Stdio,
-};
+use std::path::{Path, PathBuf};
 
 use shared::Bot;
 
 pub async fn build_bot<T: AsRef<Path>>(bot_folder: T) -> Result<(), io::Error> {
     //TODO: run this in a cgroup this to protect against zip bombs
-    // We leave the bot.zip in the directory cause why not
     let path = bot_folder.as_ref();
     log::info!("Constructing bot in {:?}", path);
 
-    shared::process::Process::sh_configured("unzip -o bot.zip", move |command| {
-        command.current_dir(path)
-    })
-    .await?
-    .wait()
-    .await?;
+    subprocess::Popen::create(
+        &["unzip", "-o", "bot.zip"],
+        PopenConfig {
+            cwd: Some(path.into()),
+            stderr: subprocess::Redirection::Merge,
+            stdout: subprocess::Redirection::File(std::fs::File::create(path.join("logs"))?),
+            ..Default::default()
+        },
+    )
+    .and_then(|mut p| p.wait())
+    .map_err(|e| {
+        io::Error::new(
+            io::ErrorKind::Other,
+            format!("Failed to unzip bot: {:?}", e),
+        )
+    })?;
 
     // This fails if the bot folder is not named bot.
     // This should be guaranteed by the server.
@@ -28,39 +35,24 @@ pub async fn build_bot<T: AsRef<Path>>(bot_folder: T) -> Result<(), io::Error> {
         let json = fs::read_to_string(path.join("bot/bot.json")).await?;
         serde_json::from_str::<Bot>(&json)?
     };
-    let log_file = Stdio::from(std::fs::File::create(path.join("logs")).map_err(|e| {
-        io::Error::new(
-            io::ErrorKind::Other,
-            format!("Failed to create log file: {}", e),
-        )
-    })?);
-    let err_file = Stdio::from(std::fs::File::create(path.join("logs")).map_err(|e| {
-        io::Error::new(
-            io::ErrorKind::Other,
-            format!("Failed to create log file: {}", e),
-        )
-    })?);
-    let build_result = shared::process::Process::sh_configured(
-        bot_json.build.unwrap_or_default(),
-        move |command| {
-            command
-                .current_dir(path.join("bot"))
-                .stdout(log_file)
-                .stderr(err_file)
+    let build_result = subprocess::Popen::create(
+        &["sh", "-c", &bot_json.build.unwrap_or_default()],
+        PopenConfig {
+            cwd: Some(path.join("bot").into()),
+            stderr: subprocess::Redirection::Merge,
+            stdout: subprocess::Redirection::File(std::fs::File::create(path.join("logs"))?),
+            ..Default::default()
         },
     )
-    .await?
-    .wait()
-    .await?;
+    .and_then(|mut p| p.wait());
 
-    if !build_result.success() {
-        return Err(io::Error::new(
+    match build_result {
+        Ok(status) if status.success() => Ok(()),
+        _ => Err(io::Error::new(
             io::ErrorKind::Other,
             format!("Build failed: {:?}", build_result),
-        ));
+        )),
     }
-
-    Ok(())
 }
 pub async fn download_bot<T: Into<String>, U: Into<PathBuf>, V: Into<String>>(
     key: T,
@@ -86,23 +78,31 @@ pub async fn download_bot<T: Into<String>, U: Into<PathBuf>, V: Into<String>>(
 
 #[cfg(test)]
 mod tests {
+    use std::io;
+
     use super::build_bot;
     use rand::Rng;
     use tokio::fs;
 
-    #[tokio::test]
-    pub async fn create_file() {
+    async fn build_example(bot_name: &str) -> Result<String, io::Error> {
         let test_id = format!("{:x}", rand::thread_rng().gen::<u32>());
         fs::create_dir_all(format!("/tmp/{}", test_id))
             .await
             .unwrap();
         fs::copy(
-            "../../example_bots/tests/create_file_at_build/bot.zip",
+            format!("../../example_bots/tests/{}/bot.zip", bot_name),
             format!("/tmp/{}/bot.zip", test_id),
         )
         .await
         .unwrap();
-        build_bot(format!("/tmp/{}", test_id)).await.unwrap();
+        build_bot(format!("/tmp/{}", test_id))
+            .await
+            .map(move |_| test_id)
+    }
+
+    #[tokio::test]
+    pub async fn create_file() {
+        let test_id = build_example("create_file_at_build").await.unwrap();
         // Check that the file was created
         let file = fs::read_to_string(format!("/tmp/{}/bot/file.txt", test_id))
             .await
@@ -112,44 +112,31 @@ mod tests {
 
     #[tokio::test]
     pub async fn cpp_compile_error() {
-        let test_id = format!("{:x}", rand::thread_rng().gen::<u32>());
-        fs::create_dir_all(format!("/tmp/{}", test_id))
-            .await
-            .unwrap();
-        fs::copy(
-            "../../example_bots/tests/cpp_compile_error/bot.zip",
-            format!("/tmp/{}/bot.zip", test_id),
-        )
-        .await
-        .unwrap();
-        build_bot(format!("/tmp/{}", test_id))
+        build_example("cpp_compile_error")
             .await
             .expect_err("Build should fail");
     }
 
     #[tokio::test]
     pub async fn cpp_compile_success() {
-        let test_id = format!("{:x}", rand::thread_rng().gen::<u32>());
-        fs::create_dir_all(format!("/tmp/{}", test_id))
-            .await
-            .unwrap();
-        fs::copy(
-            "../../example_bots/tests/cpp_compile_success/bot.zip",
-            format!("/tmp/{}/bot.zip", test_id),
-        )
-        .await
-        .unwrap();
-        build_bot(format!("/tmp/{}", test_id))
+        let test_id = build_example("cpp_compile_success")
             .await
             .expect("Build should succeed");
 
-        shared::process::Process::sh_configured("./main", move |command| {
-            command.current_dir(format!("/tmp/{}/bot", test_id))
-        })
-        .await
-        .unwrap()
-        .wait()
-        .await
-        .unwrap();
+        assert!(subprocess::Exec::shell("./main")
+            .cwd(format!("/tmp/{}/bot", test_id))
+            .join()
+            .unwrap()
+            .success());
+    }
+
+    #[tokio::test]
+    pub async fn logs_output_correctly() {
+        let test_id = build_example("create_file_at_build").await.unwrap();
+        // Check that the file was created
+        let logs = fs::read_to_string(format!("/tmp/{}/logs", test_id))
+            .await
+            .unwrap();
+        assert_eq!(logs, "Success!\nOr not...\n");
     }
 }

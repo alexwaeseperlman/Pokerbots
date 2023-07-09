@@ -1,4 +1,3 @@
-pub mod process;
 pub mod s3;
 pub mod sqs;
 use std::{fmt::Display, io, str::FromStr};

@@ -76,8 +76,6 @@ impl Ord for Hand {
 pub mod hand_eval {
     use std::cmp::Ordering;
 
-    use log::debug;
-
     use super::*;
 
     fn hand_value(hand: &[Card; 5]) -> (u8, Vec<u8>, Vec<u8>) {
@@ -157,7 +155,6 @@ pub mod hand_eval {
     }
     #[cfg(test)]
     mod tests {
-        use super::super::*;
         use super::*;
 
         #[test]
