@@ -227,6 +227,7 @@ export default function BotTable({
                 sx={{
                   color: "black",
                 }}
+                target="_tab"
                 href={`${apiUrl}/build-log?bot=${params.id}`}
               >
                 Get build log

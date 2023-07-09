@@ -151,12 +151,22 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
           minWidth: 150,
           sortable: false,
           renderCell: (params) => {
+            console.log(params);
+            let bot = undefined;
+            if (params.row.bot_a?.team?.id === team?.id) {
+              bot = params.row.bot_a?.id;
+            } else if (params.row.bot_b?.team?.id === team?.id) {
+              bot = params.row.bot_b?.id;
+            }
             return (
               <Button
                 sx={{
                   color: "black",
                 }}
-                href={`${apiUrl}/game-log?id=${params.id}`}
+                target="_tab"
+                href={`${apiUrl}/game-log?id=${params.id}${
+                  bot ? `&bot=${bot}` : ""
+                }`}
               >
                 Game log
               </Button>

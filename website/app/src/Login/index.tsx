@@ -105,14 +105,14 @@ export default function Login() {
           <MicrosoftLogo />
           With Microsoft
         </LoginButton>
-        <LoginButton
+        {/*<LoginButton
           onClick={() => {
             window.location.href = "/api/login-provider?provider=google";
           }}
         >
           <GoogleLogo />
           With Google
-        </LoginButton>
+        </LoginButton>*/}
       </Container>
     </Box>
   );
