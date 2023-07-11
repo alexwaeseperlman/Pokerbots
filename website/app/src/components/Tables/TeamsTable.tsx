@@ -90,7 +90,7 @@ export function TeamsTable() {
       pageSizeOptions={[10, 25, 50, 100]}
       paginationMode="server"
       paginationModel={paginationModel}
-      rowCount={teamCount}
+      rowCount={teamCount ?? 0}
       onPaginationModelChange={setPaginationModel}
       disableColumnFilter
       disableColumnMenu

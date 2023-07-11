@@ -202,7 +202,7 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
         pageSizeOptions={[10, 25, 50, 100]}
         paginationMode="server"
         paginationModel={paginationModel}
-        rowCount={gameCount}
+        rowCount={gameCount ?? 0}
         onPaginationModelChange={setPaginationModel}
         disableColumnFilter
         disableColumnMenu

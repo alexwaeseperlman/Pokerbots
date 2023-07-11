@@ -163,7 +163,7 @@ export default function BotTable({
         pageSizeOptions={[10, 25, 50, 100]}
         paginationMode="server"
         paginationModel={paginationModel}
-        rowCount={botCount}
+        rowCount={botCount ?? 0}
         onPaginationModelChange={setPaginationModel}
         disableColumnFilter
         disableColumnMenu
