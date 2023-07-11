@@ -69,7 +69,6 @@ export default function ManageTeam({
 }) {
   const [team, fetchTeam] = useTeam(teamId);
   const [user, fetchUser] = useUser();
-  console.log(team, user);
   if (readonly || (team && user)) {
     return <DisplayTeam readonly={readonly} teamId={teamId} />;
   } else if (user) {

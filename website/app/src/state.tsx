@@ -109,7 +109,6 @@ export async function fillInGames(
     bot_a: botMap.get(game.bot_a) as Bot,
     bot_b: botMap.get(game.bot_b) as Bot,
   }));
-  console.log(out);
   return out;
 }
 

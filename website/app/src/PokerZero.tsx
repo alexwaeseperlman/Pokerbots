@@ -68,7 +68,6 @@ function TeamDashboard() {
   const user = useUser()[0];
 
   //TODO: Use suspense here
-  console.log(teamId);
 
   return (
     <ManageTeam

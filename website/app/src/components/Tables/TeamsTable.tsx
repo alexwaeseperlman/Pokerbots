@@ -38,7 +38,6 @@ export function TeamsTable() {
     getTeams();
   }, [getTeams, paginationModel]);
   const renderTeam = (params) => {
-    console.log(params);
     return (
       <>
         <Avatar

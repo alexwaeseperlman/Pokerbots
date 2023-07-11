@@ -16,7 +16,6 @@ export default function JoinTeam() {
   // TODO: Is it actually valid to use an atom family like this?
   const [myTeam, fetchMyTeam] = useTeam(null);
 
-  console.log(team, myTeam);
   React.useEffect(() => {
     if (code === undefined) {
       navigate("/");
@@ -75,7 +74,6 @@ export default function JoinTeam() {
             fetch(`${apiUrl}/join-team?invite_code=${code}`)
               .then((res) => res.json())
               .then((data) => {
-                console.log(data);
                 if (data.error) {
                   enqueueSnackbar(data.error, { variant: "error" });
                 } else {

@@ -82,7 +82,6 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
         setGames(await fillInGames(games));
       });
   }, [team?.id, paginationModel.page, paginationModel.pageSize]);
-  console.log(menuEl?.game, team);
   //TODO: only poll active games
   useEffect(() => {
     setLoading(true);
@@ -97,7 +96,6 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
     let color: ChipProps["color"] = "success";
     if (params.row.score_change * score_mul < 0) color = "error";
     else if (params.row.score_change * score_mul == 0) color = "default";
-    console.log(params.row);
     if (params.row.error_type) {
       color = "warning";
     }
