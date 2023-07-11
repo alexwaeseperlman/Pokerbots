@@ -296,11 +296,15 @@ impl GameState {
 }
 #[cfg(test)]
 mod tests {
+    use itertools::Itertools;
     use rand::{rngs::StdRng, SeedableRng};
 
     use crate::poker::{
         game::{Action, GameState, Round},
-        hands::{self, hand_eval},
+        hands::{
+            self,
+            hand_eval::{self, cards_from},
+        },
     };
 
     #[test]
@@ -591,5 +595,71 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    pub fn snapshot_1() {
+        /*
+        99ms BotA <<< P 1
+        99ms BotB <<< P 0
+        99ms BotA <<< C 7s 7h
+        99ms BotB <<< C Jc 9h
+        99ms BotB <<< S 2 1 2 48 52
+        99ms BotB >>> C
+        99ms BotA <<< S 2 2 2 48 52
+        99ms BotA >>> R5
+        99ms BotB <<< S 7 2 7 48 52
+        99ms BotB >>> C
+        99ms BotA <<< C 7s 7h Qh 7d Qc
+        99ms BotB <<< C Jc 9h Qh 7d Qc
+        99ms BotA <<< S 7 7 7 48 52
+        99ms BotA >>> R5
+        99ms BotB <<< S 12 7 12 48 52
+        99ms BotB >>> C
+        99ms BotA <<< C 7s 7h Qh 7d Qc 6h
+        99ms BotB <<< C Jc 9h Qh 7d Qc 6h
+        99ms BotA <<< S 12 12 12 48 52
+        99ms BotA >>> R5
+        99ms BotB <<< S 17 12 17 48 52
+        99ms BotB >>> C
+        99ms BotA <<< C 7s 7h Qh 7d Qc 6h 4c
+        99ms BotB <<< C Jc 9h Qh 7d Qc 6h 4c
+        99ms BotA <<< S 17 17 17 48 52
+        99ms BotA >>> R5
+        99ms BotB <<< S 22 17 22 48 52
+        99ms BotB >>> C
+         */
+        let mut state = GameState::new(
+            &[48, 52],
+            cards_from("Jc9h7s7hQh7dQc6h4c")
+                .into_iter()
+                .rev()
+                .collect_vec(),
+        );
+        assert_eq!(state.player_states[0].hole_cards, cards_from("Jc9h"));
+        assert_eq!(state.player_states[1].hole_cards, cards_from("7s7h"));
+
+        state = state.post_action(Action::Call).unwrap();
+
+        state = state.post_action(Action::Raise { amt: 5 }).unwrap();
+
+        state = state.post_action(Action::Call).unwrap();
+
+        state = state.post_action(Action::Raise { amt: 5 }).unwrap();
+
+        state = state.post_action(Action::Call).unwrap();
+
+        state = state.post_action(Action::Raise { amt: 5 }).unwrap();
+
+        state = state.post_action(Action::Call).unwrap();
+
+        state = state.post_action(Action::Raise { amt: 5 }).unwrap();
+
+        state = state.post_action(Action::Call).unwrap();
+
+        assert_eq!(state.round, Round::End);
+        assert_eq!(state.last_aggressor, true);
+        assert_eq!(state.get_stack(false), 26);
+        assert_eq!(state.get_stack(true), 74);
     }
 }

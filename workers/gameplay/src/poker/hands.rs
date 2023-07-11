@@ -88,7 +88,7 @@ pub mod hand_eval {
             .rev()
             .collect_vec();
         // check low straight
-        if hist[0].1 == 14 && hist[1].1 == 5 {
+        if hist == vec![(1, 14), (1, 5), (1, 4), (1, 3), (1, 2)] {
             hist = vec![(1, 5), (1, 4), (1, 3), (1, 2), (1, 1)];
         }
 
@@ -162,7 +162,7 @@ pub mod hand_eval {
             // 100 randomly generated hands of 7 cards in order of strength
             // The current and previous algorithm agree on this ordering,
             // so we can have confidence that it is correct
-            let hands_order = [
+            let hands = [
                 "Js6d2c8h7d3s4s",
                 "Jc3d4h5s2sTdKs",
                 "3h2cKd7c9dJdTh",
@@ -245,6 +245,7 @@ pub mod hand_eval {
                 "9s7s4c7hKd3dKc",
                 "5hKd8sKsQsJh8c",
                 "KsQhKd9dTsQc5d",
+                "Ac2dAh5s5h",
                 "Jd8h3sJcAcAdQh",
                 "9s5sJdQhQsQc2d",
                 "2cKhKs4c7h5sKd",
@@ -263,12 +264,12 @@ pub mod hand_eval {
                 "4s9d9s9h8s2s4c",
                 "TsQhThJdTd4cJh",
                 "As7cAh5s2c2sAc",
-            ]
-            .map(|a| best5(&cards_from(a)));
+            ];
+            let hands_order = hands.map(|a| best5(&cards_from(a)));
 
             for a in 0..hands_order.len() {
                 for b in 0..hands_order.len() {
-                    println!("{} vs {}", a, b);
+                    println!("{} vs {}", hands[a], hands[b]);
                     println!(
                         "{:?} vs {:?}",
                         hand_value(&hands_order[a].cards),
@@ -277,7 +278,9 @@ pub mod hand_eval {
                     assert_eq!(
                         hands_order[a].cmp(&hands_order[b]),
                         a.cmp(&b),
-                        "hand order should be the same as given"
+                        "hand order between {} and {} should be the same as given",
+                        hands[a],
+                        hands[b]
                     )
                 }
             }
