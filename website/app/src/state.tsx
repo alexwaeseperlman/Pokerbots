@@ -70,6 +70,7 @@ export type Bot = {
   uploaded_by: string;
   date_uploaded: number;
   build_status: number;
+  active: boolean;
 };
 
 export type Game = {

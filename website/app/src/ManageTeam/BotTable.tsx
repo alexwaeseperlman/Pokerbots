@@ -1,13 +1,11 @@
 import React, { useCallback, useEffect } from "react";
 import { Bot, Team, apiUrl, usePfpEndpoint, useTeam } from "../state";
-import Avatar from "@mui/material/Avatar";
-import Box from "@mui/system/Box";
 import Typography from "@mui/material/Typography";
 import { DataGrid } from "@mui/x-data-grid/DataGrid";
 import Chip from "@mui/material/Chip";
-import { TableButton } from "../components/Tables/GameTable";
-import Button from "@mui/material/Button";
 import { enqueueSnackbar } from "notistack";
+import { IconButton, Menu, MenuItem } from "@mui/material";
+import { GridMoreVertIcon } from "@mui/x-data-grid";
 
 export default function BotTable({
   readonly,
@@ -26,6 +24,13 @@ export default function BotTable({
   });
   const [pfpEndpoint, fetchPfpEndpoint] = usePfpEndpoint();
   const [loading, setLoading] = React.useState(true);
+
+  const [menuEl, setMenuEl] = React.useState<null | {
+    bot: Bot;
+    el: HTMLElement;
+  }>(null);
+  const [menuOpen, setMenuOpen] = React.useState(false);
+
   const getBots = () => {
     fetch(`${apiUrl}/bots?team=${team?.id}&count=true`)
       .then((res) => res.json())
@@ -57,198 +62,192 @@ export default function BotTable({
   }, [paginationModel, team?.active_bot]);
 
   return (
-    <DataGrid
-      columns={[
-        {
-          field: "score",
-          headerName: "Result",
-          renderCell: (params) => {
-            if (params.row.build_status === -1)
-              return <Chip color="warning" label={"Not in queue"}></Chip>;
-            if (params.row.build_status === 0)
-              return <Chip color="default" label={"In queue"}></Chip>;
-            if (params.row.build_status === 1)
-              return <Chip color="default" label={"Building"}></Chip>;
-            if (params.row.build_status === 2)
-              return <Chip color="default" label={"Built successfully"}></Chip>;
-            if (params.row.build_status === 3)
-              return <Chip color="default" label={"Playing test game"}></Chip>;
-            // 4 means the bot succeeded in the test game, so we show its score
-            if (params.row.build_status === 4)
-              return <Chip label={"Ready to play"} color={"success"} />;
-            if (params.row.build_status === 5)
-              return <Chip color="error" label={"Build failed"}></Chip>;
-            if (params.row.build_status == 6)
-              return <Chip color="error" label={"Test game failed"}></Chip>;
+    <>
+      <DataGrid
+        columns={[
+          {
+            field: "score",
+            headerName: "Result",
+            renderCell: (params) => {
+              if (params.row.build_status === -1)
+                return <Chip color="warning" label={"Not in queue"}></Chip>;
+              if (params.row.build_status === 0)
+                return <Chip color="default" label={"In queue"}></Chip>;
+              if (params.row.build_status === 1)
+                return <Chip color="default" label={"Building"}></Chip>;
+              if (params.row.build_status === 2)
+                return (
+                  <Chip color="default" label={"Built successfully"}></Chip>
+                );
+              if (params.row.build_status === 3)
+                return (
+                  <Chip color="default" label={"Playing test game"}></Chip>
+                );
+              // 4 means the bot succeeded in the test game, so we show its score
+              if (params.row.build_status === 4)
+                return <Chip label={"Ready to play"} color={"success"} />;
+              if (params.row.build_status === 5)
+                return <Chip color="error" label={"Build failed"}></Chip>;
+              if (params.row.build_status == 6)
+                return <Chip color="error" label={"Test game failed"}></Chip>;
+            },
+            minWidth: 100,
+            flex: 1,
+            sortable: false,
           },
-          minWidth: 100,
-          flex: 1,
-          sortable: false,
-        },
-        {
-          field: "uploaded_by",
-          headerName: "Uploaded By",
-          minWidth: 200,
-          flex: 1,
-          sortable: false,
-        },
-        {
-          field: "name",
-          headerName: "Name",
-          minWidth: 150,
-          flex: 1,
-          sortable: false,
-        },
-        {
-          field: "created",
-          headerName: "Uploaded",
-          minWidth: 150,
-          flex: 1,
-          renderCell: (params) => {
-            const date = new Date(params.value * 1000);
-            return (
-              <Typography>
-                {date.toLocaleDateString()} {date.toLocaleTimeString()}
-              </Typography>
-            );
+          {
+            field: "uploaded_by",
+            headerName: "Uploaded By",
+            minWidth: 200,
+            flex: 1,
+            sortable: false,
           },
-          sortable: false,
-        },
-        ...(readonly
-          ? []
-          : [
-              {
-                field: "delete-col",
-                headerName: "",
-                minWidth: 150,
-                sortable: false,
-                valueGetter(params) {
-                  return params.id;
-                },
-                renderCell: (params) => {
-                  // delete that bot
-                  return (
-                    <Button
-                      sx={{
-                        color: "black",
-                      }}
-                      onClick={() => {
-                        if (
-                          !window.confirm(
-                            "Are you sure you want to delete a bot?"
-                          )
-                        )
-                          return;
-                        fetch(`${apiUrl}/delete-bot?id=${params.value}`).then(
-                          () => getBots()
-                        );
-                      }}
-                    >
-                      Delete
-                    </Button>
-                  );
-                },
-              },
-              {
-                field: "id",
-                headerName: "",
-                minWidth: 175,
-                sortable: false,
-                valueGetter: (params) => ({
-                  active: params.row.active,
-                  id: params.value,
-                }),
-                renderCell: (params) => {
-                  // make that bot active
-                  return (
-                    <Button
-                      sx={{
-                        color: "black",
-                      }}
-                      onClick={() => {
-                        fetch(`${apiUrl}/set-active-bot?id=${params.id}`)
-                          .then(async (r) => {
-                            const data = await r.json();
-                            if (data.error) {
-                              enqueueSnackbar(data.error, { variant: "error" });
-                            }
-                          })
-                          .then(() => {
-                            enqueueSnackbar("Set active", {
-                              variant: "success",
-                            });
-                            setTimeout(() => {
-                              fetchTeam();
-                            }, 100);
-                          });
-                      }}
-                    >
-                      {params.value.active ? "Currently active" : "Set active"}
-                    </Button>
-                  );
-                },
-              },
-            ]),
-        {
-          field: "play-against",
-          headerName: "",
-          minWidth: 150,
-          sortable: false,
-          renderCell: (params) => {
-            return (
-              <Button
-                sx={{
-                  color: "black",
-                }}
-                onClick={() => {
-                  fetch(
-                    `${apiUrl}/create-game?bot_a=${myTeam?.active_bot}&bot_b=${params.id}`
-                  ).then(async (r) => {
-                    const data = await r.json();
-                    if (data.error) {
-                      enqueueSnackbar(data.error, { variant: "error" });
+          {
+            field: "name",
+            headerName: "Name",
+            minWidth: 150,
+            flex: 1,
+            sortable: false,
+          },
+          {
+            field: "created",
+            headerName: "Uploaded",
+            minWidth: 150,
+            flex: 1,
+            renderCell: (params) => {
+              const date = new Date(params.value * 1000);
+              return (
+                <Typography>
+                  {date.toLocaleDateString()} {date.toLocaleTimeString()}
+                </Typography>
+              );
+            },
+            sortable: false,
+          },
+          {
+            field: "options",
+            headerName: "",
+            width: 40,
+            sortable: false,
+            align: "center",
+            renderCell: (params) => {
+              const ref = React.useRef(null);
+              return (
+                <IconButton
+                  sx={{
+                    color: "black",
+                  }}
+                  ref={ref}
+                  onClick={() => {
+                    if (menuEl == ref.current) {
+                      setMenuEl(null);
+                      setMenuOpen(false);
+                    } else {
+                      setMenuOpen(true);
+                      setMenuEl({
+                        bot: params.row,
+                        el: ref.current as unknown as HTMLElement,
+                      });
                     }
+                  }}
+                >
+                  <GridMoreVertIcon />
+                </IconButton>
+              );
+            },
+          },
+        ]}
+        loading={loading}
+        rows={bots}
+        pagination
+        pageSizeOptions={[10, 25, 50, 100]}
+        paginationMode="server"
+        paginationModel={paginationModel}
+        rowCount={botCount}
+        onPaginationModelChange={setPaginationModel}
+        disableColumnFilter
+        disableColumnMenu
+        disableColumnSelector
+        disableDensitySelector
+        disableRowSelectionOnClick
+      />
+      <Menu
+        id="bots-menu"
+        open={!!menuEl && menuOpen}
+        anchorEl={menuEl?.el}
+        onClose={() => setMenuOpen(false)}
+        onClick={() => setMenuOpen(false)}
+      >
+        <MenuItem
+          sx={{
+            color: "black",
+          }}
+          onClick={() => {
+            fetch(`${apiUrl}/set-active-bot?id=${menuEl?.bot.id}`)
+              .then(async (r) => {
+                const data = await r.json();
+                if (data.error) {
+                  enqueueSnackbar(data.error, {
+                    variant: "error",
                   });
-                }}
-              >
-                Challenge
-              </Button>
+                }
+              })
+              .then(() => {
+                enqueueSnackbar("Set active", {
+                  variant: "success",
+                });
+                setTimeout(() => {
+                  fetchTeam();
+                }, 100);
+              });
+          }}
+        >
+          {menuEl?.bot.active ? "Currently active" : "Set active"}
+        </MenuItem>
+
+        <MenuItem
+          sx={{
+            color: "black",
+          }}
+          onClick={() => {
+            fetch(
+              `${apiUrl}/create-game?bot_a=${myTeam?.active_bot}&bot_b=${menuEl?.bot.id}`
+            ).then(async (r) => {
+              const data = await r.json();
+              if (data.error) {
+                enqueueSnackbar(data.error, { variant: "error" });
+              }
+            });
+          }}
+        >
+          Challenge
+        </MenuItem>
+
+        <MenuItem
+          sx={{
+            color: "black",
+          }}
+          target="_tab"
+          href={`${apiUrl}/build-log?bot=${menuEl?.bot.id}`}
+          LinkComponent={"a"}
+        >
+          Get build log
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            if (!window.confirm("Are you sure you want to delete a bot?"))
+              return;
+            fetch(`${apiUrl}/delete-bot?id=${menuEl?.bot}`).then(() =>
+              getBots()
             );
-          },
-        },
-        {
-          field: "build-log",
-          headerName: "",
-          minWidth: 150,
-          sortable: false,
-          renderCell: (params) => {
-            return (
-              <Button
-                sx={{
-                  color: "black",
-                }}
-                target="_tab"
-                href={`${apiUrl}/build-log?bot=${params.id}`}
-              >
-                Get build log
-              </Button>
-            );
-          },
-        },
-      ]}
-      loading={loading}
-      rows={bots}
-      pagination
-      pageSizeOptions={[10, 25, 50, 100]}
-      paginationMode="server"
-      paginationModel={paginationModel}
-      rowCount={botCount}
-      onPaginationModelChange={setPaginationModel}
-      disableColumnFilter
-      disableColumnMenu
-      disableColumnSelector
-      disableDensitySelector
-      disableRowSelectionOnClick
-    />
+          }}
+          sx={{
+            color: "red",
+          }}
+        >
+          Delete
+        </MenuItem>
+      </Menu>
+    </>
   );
 }
