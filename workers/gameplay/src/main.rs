@@ -33,6 +33,9 @@ async fn main() {
                 } => {
                     let mut path = PathBuf::default();
                     let result = run_game(&bot_a, &bot_b, &s3, &id, rounds, &mut path).await;
+                    if let Err(e) = result.clone() {
+                        log::error!("Game failed: {:?}", e);
+                    }
                     // upload logs
                     // ignore if they have errors
                     tokio::join!(

@@ -222,6 +222,7 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
       >
         {team && menuEl?.game?.bot_a?.team?.id == team.id && (
           <MenuItem
+            component="a"
             target="_tab"
             href={`${apiUrl}/game-log?id=${menuEl?.game.id}&bot=${menuEl?.game?.bot_a.id}`}
           >
@@ -230,6 +231,7 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
         )}
         {team && menuEl?.game?.bot_b?.team?.id == team.id && (
           <MenuItem
+            component="a"
             target="_tab"
             href={`${apiUrl}/game-log?id=${menuEl?.game.id}&bot=${menuEl?.game?.bot_b.id}`}
           >
@@ -238,6 +240,7 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
         )}
 
         <MenuItem
+          component="a"
           target="_tab"
           href={`${apiUrl}/game-log?id=${menuEl?.game.id}`}
         >

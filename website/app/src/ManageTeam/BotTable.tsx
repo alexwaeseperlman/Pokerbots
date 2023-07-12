@@ -179,9 +179,6 @@ export default function BotTable({
         onClick={() => setMenuOpen(false)}
       >
         <MenuItem
-          sx={{
-            color: "black",
-          }}
           onClick={() => {
             fetch(`${apiUrl}/set-active-bot?id=${menuEl?.bot.id}`)
               .then(async (r) => {
@@ -206,9 +203,7 @@ export default function BotTable({
         </MenuItem>
 
         <MenuItem
-          sx={{
-            color: "black",
-          }}
+          component="a"
           onClick={() => {
             fetch(
               `${apiUrl}/create-game?bot_a=${myTeam?.active_bot}&bot_b=${menuEl?.bot.id}`
@@ -224,12 +219,9 @@ export default function BotTable({
         </MenuItem>
 
         <MenuItem
-          sx={{
-            color: "black",
-          }}
           target="_tab"
           href={`${apiUrl}/build-log?bot=${menuEl?.bot.id}`}
-          LinkComponent={"a"}
+          component="a"
         >
           Get build log
         </MenuItem>
@@ -244,6 +236,7 @@ export default function BotTable({
           sx={{
             color: "red",
           }}
+          component="a"
         >
           Delete
         </MenuItem>
