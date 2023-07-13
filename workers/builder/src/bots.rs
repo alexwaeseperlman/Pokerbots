@@ -35,8 +35,47 @@ pub async fn build_bot<T: AsRef<Path>>(bot_folder: T) -> Result<(), io::Error> {
         let json = fs::read_to_string(path.join("bot/bot.json")).await?;
         serde_json::from_str::<Bot>(&json)?
     };
+
+    std::fs::write(
+        path.join("bot/build.sh"),
+        bot_json.build.unwrap_or_default(),
+    )
+    .expect("write to build.sh failed");
+    let chown_result = subprocess::Popen::create(
+        &["chown", "-R", "builder:builder", "."],
+        PopenConfig {
+            cwd: Some(path.join("bot").into()),
+            stderr: subprocess::Redirection::Merge,
+            ..Default::default()
+        },
+    )
+    .and_then(|mut p| p.wait());
+
+    let _ = match chown_result {
+        Ok(status) if status.success() => Ok(()),
+        _ => Err(io::Error::new(
+            io::ErrorKind::Other,
+            format!("Build failed: {:?}", chown_result),
+        )),
+    };
+    let chmod_result = subprocess::Popen::create(
+        &["chmod", "+x", "build.sh", "."],
+        PopenConfig {
+            cwd: Some(path.join("bot").into()),
+            stderr: subprocess::Redirection::Merge,
+            ..Default::default()
+        },
+    )
+    .and_then(|mut p| p.wait());
+    let _ = match chmod_result {
+        Ok(status) if status.success() => Ok(()),
+        _ => Err(io::Error::new(
+            io::ErrorKind::Other,
+            format!("Build failed: {:?}", chmod_result),
+        )),
+    };
     let build_result = subprocess::Popen::create(
-        &["sh", "-c", &bot_json.build.unwrap_or_default()],
+        &["su", "builder", "-c","bwrap --unshare-all --die-with-parent --dir /tmp --ro-bind /usr /usr --proc /proc --dev /dev --ro-bind /lib /lib --ro-bind /usr/bin /usr/bin --ro-bind /bin /bin --bind . /home/builder --chdir /home/builder ./build.sh" ],
         PopenConfig {
             cwd: Some(path.join("bot").into()),
             stderr: subprocess::Redirection::Merge,

@@ -184,6 +184,18 @@ impl Game {
             })?;
             Ok(())
         } else {
+            // TODO: determine cause close
+            self.logs
+                .write_all(
+                    format!(
+                        "{}ms System >>> Ending because {} lost stdin\n",
+                        tokio::time::Instant::now()
+                            .duration_since(self.start_time)
+                            .as_millis(),
+                        which_bot
+                    )
+                    .as_bytes(),
+                );
             // TODO: determine cause of close
             self.write_log(format!("System > Ending because {} lost stdin", which_bot))
                 .await?;
@@ -340,12 +352,14 @@ impl Game {
                 log::info!("Failed to write current state to bot {:?}.", whose_turn);
                 GameError::RunTimeError(whose_turn)
             })?;
-            log::debug!("Reading action from {:?}.", whose_turn);
+
+           log::debug!("Reading action from {:?}.", whose_turn);
             let mut line: String = Default::default();
             tokio::time::timeout(self.timeout, target_reader.read_line(&mut line))
                 .await
                 .map_err(|_| shared::GameError::TimeoutError(whose_turn))?
                 .map_err(|_| shared::GameError::RunTimeError(whose_turn))?;
+
             self.write_log(format!("{} > {}", whose_turn, line.trim()))
                 .await?;
             log::debug!("Reading action from {:?}.", line);
