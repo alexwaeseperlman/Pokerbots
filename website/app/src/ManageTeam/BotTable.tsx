@@ -229,7 +229,7 @@ export default function BotTable({
           onClick={() => {
             if (!window.confirm("Are you sure you want to delete a bot?"))
               return;
-            fetch(`${apiUrl}/delete-bot?id=${menuEl?.bot}`).then(() =>
+            fetch(`${apiUrl}/delete-bot?id=${menuEl?.bot.id}`).then(() =>
               getBots()
             );
           }}
