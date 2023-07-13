@@ -4,7 +4,7 @@ use shared::{Bot, GameError, GameResult, WhichBot};
 use std::{
     path::{Path, PathBuf},
     process::Stdio,
-    time::{Duration, UNIX_EPOCH},
+    time::Duration,
 };
 use tokio::{
     fs,
@@ -157,31 +157,21 @@ impl Game {
         }
     }
 
-    async fn write_bot(&mut self, which_bot: WhichBot, bytes: &[u8]) -> Result<(), GameError> {
+    async fn write_bot<T: Into<String>>(
+        &mut self,
+        which_bot: WhichBot,
+        message: T,
+    ) -> Result<(), GameError> {
+        let message: String = message.into();
+        self.write_log(format!("{} < {}", which_bot, message.clone()))
+            .await?;
         let bot = match which_bot {
             WhichBot::BotA => &mut self.bot_a,
             WhichBot::BotB => &mut self.bot_b,
         };
         if let Some(ref mut stdin) = bot.stdin {
-            self.logs
-                .write_all(
-                    &[
-                        format!(
-                            "{}ms {} <<< ",
-                            tokio::time::Instant::now()
-                                .duration_since(self.start_time)
-                                .as_millis(),
-                            which_bot
-                        )
-                        .as_bytes(),
-                        bytes,
-                        b"\n",
-                    ]
-                    .concat(),
-                )
-                .await?;
             stdin
-                .write_all(&[bytes, b"\n"].concat())
+                .write_all(format!("{}\n", message).as_bytes())
                 .await
                 .map_err(|_| {
                     log::error!("Error writing to bot");
@@ -206,6 +196,8 @@ impl Game {
                     )
                     .as_bytes(),
                 )
+            // TODO: determine cause of close
+            self.write_log(format!("System > Ending because {} lost stdin", which_bot))
                 .await?;
             return Err(GameError::RunTimeError(which_bot));
         }
@@ -219,12 +211,12 @@ impl Game {
                 WhichBot::BotB => (self.button + 1) % 2,
             }
         );
-        self.write_bot(which_bot, position.as_bytes()).await?;
+        self.write_bot(which_bot, position).await?;
         Ok(())
     }
 
     async fn print_round_end(&mut self, which_bot: WhichBot) -> Result<(), shared::GameError> {
-        self.write_bot(which_bot, b"E").await?;
+        self.write_bot(which_bot, "E").await?;
         Ok(())
     }
 
@@ -235,8 +227,8 @@ impl Game {
     ) -> Result<(), shared::GameError> {
         let cards = [
             state.player_states[match which_bot {
-                WhichBot::BotA => 0,
-                WhichBot::BotB => 1,
+                WhichBot::BotA => self.button,
+                WhichBot::BotB => 1 - self.button,
             }]
             .hole_cards
             .clone(),
@@ -246,9 +238,24 @@ impl Game {
         .iter()
         .map(|card| format!("{}", card))
         .join(" ");
-        self.write_bot(which_bot, format!("C {}", cards).as_bytes())
-            .await?;
+        self.write_bot(which_bot, format!("C {}", cards)).await?;
 
+        Ok(())
+    }
+
+    async fn write_log<S: Into<String>>(&mut self, msg: S) -> Result<(), shared::GameError> {
+        self.logs
+            .write_all(
+                format!(
+                    "{}ms {}\n",
+                    tokio::time::Instant::now()
+                        .duration_since(self.start_time)
+                        .as_millis(),
+                    msg.into()
+                )
+                .as_bytes(),
+            )
+            .await?;
         Ok(())
     }
 
@@ -258,12 +265,14 @@ impl Game {
         bot_b_reader: &mut BufReader<ChildStdout>,
     ) -> Result<(), shared::GameError> {
         let mut rng = thread_rng();
-        let mut stacks = self.stacks;
-        if self.button == 1 {
-            stacks = [stacks[1], stacks[0]];
-        }
-        let mut state =
-            crate::poker::game::GameState::new(&stacks, GameState::get_shuffled_deck(&mut rng));
+        let mut state = crate::poker::game::GameState::new(
+            if self.button == 1 {
+                [self.stacks[1], self.stacks[0]]
+            } else {
+                [self.stacks[0], self.stacks[1]]
+            },
+            GameState::get_shuffled_deck(&mut rng),
+        );
 
         log::debug!("Game state: {:?}. ", state);
 
@@ -339,31 +348,19 @@ impl Game {
                 state.player_states[0].stack,
                 state.player_states[1].stack,
             );
-            self.write_bot(whose_turn, status.as_bytes())
-                .await
-                .map_err(|_| {
-                    log::info!("Failed to write current state to bot {:?}.", whose_turn);
-                    GameError::RunTimeError(whose_turn)
-                })?;
-            log::debug!("Reading action from {:?}.", whose_turn);
+            self.write_bot(whose_turn, status).await.map_err(|_| {
+                log::info!("Failed to write current state to bot {:?}.", whose_turn);
+                GameError::RunTimeError(whose_turn)
+            })?;
+
+           log::debug!("Reading action from {:?}.", whose_turn);
             let mut line: String = Default::default();
             tokio::time::timeout(self.timeout, target_reader.read_line(&mut line))
                 .await
                 .map_err(|_| shared::GameError::TimeoutError(whose_turn))?
                 .map_err(|_| shared::GameError::RunTimeError(whose_turn))?;
-            self.logs
-                // don't print the newline because it's already in the line
-                .write(
-                    format!(
-                        "{}ms {} >>> {}",
-                        tokio::time::Instant::now()
-                            .duration_since(self.start_time)
-                            .as_millis(),
-                        whose_turn,
-                        line
-                    )
-                    .as_bytes(),
-                )
+
+            self.write_log(format!("{} > {}", whose_turn, line.trim()))
                 .await?;
             log::debug!("Reading action from {:?}.", line);
             state = state
@@ -395,25 +392,18 @@ impl Game {
 
         log::info!("Clients connected for {}", self.id);
         for i in 0..rounds {
-            self.logs
-                .write(
-                    format!(
-                        "{}ms System >>> round {}/{}\n",
-                        tokio::time::Instant::now()
-                            .duration_since(self.start_time)
-                            .as_millis(),
-                        i + 1,
-                        rounds
-                    )
-                    .as_bytes(),
-                )
-                .await?;
-            log::debug!("Playing round. Current stacks: {:?}.", self.stacks);
             if self.stacks[0] == 0 || self.stacks[1] == 0 {
+                self.write_log(format!("System > Ending because a bot has an empty stack"))
+                    .await?;
                 break;
             }
-            self.play_round(&mut bot_a_reader, &mut bot_b_reader)
+            self.write_log(format!("System > round {}/{}", i + 1, rounds))
                 .await?;
+            log::debug!("Playing round. Current stacks: {:?}.", self.stacks);
+            if let Err(e) = self.play_round(&mut bot_a_reader, &mut bot_b_reader).await {
+                self.write_log(format!("System > {:?}", e)).await?;
+                Err(e)?;
+            }
             self.button = 1 - self.button;
         }
         Ok(shared::GameStatus::ScoreChanged(

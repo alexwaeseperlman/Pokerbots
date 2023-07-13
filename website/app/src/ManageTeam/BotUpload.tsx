@@ -17,7 +17,6 @@ export function BotUpload() {
     })
       .then(async (res) => {
         const json = await res.json();
-        console.log(json);
         if (res.status !== 200) {
           enqueueSnackbar({
             message: json.error,
@@ -26,14 +25,12 @@ export function BotUpload() {
         }
       })
       .catch((err) => {
-        console.log(err);
         enqueueSnackbar({
           message: err.toString(),
           variant: "error",
         });
       })
       .finally(() => {
-        console.log("finally");
         setUploading(false);
       });
   };
@@ -74,7 +71,6 @@ export function BotUpload() {
         e.preventDefault();
         handleUpload(e.dataTransfer.files[0]);
         setDrag(false);
-        console.log("file dragged");
       }}
     >
       {/*

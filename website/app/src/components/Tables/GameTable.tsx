@@ -10,8 +10,17 @@ import Box from "@mui/system/Box";
 import MuiTableCell from "@mui/material/TableCell";
 import { styled } from "@mui/material/styles";
 import Button, { ButtonProps } from "@mui/material/Button";
-import { Avatar, Chip, ChipProps, Typography } from "@mui/material";
+import {
+  Avatar,
+  Chip,
+  ChipProps,
+  IconButton,
+  Menu,
+  MenuItem,
+  Typography,
+} from "@mui/material";
 import { Link } from "react-router-dom";
+import { GridMoreVertIcon } from "@mui/x-data-grid";
 
 export const DataGrid = React.lazy(() =>
   import("@mui/x-data-grid").then((mod) => ({ default: mod.DataGrid }))
@@ -44,6 +53,13 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
     pageSize: 10,
   });
   const [loading, setLoading] = React.useState(true);
+
+  const [menuEl, setMenuEl] = React.useState<null | {
+    game: Game;
+    el: HTMLElement;
+  }>(null);
+  const [menuOpen, setMenuOpen] = React.useState(false);
+
   const getGames = useCallback(() => {
     fetch(
       `${apiUrl}/games?${
@@ -75,122 +91,162 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
     }, 5000);
     return () => clearInterval(int);
   }, [getGames, paginationModel]);
-  const renderTeam = (params) => (
-    <>
-      <Avatar
-        sx={{
-          width: 24,
-          height: 24,
-          marginRight: 2,
-        }}
-        src={`${pfpEndpoint}${params.value?.team?.id}`}
-      />
-      <Box flexDirection={"column"}>
-        <Link
-          to={`/team/${params.value?.team?.id}`}
-          style={{
-            color: "inherit",
-            textDecoration: "none",
+  const renderTeam = (score_mul) => (params) => {
+    if (params.value === null) return;
+    let color: ChipProps["color"] = "success";
+    if (params.row.score_change * score_mul < 0) color = "error";
+    else if (params.row.score_change * score_mul == 0) color = "default";
+    if (params.row.error_type) {
+      color = "warning";
+    }
+    return (
+      <>
+        <Avatar
+          sx={{
+            width: 24,
+            height: 24,
+            marginRight: 2,
           }}
-        >
-          <Typography>
-            {params.value?.team?.team_name ?? "Deleted team"}
-          </Typography>
-        </Link>
+          src={`${pfpEndpoint}${params.value?.team?.id}`}
+        />
 
-        <Typography fontSize="small" color={"text.secondary"}>
-          {params.value?.name ?? "Deleted bot"}
-        </Typography>
-      </Box>
-    </>
-  );
+        <Chip
+          sx={{
+            width: "50px !important",
+          }}
+          label={
+            params.row.score_change === null
+              ? "Running"
+              : params.row.error_type ?? params.row.score_change * score_mul
+          }
+          color={color}
+        />
+
+        <Box ml={2} mr={2} flexDirection={"column"}>
+          <Link
+            to={`/team/${params.value?.team?.id}`}
+            style={{
+              color: "inherit",
+              textDecoration: "none",
+            }}
+          >
+            <Typography>
+              {params.value?.team?.team_name ?? "Deleted team"}
+            </Typography>
+          </Link>
+
+          <Typography fontSize="small" color={"text.secondary"}>
+            {params.value?.name ?? "Deleted bot"}
+          </Typography>
+        </Box>
+      </>
+    );
+  };
 
   return (
-    <DataGrid
-      columns={[
-        {
-          field: "score_change",
-          headerName: "Result",
-          renderCell: (params) => {
-            if (params.value === null)
-              return <Chip color="default" label={"Running"}></Chip>;
-            let color: ChipProps["color"] = "success";
-            if (params.value < 0) color = "error";
-            else if (params.value == 0) color = "default";
-            console.log(params.row);
-            if (params.row.error_type) {
-              color = "warning";
-            }
-            return (
-              <Chip
-                label={params.row.error_type ?? params.value}
-                color={color}
-              />
-            );
+    <>
+      <DataGrid
+        columns={[
+          {
+            field: "bot_b",
+            headerName: "Defender",
+            renderCell: renderTeam(-1),
+            flex: 1,
+            sortable: false,
           },
-          flex: 1,
-          sortable: false,
-        },
-        {
-          field: "bot_a",
-          headerName: "Defender",
-          renderCell: renderTeam,
-          flex: 1,
-          sortable: false,
-        },
-        {
-          field: "bot_b",
-          headerName: "Challenger",
-          renderCell: renderTeam,
-          flex: 1,
-          sortable: false,
-        },
-        {
-          field: "game-log",
-          headerName: "",
-          minWidth: 150,
-          sortable: false,
-          renderCell: (params) => {
-            console.log(params);
-            let bot = undefined;
-            if (params.row.bot_a?.team?.id === team?.id) {
-              bot = params.row.bot_a?.id;
-            } else if (params.row.bot_b?.team?.id === team?.id) {
-              bot = params.row.bot_b?.id;
-            }
-            return (
-              <Button
-                sx={{
-                  color: "black",
-                }}
-                target="_tab"
-                href={`${apiUrl}/game-log?id=${params.id}${
-                  bot ? `&bot=${bot}` : ""
-                }`}
-              >
-                Game log
-              </Button>
-            );
+          {
+            field: "bot_a",
+            headerName: "Challenger",
+            renderCell: renderTeam(1),
+            flex: 1,
+            sortable: false,
           },
-        },
-      ]}
-      loading={loading}
-      rows={games}
-      pagination
-      pageSizeOptions={[10, 25, 50, 100]}
-      paginationMode="server"
-      paginationModel={paginationModel}
-      rowCount={gameCount}
-      onPaginationModelChange={setPaginationModel}
-      disableColumnFilter
-      disableColumnMenu
-      disableColumnSelector
-      disableDensitySelector
-      disableRowSelectionOnClick
-      sx={{
-        width: "100%",
-        height: "100%",
-      }}
-    />
+          {
+            field: "options",
+            headerName: "",
+            width: 40,
+            sortable: false,
+            renderCell: (params) => {
+              let bot = undefined;
+              if (params.row.bot_a?.team?.id === team?.id) {
+                bot = params.row.bot_a?.id;
+              } else if (params.row.bot_b?.team?.id === team?.id) {
+                bot = params.row.bot_b?.id;
+              }
+
+              const ref = React.createRef<HTMLButtonElement>();
+
+              return (
+                <IconButton
+                  sx={{
+                    color: "black",
+                  }}
+                  onClick={() => {
+                    setMenuEl({
+                      game: params.row as Game,
+                      el: ref.current!,
+                    });
+                    setMenuOpen(true);
+                  }}
+                  ref={ref}
+                >
+                  <GridMoreVertIcon />
+                </IconButton>
+              );
+            },
+          },
+        ]}
+        loading={loading}
+        rows={games}
+        pagination
+        pageSizeOptions={[10, 25, 50, 100]}
+        paginationMode="server"
+        paginationModel={paginationModel}
+        rowCount={gameCount ?? 0}
+        onPaginationModelChange={setPaginationModel}
+        disableColumnFilter
+        disableColumnMenu
+        disableColumnSelector
+        disableDensitySelector
+        disableRowSelectionOnClick
+        sx={{
+          width: "100%",
+          height: "100%",
+        }}
+      />
+      <Menu
+        open={menuOpen}
+        anchorEl={menuEl?.el}
+        onClose={() => setMenuOpen(false)}
+        onClick={() => setMenuOpen(false)}
+      >
+        {team && menuEl?.game?.bot_a?.team?.id == team.id && (
+          <MenuItem
+            component="a"
+            target="_tab"
+            href={`${apiUrl}/game-log?id=${menuEl?.game.id}&bot=${menuEl?.game?.bot_a.id}`}
+          >
+            Defender game log
+          </MenuItem>
+        )}
+        {team && menuEl?.game?.bot_b?.team?.id == team.id && (
+          <MenuItem
+            component="a"
+            target="_tab"
+            href={`${apiUrl}/game-log?id=${menuEl?.game.id}&bot=${menuEl?.game?.bot_b.id}`}
+          >
+            Challenger game log
+          </MenuItem>
+        )}
+
+        <MenuItem
+          component="a"
+          target="_tab"
+          href={`${apiUrl}/game-log?id=${menuEl?.game.id}`}
+        >
+          Public game log
+        </MenuItem>
+      </Menu>
+    </>
   );
 }

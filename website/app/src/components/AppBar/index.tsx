@@ -108,7 +108,6 @@ export function TopBar() {
           command={() => {
             fetch(`${apiUrl}/signout`).then(() => {
               fetchUser();
-              console.log("signed out");
             });
           }}
         />

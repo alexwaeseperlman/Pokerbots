@@ -63,27 +63,27 @@ pub async fn teams(
 ) -> ApiResult {
     let team = login::get_team_data(&session);
     let conn = &mut (*DB_CONNECTION).get()?;
-    let mut base = schema::teams::dsl::teams
-        .order_by(schema::teams::dsl::score.desc())
-        .into_boxed();
+    let mut base = schema::teams::dsl::teams.into_boxed();
     // <cringe>
-    match sort {
-        Some(TeamsQuerySort::Score) | None => match sort_direction {
-            Some(TeamsQuerySortDirection::Asc) => {
-                base = base.order_by(schema::teams::dsl::score.asc());
-            }
-            Some(TeamsQuerySortDirection::Desc) | None => {
-                base = base.order_by(schema::teams::dsl::score.desc());
-            }
-        },
-        Some(TeamsQuerySort::Created) => match sort_direction {
-            Some(TeamsQuerySortDirection::Asc) => {
-                base = base.order_by(schema::teams::dsl::id.asc());
-            }
-            Some(TeamsQuerySortDirection::Desc) | None => {
-                base = base.order_by(schema::teams::dsl::id.desc());
-            }
-        },
+    if !count.unwrap_or(false) {
+        match sort {
+            Some(TeamsQuerySort::Score) | None => match sort_direction {
+                Some(TeamsQuerySortDirection::Asc) => {
+                    base = base.order_by(schema::teams::dsl::score.asc());
+                }
+                Some(TeamsQuerySortDirection::Desc) | None => {
+                    base = base.order_by(schema::teams::dsl::score.desc());
+                }
+            },
+            Some(TeamsQuerySort::Created) => match sort_direction {
+                Some(TeamsQuerySortDirection::Asc) => {
+                    base = base.order_by(schema::teams::dsl::id.asc());
+                }
+                Some(TeamsQuerySortDirection::Desc) | None => {
+                    base = base.order_by(schema::teams::dsl::id.desc());
+                }
+            },
+        }
     }
     // </cringe>
 
@@ -94,14 +94,14 @@ pub async fn teams(
     }
     let page_size = page_size.unwrap_or(10).min(100);
     let page = page.unwrap_or(0);
-    base = base
-        .limit((page_size).into())
-        .offset((page * page_size).into());
     if count.unwrap_or(false) {
         return Ok(HttpResponse::Ok().json(json!({
             "count": base.count().get_result::<i64>(conn)?,
         })));
     }
+    base = base
+        .limit((page_size).into())
+        .offset((page * page_size).into());
     let result: Vec<Team> = base.load::<Team>(conn)?.into_iter().collect();
     if fill_members.unwrap_or(false) {
         let users = schema::users::dsl::users

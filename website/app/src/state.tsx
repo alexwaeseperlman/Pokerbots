@@ -70,6 +70,7 @@ export type Bot = {
   uploaded_by: string;
   date_uploaded: number;
   build_status: number;
+  active: boolean;
 };
 
 export type Game = {
@@ -108,7 +109,6 @@ export async function fillInGames(
     bot_a: botMap.get(game.bot_a) as Bot,
     bot_b: botMap.get(game.bot_b) as Bot,
   }));
-  console.log(out);
   return out;
 }
 
