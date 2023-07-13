@@ -195,7 +195,7 @@ impl Game {
                         which_bot
                     )
                     .as_bytes(),
-                )
+                );
             // TODO: determine cause of close
             self.write_log(format!("System > Ending because {} lost stdin", which_bot))
                 .await?;
