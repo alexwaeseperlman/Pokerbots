@@ -126,8 +126,8 @@ pub async fn run_game(
 }
 
 pub struct Game {
-    bot_a: tokio::process::Child,
-    bot_b: tokio::process::Child,
+    bot_a: Option<tokio::process::Child>,
+    bot_b: Option<tokio::process::Child>,
     stacks: [u32; 2],
     initial_stacks: [u32; 2],
     button: usize,
@@ -145,8 +145,8 @@ impl Game {
         logs: tokio::fs::File,
     ) -> Self {
         Self {
-            bot_a,
-            bot_b,
+            bot_a: Some(bot_a),
+            bot_b: Some(bot_b),
             stacks: [50, 50],
             initial_stacks: [50, 50],
             button: 0,
@@ -165,30 +165,36 @@ impl Game {
         let message: String = message.into();
         self.write_log(format!("{} < {}", which_bot, message.clone()))
             .await?;
-        let bot = match which_bot {
-            WhichBot::BotA => &mut self.bot_a,
-            WhichBot::BotB => &mut self.bot_b,
-        };
-        if let Some(ref mut stdin) = bot.stdin {
-            stdin
-                .write_all(format!("{}\n", message).as_bytes())
-                .await
-                .map_err(|_| {
-                    log::error!("Error writing to bot");
-                    GameError::RunTimeError(which_bot)
-                })?;
+        if let Some(ref mut bot_a) = &mut self.bot_a {
+            if let Some(ref mut bot_b) = &mut self.bot_b {
+                let bot = match which_bot {
+                    WhichBot::BotA => bot_a,
+                    WhichBot::BotB => bot_b,
+                };
+                if let Some(ref mut stdin) = bot.stdin {
+                    stdin
+                        .write_all(format!("{}\n", message).as_bytes())
+                        .await
+                        .map_err(|_| {
+                            log::error!("Error writing to bot");
+                            GameError::RunTimeError(which_bot)
+                        })?;
 
-            stdin.flush().await.map_err(|_| {
-                log::error!("Error writing to bot");
-                GameError::RunTimeError(which_bot)
-            })?;
-            Ok(())
-        } else {
-            // TODO: determine cause of close
-            self.write_log(format!("System > Ending because {} lost stdin", which_bot))
-                .await?;
-            return Err(GameError::RunTimeError(which_bot));
+                    stdin.flush().await.map_err(|_| {
+                        log::error!("Error writing to bot");
+                        GameError::RunTimeError(which_bot)
+                    })?;
+                    return Ok(());
+                } else {
+                    // TODO: determine cause of close
+                    self.write_log(format!("System > Ending because {} lost stdin", which_bot))
+                        .await?;
+                    return Err(GameError::RunTimeError(which_bot));
+                }
+            }
         }
+        log::error!("Bot does not exist");
+        Err(GameError::InternalError)
     }
 
     async fn print_position(&mut self, which_bot: WhichBot) -> Result<(), GameError> {
@@ -363,45 +369,59 @@ impl Game {
     pub async fn play(&mut self, rounds: usize) -> shared::GameResult {
         log::debug!("Playing game {} with {} rounds", self.id, rounds);
 
-        let mut bot_a_reader = BufReader::new(
-            self.bot_a
-                .stdout
-                .take()
-                .ok_or(GameError::RunTimeError(WhichBot::BotA))?,
-        );
-        let mut bot_b_reader = BufReader::new(
-            self.bot_b
-                .stdout
-                .take()
-                .ok_or(GameError::RunTimeError(WhichBot::BotB))?,
-        );
+        if let Some(ref mut bot_a) = &mut self.bot_a {
+            if let Some(ref mut bot_b) = &mut self.bot_b {
+                let mut bot_a_reader = BufReader::new(
+                    bot_a
+                        .stdout
+                        .take()
+                        .ok_or(GameError::RunTimeError(WhichBot::BotA))?,
+                );
+                let mut bot_b_reader = BufReader::new(
+                    bot_b
+                        .stdout
+                        .take()
+                        .ok_or(GameError::RunTimeError(WhichBot::BotB))?,
+                );
 
-        log::info!("Clients connected for {}", self.id);
-        for i in 0..rounds {
-            if self.stacks[0] == 0 || self.stacks[1] == 0 {
-                self.write_log(format!("System > Ending because a bot has an empty stack"))
-                    .await?;
-                break;
+                log::info!("Clients connected for {}", self.id);
+                for i in 0..rounds {
+                    if self.stacks[0] == 0 || self.stacks[1] == 0 {
+                        self.write_log(format!("System > Ending because a bot has an empty stack"))
+                            .await?;
+                        break;
+                    }
+                    self.write_log(format!("System > round {}/{}", i + 1, rounds))
+                        .await?;
+                    log::debug!("Playing round. Current stacks: {:?}.", self.stacks);
+                    if let Err(e) = self.play_round(&mut bot_a_reader, &mut bot_b_reader).await {
+                        self.write_log(format!("System > {:?}", e)).await?;
+                        Err(e)?;
+                    }
+                    self.button = 1 - self.button;
+                }
+                return Ok(shared::GameStatus::ScoreChanged(
+                    i32::try_from(self.stacks[0]).unwrap()
+                        - i32::try_from(self.initial_stacks[0]).unwrap(),
+                ));
             }
-            self.write_log(format!("System > round {}/{}", i + 1, rounds))
-                .await?;
-            log::debug!("Playing round. Current stacks: {:?}.", self.stacks);
-            if let Err(e) = self.play_round(&mut bot_a_reader, &mut bot_b_reader).await {
-                self.write_log(format!("System > {:?}", e)).await?;
-                Err(e)?;
-            }
-            self.button = 1 - self.button;
         }
-        Ok(shared::GameStatus::ScoreChanged(
-            i32::try_from(self.stacks[0]).unwrap() - i32::try_from(self.initial_stacks[0]).unwrap(),
-        ))
+        return Err(shared::GameError::InternalError);
     }
 }
 
 impl Drop for Game {
     fn drop(&mut self) {
-        let _ = self.bot_a.start_kill();
-        let _ = self.bot_b.start_kill();
+        let bot_a = self.bot_a.take();
+        let bot_b = self.bot_b.take();
+        tokio::spawn(async move {
+            if let Some(mut bot_a) = bot_a {
+                bot_a.kill().await.ok();
+            }
+            if let Some(mut bot_b) = bot_b {
+                bot_b.kill().await.ok();
+            }
+        });
     }
 }
 
