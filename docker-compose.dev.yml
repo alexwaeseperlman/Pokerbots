@@ -21,7 +21,7 @@ services:
     ports:
       - 3000:3000
     environment:
-      - S3_ADDRESS=http://localhost:9000
+      - S3_ADDRESS=http://s3:9000
   gameplay:
     build:
       context: .
