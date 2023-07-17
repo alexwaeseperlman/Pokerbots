@@ -32,6 +32,7 @@ services:
     build:
       context: .
       dockerfile: ./workers/builder/Dockerfile
+    privileged: true
     depends_on:
       - sqs
     restart: always

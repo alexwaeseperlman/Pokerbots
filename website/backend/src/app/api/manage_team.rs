@@ -13,10 +13,7 @@ use chrono;
 use diesel::prelude::*;
 use futures_util::StreamExt;
 use rand::{self, Rng};
-use reqwest::header::ToStrError;
-use s3::presigning::PresigningConfig;
 use serde::Deserialize;
-use serde_json::json;
 use shared::db::{
     models::{NewBot, NewInvite, NewTeam, TeamInvite, User},
     schema::{bots, team_invites, teams, users},

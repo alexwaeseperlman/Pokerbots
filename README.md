@@ -2,7 +2,7 @@
 
 ## Running locally
 Run `scripts/setup-env`. It will request any necessary variables from you. Then you can start
-all the services using `docker compose up`, or run `docker compose -f dev-compose.yml up`
+all the services using `docker compose up`, or run `docker compose -f docker-compose.dev.yml up`
 to watch for changes and recompile if necessary.
 
 ### Dependencies
@@ -30,3 +30,10 @@ to watch for changes and recompile if necessary.
 
 ## Deploying to AWS
 Coming soon...
+
+## Developing
+When you're working on a service, you probably don't want to rebuild and run the docker 
+containers every time you make a change. This is when the docker-compose.dev file is useful.
+
+- Always make sure that you're running the builder and gameplay workers in the same environment.
+  Otherwise they might run into issues.  A more permanent solution to this would be to combine them into one service, but that's not a top priority.

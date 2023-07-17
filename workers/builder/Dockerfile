@@ -24,10 +24,12 @@ RUN echo 'source $HOME/.cargo/env' >> $HOME/.bashrc
 
 # Install common python packages
 RUN pip install numpy pandas scipy scikit-learn
-RUN apt-get install -y iptables unzip zip
+RUN apt-get install -y iptables unzip zip bubblewrap
+
 
 WORKDIR /usr/src/builder
 COPY --from=builder /usr/src/builder/target/release/builder /usr/local/bin/builder
 
+RUN adduser builder
 RUN chmod +x /usr/local/bin/builder
 ENTRYPOINT ["builder"]
