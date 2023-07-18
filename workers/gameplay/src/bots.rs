@@ -88,7 +88,7 @@ pub async fn run_game(
     let tmp_dir = Path::new("/tmp").join(&game_id);
     *game_path = tmp_dir.clone();
     log::debug!("Playing {} against {}", bot_a, bot_b);
-    log::debug!("Running game {} with local id {}.", task_id, game_id);
+    log::info!("Running game {} with local id {}", task_id, game_id);
     let bot_bucket = std::env::var("COMPILED_BOT_S3_BUCKET").map_err(|e| {
         log::error!("Error getting COMPILED_BOT_S3_BUCKET: {}", e);
         GameError::InternalError
@@ -199,7 +199,7 @@ impl Game {
             // TODO: determine cause of close
             self.write_log(format!("System > Ending because {} lost stdin", which_bot))
                 .await?;
-            return Err(GameError::RunTimeError(which_bot));
+            Err(GameError::RunTimeError(which_bot))
         }
     }
 
@@ -376,7 +376,6 @@ impl Game {
     /// Play a game of poker, returning a [shared::GameResult]
     pub async fn play(&mut self, rounds: usize) -> shared::GameResult {
         log::debug!("Playing game {} with {} rounds", self.id, rounds);
-
         let mut bot_a_reader = BufReader::new(
             self.bot_a
                 .stdout
@@ -406,16 +405,28 @@ impl Game {
             }
             self.button = 1 - self.button;
         }
-        Ok(shared::GameStatus::ScoreChanged(
+        return Ok(shared::GameStatus::ScoreChanged(
             i32::try_from(self.stacks[0]).unwrap() - i32::try_from(self.initial_stacks[0]).unwrap(),
-        ))
+        ));
     }
+}
+
+extern "C" {
+    fn kill(pid: i32, sig: i32) -> i32;
 }
 
 impl Drop for Game {
     fn drop(&mut self) {
-        let _ = self.bot_a.start_kill();
-        let _ = self.bot_b.start_kill();
+        if let Some(id) = self.bot_a.id() {
+            unsafe {
+                kill(id.try_into().unwrap(), 9);
+            }
+        }
+        if let Some(id) = self.bot_b.id() {
+            unsafe {
+                kill(id.try_into().unwrap(), 9);
+            }
+        }
     }
 }
 

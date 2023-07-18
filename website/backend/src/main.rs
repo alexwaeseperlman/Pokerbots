@@ -36,59 +36,6 @@ async fn main() -> std::io::Result<()> {
     let s3_client = web::Data::new(shared::s3_client(&aws_config).await);
     let sqs_client = web::Data::new(shared::sqs_client(&aws_config).await);
 
-    /*
-    s3_client
-        .create_bucket()
-        .bucket(&*pokerbots::config::PFP_S3_BUCKET)
-        .send()
-        .await
-        .unwrap();
-
-    s3_client
-        .delete_public_access_block()
-        .bucket(&*pokerbots::config::PFP_S3_BUCKET)
-        .send()
-        .await
-        .unwrap();
-
-    s3_client
-        .put_bucket_ownership_controls()
-        .bucket(&*pokerbots::config::PFP_S3_BUCKET)
-        .ownership_controls(
-            OwnershipControls::builder()
-                .rules(
-                    OwnershipControlsRule::builder()
-                        .object_ownership(ObjectOwnership::BucketOwnerPreferred)
-                        .build(),
-                )
-                .build(),
-        )
-        .send()
-        .await
-        .unwrap();
-
-    s3_client
-        .put_bucket_cors()
-        .bucket(&*pokerbots::config::PFP_S3_BUCKET)
-        .cors_configuration(
-            aws_sdk_s3::types::CorsConfiguration::builder()
-                .cors_rules(
-                    aws_sdk_s3::types::CorsRule::builder()
-                        .allowed_headers("*")
-                        .allowed_methods("PUT")
-                        .allowed_origins("*")
-                        .build(),
-                )
-                .build(),
-        )
-        .send()
-        .await
-        .unwrap();
-    */
-
-    //let amqp_channel = web::Data::new(Arc::new(channel));
-    //tokio::spawn(async { pokerbots::games::listen_for_game_results(channel_b).await });
-
     // Generate the list of routes in your App
     HttpServer::new(move || {
         let session_middleware =
