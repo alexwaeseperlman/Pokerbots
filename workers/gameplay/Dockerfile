@@ -25,10 +25,11 @@ RUN echo 'source $HOME/.cargo/env' >> $HOME/.bashrc
 
 # Install common python packages
 RUN pip install numpy pandas scipy scikit-learn
-RUN apt-get install -y iptables unzip
+RUN apt-get install -y iptables unzip bubblewrap
 
 WORKDIR /usr/src/gameplay
 COPY --from=builder /usr/src/gameplay/target/release/gameplay /usr/local/bin/gameplay
 
+RUN adduser runner
 RUN chmod +x /usr/local/bin/gameplay
 ENTRYPOINT ["gameplay"]

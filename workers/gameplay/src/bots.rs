@@ -24,6 +24,17 @@ pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>
     s3_client: &aws_sdk_s3::Client,
 ) -> Result<tokio::process::Child, GameError> {
     let bot_path: PathBuf = bot_path.into();
+    Command::new("mount")
+        .arg("-t")
+        .arg("tmpfs")
+        .arg("-o")
+        .arg("rw,size=2G")
+        .arg(format!("{}", bot_path.display()))
+        .arg(&bot_path)
+        .stderr(Stdio::null())
+        .stdout(Stdio::null())
+        .status()
+        .await?;
     shared::s3::download_file(
         &bot.into(),
         &bot_path.join("bot.zip"),
@@ -60,9 +71,24 @@ pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>
             format!("Failed to create log file: {}", e),
         )
     })?);
-    Command::new("sh")
+    std::fs::write(bot_path.join("bot/run.sh"), bot_json.run).expect("write to build.sh failed");
+    Command::new("chown")
+        .arg("-R")
+        .arg("runner:runner")
+        .arg(".")
+        .current_dir(&bot_path.join("bot"))
+        .status()
+        .await?;
+    Command::new("chmod")
+        .arg("+x")
+        .arg("run.sh")
+        .current_dir(&bot_path.join("bot"))
+        .status()
+        .await?;
+    Command::new("su")
+        .arg("runner")
         .arg("-c")
-        .arg(bot_json.run)
+        .arg("bwrap --unshare-all --die-with-parent --dir /tmp --ro-bind /usr /usr --proc /proc --dev /dev --ro-bind /lib /lib --ro-bind /usr/bin /usr/bin --ro-bind /bin /bin --bind . /home/runner --chdir /home/runner ./run.sh")
         .current_dir(&bot_path.join("bot"))
         .stderr(log_file)
         .stdin(Stdio::piped())
@@ -185,17 +211,16 @@ impl Game {
             Ok(())
         } else {
             // TODO: determine cause close
-            self.logs
-                .write_all(
-                    format!(
-                        "{}ms System >>> Ending because {} lost stdin\n",
-                        tokio::time::Instant::now()
-                            .duration_since(self.start_time)
-                            .as_millis(),
-                        which_bot
-                    )
-                    .as_bytes(),
-                );
+            self.logs.write_all(
+                format!(
+                    "{}ms System >>> Ending because {} lost stdin\n",
+                    tokio::time::Instant::now()
+                        .duration_since(self.start_time)
+                        .as_millis(),
+                    which_bot
+                )
+                .as_bytes(),
+            );
             // TODO: determine cause of close
             self.write_log(format!("System > Ending because {} lost stdin", which_bot))
                 .await?;
@@ -353,7 +378,7 @@ impl Game {
                 GameError::RunTimeError(whose_turn)
             })?;
 
-           log::debug!("Reading action from {:?}.", whose_turn);
+            log::debug!("Reading action from {:?}.", whose_turn);
             let mut line: String = Default::default();
             tokio::time::timeout(self.timeout, target_reader.read_line(&mut line))
                 .await
