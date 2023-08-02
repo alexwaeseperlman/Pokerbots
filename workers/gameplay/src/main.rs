@@ -7,7 +7,7 @@ use shared::{GameStatus, GameStatusMessage, GameTask};
 async fn main() {
     dotenvy::dotenv().ok();
     env_logger::init();
-    log::info!("Starting worker");
+    log::info!("Starting gameplay worker");
 
     let config = shared::aws_config().await;
     let sqs = shared::sqs_client(&config).await;

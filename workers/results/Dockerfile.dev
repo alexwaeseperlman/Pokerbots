@@ -1,0 +1,8 @@
+FROM --platform=$BUILDARCH rust:1.70
+
+
+RUN apt-get update && apt-get install -y entr
+
+WORKDIR /usr/src/workers/results
+
+ENTRYPOINT while true; do git ls-files | entr -d -r cargo run; done

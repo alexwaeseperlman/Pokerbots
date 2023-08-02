@@ -7,45 +7,43 @@ services:
       service: db
     ports:
       - 5432:5432
-  # Frontend and backend
-  website:
+  gameplay-dev:
     build:
       context: .
-      dockerfile: ./website/Dockerfile
-    depends_on:
-      - db
-      - sqs
-    extends:
-      file: common-compose.yml
-      service: website
-    ports:
-      - 3000:3000
-    environment:
-      - S3_ADDRESS=http://s3:9000
-  gameplay:
-    build:
-      context: .
-      dockerfile: ./workers/gameplay/Dockerfile
+      dockerfile: ./workers/gameplay/Dockerfile.dev
+    volumes:
+      - .:/usr/src
+      - ./.volumes/cargo-registry/:/usr/local/cargo/registry
     depends_on:
       - sqs
     restart: always
     extends:
       file: common-compose.yml
       service: gameplay
-  builder:
+    environment:
+      - RUST_LOG=debug
+  builder-dev:
     build:
       context: .
-      dockerfile: ./workers/builder/Dockerfile
+      dockerfile: ./workers/builder/Dockerfile.dev
+    volumes:
+      - .:/usr/src
+      - ./.volumes/cargo-registry/:/usr/local/cargo/registry
     depends_on:
       - sqs
     restart: always
     extends:
       file: common-compose.yml
       service: builder
+    environment:
+      - RUST_LOG=debug
   results:
     build:
       context: .
-      dockerfile: ./workers/results/Dockerfile
+      dockerfile: ./workers/results/Dockerfile.dev
+    volumes:
+      - .:/usr/src
+      - ./.volumes/cargo-registry/:/usr/local/cargo/registry
     depends_on:
       - db
       - sqs
@@ -53,6 +51,8 @@ services:
     extends:
       file: common-compose.yml
       service: results
+    environment:
+      - RUST_LOG=debug
   s3:
     extends:
       file: common-compose.yml
