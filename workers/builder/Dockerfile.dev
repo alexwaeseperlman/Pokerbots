@@ -9,4 +9,4 @@ RUN apt-get install -y entr
 
 WORKDIR /usr/src/workers/builder
 
-ENTRYPOINT while true; do git ls-files | entr -d -r cargo run; done
+ENTRYPOINT while true; do git ls-files | entr -d -r sh -c "cargo test && cargo run"; done
