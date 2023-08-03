@@ -13,7 +13,8 @@ services:
       dockerfile: ./workers/gameplay/Dockerfile.dev
     volumes:
       - .:/usr/src
-      - ./.volumes/cargo-registry/:/usr/local/cargo/registry
+      - ./.volumes/gameplay-target:/usr/src/target
+      - ./.volumes/gameplay-registry/:/usr/local/cargo/registry
     depends_on:
       - sqs
     restart: always
@@ -28,7 +29,8 @@ services:
       dockerfile: ./workers/builder/Dockerfile.dev
     volumes:
       - .:/usr/src
-      - ./.volumes/cargo-registry/:/usr/local/cargo/registry
+      - ./.volumes/builder-target:/usr/src/target
+      - ./.volumes/builder-registry/:/usr/local/cargo/registry
     depends_on:
       - sqs
     restart: always
@@ -37,13 +39,14 @@ services:
       service: builder
     environment:
       - RUST_LOG=debug
-  results:
+  results-dev:
     build:
       context: .
       dockerfile: ./workers/results/Dockerfile.dev
     volumes:
       - .:/usr/src
-      - ./.volumes/cargo-registry/:/usr/local/cargo/registry
+      - ./.volumes/results-target:/usr/src/target
+      - ./.volumes/results-registry/:/usr/local/cargo/registry
     depends_on:
       - db
       - sqs
