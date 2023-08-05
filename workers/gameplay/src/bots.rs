@@ -2,6 +2,7 @@ use itertools::Itertools;
 use rand::{thread_rng, Rng};
 use shared::{Bot, GameError, GameResult, WhichBot};
 use std::{
+    os::unix::process,
     path::{Path, PathBuf},
     process::Stdio,
     time::Duration,
@@ -15,6 +16,7 @@ use tokio::{
 };
 
 use crate::poker::game::GameState;
+use syscalls::{syscall, Sysno};
 
 pub mod sandbox;
 pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>>(
@@ -358,9 +360,9 @@ impl Game {
                     WhichBot::BotB
                 };
 
-            let target_reader = match whose_turn {
-                WhichBot::BotA => &mut *bot_a_reader,
-                WhichBot::BotB => &mut *bot_b_reader,
+            let (target_reader, target_session_id) = match whose_turn {
+                WhichBot::BotA => (&mut *bot_a_reader, self.bot_a.id()),
+                WhichBot::BotB => (&mut *bot_b_reader, self.bot_b.id()),
             };
 
             // write current game state to the bots stream
@@ -377,6 +379,11 @@ impl Game {
                 log::info!("Failed to write current state to bot {:?}.", whose_turn);
                 GameError::RunTimeError(whose_turn)
             })?;
+            let _ = Command::new("pkill")
+                .arg("-CONT")
+                .arg("-s")
+                .arg(format!("{}", target_session_id.unwrap_or_default()))
+                .spawn();
 
             log::debug!("Reading action from {:?}.", whose_turn);
             let mut line: String = Default::default();
@@ -384,6 +391,11 @@ impl Game {
                 .await
                 .map_err(|_| shared::GameError::TimeoutError(whose_turn))?
                 .map_err(|_| shared::GameError::RunTimeError(whose_turn))?;
+            let _ = Command::new("pkill")
+                .arg("-STOP")
+                .arg("-s")
+                .arg(format!("{}", target_session_id.unwrap_or_default()))
+                .spawn();
 
             self.write_log(format!("{} > {}", whose_turn, line.trim()))
                 .await?;

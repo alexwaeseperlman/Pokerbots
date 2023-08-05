@@ -1913,6 +1913,7 @@ dependencies = [
  "serde",
  "serde_json",
  "shared",
+ "syscalls",
  "tokio",
 ]
 
@@ -3456,6 +3457,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "syscalls",
  "tokio",
  "ts-rs",
 ]
@@ -3579,6 +3581,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "syscalls"
+version = "0.6.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97feb70b9443edd79ca26f40122d271fa61df4ffb2220965a27711bfe6ceec7c"
+dependencies = [
+ "cc",
+ "serde",
+ "serde_repr",
 ]
 
 [[package]]
