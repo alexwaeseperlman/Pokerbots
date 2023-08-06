@@ -195,7 +195,7 @@ impl Game {
                         which_bot
                     )
                     .as_bytes(),
-                );
+                ).await?;
             // TODO: determine cause of close
             self.write_log(format!("System > Ending because {} lost stdin", which_bot))
                 .await?;
@@ -353,7 +353,7 @@ impl Game {
                 GameError::RunTimeError(whose_turn)
             })?;
 
-           log::debug!("Reading action from {:?}.", whose_turn);
+            log::debug!("Reading action from {:?}.", whose_turn);
             let mut line: String = Default::default();
             tokio::time::timeout(self.timeout, target_reader.read_line(&mut line))
                 .await
