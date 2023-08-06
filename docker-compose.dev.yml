@@ -12,9 +12,9 @@ services:
       context: .
       dockerfile: ./workers/gameplay/Dockerfile.dev
     volumes:
-      - .:/usr/src
-      - ./.volumes/gameplay-target:/usr/src/target
-      - ./.volumes/gameplay-registry/:/usr/local/cargo/registry
+      - .:/usr/src:ro
+      - gameplay-target:/usr/src/target
+      - gameplay-registry:/usr/local/cargo/registry
     depends_on:
       - sqs
     restart: always
@@ -28,9 +28,9 @@ services:
       context: .
       dockerfile: ./workers/builder/Dockerfile.dev
     volumes:
-      - .:/usr/src
-      - ./.volumes/builder-target:/usr/src/target
-      - ./.volumes/builder-registry/:/usr/local/cargo/registry
+      - .:/usr/src:ro
+      - builder-target:/usr/src/target
+      - builder-registry:/usr/local/cargo/registry
     depends_on:
       - sqs
     restart: always
@@ -44,9 +44,9 @@ services:
       context: .
       dockerfile: ./workers/results/Dockerfile.dev
     volumes:
-      - .:/usr/src
-      - ./.volumes/results-target:/usr/src/target
-      - ./.volumes/results-registry/:/usr/local/cargo/registry
+      - .:/usr/src:ro
+      - results-target:/usr/src/target
+      - results-registry:/usr/local/cargo/registry
     depends_on:
       - db
       - sqs
@@ -79,6 +79,10 @@ services:
 
 volumes:
   database:
-    external: false
   minio:
-    external: false
+  gameplay-target:
+  gameplay-registry:
+  builder-target:
+  builder-registry:
+  results-target:
+  results-registry:
