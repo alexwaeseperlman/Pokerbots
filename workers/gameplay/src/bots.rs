@@ -1,8 +1,11 @@
 use itertools::Itertools;
+use libc;
 use rand::{thread_rng, Rng};
 use shared::{Bot, GameError, GameResult, WhichBot};
+use std::borrow::BorrowMut;
+use std::os::unix::process::CommandExt;
 use std::{
-    os::unix::process,
+    env,
     path::{Path, PathBuf},
     process::Stdio,
     time::Duration,
@@ -16,7 +19,6 @@ use tokio::{
 };
 
 use crate::poker::game::GameState;
-use syscalls::{syscall, Sysno};
 
 pub mod sandbox;
 pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>>(
@@ -87,11 +89,40 @@ pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>
         .current_dir(&bot_path.join("bot"))
         .status()
         .await?;
-    Command::new("su")
-        .arg("runner")
-        .arg("-c")
-        .arg("bwrap --unshare-all --die-with-parent --dir /tmp --ro-bind /usr /usr --proc /proc --dev /dev --ro-bind /lib /lib --ro-bind /usr/bin /usr/bin --ro-bind /bin /bin --bind . /home/runner --chdir /home/runner ./run.sh")
+
+    Command::new("bwrap")
+        .args([
+            "--unshare-all",
+            "--die-with-parent",
+            "--dir",
+            "/tmp",
+            "--ro-bind",
+            "/usr",
+            "/usr",
+            "--proc",
+            "/proc",
+            "--dev",
+            "/dev",
+            "--ro-bind",
+            "/lib",
+            "/lib",
+            "--ro-bind",
+            "/usr/bin",
+            "/usr/bin",
+            "--ro-bind",
+            "/bin",
+            "/bin",
+            "--bind",
+            ".",
+            "/home/runner",
+            "--chdir",
+            "/home/runner",
+            "./run.sh",
+        ])
         .current_dir(&bot_path.join("bot"))
+        .uid(1000)
+        .gid(1000)
+        .process_group(0)
         .stderr(log_file)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -100,6 +131,10 @@ pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>
             log::error!("Error running bot: {}", e);
             GameError::InternalError
         })
+}
+extern "C" {
+    fn kill(pid: i32, sig: i32) -> i32;
+    fn waitpid(pid: i32, status: *mut i32, options: i32) -> i32;
 }
 
 pub async fn run_game(
@@ -360,11 +395,19 @@ impl Game {
                     WhichBot::BotB
                 };
 
-            let (target_reader, target_session_id) = match whose_turn {
-                WhichBot::BotA => (&mut *bot_a_reader, self.bot_a.id()),
-                WhichBot::BotB => (&mut *bot_b_reader, self.bot_b.id()),
+            let (target_reader, opponent_gid) = match whose_turn {
+                WhichBot::BotA => (&mut *bot_a_reader, self.bot_b.id().unwrap_or_default()),
+                WhichBot::BotB => (&mut *bot_b_reader, self.bot_a.id().unwrap_or_default()),
             };
 
+            unsafe {
+                let status = libc::kill(-(opponent_gid as i32), 19);
+                self.write_log(format!(
+                    "Sleeping process group {}, status: {}",
+                    opponent_gid, status
+                ))
+                .await?;
+            };
             // write current game state to the bots stream
             log::debug!("Writing current state.");
             let status = format!(
@@ -376,26 +419,16 @@ impl Game {
                 state.player_states[1].stack,
             );
             self.write_bot(whose_turn, status).await.map_err(|_| {
+                unsafe { kill(-(opponent_gid as i32), 18) };
                 log::info!("Failed to write current state to bot {:?}.", whose_turn);
                 GameError::RunTimeError(whose_turn)
             })?;
-            let _ = Command::new("pkill")
-                .arg("-CONT")
-                .arg("-s")
-                .arg(format!("{}", target_session_id.unwrap_or_default()))
-                .spawn();
 
-            log::debug!("Reading action from {:?}.", whose_turn);
             let mut line: String = Default::default();
             tokio::time::timeout(self.timeout, target_reader.read_line(&mut line))
                 .await
                 .map_err(|_| shared::GameError::TimeoutError(whose_turn))?
                 .map_err(|_| shared::GameError::RunTimeError(whose_turn))?;
-            let _ = Command::new("pkill")
-                .arg("-STOP")
-                .arg("-s")
-                .arg(format!("{}", target_session_id.unwrap_or_default()))
-                .spawn();
 
             self.write_log(format!("{} > {}", whose_turn, line.trim()))
                 .await?;
@@ -406,10 +439,20 @@ impl Game {
                         .map_err(|_| shared::GameError::InvalidActionError(whose_turn.clone()))?,
                 )
                 .map_err(|_| shared::GameError::InvalidActionError(whose_turn.clone()))?;
+
+            unsafe {
+                let status = kill(-(opponent_gid as i32), 18);
+                self.write_log(format!(
+                    "Waking up process group {}, status: {}",
+                    opponent_gid, status
+                ))
+                .await?;
+            };
         }
 
         Ok(())
     }
+
     /// Play a game of poker, returning a [shared::GameResult]
     pub async fn play(&mut self, rounds: usize) -> shared::GameResult {
         log::debug!("Playing game {} with {} rounds", self.id, rounds);
@@ -448,11 +491,21 @@ impl Game {
         ))
     }
 }
-
 impl Drop for Game {
     fn drop(&mut self) {
-        let _ = self.bot_a.start_kill();
-        let _ = self.bot_b.start_kill();
+        // unsafe {
+        //     let _ = kill(-(self.bot_a.id().unwrap_or_default() as i32), 18);
+        //     let _ = kill(-(self.bot_b.id().unwrap_or_default() as i32), 18);
+        //     let _ = kill(-(self.bot_a.id().unwrap_or_default() as i32), 9);
+        //     let _ = kill(-(self.bot_b.id().unwrap_or_default() as i32), 9);
+        //     let mut status: i32 = 0;
+        //     let _ = waitpid(self.bot_a.id().unwrap_or_default() as i32, &mut status, -2);
+        //     let _ = waitpid(self.bot_a.id().unwrap_or_default() as i32, &mut status, -2);
+        //     let _ = waitpid(self.bot_b.id().unwrap_or_default() as i32, &mut status, -2);
+        //     let _ = waitpid(self.bot_b.id().unwrap_or_default() as i32, &mut status, -2);
+        // };
+        // let _ = self.bot_a.start_kill();
+        // let _ = self.bot_b.start_kill();
     }
 }
 
