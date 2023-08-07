@@ -132,7 +132,6 @@ pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>
 }
 extern "C" {
     fn kill(pid: i32, sig: i32) -> i32;
-    fn waitpid(pid: i32, status: *mut i32, options: i32) -> i32;
 }
 
 pub async fn run_game(
@@ -497,11 +496,6 @@ impl Drop for Game {
         };
         let _ = self.bot_a.start_kill();
         let _ = self.bot_b.start_kill();
-        // unsafe {
-        //     let mut status: i32 = 0;
-        //     let _ = waitpid(self.bot_a.id().unwrap_or_default() as i32, &mut status, -2);
-        //     let _ = waitpid(self.bot_b.id().unwrap_or_default() as i32, &mut status, -2);
-        // }
     }
 }
 
