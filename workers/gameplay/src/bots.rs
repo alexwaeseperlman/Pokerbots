@@ -1,9 +1,7 @@
 use itertools::Itertools;
-use libc;
 use rand::{thread_rng, Rng};
 use shared::{Bot, GameError, GameResult, WhichBot};
 use std::borrow::BorrowMut;
-use std::os::unix::process::CommandExt;
 use std::{
     env,
     path::{Path, PathBuf},
@@ -401,7 +399,7 @@ impl Game {
             };
 
             unsafe {
-                let status = libc::kill(-(opponent_gid as i32), 19);
+                let status = kill(-(opponent_gid as i32), 19);
                 self.write_log(format!(
                     "Sleeping process group {}, status: {}",
                     opponent_gid, status
@@ -499,11 +497,11 @@ impl Drop for Game {
         };
         let _ = self.bot_a.start_kill();
         let _ = self.bot_b.start_kill();
-        unsafe {
-            let mut status: i32 = 0;
-            let _ = waitpid(self.bot_a.id().unwrap_or_default() as i32, &mut status, -2);
-            let _ = waitpid(self.bot_b.id().unwrap_or_default() as i32, &mut status, -2);
-        }
+        // unsafe {
+        //     let mut status: i32 = 0;
+        //     let _ = waitpid(self.bot_a.id().unwrap_or_default() as i32, &mut status, -2);
+        //     let _ = waitpid(self.bot_b.id().unwrap_or_default() as i32, &mut status, -2);
+        // }
     }
 }
 
