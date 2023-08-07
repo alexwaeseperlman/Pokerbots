@@ -493,19 +493,17 @@ impl Game {
 }
 impl Drop for Game {
     fn drop(&mut self) {
-        // unsafe {
-        //     let _ = kill(-(self.bot_a.id().unwrap_or_default() as i32), 18);
-        //     let _ = kill(-(self.bot_b.id().unwrap_or_default() as i32), 18);
-        //     let _ = kill(-(self.bot_a.id().unwrap_or_default() as i32), 9);
-        //     let _ = kill(-(self.bot_b.id().unwrap_or_default() as i32), 9);
-        //     let mut status: i32 = 0;
-        //     let _ = waitpid(self.bot_a.id().unwrap_or_default() as i32, &mut status, -2);
-        //     let _ = waitpid(self.bot_a.id().unwrap_or_default() as i32, &mut status, -2);
-        //     let _ = waitpid(self.bot_b.id().unwrap_or_default() as i32, &mut status, -2);
-        //     let _ = waitpid(self.bot_b.id().unwrap_or_default() as i32, &mut status, -2);
-        // };
-        // let _ = self.bot_a.start_kill();
-        // let _ = self.bot_b.start_kill();
+        unsafe {
+            let _ = kill(-(self.bot_a.id().unwrap_or_default() as i32), 18);
+            let _ = kill(-(self.bot_b.id().unwrap_or_default() as i32), 18);
+        };
+        let _ = self.bot_a.start_kill();
+        let _ = self.bot_b.start_kill();
+        unsafe {
+            let mut status: i32 = 0;
+            let _ = waitpid(self.bot_a.id().unwrap_or_default() as i32, &mut status, -2);
+            let _ = waitpid(self.bot_b.id().unwrap_or_default() as i32, &mut status, -2);
+        }
     }
 }
 
