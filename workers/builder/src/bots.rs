@@ -96,13 +96,13 @@ pub async fn build_bot<T: AsRef<Path>>(bot_folder: T) -> Result<(), io::Error> {
 pub async fn download_bot<T: Into<String>, U: Into<PathBuf>, V: Into<String>>(
     key: T,
     path: U,
-    bot_bucket: V,
+    challengerucket: V,
     client: &aws_sdk_s3::Client,
 ) -> Result<(), io::Error> {
     //TODO: download this in a better way
     let key: String = key.into();
     log::debug!("Downloading bot {:?} from s3", key.clone());
-    if let Ok(res) = client.get_object().bucket(bot_bucket).key(key).send().await {
+    if let Ok(res) = client.get_object().bucket(challengerucket).key(key).send().await {
         if let Ok(body) = res.body.collect().await {
             let bytes = body.into_bytes();
             fs::write(path.into().join("bot.zip"), bytes).await?;

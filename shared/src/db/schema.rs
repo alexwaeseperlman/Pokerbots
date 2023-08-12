@@ -16,12 +16,12 @@ diesel::table! {
 diesel::table! {
     games (id) {
         id -> Text,
-        bot_a -> Int4,
-        bot_b -> Int4,
+        challenger -> Int4,
+        defender -> Int4,
         score_change -> Nullable<Int4>,
         created -> Int8,
-        error_type -> Nullable<Text>,
-        error_message -> Nullable<Text>,
+        error_type -> Nullable<Int4>,
+        error_message -> Nullable<Varchar>,
     }
 }
 

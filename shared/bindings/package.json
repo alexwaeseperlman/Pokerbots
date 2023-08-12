@@ -1,0 +1,6 @@
+{
+  "name": "pokerbots-shared",
+  "version": "1.0.0",
+  "description": "Structs and methods that all backend services share.",
+  "author": ""
+}

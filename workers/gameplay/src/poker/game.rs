@@ -602,34 +602,34 @@ mod tests {
     #[test]
     pub fn snapshot_1() {
         /*
-        99ms BotA <<< P 1
-        99ms BotB <<< P 0
-        99ms BotA <<< C 7s 7h
-        99ms BotB <<< C Jc 9h
-        99ms BotB <<< S 2 1 2 48 52
-        99ms BotB >>> C
-        99ms BotA <<< S 2 2 2 48 52
-        99ms BotA >>> R5
-        99ms BotB <<< S 7 2 7 48 52
-        99ms BotB >>> C
-        99ms BotA <<< C 7s 7h Qh 7d Qc
-        99ms BotB <<< C Jc 9h Qh 7d Qc
-        99ms BotA <<< S 7 7 7 48 52
-        99ms BotA >>> R5
-        99ms BotB <<< S 12 7 12 48 52
-        99ms BotB >>> C
-        99ms BotA <<< C 7s 7h Qh 7d Qc 6h
-        99ms BotB <<< C Jc 9h Qh 7d Qc 6h
-        99ms BotA <<< S 12 12 12 48 52
-        99ms BotA >>> R5
-        99ms BotB <<< S 17 12 17 48 52
-        99ms BotB >>> C
-        99ms BotA <<< C 7s 7h Qh 7d Qc 6h 4c
-        99ms BotB <<< C Jc 9h Qh 7d Qc 6h 4c
-        99ms BotA <<< S 17 17 17 48 52
-        99ms BotA >>> R5
-        99ms BotB <<< S 22 17 22 48 52
-        99ms BotB >>> C
+        99ms Defender <<< P 1
+        99ms Challenger <<< P 0
+        99ms Defender <<< C 7s 7h
+        99ms Challenger <<< C Jc 9h
+        99ms Challenger <<< S 2 1 2 48 52
+        99ms Challenger >>> C
+        99ms Defender <<< S 2 2 2 48 52
+        99ms Defender >>> R5
+        99ms Challenger <<< S 7 2 7 48 52
+        99ms Challenger >>> C
+        99ms Defender <<< C 7s 7h Qh 7d Qc
+        99ms Challenger <<< C Jc 9h Qh 7d Qc
+        99ms Defender <<< S 7 7 7 48 52
+        99ms Defender >>> R5
+        99ms Challenger <<< S 12 7 12 48 52
+        99ms Challenger >>> C
+        99ms Defender <<< C 7s 7h Qh 7d Qc 6h
+        99ms Challenger <<< C Jc 9h Qh 7d Qc 6h
+        99ms Defender <<< S 12 12 12 48 52
+        99ms Defender >>> R5
+        99ms Challenger <<< S 17 12 17 48 52
+        99ms Challenger >>> C
+        99ms Defender <<< C 7s 7h Qh 7d Qc 6h 4c
+        99ms Challenger <<< C Jc 9h Qh 7d Qc 6h 4c
+        99ms Defender <<< S 17 17 17 48 52
+        99ms Defender >>> R5
+        99ms Challenger <<< S 22 17 22 48 52
+        99ms Challenger >>> C
          */
         let mut state = GameState::new(
             [48, 52],

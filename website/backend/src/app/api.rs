@@ -13,12 +13,6 @@ pub mod games;
 pub mod manage_team;
 pub mod signout;
 
-#[derive(Deserialize, Serialize, Clone, Debug)]
-pub struct ServerMessage {
-    pub message: String,
-    pub message_type: String,
-}
-
 pub fn api_service() -> actix_web::Scope {
     actix_web::web::scope("/api")
         .service(manage_team::create_team)
@@ -46,7 +40,20 @@ pub fn api_service() -> actix_web::Scope {
         .service(signout::signout)
 }
 
-type ApiResult = Result<HttpResponse, ApiError>;
+type ApiResult<T: Serialize> = Result<T, ApiError>;
+
+impl<T: Serialize> Into<HttpResponse> for ApiResult<T> {
+    fn into(self) -> HttpResponse {
+        if let Ok(response) = self {
+            HttpResponse::Ok().body(serde_json::to_string(&response))
+        }
+        else {
+            let Err(e) = self;
+            e.into()
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct ApiError {
     pub status_code: actix_web::http::StatusCode,

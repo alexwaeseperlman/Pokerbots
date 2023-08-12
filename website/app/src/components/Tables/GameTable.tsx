@@ -148,14 +148,14 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
       <DataGrid
         columns={[
           {
-            field: "bot_b",
+            field: "challenger",
             headerName: "Defender",
             renderCell: renderTeam(-1),
             flex: 1,
             sortable: false,
           },
           {
-            field: "bot_a",
+            field: "defender",
             headerName: "Challenger",
             renderCell: renderTeam(1),
             flex: 1,
@@ -168,10 +168,10 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
             sortable: false,
             renderCell: (params) => {
               let bot = undefined;
-              if (params.row.bot_a?.team?.id === team?.id) {
-                bot = params.row.bot_a?.id;
-              } else if (params.row.bot_b?.team?.id === team?.id) {
-                bot = params.row.bot_b?.id;
+              if (params.row.defender?.team?.id === team?.id) {
+                bot = params.row.defender?.id;
+              } else if (params.row.challenger?.team?.id === team?.id) {
+                bot = params.row.challenger?.id;
               }
 
               const ref = React.createRef<HTMLButtonElement>();
@@ -220,20 +220,20 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
         onClose={() => setMenuOpen(false)}
         onClick={() => setMenuOpen(false)}
       >
-        {team && menuEl?.game?.bot_a?.team?.id == team.id && (
+        {team && menuEl?.game?.defender?.team?.id == team.id && (
           <MenuItem
             component="a"
             target="_tab"
-            href={`${apiUrl}/game-log?id=${menuEl?.game.id}&bot=${menuEl?.game?.bot_a.id}`}
+            href={`${apiUrl}/game-log?id=${menuEl?.game.id}&bot=${menuEl?.game?.defender.id}`}
           >
             Defender game log
           </MenuItem>
         )}
-        {team && menuEl?.game?.bot_b?.team?.id == team.id && (
+        {team && menuEl?.game?.challenger?.team?.id == team.id && (
           <MenuItem
             component="a"
             target="_tab"
-            href={`${apiUrl}/game-log?id=${menuEl?.game.id}&bot=${menuEl?.game?.bot_b.id}`}
+            href={`${apiUrl}/game-log?id=${menuEl?.game.id}&bot=${menuEl?.game?.challenger.id}`}
           >
             Challenger game log
           </MenuItem>

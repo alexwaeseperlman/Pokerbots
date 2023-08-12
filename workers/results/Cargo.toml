@@ -19,3 +19,5 @@ aws-sdk-sqs = "0.28.0"
 async-trait = "0.1.68"
 dotenvy = "0.15.7"
 diesel = { version = "2.0.3", features = ["postgres", "r2d2", "with-deprecated"]}
+ws = "0.9.2"
+aws-sdk-sns = "0.29.0"

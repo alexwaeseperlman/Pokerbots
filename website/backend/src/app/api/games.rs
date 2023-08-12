@@ -22,15 +22,15 @@ use shared::GameTask;
 use shared::{db::conn::DB_CONNECTION, PresignedRequest};
 #[derive(Deserialize)]
 pub struct MakeGameQuery {
-    pub bot_a: i32,
-    pub bot_b: i32,
+    pub defender: i32,
+    pub challenger: i32,
 }
 
 //TODO: restrict who can make games
 #[get("/create-game")]
 pub async fn create_game(
     session: Session,
-    web::Query::<MakeGameQuery>(MakeGameQuery { bot_a, bot_b }): web::Query<MakeGameQuery>,
+    web::Query::<MakeGameQuery>(MakeGameQuery { defender, challenger }): web::Query<MakeGameQuery>,
     sqs_client: web::Data<aws_sdk_sqs::Client>,
     s3_client: web::Data<aws_sdk_s3::Client>,
 ) -> ApiResult {
@@ -38,61 +38,65 @@ pub async fn create_game(
     // also push a batch job to the queue
     let id = format!("{:02x}", rand::thread_rng().gen::<u128>());
     let conn = &mut (*DB_CONNECTION).get()?;
-    let game = diesel::insert_into(schema::games::dsl::games)
+    diesel::insert_into(schema::games::dsl::games)
         .values(NewGame {
-            bot_a,
-            bot_b,
+            bot: defender,
+            id: id.clone(),
+        })
+        .get_result::<Game>(conn)?;
+    diesel::insert_into(schema::games::dsl::games)
+        .values(NewGame {
+            bot: challenger,
             id: id.clone(),
         })
         .get_result::<Game>(conn)?;
     // push a batch job to the queue
     let presign_config =
         PresigningConfig::expires_in(std::time::Duration::from_secs(60 * 60 * 24 * 7))?;
-    let (public_logs, bot_a_logs, bot_b_logs) = try_join3(
+    let (public_logs, defender_logs, challenger_logs) = try_join3(
         s3_client
             .put_object()
             .bucket(&*GAME_LOGS_S3_BUCKET)
-            .key(format!("public/{}", game.id))
+            .key(format!("public/{}", id))
             .presigned(presign_config.clone()),
         s3_client
             .put_object()
             .bucket(&*GAME_LOGS_S3_BUCKET)
-            .key(format!("{}/{}", bot_a, game.id))
+            .key(format!("{}/{}", defender, id))
             .presigned(presign_config.clone()),
         s3_client
             .put_object()
             .bucket(&*GAME_LOGS_S3_BUCKET)
-            .key(format!("{}/{}", bot_b, game.id))
+            .key(format!("{}/{}", challenger, id))
             .presigned(presign_config.clone()),
     )
     .await?;
-    let (public_logs_presigned, bot_a_logs_presigned, bot_b_logs_presigned) = (
+    let (public_logs_presigned, defender_logs_presigned, challenger_logs_presigned) = (
         PresignedRequest {
             url: public_logs.uri().to_string(),
             headers: public_logs.headers().into(),
         },
         PresignedRequest {
-            url: bot_a_logs.uri().to_string(),
-            headers: bot_a_logs.headers().into(),
+            url: defender_logs.uri().to_string(),
+            headers: defender_logs.headers().into(),
         },
         PresignedRequest {
-            url: bot_b_logs.uri().to_string(),
-            headers: bot_b_logs.headers().into(),
+            url: challenger_logs.uri().to_string(),
+            headers: challenger_logs.headers().into(),
         },
     );
     let job = sqs_client
         .send_message()
         .queue_url(std::env::var("NEW_GAMES_QUEUE_URL")?)
         .message_body(&serde_json::to_string(&GameTask::Game {
-            bot_a: game.bot_a.to_string(),
-            bot_b: game.bot_b.to_string(),
-            id: game.id.clone(),
-            date: game.created,
+            defender: defender.to_string(),
+            challenger: challenger.to_string(),
+            id: id.clone(),
             // TODO: Choose a number of rounds
             rounds: 100,
             public_logs_presigned,
-            bot_a_logs_presigned,
-            bot_b_logs_presigned,
+            defender_logs_presigned,
+            challenger_logs_presigned,
         })?)
         .send();
     if let Err(e) = job.await {
@@ -102,7 +106,9 @@ pub async fn create_game(
             .execute(conn)?;
         return Err(e.into());
     }
-    Ok(HttpResponse::Ok().json(game))
+    Ok(HttpResponse::Ok().json(json!({
+        "id": id
+    })))
 }
 
 #[derive(Deserialize)]
@@ -144,9 +150,9 @@ pub async fn games(
             .into_iter()
             .collect();
         base = base.filter(
-            schema::games::dsl::bot_a
+            schema::games::dsl::bot
                 .eq_any(bots.clone())
-                .or(schema::games::dsl::bot_b.eq_any(bots.clone())),
+                .or(schema::games::dsl::challenger.eq_any(bots.clone())),
         );
     }
     let count = count.unwrap_or(false);
