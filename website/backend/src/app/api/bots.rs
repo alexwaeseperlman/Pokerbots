@@ -8,12 +8,11 @@ use crate::{
     config::{BOT_S3_BUCKET, BOT_SIZE, BUILD_LOGS_S3_BUCKET},
 };
 use actix_session::Session;
-use actix_web::{get, post, web, HttpResponse, Responder};
+use actix_web::{get, post, web, HttpResponse};
 use aws_sdk_s3::presigning::PresigningConfig;
 use diesel::*;
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use shared::{
     db::{
         conn::DB_CONNECTION,

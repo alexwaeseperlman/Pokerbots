@@ -1,10 +1,5 @@
-use diesel::{
-    pg::PgConnection,
-    r2d2::{ConnectionManager, Pool},
-};
-use dotenvy::dotenv;
 use lazy_static::lazy_static;
-use std::{env, fs};
+use std::fs;
 
 pub const TEAM_SIZE: usize = 5;
 lazy_static! {

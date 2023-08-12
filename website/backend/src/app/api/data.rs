@@ -1,8 +1,7 @@
 use actix_session::Session;
-use actix_web::{get, web, HttpResponse};
+use actix_web::{get, web};
 use diesel::*;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 
 use crate::app::login::{TeamData, UserData};
 use crate::app::{api::ApiResult, login};

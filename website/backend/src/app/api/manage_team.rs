@@ -1,21 +1,15 @@
-use std::io::{Read, Result};
-
-use crate::{
-    app::login,
-    app::{api::ApiResult, login::microsoft_login_url},
-    config::PFP_S3_BUCKET,
-};
+use crate::{app::api::ApiResult, app::login, config::PFP_S3_BUCKET};
 use actix_session::Session;
-use actix_web::{delete, get, post, put, web, HttpResponse};
+use actix_web::{delete, get, put, web};
 use aws_sdk_s3 as s3;
 use chrono;
 use diesel::prelude::*;
 use futures_util::StreamExt;
 use rand::{self, Rng};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use shared::db::conn::DB_CONNECTION;
 use shared::db::{
-    models::{NewInvite, NewTeam, Team, TeamInvite, User},
+    models::{NewInvite, NewTeam, TeamInvite, User},
     schema::{team_invites, teams, users},
 };
 

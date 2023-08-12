@@ -1,19 +1,10 @@
 use core::panic;
-use std::{
-    cmp::{min, Ordering},
-    future::Future,
-};
+use std::cmp::{min, Ordering};
 
 use rand::{seq::SliceRandom, Rng};
 use shared::GameActionError;
 
 use super::hands::{self, Card, Suite};
-
-pub trait Player {
-    fn get_action(&self, state: GameState) -> Box<dyn Future<Output = Action>>;
-    fn post_response(&self, state: GameState, response: EngineResponse);
-    fn post_action(&self, state: GameState, action: Action, player: usize);
-}
 
 #[derive(PartialEq, Debug)]
 pub enum Action {
@@ -32,7 +23,6 @@ pub enum Round {
     River,
     End,
 }
-pub enum EngineResponse {}
 
 #[derive(Clone, Debug)]
 pub struct PlayerState {

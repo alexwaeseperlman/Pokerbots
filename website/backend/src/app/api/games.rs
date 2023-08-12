@@ -6,14 +6,13 @@ use actix_session::Session;
 use actix_web::{
     get,
     web::{self},
-    HttpResponse, Responder,
+    HttpResponse,
 };
 use aws_sdk_s3::presigning::PresigningConfig;
 use diesel::prelude::*;
 use futures_util::future::try_join3;
 use rand::{self, Rng};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use shared::db::{
     models::{Bot, Game, NewGame},
     schema,
