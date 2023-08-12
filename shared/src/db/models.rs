@@ -61,6 +61,7 @@ pub struct NewInvite {
 #[ts(export)]
 pub struct TeamInvite {
     pub invite_code: String,
+    //TODO: rename this to team
     pub teamid: i32,
     pub expires: i64,
 }

@@ -1,7 +1,9 @@
+use std::fmt::Display;
 use std::{fmt, num::TryFromIntError};
 
+use actix_web::body::BoxBody;
 use actix_web::http::StatusCode;
-use actix_web::{error::PayloadError, HttpResponse, ResponseError};
+use actix_web::{error::PayloadError, HttpRequest, HttpResponse, Responder, ResponseError};
 use aws_sdk_s3::presigning::PresigningConfigError;
 use reqwest::header::ToStrError;
 use serde::{Deserialize, Serialize};
@@ -40,16 +42,24 @@ pub fn api_service() -> actix_web::Scope {
         .service(signout::signout)
 }
 
-type ApiResult<T: Serialize> = Result<T, ApiError>;
+type ApiResult<T: Serialize> = Result<actix_web::web::Json<T>, ApiError>;
 
-impl<T: Serialize> Into<HttpResponse> for ApiResult<T> {
-    fn into(self) -> HttpResponse {
-        if let Ok(response) = self {
-            HttpResponse::Ok().body(serde_json::to_string(&response))
-        }
-        else {
-            let Err(e) = self;
-            e.into()
+struct ApiResultWrapper<T: Serialize>(ApiResult<T>);
+
+impl<T: Serialize> Responder for ApiResultWrapper<T> {
+    type Body = BoxBody;
+
+    fn respond_to(self, req: &actix_web::HttpRequest) -> HttpResponse<Self::Body> {
+        let ApiResultWrapper(result) = self;
+        match self {
+            ApiResultWrapper(Ok(response)) => {
+                let s = serde_json::to_string(&response);
+                match s {
+                    Err(e) => ApiError::from(e).error_response(),
+                    Ok(s) => HttpResponse::Ok().body(s),
+                }
+            }
+            ApiResultWrapper(Err(e)) => e.error_response(),
         }
     }
 }

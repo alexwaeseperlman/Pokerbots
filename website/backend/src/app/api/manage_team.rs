@@ -1,4 +1,4 @@
-use std::io::Read;
+use std::io::{Read, Result};
 
 use crate::{
     app::login,
@@ -13,11 +13,11 @@ use diesel::prelude::*;
 use futures_util::StreamExt;
 use rand::{self, Rng};
 use serde::{Deserialize, Serialize};
+use shared::db::conn::DB_CONNECTION;
 use shared::db::{
     models::{NewInvite, NewTeam, Team, TeamInvite, User},
     schema::{team_invites, teams, users},
 };
-use shared::db::conn::DB_CONNECTION;
 
 #[derive(Deserialize)]
 pub struct CreateTeamQuery {
@@ -39,17 +39,12 @@ pub fn validate_team_name(name: &String) -> bool {
     return true;
 }
 
-#[derive(Serialize)]
-struct BinaryApiResult {
-    success: bool,
-}
-
 // Create or rename your current team
 #[put("/team")]
 pub async fn create_team(
     session: Session,
     web::Query::<CreateTeamQuery>(CreateTeamQuery { team_name }): web::Query<CreateTeamQuery>,
-) -> ApiResult<BinaryApiResult> {
+) -> ApiResult<()> {
     let user = login::get_user_data(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
 
@@ -62,8 +57,9 @@ pub async fn create_team(
 
     let conn = &mut (*DB_CONNECTION).get()?;
 
-    if let Ok(user) =
-        users::table::select(users::dsl::email.eq(user.email)).get_result::<User>(conn)
+    if let Ok(user) = users::table
+        .select(users::dsl::email.eq(user.email))
+        .get_result::<User>(conn)
     {
         if user.team_id == None {
             let new_id = diesel::insert_into(teams::dsl::teams)
@@ -84,7 +80,7 @@ pub async fn create_team(
         }
     }
 
-    Ok(BinaryApiResult { success: true })
+    Ok(web::Json(()))
 }
 
 #[derive(Deserialize)]
@@ -93,16 +89,17 @@ pub struct JoinTeamQuery {
 }
 
 #[delete("/team")]
-pub async fn delete_team(session: Session) -> ApiResult<BinaryApiResult> {
+pub async fn delete_team(session: Session) -> ApiResult<()> {
     let user = login::get_user_data(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
     let team = login::get_team_data(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
     // You can't delete a team if you're not in one
     if team.clone().owner != user.email {
-        return Ok(HttpResponse::Found()
-            .append_header(("Location", "/manage-team"))
-            .finish());
+        return Err(actix_web::error::ErrorNotFound(
+            "You can't delete a team if you are not the owner.",
+        )
+        .into());
     }
     let conn = &mut (*DB_CONNECTION).get()?;
 
@@ -113,11 +110,11 @@ pub async fn delete_team(session: Session) -> ApiResult<BinaryApiResult> {
         .set(users::dsl::team_id.eq::<Option<i32>>(None))
         .execute(conn)?;
 
-    Ok(BinaryApiResult { success: true })
+    Ok(web::Json(()))
 }
 
 #[get("/leave-team")]
-pub async fn leave_team(session: Session) -> ApiResult<BinaryApiResult> {
+pub async fn leave_team(session: Session) -> ApiResult<()> {
     let user = login::get_user_data(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
     let team = login::get_team_data(&session)
@@ -137,12 +134,10 @@ pub async fn leave_team(session: Session) -> ApiResult<BinaryApiResult> {
         .set(users::dsl::team_id.eq::<Option<i32>>(None))
         .execute(conn)?;
 
-    Ok(HttpResponse::Found()
-        .append_header(("Location", "/manage-team"))
-        .finish())
+    Ok(web::Json(()))
 }
 #[get("/create-invite")]
-pub async fn create_invite(session: Session) -> ApiResult<BinaryApiResult> {
+pub async fn create_invite(session: Session) -> ApiResult<()> {
     let user = login::get_user_data(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
     let team = login::get_team_data(&session)
@@ -171,7 +166,7 @@ pub async fn create_invite(session: Session) -> ApiResult<BinaryApiResult> {
         })
         .returning(team_invites::dsl::invite_code)
         .get_result::<String>(conn)?;
-    Ok(HttpResponse::Ok().body(out))
+    Ok(web::Json(()))
 }
 
 #[derive(Deserialize)]
@@ -183,7 +178,7 @@ pub struct CancelTeamQuery {
 pub async fn cancel_invite(
     session: Session,
     web::Query(CancelTeamQuery { invite_code }): web::Query<CancelTeamQuery>,
-) -> ApiResult {
+) -> ApiResult<()> {
     let user = login::get_user_data(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
     let team = login::get_team_data(&session)
@@ -196,7 +191,7 @@ pub async fn cancel_invite(
         .filter(team_invites::dsl::teamid.eq(team.id))
         .returning(team_invites::dsl::invite_code)
         .get_result::<String>(conn)?;
-    Ok(HttpResponse::Ok().body(out))
+    Ok(web::Json(()))
 }
 
 #[get("/join-team")]
@@ -204,7 +199,7 @@ pub async fn join_team(
     session: Session,
     web::Query::<JoinTeamQuery>(JoinTeamQuery { invite_code }): web::Query<JoinTeamQuery>,
     req: actix_web::HttpRequest,
-) -> ApiResult {
+) -> ApiResult<()> {
     let user = login::get_user_data(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
     let team = login::get_team_data(&session);
@@ -236,7 +231,7 @@ pub async fn join_team(
             return Err(actix_web::error::ErrorNotAcceptable("Invalid code.").into());
         }
     }
-    Ok(HttpResponse::Ok().body("{}"))
+    Ok(web::Json(()))
 }
 
 #[put("/upload-pfp")]
@@ -244,7 +239,7 @@ pub async fn upload_pfp(
     s3_client: actix_web::web::Data<s3::Client>,
     session: Session,
     mut payload: web::Payload,
-) -> ApiResult {
+) -> ApiResult<()> {
     let user = login::get_user_data(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
     let team = login::get_team_data(&session)
@@ -271,7 +266,7 @@ pub async fn upload_pfp(
     // TODO: Maybe run the image through a sanitizer/thumbnailer
     // TODO: Maybe check for inappropriate content using Rekognition
 
-    Ok(HttpResponse::Ok().body("{}"))
+    Ok(web::Json(()))
 }
 
 #[derive(Deserialize)]
@@ -283,7 +278,7 @@ pub struct KickMemberQuery {
 pub async fn kick_member(
     session: Session,
     web::Query::<KickMemberQuery>(KickMemberQuery { email }): web::Query<KickMemberQuery>,
-) -> ApiResult {
+) -> ApiResult<()> {
     let user = login::get_user_data(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
     let team = login::get_team_data(&session)
@@ -301,7 +296,7 @@ pub async fn kick_member(
         .set(users::dsl::team_id.eq::<Option<i32>>(None))
         .execute(conn)?;
     // TODO: Maybe some kind of message should show for the user next time they log in?
-    Ok(HttpResponse::Ok().body("{}"))
+    Ok(web::Json(()))
 }
 
 #[derive(Deserialize)]
@@ -313,7 +308,7 @@ pub struct RenameTeamQuery {
 pub async fn rename_team(
     session: Session,
     web::Query::<RenameTeamQuery>(RenameTeamQuery { to }): web::Query<RenameTeamQuery>,
-) -> ApiResult {
+) -> ApiResult<()> {
     let user = login::get_user_data(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
     let team = login::get_team_data(&session)
@@ -322,8 +317,7 @@ pub async fn rename_team(
     if !validate_team_name(&to) {
         return Err(actix_web::error::ErrorNotAcceptable(
             "Invalid team name. It must be at most 20 characters and cannot contain consecutive spaces.",
-        )
-        .into()).into();
+        ).into());
     }
 
     let conn = &mut (*DB_CONNECTION).get()?;
@@ -333,5 +327,5 @@ pub async fn rename_team(
         //.filter(teams::dsl::owner.eq(user.clone().email))
         .set(teams::dsl::team_name.eq(to))
         .execute(conn)?;
-    Ok(HttpResponse::Ok().body("{}")).into()
+    Ok(web::Json(()))
 }

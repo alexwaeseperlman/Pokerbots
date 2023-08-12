@@ -25,7 +25,6 @@ async fn main() {
                     defender,
                     challenger,
                     id,
-                    date: _,
                     rounds,
                     public_logs_presigned,
                     defender_logs_presigned,

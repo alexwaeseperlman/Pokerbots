@@ -3389,6 +3389,7 @@ dependencies = [
  "serde_yaml",
  "shared",
  "tokio",
+ "ts-rs",
  "url",
  "zip",
 ]

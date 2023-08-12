@@ -1,5 +1,5 @@
 use diesel::prelude::*;
-use shared::{GameError, GameResult, GameStatus, GameStatusMessage};
+use shared::{GameError, GameStatus, GameStatusMessage};
 
 pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
     use shared::db::schema::{bots, games};

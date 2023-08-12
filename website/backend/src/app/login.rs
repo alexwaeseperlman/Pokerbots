@@ -3,12 +3,10 @@ use actix_web::{get, web, HttpResponse};
 use diesel::prelude::*;
 use log::error;
 use serde::{Deserialize, Serialize};
-use std::env;
 
 use crate::config::{CLIENT_ID, REDIRECT_URI};
 use shared::db::conn::DB_CONNECTION;
 
-use super::api::ServerMessage;
 use shared::db::{
     models::{NewUser, Team, TeamInvite, User},
     schema::{team_invites, teams, users},
@@ -191,14 +189,6 @@ pub async fn handle_login(
                         .displayName
                         .clone()
                         .unwrap_or_else(|| me.givenName.unwrap_or_else(|| mail.clone())),
-                },
-            )?;
-        } else {
-            session.insert(
-                "message",
-                ServerMessage {
-                    message: "There was an issue logging you in.".to_owned(),
-                    message_type: "error".to_owned(),
                 },
             )?;
         }

@@ -6,13 +6,13 @@ use actix_session::Session;
 use actix_web::{
     get,
     web::{self},
-    HttpResponse,
+    HttpResponse, Responder,
 };
 use aws_sdk_s3::presigning::PresigningConfig;
 use diesel::prelude::*;
 use futures_util::future::try_join3;
 use rand::{self, Rng};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use shared::db::{
     models::{Bot, Game, NewGame},
@@ -20,33 +20,39 @@ use shared::db::{
 };
 use shared::GameTask;
 use shared::{db::conn::DB_CONNECTION, PresignedRequest};
+
+use super::ApiError;
+
 #[derive(Deserialize)]
 pub struct MakeGameQuery {
     pub defender: i32,
     pub challenger: i32,
 }
 
+#[derive(Serialize)]
+pub struct CreateGameResponse {
+    pub id: String,
+}
+
 //TODO: restrict who can make games
 #[get("/create-game")]
 pub async fn create_game(
     session: Session,
-    web::Query::<MakeGameQuery>(MakeGameQuery { defender, challenger }): web::Query<MakeGameQuery>,
+    web::Query::<MakeGameQuery>(MakeGameQuery {
+        defender,
+        challenger,
+    }): web::Query<MakeGameQuery>,
     sqs_client: web::Data<aws_sdk_sqs::Client>,
     s3_client: web::Data<aws_sdk_s3::Client>,
-) -> ApiResult {
+) -> ApiResult<CreateGameResponse> {
     // generate a random code and insert it into the database
     // also push a batch job to the queue
     let id = format!("{:02x}", rand::thread_rng().gen::<u128>());
     let conn = &mut (*DB_CONNECTION).get()?;
     diesel::insert_into(schema::games::dsl::games)
         .values(NewGame {
-            bot: defender,
-            id: id.clone(),
-        })
-        .get_result::<Game>(conn)?;
-    diesel::insert_into(schema::games::dsl::games)
-        .values(NewGame {
-            bot: challenger,
+            defender,
+            challenger,
             id: id.clone(),
         })
         .get_result::<Game>(conn)?;
@@ -106,9 +112,7 @@ pub async fn create_game(
             .execute(conn)?;
         return Err(e.into());
     }
-    Ok(HttpResponse::Ok().json(json!({
-        "id": id
-    })))
+    Ok(web::Json(CreateGameResponse { id }))
 }
 
 #[derive(Deserialize)]
@@ -119,6 +123,12 @@ pub struct GameQuery {
     pub page_size: Option<i32>,
     pub page: Option<i32>,
     pub count: Option<bool>,
+}
+
+#[derive(Serialize)]
+pub enum GamesResponse {
+    Count(i64),
+    Games(Vec<Game>),
 }
 
 #[get("/games")]
@@ -132,7 +142,7 @@ pub async fn games(
         page,
         count,
     }): web::Query<GameQuery>,
-) -> ApiResult {
+) -> ApiResult<GamesResponse> {
     let conn = &mut (*DB_CONNECTION).get()?;
     let mut base = schema::games::dsl::games.into_boxed();
     if let Some(active) = active {
@@ -150,7 +160,7 @@ pub async fn games(
             .into_iter()
             .collect();
         base = base.filter(
-            schema::games::dsl::bot
+            schema::games::dsl::defender
                 .eq_any(bots.clone())
                 .or(schema::games::dsl::challenger.eq_any(bots.clone())),
         );
@@ -160,14 +170,14 @@ pub async fn games(
     let page = page.unwrap_or(0);
     if count {
         let count = base.count().get_result::<i64>(conn)?;
-        return Ok(HttpResponse::Ok().json(json!({ "count": count })));
+        return Ok(web::Json(GamesResponse::Count(count)));
     }
     base = base
         .order_by(schema::games::dsl::created.desc())
         .limit((page_size).into())
         .offset((page * page_size).into());
     let result: Vec<Game> = base.load::<Game>(conn)?.into_iter().collect();
-    Ok(HttpResponse::Ok().json(result))
+    Ok(web::Json(GamesResponse::Games(result)))
 }
 
 #[derive(Deserialize)]
@@ -181,7 +191,7 @@ pub async fn game_log(
     web::Query::<GameLogQuery>(GameLogQuery { id, bot }): web::Query<GameLogQuery>,
     sqs_client: web::Data<aws_sdk_sqs::Client>,
     s3_client: web::Data<aws_sdk_s3::Client>,
-) -> ApiResult {
+) -> Result<HttpResponse, ApiError> {
     let team = login::get_team_data(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
     let conn = &mut (*DB_CONNECTION).get()?;

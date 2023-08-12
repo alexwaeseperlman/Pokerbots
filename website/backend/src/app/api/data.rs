@@ -1,9 +1,10 @@
 use actix_session::Session;
 use actix_web::{get, web, HttpResponse};
 use diesel::*;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
+use crate::app::login::{TeamData, UserData};
 use crate::app::{api::ApiResult, login};
 use crate::config::APP_PFP_ENDPOINT;
 use shared::db::conn::DB_CONNECTION;
@@ -13,14 +14,14 @@ use shared::db::{
 };
 
 #[get("/my-account")]
-pub async fn my_account(session: Session) -> ApiResult {
-    Ok(HttpResponse::Ok().json(login::get_user_data(&session)))
+pub async fn my_account(session: Session) -> ApiResult<Option<UserData>> {
+    Ok(web::Json(login::get_user_data(&session)))
 }
 
 #[get("/my-team")]
-pub async fn my_team(session: Session) -> ApiResult {
+pub async fn my_team(session: Session) -> ApiResult<Option<TeamData>> {
     log::debug!("my-team");
-    Ok(HttpResponse::Ok().json(login::get_team_data(&session)))
+    Ok(web::Json(login::get_team_data(&session)))
 }
 
 #[derive(Deserialize)]
@@ -46,6 +47,13 @@ pub struct TeamQuery {
     pub count: Option<bool>,
 }
 
+#[derive(Serialize)]
+pub enum TeamsResponse {
+    Count(i64),
+    Teams(Vec<Team>),
+    TeamsWithMembers(Vec<TeamWithMembers>),
+}
+
 #[get("/teams")]
 pub async fn teams(
     session: Session,
@@ -58,7 +66,7 @@ pub async fn teams(
         sort_direction,
         count,
     }): web::Query<TeamQuery>,
-) -> ApiResult {
+) -> ApiResult<TeamsResponse> {
     let team = login::get_team_data(&session);
     let conn = &mut (*DB_CONNECTION).get()?;
     let mut base = schema::teams::dsl::teams.into_boxed();
@@ -93,9 +101,9 @@ pub async fn teams(
     let page_size = page_size.unwrap_or(10).min(100);
     let page = page.unwrap_or(0);
     if count.unwrap_or(false) {
-        return Ok(HttpResponse::Ok().json(json!({
-            "count": base.count().get_result::<i64>(conn)?,
-        })));
+        return Ok(web::Json(TeamsResponse::Count(
+            base.count().get_result::<i64>(conn)?,
+        )));
     }
     base = base
         .limit((page_size).into())
@@ -111,7 +119,7 @@ pub async fn teams(
         let invites = schema::team_invites::dsl::team_invites
             .filter(schema::team_invites::dsl::teamid.eq(team.clone().map(|u| u.id).unwrap_or(-1)))
             .load::<TeamInvite>(conn)?;
-        return Ok(HttpResponse::Ok().json(
+        return Ok(web::Json(TeamsResponse::TeamsWithMembers(
             result
                 .into_iter()
                 .map(|t| TeamWithMembers {
@@ -139,9 +147,9 @@ pub async fn teams(
                     team_name: t.team_name,
                 })
                 .collect::<Vec<TeamWithMembers>>(),
-        ));
+        )));
     }
-    Ok(HttpResponse::Ok().json(result))
+    Ok(web::Json(TeamsResponse::Teams(result)))
 }
 
 #[derive(Deserialize)]
@@ -151,6 +159,12 @@ pub struct BotQuery {
     pub page_size: Option<i32>,
     pub page: Option<i32>,
     pub count: Option<bool>,
+}
+
+#[derive(Serialize)]
+pub enum BotsResponse {
+    Count(i64),
+    Bots(Vec<Bot>),
 }
 
 #[get("/bots")]
@@ -163,7 +177,7 @@ pub async fn bots(
         page,
         count,
     }): web::Query<BotQuery>,
-) -> ApiResult {
+) -> ApiResult<BotsResponse> {
     let conn = &mut (*DB_CONNECTION).get()?;
     let mut base = schema::bots::dsl::bots.into_boxed();
     if let Some(ids) = ids {
@@ -180,33 +194,45 @@ pub async fn bots(
     let page = page.unwrap_or(0);
     if count {
         let count = base.count().get_result::<i64>(conn)?;
-        return Ok(HttpResponse::Ok().json(json!({ "count": count })));
+        return Ok(web::Json(BotsResponse::Count(count)));
     }
     base = base
         .order_by(schema::bots::dsl::created.desc())
         .limit((page_size).into())
         .offset((page * page_size).into());
     let result: Vec<Bot> = base.load::<Bot>(conn)?.into_iter().collect();
-    Ok(HttpResponse::Ok().json(result))
+    Ok(web::Json(BotsResponse::Bots(result)))
 }
 
 #[derive(Deserialize)]
 pub struct InviteCodeQuery {
     pub code: String,
 }
+
+#[derive(Serialize)]
+pub struct TeamInviteWithTeam {
+    pub invite_code: String,
+    pub team: Team,
+    pub expires: i64,
+}
+
 #[get("/invite-code")]
 pub async fn invite_code(
     web::Query::<InviteCodeQuery>(InviteCodeQuery { code }): web::Query<InviteCodeQuery>,
-) -> ApiResult {
+) -> ApiResult<TeamInviteWithTeam> {
     let conn = &mut (*DB_CONNECTION).get()?;
-    let invite = schema::team_invites::dsl::team_invites
+    let (invite, team) = schema::team_invites::dsl::team_invites
         .inner_join(schema::teams::dsl::teams)
-        .filter(schema::team_invites::dsl::invite_code.eq(code))
+        .filter(schema::team_invites::dsl::invite_code.eq(&code))
         .first::<(TeamInvite, Team)>(conn)?;
-    Ok(HttpResponse::Ok().json(invite))
+    Ok(web::Json(TeamInviteWithTeam {
+        invite_code: code,
+        expires: invite.expires,
+        team,
+    }))
 }
 
 #[get("/pfp-endpoint")]
-pub async fn pfp_endpoint() -> ApiResult {
-    Ok(HttpResponse::Ok().json(&*APP_PFP_ENDPOINT))
+pub async fn pfp_endpoint() -> ApiResult<String> {
+    Ok(web::Json((*APP_PFP_ENDPOINT).clone()))
 }

@@ -1,15 +1,18 @@
 use std::io::Read;
 
 use crate::{
-    app::{api::ApiResult, login},
+    app::{
+        api::{ApiError, ApiResult},
+        login,
+    },
     config::{BOT_S3_BUCKET, BOT_SIZE, BUILD_LOGS_S3_BUCKET},
 };
 use actix_session::Session;
-use actix_web::{get, post, web, HttpResponse};
+use actix_web::{get, post, web, HttpResponse, Responder};
 use aws_sdk_s3::presigning::PresigningConfig;
 use diesel::*;
 use futures_util::StreamExt;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use shared::{
     db::{
@@ -29,7 +32,7 @@ pub struct DeleteBot {
 pub async fn delete_bot(
     session: Session,
     web::Query::<DeleteBot>(DeleteBot { id }): web::Query<DeleteBot>,
-) -> ApiResult {
+) -> ApiResult<()> {
     use shared::db::schema::bots;
     let team = login::get_team_data(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
@@ -40,7 +43,7 @@ pub async fn delete_bot(
         .filter(bots::dsl::team.eq(team.id))
         .execute(conn)?;
 
-    Ok(HttpResponse::Ok().body("{}"))
+    Ok(web::Json(()))
 }
 
 #[derive(Deserialize)]
@@ -51,7 +54,7 @@ pub struct ActiveBot {
 pub async fn set_active_bot(
     session: Session,
     web::Query::<ActiveBot>(ActiveBot { id }): web::Query<ActiveBot>,
-) -> ApiResult {
+) -> ApiResult<()> {
     use shared::db::schema::teams;
     let user = login::get_user_data(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
@@ -65,7 +68,12 @@ pub async fn set_active_bot(
         .set(teams::dsl::active_bot.eq(id))
         .execute(conn)?;
 
-    Ok(HttpResponse::Ok().body("{}"))
+    Ok(web::Json(()))
+}
+
+#[derive(Serialize)]
+pub struct UploadBotResponse {
+    id: i32,
 }
 
 #[post("/upload-bot")]
@@ -74,7 +82,7 @@ pub async fn upload_bot(
     sqs_client: actix_web::web::Data<aws_sdk_sqs::Client>,
     session: Session,
     mut payload: web::Payload,
-) -> ApiResult {
+) -> ApiResult<UploadBotResponse> {
     use shared::db::schema::{bots, teams};
     let user = login::get_user_data(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
@@ -158,7 +166,7 @@ pub async fn upload_bot(
         })?)
         .send()
         .await?;
-    Ok(HttpResponse::Ok().json(json!({ "id": id })))
+    Ok(web::Json(UploadBotResponse { id }))
 }
 
 #[derive(Deserialize)]
@@ -171,7 +179,7 @@ pub async fn build_log(
     web::Query::<BuildLogQuery>(BuildLogQuery { bot }): web::Query<BuildLogQuery>,
     sqs_client: web::Data<aws_sdk_sqs::Client>,
     s3_client: web::Data<aws_sdk_s3::Client>,
-) -> ApiResult {
+) -> Result<HttpResponse, ApiError> {
     let team = login::get_team_data(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
     let conn = &mut (*DB_CONNECTION).get()?;
