@@ -1,16 +1,11 @@
-use actix_session::Session;
-use actix_web::{get, web};
-use diesel::*;
-use serde::{Deserialize, Serialize};
+use shared::db::models::{Team, TeamWithMembers};
 
-use crate::app::login::{TeamData, UserData};
-use crate::app::{api::ApiResult, login};
-use crate::config::APP_PFP_ENDPOINT;
-use shared::db::conn::DB_CONNECTION;
-use shared::db::{
-    models::{Bot, Team, TeamInvite, TeamWithMembers, User},
-    schema,
+use crate::{
+    app::login::{TeamData, UserData},
+    config::APP_PFP_ENDPOINT,
 };
+
+use super::*;
 
 #[get("/my-account")]
 pub async fn my_account(session: Session) -> ApiResult<Option<UserData>> {
@@ -46,7 +41,8 @@ pub struct TeamQuery {
     pub count: Option<bool>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, TS)]
+#[ts(export)]
 pub enum TeamsResponse {
     Count(i64),
     Teams(Vec<Team>),
@@ -160,7 +156,8 @@ pub struct BotQuery {
     pub count: Option<bool>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, TS)]
+#[ts(export)]
 pub enum BotsResponse {
     Count(i64),
     Bots(Vec<Bot>),

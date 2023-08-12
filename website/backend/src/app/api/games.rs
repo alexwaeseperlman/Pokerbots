@@ -1,26 +1,4 @@
-use crate::{
-    app::{api::ApiResult, login},
-    config::GAME_LOGS_S3_BUCKET,
-};
-use actix_session::Session;
-use actix_web::{
-    get,
-    web::{self},
-    HttpResponse,
-};
-use aws_sdk_s3::presigning::PresigningConfig;
-use diesel::prelude::*;
-use futures_util::future::try_join3;
-use rand::{self, Rng};
-use serde::{Deserialize, Serialize};
-use shared::db::{
-    models::{Bot, Game, NewGame},
-    schema,
-};
-use shared::GameTask;
-use shared::{db::conn::DB_CONNECTION, PresignedRequest};
-
-use super::ApiError;
+use super::*;
 
 #[derive(Deserialize)]
 pub struct MakeGameQuery {
@@ -28,7 +6,8 @@ pub struct MakeGameQuery {
     pub challenger: i32,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, TS)]
+#[ts(export)]
 pub struct CreateGameResponse {
     pub id: String,
 }
@@ -124,7 +103,8 @@ pub struct GameQuery {
     pub count: Option<bool>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, TS)]
+#[ts(export)]
 pub enum GamesResponse {
     Count(i64),
     Games(Vec<Game>),
@@ -184,6 +164,7 @@ pub struct GameLogQuery {
     id: String,
     bot: Option<i32>,
 }
+
 #[get("/game-log")]
 pub async fn game_log(
     session: Session,

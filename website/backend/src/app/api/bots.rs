@@ -1,26 +1,9 @@
+use shared::db::models::NewBot;
 use std::io::Read;
 
-use crate::{
-    app::{
-        api::{ApiError, ApiResult},
-        login,
-    },
-    config::{BOT_S3_BUCKET, BOT_SIZE, BUILD_LOGS_S3_BUCKET},
-};
-use actix_session::Session;
-use actix_web::{get, post, web, HttpResponse};
-use aws_sdk_s3::presigning::PresigningConfig;
-use diesel::*;
-use futures_util::StreamExt;
-use serde::{Deserialize, Serialize};
-use shared::{
-    db::{
-        conn::DB_CONNECTION,
-        models::{Bot, NewBot},
-        schema,
-    },
-    PresignedRequest,
-};
+use crate::config::{BOT_S3_BUCKET, BOT_SIZE, BUILD_LOGS_S3_BUCKET};
+
+use super::*;
 
 #[derive(Deserialize)]
 pub struct DeleteBot {
@@ -70,7 +53,8 @@ pub async fn set_active_bot(
     Ok(web::Json(()))
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, TS)]
+#[ts(export)]
 pub struct UploadBotResponse {
     id: i32,
 }

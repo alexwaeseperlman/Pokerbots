@@ -3,6 +3,7 @@ use actix_web::{get, web, HttpResponse};
 use diesel::prelude::*;
 use log::error;
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 use crate::config::{CLIENT_ID, REDIRECT_URI};
 use shared::db::conn::DB_CONNECTION;
@@ -12,13 +13,15 @@ use shared::db::{
     schema::{team_invites, teams, users},
 };
 
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug, TS)]
+#[ts(export)]
 pub struct UserData {
     pub email: String,
     pub display_name: String,
 }
 
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug, TS)]
+#[ts(export)]
 pub struct TeamData {
     pub id: i32,
     pub team_name: String,
