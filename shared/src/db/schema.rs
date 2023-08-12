@@ -16,12 +16,12 @@ diesel::table! {
 diesel::table! {
     games (id) {
         id -> Text,
-        challenger -> Int4,
         defender -> Int4,
+        challenger -> Int4,
         score_change -> Nullable<Int4>,
         created -> Int8,
-        error_type -> Nullable<Int4>,
-        error_message -> Nullable<Varchar>,
+        error_type -> Nullable<Text>,
+        error_message -> Nullable<Text>,
     }
 }
 
@@ -54,6 +54,7 @@ diesel::table! {
 
 diesel::joinable!(team_invites -> teams (teamid));
 diesel::joinable!(teams -> bots (active_bot));
+diesel::joinable!(users -> teams (team_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     bots,

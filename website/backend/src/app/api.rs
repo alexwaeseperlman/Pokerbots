@@ -50,7 +50,6 @@ impl<T: Serialize> Responder for ApiResultWrapper<T> {
     type Body = BoxBody;
 
     fn respond_to(self, req: &actix_web::HttpRequest) -> HttpResponse<Self::Body> {
-        let ApiResultWrapper(result) = self;
         match self {
             ApiResultWrapper(Ok(response)) => {
                 let s = serde_json::to_string(&response);

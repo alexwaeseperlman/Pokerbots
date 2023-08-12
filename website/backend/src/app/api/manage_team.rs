@@ -39,14 +39,17 @@ pub fn validate_team_name(name: &String) -> bool {
     return true;
 }
 
-// Create or rename your current team
-#[put("/team")]
+#[get("/create-team")]
 pub async fn create_team(
     session: Session,
     web::Query::<CreateTeamQuery>(CreateTeamQuery { team_name }): web::Query<CreateTeamQuery>,
 ) -> ApiResult<()> {
     let user = login::get_user_data(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+    // You can't create a team if you're already in one
+    if login::get_team_data(&session).is_some() {
+        return Err(actix_web::error::ErrorConflict("You are already on a team.").into());
+    }
 
     if !validate_team_name(&team_name) {
         return Err(actix_web::error::ErrorNotAcceptable(
@@ -56,29 +59,18 @@ pub async fn create_team(
     }
 
     let conn = &mut (*DB_CONNECTION).get()?;
+    let new_id = diesel::insert_into(teams::dsl::teams)
+        .values(NewTeam {
+            team_name,
+            owner: user.clone().email,
+        })
+        .returning(teams::dsl::id)
+        .get_result::<i32>(conn)?;
 
-    if let Ok(user) = users::table
-        .select(users::dsl::email.eq(user.email))
-        .get_result::<User>(conn)
-    {
-        if user.team_id == None {
-            let new_id = diesel::insert_into(teams::dsl::teams)
-                .values(NewTeam {
-                    team_name,
-                    owner: user.clone().email,
-                })
-                .returning(teams::dsl::id)
-                .get_result::<i32>(conn)?;
-            diesel::update(users::dsl::users)
-                .filter(users::dsl::email.eq(user.email))
-                .set(users::dsl::team_id.eq(new_id))
-                .get_result::<User>(conn)?;
-        } else {
-            diesel::update(teams::dsl::teams)
-                .set(teams::dsl::team_name.eq(team_name))
-                .get_result::<Team>(conn)?;
-        }
-    }
+    diesel::update(users::dsl::users)
+        .filter(users::dsl::email.eq(user.email))
+        .set(users::dsl::team_id.eq(new_id))
+        .get_result::<User>(conn)?;
 
     Ok(web::Json(()))
 }
