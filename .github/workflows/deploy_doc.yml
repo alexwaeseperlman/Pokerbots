@@ -4,14 +4,20 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
     permissions:
       contents: write  # To push a branch 
       pull-requests: write  # To create a PR from that branch
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout
+      uses: actions/checkout@v3
       with:
         fetch-depth: 0
     - name: Install latest mdbook
@@ -21,20 +27,22 @@ jobs:
         mkdir mdbook
         curl -sSL $url | tar -xz --directory=./mdbook
         echo `pwd`/mdbook >> $GITHUB_PATH
-    - name: Deploy GitHub Pages
+    - name: Build mdbook
       run: |
         # This assumes your book is in the root of your repository.
         # Just add a `cd` here if you need to change to another directory.
         cd docs
         mdbook build
-        git worktree add gh-pages
-        git config user.name "Deploy from CI"
-        git config user.email "santoshpassoubady@gmail.com"
-        cd gh-pages
-        # Delete the ref to avoid keeping history.
-        git update-ref -d refs/heads/gh-pages
-        rm -rf *
-        mv ../book/* .
-        git add .
-        git commit -m "Deploy $GITHUB_SHA to gh-pages"
-        git push --force --set-upstream origin gh-pages
+        mv public ../_site
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v2
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
