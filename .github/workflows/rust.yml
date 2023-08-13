@@ -10,6 +10,18 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  gen-bindings:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Generate bindings
+        run: ./scripts/gen-bindings
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Update bindings
+
   build:
     runs-on: ubuntu-latest
 

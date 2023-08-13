@@ -35,3 +35,6 @@ ts-rs = "6.2"
 
 [dev-dependencies]
 cargo-watch = "8.4.0"
+
+[features]
+ts-bindings = []

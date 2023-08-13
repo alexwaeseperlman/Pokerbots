@@ -4,7 +4,7 @@ use actix_web::get;
 use serde::Serialize;
 
 #[derive(Serialize, TS)]
-#[ts(export)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 pub struct SignoutResponse {
     pub message: String,
     pub message_type: String,

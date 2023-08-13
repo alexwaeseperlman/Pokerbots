@@ -42,7 +42,7 @@ pub struct TeamQuery {
 }
 
 #[derive(Serialize, TS)]
-#[ts(export)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 pub enum TeamsResponse {
     Count(i64),
     Teams(Vec<Team>),
@@ -157,7 +157,7 @@ pub struct BotQuery {
 }
 
 #[derive(Serialize, TS)]
-#[ts(export)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 pub enum BotsResponse {
     Count(i64),
     Bots(Vec<Bot>),

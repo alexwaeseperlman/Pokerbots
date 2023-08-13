@@ -22,3 +22,4 @@ num-traits = "0.2.16"
 
 [features]
 db=["dep:diesel", "dep:diesel_migrations", "dep:lazy_static"]
+ts-bindings = []

@@ -7,7 +7,7 @@ pub struct MakeGameQuery {
 }
 
 #[derive(Serialize, TS)]
-#[ts(export)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 pub struct CreateGameResponse {
     pub id: String,
 }
@@ -104,7 +104,7 @@ pub struct GameQuery {
 }
 
 #[derive(Serialize, TS)]
-#[ts(export)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 pub enum GamesResponse {
     Count(i64),
     Games(Vec<Game>),

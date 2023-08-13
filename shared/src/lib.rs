@@ -56,8 +56,8 @@ pub struct BuildTask {
 
 #[derive(Serialize, Deserialize, Debug, Clone, TS, FromPrimitive, ToPrimitive, Copy)]
 #[repr(i32)]
-#[ts(export)]
-#[cfg_attr(feature="db", derive(diesel::FromSqlRow, diesel::AsExpression))]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
+#[cfg_attr(feature = "db", derive(diesel::FromSqlRow, diesel::AsExpression))]
 #[cfg_attr(feature="db", diesel(sql_type=diesel::sql_types::Integer))]
 pub enum BuildStatus {
     Unqueued = -1,
@@ -96,7 +96,7 @@ pub enum GameTask {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, TS)]
 #[repr(i32)]
-#[ts(export)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 pub enum WhichBot {
     Defender = 0,
     Challenger = 1,
@@ -120,7 +120,7 @@ pub enum GameActionError {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, TS)]
-#[ts(export)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 pub enum GameError {
     RunTimeError(WhichBot),
     TimeoutError(WhichBot),

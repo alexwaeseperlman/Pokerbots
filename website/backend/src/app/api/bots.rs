@@ -54,7 +54,7 @@ pub async fn set_active_bot(
 }
 
 #[derive(Serialize, TS)]
-#[ts(export)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 pub struct UploadBotResponse {
     id: i32,
 }

@@ -14,14 +14,14 @@ use shared::db::{
 };
 
 #[derive(Deserialize, Serialize, Clone, Debug, TS)]
-#[ts(export)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 pub struct UserData {
     pub email: String,
     pub display_name: String,
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, TS)]
-#[ts(export)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 pub struct TeamData {
     pub id: i32,
     pub team_name: String,
