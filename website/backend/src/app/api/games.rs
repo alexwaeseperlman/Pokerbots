@@ -1,3 +1,6 @@
+use diesel::alias;
+use shared::db::models::{BotWithTeam, GameWithBots, Team};
+
 use super::*;
 
 #[derive(Deserialize)]
@@ -101,6 +104,7 @@ pub struct GameQuery {
     pub page_size: Option<i32>,
     pub page: Option<i32>,
     pub count: Option<bool>,
+    pub join_bots: Option<bool>,
 }
 
 #[derive(Serialize, TS)]
@@ -108,6 +112,7 @@ pub struct GameQuery {
 pub enum GamesResponse {
     Count(i64),
     Games(Vec<Game>),
+    GamesWithBots(Vec<GameWithBots<BotWithTeam<Team>>>),
 }
 
 #[get("/games")]
@@ -120,8 +125,10 @@ pub async fn games(
         page_size,
         page,
         count,
+        join_bots,
     }): web::Query<GameQuery>,
 ) -> ApiResult<GamesResponse> {
+    use schema::*;
     let conn = &mut (*DB_CONNECTION).get()?;
     let mut base = schema::games::dsl::games.into_boxed();
     if let Some(active) = active {
@@ -155,8 +162,21 @@ pub async fn games(
         .order_by(schema::games::dsl::created.desc())
         .limit((page_size).into())
         .offset((page * page_size).into());
-    let result: Vec<Game> = base.load::<Game>(conn)?.into_iter().collect();
-    Ok(web::Json(GamesResponse::Games(result)))
+
+    if join_bots.unwrap_or(false) {
+        let (defender_bots, challenger_bots) =
+            alias!(bots as defender_bots, bots as challenger_bots);
+        let x: Vec<(Game, Team)> = games::table
+            .left_join(defender_bots.on(games::dsl::defender.eq(bots::dsl::id)))
+            .left_join(challenger_bots.on(bots::dsl::id.eq(games::dsl::challenger)))
+            .load::<(Game, Team)>(conn)?
+            .into_iter()
+            .collect();
+        Ok(web::Json(GamesResponse::Count(0)))
+    } else {
+        let result: Vec<Game> = base.load::<Game>(conn)?.into_iter().collect();
+        Ok(web::Json(GamesResponse::Games(result)))
+    }
 }
 
 #[derive(Deserialize)]

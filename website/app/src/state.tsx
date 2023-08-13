@@ -10,13 +10,14 @@ import {
 import { atomFamily, atomWithStorage } from "jotai/utils";
 import { useEffect } from "react";
 import { matchPath } from "react-router-dom";
-import { User } from "pokerbots-shared/User"
-import { Game } from "pokerbots-shared/Game"
-import { Bot } from "pokerbots-shared/Bot"
+import { UserData } from "@bindings/UserData";
+import { Game } from "@bindings/Game";
+import { Bot } from "@bindings/Bot";
+import { TeamWithMembers } from "@bindings/TeamWithMembers";
 
 export const apiUrl = window.location.origin + "/api";
 
-const userAtom = atom<Promise<User | null>>(
+const userAtom = atom<Promise<UserData | null>>(
   fetch(`${apiUrl}/my-account`)
     .then((res) => res.json())
     .catch(() => null)
@@ -34,15 +35,6 @@ export const useUser = () => {
   return [user, fetchUser] as const;
 };
 
-export type Team = {
-  id: number;
-  team_name: string;
-  members: User[];
-  invites?: string[];
-  owner: string;
-  score: number | null;
-  active_bot?: number;
-};
 export const pfpEndpointAtom = atomWithStorage<string | null>(
   "pfpEndpoint",
   null
@@ -63,49 +55,21 @@ export const usePfpEndpoint = () => {
   return [pfpEndpoint, fetchPfpEndpoint] as const;
 };
 
-// take a list of games that have bot ids and replace them with bot objects
-export async function fillInGames(
-  games: ({ defender: number; challenger: number } & Omit<Game, "defender" | "challenger">)[]
-) {
-  if (games.length == 0) return [] as Game[];
-  // replace team ids with their objects
-  const botIds = new Set<number>([]);
-  for (const game of games) botIds.add(game.defender), botIds.add(game.challenger);
-  const bots = await fetch(`${apiUrl}/bots?ids=${[...botIds].join(",")}`).then(
-    (res) => res.json()
-  );
-
-  const teamIds = new Set<number>([]);
-  for (const bot of bots) teamIds.add(bot.team);
-  const teams = await fetch(`${apiUrl}/teams?ids=${[...teamIds].join(",")}`)
-    .then((res) => res.json())
-    .catch(() => []);
-
-  const teamMap = new Map(teams.map((team) => [team.id, team]));
-  const botMap = new Map(
-    bots.map((bot) => [bot.id, { ...bot, team: teamMap.get(bot.team) }])
-  );
-  const out = games.map((game) => ({
-    ...game,
-    defender: botMap.get(game.defender) as Bot,
-    challenger: botMap.get(game.challenger) as Bot,
-  }));
-  return out;
-}
-
 // choose default value based on route
-const teamAtom = atomFamily<string | null, PrimitiveAtom<Promise<Team | null>>>(
-  (param) =>
-    atom(
-      param
-        ? fetch(`${apiUrl}/teams?ids=${param ?? ""}&fill_members=true`)
-            .then((res) => res.json())
-            .then((teams) => teams[0])
-            .catch(() => null)
-        : fetch(`${apiUrl}/my-team`)
-            .then((res) => res.json())
-            .catch(() => null)
-    )
+const teamAtom = atomFamily<
+  string | null,
+  PrimitiveAtom<Promise<TeamWithMembers | null>>
+>((param) =>
+  atom(
+    param
+      ? fetch(`${apiUrl}/teams?ids=${param ?? ""}&fill_members=true`)
+          .then((res) => res.json())
+          .then((teams) => teams[0])
+          .catch(() => null)
+      : fetch(`${apiUrl}/my-team`)
+          .then((res) => res.json())
+          .catch(() => null)
+  )
 );
 
 export const useTeam = (selectedTeam: string | null) => {

@@ -1,11 +1,5 @@
 import React, { useCallback, useEffect } from "react";
-import {
-  Game,
-  apiUrl,
-  usePfpEndpoint,
-  fillInGames,
-  useTeam,
-} from "../../state";
+import { apiUrl, usePfpEndpoint, useTeam } from "../../state";
 import Box from "@mui/system/Box";
 import MuiTableCell from "@mui/material/TableCell";
 import { styled } from "@mui/material/styles";
@@ -21,6 +15,9 @@ import {
 } from "@mui/material";
 import { Link } from "react-router-dom";
 import { GridMoreVertIcon } from "@mui/x-data-grid";
+import { GameWithBots } from "@bindings/GameWithBots";
+import { BotWithTeam } from "@bindings/BotWithTeam";
+import { Team } from "@bindings/Team";
 
 export const DataGrid = React.lazy(() =>
   import("@mui/x-data-grid").then((mod) => ({ default: mod.DataGrid }))
@@ -44,6 +41,7 @@ export const TableButton = styled((props: ButtonProps) => (
   color: "#bbb",
 }));
 export function GameTable({ teamId }: { teamId?: string | null }) {
+  type Game = GameWithBots<BotWithTeam<Team>>;
   const [team, fetchTeam] = useTeam(teamId ?? null);
   const [games, setGames] = React.useState<Game[]>([]);
   const [gameCount, setGameCount] = React.useState(0);

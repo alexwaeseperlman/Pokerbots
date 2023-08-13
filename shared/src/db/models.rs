@@ -3,6 +3,7 @@ use diesel::{
     pg::{self, PgValue},
     serialize::ToSql,
     sql_types::Integer,
+    Queryable, Selectable,
 };
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -12,8 +13,9 @@ use crate::{
     BuildStatus,
 };
 
-#[derive(Serialize, Deserialize, diesel::Queryable, Debug, TS)]
+#[derive(Serialize, Deserialize, diesel::Queryable, Debug, TS, Selectable)]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
+#[diesel(table_name = teams)]
 pub struct Team {
     pub id: i32,
     pub team_name: String,
@@ -82,8 +84,9 @@ pub struct NewGame {
     pub challenger: i32,
 }
 
-#[derive(Serialize, Deserialize, diesel::Queryable, Debug, TS)]
+#[derive(Serialize, Deserialize, Queryable, Debug, TS, Selectable)]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
+#[diesel(table_name = games)]
 pub struct Game {
     pub id: String,
     pub defender: i32,
@@ -94,8 +97,9 @@ pub struct Game {
     pub error_message: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, diesel::Queryable, TS)]
+#[derive(Serialize, Deserialize, Debug, Queryable, TS, Selectable)]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
+#[diesel(table_name = bots)]
 pub struct Bot {
     pub id: i32,
     pub team: i32,
@@ -105,6 +109,31 @@ pub struct Bot {
     pub created: i64,
     pub uploaded_by: String,
     pub build_status: BuildStatus,
+}
+
+#[derive(Serialize, Deserialize, Debug, diesel::Queryable, TS)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
+pub struct BotWithTeam<T> {
+    pub id: i32,
+    pub team: T,
+    pub name: String,
+    pub description: Option<String>,
+    pub score: f32,
+    pub created: i64,
+    pub uploaded_by: String,
+    pub build_status: BuildStatus,
+}
+
+#[derive(Serialize, TS)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
+pub struct GameWithBots<T> {
+    pub id: String,
+    pub defender: T,
+    pub challenger: T,
+    pub score_change: Option<i32>,
+    pub created: i64,
+    pub error_type: Option<String>,
+    pub error_message: Option<String>,
 }
 
 #[derive(Debug, diesel::Insertable)]
