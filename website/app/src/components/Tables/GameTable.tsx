@@ -18,6 +18,8 @@ import { GridMoreVertIcon } from "@mui/x-data-grid";
 import { GameWithBots } from "@bindings/GameWithBots";
 import { BotWithTeam } from "@bindings/BotWithTeam";
 import { Team } from "@bindings/Team";
+import { GamesResponse } from "@bindings/GamesResponse";
+import { enqueueSnackbar } from "notistack";
 
 export const DataGrid = React.lazy(() =>
   import("@mui/x-data-grid").then((mod) => ({ default: mod.DataGrid }))
@@ -68,16 +70,22 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
       .then((data) => setGameCount(data.count));
 
     fetch(
-      `${apiUrl}/games?page=${paginationModel.page}&page_size=${
+      `${apiUrl}/games?join_bots=true&page=${paginationModel.page}&page_size=${
         paginationModel.pageSize
       }&${teamId === undefined ? "" : `team=${team?.id}`}`
     )
       .then((res) => res.json())
-      .then(async (data) => {
+      .then(async (data: GamesResponse) => {
         // swap teama and teamb if teama is not the user's team
-        const games = data;
         setLoading(false);
-        setGames(await fillInGames(games));
+        console.log(data);
+        if ("GamesWithBots" in data) {
+          setGames(data.GamesWithBots);
+        } else {
+          setGames([]);
+          enqueueSnackbar("Error loading games", { variant: "error" });
+          console.error("Received games as", data);
+        }
       });
   }, [team?.id, paginationModel.page, paginationModel.pageSize]);
   //TODO: only poll active games

@@ -9,6 +9,7 @@
     "module": "NodeNext",
     "jsx": "react",
     "allowSyntheticDefaultImports": true,
-    "strict": true
+    "strict": true,
+    "noImplicitAny": true
   }
 }

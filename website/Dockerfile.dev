@@ -1,0 +1,20 @@
+# Build frontend in one container, backend in another, then copy the results into a third container
+FROM --platform=$BUILDARCH rust:1.70
+RUN apt-get update && apt-get install pkg-config libssl-dev libpq-dev curl build-essential -y
+
+ENV NVM_DIR /root/.nvm
+ENV NODE_VERSION 20.5.1
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.4/install.sh | bash && . $NVM_DIR/nvm.sh \
+    && nvm install $NODE_VERSION \
+    && nvm alias default $NODE_VERSION \
+    && nvm use default
+
+ENV NODE_VERSION_PATH ${NVM_DIR}/versions/node/v${NODE_VERSION}
+ENV NODE_PATH ${NODE_VERSION_PATH}/lib/node_modules
+ENV PATH ${NODE_VERSION_PATH}/bin:${PATH}
+
+RUN apt-get install -y entr
+
+WORKDIR /usr/src/website
+ENV ENTR_INOTIFY_WORKAROUND=1
+ENTRYPOINT (cd app && npm install && npm run dev) & while true; do git ls-files | entr -d -r sh -c "cd backend && cargo run"; done

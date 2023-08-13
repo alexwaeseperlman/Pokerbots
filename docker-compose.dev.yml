@@ -7,6 +7,27 @@ services:
       service: db
     ports:
       - 5432:5432
+  website-dev:
+    build:
+      context: .
+      dockerfile: ./website/Dockerfile.dev
+    volumes:
+      - ./website/app/package-lock.json:/usr/src/website/app/package-lock.json
+      - .:/usr/src:ro
+      - website-target:/usr/src/target
+      - website-registry:/usr/local/cargo/registry
+      - website-node_modules:/usr/src/website/app/node_modules
+    depends_on:
+      - sqs
+      - db
+    restart: always
+    extends:
+      file: common-compose.yml
+      service: website
+    environment:
+      - RUST_LOG=debug
+    ports:
+      - 5173:5173
   gameplay-dev:
     build:
       context: .
@@ -80,6 +101,9 @@ services:
 volumes:
   database:
   minio:
+  website-target:
+  website-registry:
+  website-node_modules:
   gameplay-target:
   gameplay-registry:
   builder-target:

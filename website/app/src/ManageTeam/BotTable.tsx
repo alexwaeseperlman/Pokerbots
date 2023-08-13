@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect } from "react";
-import { Bot, Team, apiUrl, usePfpEndpoint, useTeam } from "../state";
+import { apiUrl, usePfpEndpoint, useTeam } from "../state";
 import Typography from "@mui/material/Typography";
 import { DataGrid } from "@mui/x-data-grid/DataGrid";
 import Chip from "@mui/material/Chip";
 import { enqueueSnackbar } from "notistack";
 import { IconButton, Menu, MenuItem } from "@mui/material";
 import { GridMoreVertIcon } from "@mui/x-data-grid";
+import { Bot } from "@bindings/Bot";
 
 export default function BotTable({
   readonly,
@@ -69,26 +70,26 @@ export default function BotTable({
             field: "score",
             headerName: "Result",
             renderCell: (params) => {
-              if (params.row.build_status === -1)
+              if (params.row.build_status === "Unqueued")
                 return <Chip color="warning" label={"Not in queue"}></Chip>;
-              if (params.row.build_status === 0)
+              if (params.row.build_status === "Queued")
                 return <Chip color="default" label={"In queue"}></Chip>;
-              if (params.row.build_status === 1)
+              if (params.row.build_status === "Building")
                 return <Chip color="default" label={"Building"}></Chip>;
-              if (params.row.build_status === 2)
+              if (params.row.build_status === "BuildSucceeded")
                 return (
                   <Chip color="default" label={"Built successfully"}></Chip>
                 );
-              if (params.row.build_status === 3)
+              if (params.row.build_status === "PlayingTestGame")
                 return (
                   <Chip color="default" label={"Playing test game"}></Chip>
                 );
               // 4 means the bot succeeded in the test game, so we show its score
-              if (params.row.build_status === 4)
+              if (params.row.build_status === "TestGameSucceeded")
                 return <Chip label={"Ready to play"} color={"success"} />;
-              if (params.row.build_status === 5)
+              if (params.row.build_status === "BuildFailed")
                 return <Chip color="error" label={"Build failed"}></Chip>;
-              if (params.row.build_status == 6)
+              if (params.row.build_status == "TestGameFailed")
                 return <Chip color="error" label={"Test game failed"}></Chip>;
             },
             minWidth: 100,
@@ -199,7 +200,9 @@ export default function BotTable({
               });
           }}
         >
-          {menuEl?.bot.active ? "Currently active" : "Set active"}
+          {menuEl?.bot.id == team?.active_bot
+            ? "Currently active"
+            : "Set active"}
         </MenuItem>
 
         <MenuItem
