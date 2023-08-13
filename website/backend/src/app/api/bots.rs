@@ -44,6 +44,20 @@ pub async fn set_active_bot(
         .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
 
     let conn = &mut (*DB_CONNECTION).get()?;
+    // ensure the bot belongs to the team
+    if let Some(id) = id {
+        let bot: Vec<Bot> = schema::bots::dsl::bots
+            .filter(schema::bots::dsl::id.eq(id))
+            .filter(schema::bots::dsl::team.eq(team.id))
+            .load::<Bot>(conn)?;
+        if bot.len() == 0 {
+            return Err(actix_web::error::ErrorUnauthorized(
+                "Only the owner can set a bot as active.",
+            )
+            .into());
+        }
+    }
+
     diesel::update(teams::dsl::teams)
         .filter(teams::dsl::id.eq(team.id))
         .filter(teams::dsl::owner.eq(user.clone().email))
