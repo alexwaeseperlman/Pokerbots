@@ -144,7 +144,7 @@ pub struct GameStatusMessage {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, TS)]
-pub struct Bot {
+pub struct BotJson {
     pub name: String,
     pub description: Option<String>,
     pub build: Option<String>,

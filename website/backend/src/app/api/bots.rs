@@ -94,7 +94,7 @@ pub async fn upload_bot(
     bot_file.read_to_string(&mut bot_json)?;
     log::debug!("bot.json: {}", bot_json);
 
-    let bot: shared::Bot = serde_json::from_str(&bot_json)?;
+    let bot: shared::BotJson = serde_json::from_str(&bot_json)?;
 
     println!("{:?}", bot);
     // Create a bot entry in the database

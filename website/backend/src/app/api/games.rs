@@ -1,5 +1,8 @@
-use diesel::alias;
-use shared::db::models::{BotWithTeam, GameWithBots, Team};
+use itertools::Itertools;
+use shared::db::{
+    dao::bots::BotsDao,
+    models::{BotWithTeam, GameWithBots, Team},
+};
 
 use super::*;
 
@@ -128,7 +131,6 @@ pub async fn games(
         join_bots,
     }): web::Query<GameQuery>,
 ) -> ApiResult<GamesResponse> {
-    use schema::*;
     let conn = &mut (*DB_CONNECTION).get()?;
     let mut base = schema::games::dsl::games.into_boxed();
     if let Some(active) = active {
@@ -163,20 +165,32 @@ pub async fn games(
         .limit((page_size).into())
         .offset((page * page_size).into());
 
+    let result: Vec<Game> = base.load::<Game>(conn)?.into_iter().collect();
+    //TODO: figure out how joins work
+    // https://matrix.to/#/!lNGJpfiFVovXFJYmwx:matrix.org/$1691960077179zmkhf:gitter.im?via=gitter.im
     if join_bots.unwrap_or(false) {
-        let (defender_bots, challenger_bots) =
-            alias!(bots as defender_bots, bots as challenger_bots);
-        let x: Vec<(Game, Team)> = games::table
-            .left_join(defender_bots.on(games::dsl::defender.eq(bots::dsl::id)))
-            .left_join(challenger_bots.on(bots::dsl::id.eq(games::dsl::challenger)))
-            .load::<(Game, Team)>(conn)?
+        let result: Vec<GameWithBots<BotWithTeam<Team>>> = result
             .into_iter()
+            .map(|game| {
+                let (defender, challenger): (BotWithTeam<_>, BotWithTeam<_>) = conn
+                    .get_bots_with_teams(vec![game.defender, game.challenger])
+                    .into_iter()
+                    .collect_tuple()
+                    .expect("Failed to get bots with teams");
+                GameWithBots {
+                    id: game.id,
+                    defender,
+                    challenger,
+                    score_change: game.score_change,
+                    created: game.created,
+                    error_type: game.error_type,
+                    error_message: game.error_message,
+                }
+            })
             .collect();
-        Ok(web::Json(GamesResponse::Count(0)))
-    } else {
-        let result: Vec<Game> = base.load::<Game>(conn)?.into_iter().collect();
-        Ok(web::Json(GamesResponse::Games(result)))
+        return Ok(web::Json(GamesResponse::GamesWithBots(result)));
     }
+    Ok(web::Json(GamesResponse::Games(result)))
 }
 
 #[derive(Deserialize)]

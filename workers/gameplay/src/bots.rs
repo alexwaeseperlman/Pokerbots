@@ -1,6 +1,6 @@
 use itertools::Itertools;
 use rand::{thread_rng, Rng};
-use shared::{Bot, GameError, GameResult, WhichBot};
+use shared::{BotJson, GameError, GameResult, WhichBot};
 use std::{
     path::{Path, PathBuf},
     process::Stdio,
@@ -41,9 +41,9 @@ pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>
         .await?;
     log::debug!("Bot unzipped to {:?}", bot_path);
 
-    let bot_json: Bot = async {
+    let bot_json: BotJson = async {
         let json = fs::read_to_string(&bot_path.join("bot/bot.json")).await?;
-        if let Ok(bot) = serde_json::from_str::<Bot>(&json) {
+        if let Ok(bot) = serde_json::from_str::<BotJson>(&json) {
             return Ok(bot);
         }
         Err(io::Error::new(
@@ -195,7 +195,8 @@ impl Game {
                         which_bot
                     )
                     .as_bytes(),
-                ).await?;
+                )
+                .await?;
             // TODO: determine cause of close
             self.write_log(format!("System > Ending because {} lost stdin", which_bot))
                 .await?;
@@ -283,10 +284,12 @@ impl Game {
             GameError::RunTimeError(WhichBot::Defender)
         })?;
 
-        self.print_position(WhichBot::Challenger).await.map_err(|_| {
-            log::info!("Failed to print position to bot B.");
-            GameError::RunTimeError(WhichBot::Challenger)
-        })?;
+        self.print_position(WhichBot::Challenger)
+            .await
+            .map_err(|_| {
+                log::info!("Failed to print position to bot B.");
+                GameError::RunTimeError(WhichBot::Challenger)
+            })?;
 
         loop {
             self.stacks = if self.button == 1 {
@@ -297,15 +300,19 @@ impl Game {
 
             if state.round_over() {
                 log::debug!("Round ended.");
-                self.print_round_end(WhichBot::Defender).await.map_err(|_| {
-                    log::info!("Failed to print round end to bot A.");
-                    GameError::RunTimeError(WhichBot::Defender)
-                })?;
+                self.print_round_end(WhichBot::Defender)
+                    .await
+                    .map_err(|_| {
+                        log::info!("Failed to print round end to bot A.");
+                        GameError::RunTimeError(WhichBot::Defender)
+                    })?;
 
-                self.print_round_end(WhichBot::Challenger).await.map_err(|_| {
-                    log::info!("Failed to print round end to bot B.");
-                    GameError::RunTimeError(WhichBot::Challenger)
-                })?;
+                self.print_round_end(WhichBot::Challenger)
+                    .await
+                    .map_err(|_| {
+                        log::info!("Failed to print round end to bot B.");
+                        GameError::RunTimeError(WhichBot::Challenger)
+                    })?;
                 break;
             }
             // Print community cards to both bots
@@ -399,7 +406,10 @@ impl Game {
             self.write_log(format!("System > round {}/{}", i + 1, rounds))
                 .await?;
             log::debug!("Playing round. Current stacks: {:?}.", self.stacks);
-            if let Err(e) = self.play_round(&mut defender_reader, &mut challenger_reader).await {
+            if let Err(e) = self
+                .play_round(&mut defender_reader, &mut challenger_reader)
+                .await
+            {
                 self.write_log(format!("System > {:?}", e)).await?;
                 Err(e)?;
             }
