@@ -1,0 +1,3331 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>UPAC Documentation</title>
+        <meta name="robots" content="noindex" />
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="The official Documentation for UPAC">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body>
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var html = document.querySelector('html');
+            var sidebar = null;
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><li class="part-title">UPAC Intro</li><li class="chapter-item expanded "><a href="contest_overview.html"><strong aria-hidden="true">1.</strong> Contest overview</a></li><li class="chapter-item expanded "><a href="eligibility.html"><strong aria-hidden="true">2.</strong> Eligibility and Registration</a></li><li class="chapter-item expanded affix "><li class="part-title">Game Mechanics</li><li class="chapter-item expanded "><a href="game_rules.html"><strong aria-hidden="true">3.</strong> Game rules</a></li><li class="chapter-item expanded "><a href="bot_dev.html"><strong aria-hidden="true">4.</strong> Building a Bot</a></li><li class="chapter-item expanded "><a href="test_and_sub.html"><strong aria-hidden="true">5.</strong> Testing & Submission</a></li><li class="chapter-item expanded "><a href="bot_requirements.html"><strong aria-hidden="true">6.</strong> Bot requirements</a></li><li class="chapter-item expanded "><a href="scoring.html"><strong aria-hidden="true">7.</strong> Scoring</a></li><li class="chapter-item expanded "><a href="faq.html"><strong aria-hidden="true">8.</strong> FAQ</a></li><li class="chapter-item expanded "><a href="appendices.html"><strong aria-hidden="true">9.</strong> Appendices</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="sample_log.html"><strong aria-hidden="true">9.1.</strong> Game log</a></li><li class="chapter-item expanded "><a href="sample_bot.html"><strong aria-hidden="true">9.2.</strong> Sample bot</a></li></ol></li><li class="chapter-item expanded "><li class="part-title">Contact us</li><li class="chapter-item expanded "><a href="sponsorship.html"><strong aria-hidden="true">10.</strong> Sponsorship</a></li><li class="chapter-item expanded "><a href="community.html"><strong aria-hidden="true">11.</strong> Support & Community</a></li><li class="chapter-item expanded "><a href="report_issue.html"><strong aria-hidden="true">12.</strong> Report an Issue</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">UPAC Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="contest-overview"><a class="header" href="#contest-overview">Contest overview</a></h1>
+<h2 id="what-is-upac"><a class="header" href="#what-is-upac">What is UPAC?</a></h2>
+<p>UPAC (University Poker Algorithm Competition) is a virtual contest that aims to bring together students from around the world to compete in developing the best poker bots.</p>
+<h2 id="schedule-tbd"><a class="header" href="#schedule-tbd">Schedule (TBD)</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Event</th><th>Date</th></tr></thead><tbody>
+<tr><td>Start of the competition</td><td>Spring 2024</td></tr>
+<tr><td>Submission closes</td><td>-</td></tr>
+<tr><td>Winners announcement</td><td>-</td></tr>
+</tbody></table>
+</div>
+<h2 id="prizes-tbd"><a class="header" href="#prizes-tbd">Prizes (TBD)</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Event</th><th>Date</th></tr></thead><tbody>
+<tr><td>1st</td><td>-</td></tr>
+<tr><td>2nd</td><td>-</td></tr>
+<tr><td>3rd</td><td>-</td></tr>
+</tbody></table>
+</div><div style="break-before: page; page-break-before: always;"></div><h1 id="eligibility-and-registration"><a class="header" href="#eligibility-and-registration">Eligibility and Registration</a></h1>
+<h2 id="teams"><a class="header" href="#teams">Teams</a></h2>
+<p>We invite teams to join the competition with a size ranging from 1 to 5 members. Each team member must meet the following criteria:</p>
+<ul>
+<li>
+<p>Currently a student (high school, undergrad, masters or PhD).</p>
+</li>
+<li>
+<p>Not a resident of a country, state, province or territory where the laws of the United States or local law prohibits participating or receiving a prize in an online contest (including, but not limited to, Brazil, Quebec, Russia, Crimea, Cuba, Iran, North Korea, Syria and any other country designated by the United States Treasury's Office of Foreign Assets Control) </p>
+</li>
+<li>
+<p>Not a member of UPAC's team.</p>
+</li>
+</ul>
+<h2 id="registration"><a class="header" href="#registration">Registration</a></h2>
+<p>Registrations are not currently available, but they will be made through our website <a href="https://upac.dev/"><strong>upac.dev</strong></a>. The competition will start in Spring 2024. </p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="developing-bots"><a class="header" href="#developing-bots">Developing bots</a></h1>
+<h2 id="the-game"><a class="header" href="#the-game">The game</a></h2>
+<p>Pokerbots play 2-player Texas Holdem' with fixed blinds. We chose this format 
+instead of larger games or tournament style because it has fewer factors for bots to deal with.
+This way you can focus on understanding your opponent and betting intelligently.</p>
+<h2 id="how-to-play"><a class="header" href="#how-to-play">How to play</a></h2>
+<p>At the start of the game the 'button' is assigned to a random player.
+Before every round the button is forced to put the small blind into the pot ($1),
+and the other player is forced to put the big blind ($2). </p>
+<h2 id="betting-rounds"><a class="header" href="#betting-rounds">Betting rounds</a></h2>
+<p>Before every action in a betting round, the engine will output a line containing 3
+integers, <code>P</code>, <code>A</code>, and <code>B</code>. <code>P</code> is the size of the pot from previous rounds, 
+<code>A</code> is how many chips player <code>0</code> has bet this round, 
+and <code>B</code> is how many chips player <code>1</code> has bet this round. You are never explicitly
+told your opponents action but you can infer it based on these values.
+After reading this line your bot must respond with an action. Calling will match your
+opponents bet for this betting round, raising will match their bet and then put down 
+an additional <code>N</code>, and folding will immediately make you lose the round. A betting round ends
+as soon as both players have made an action and a player calls.</p>
+<p>In every betting round except for the first, player <code>1</code> goes first.</p>
+<h2 id="actions"><a class="header" href="#actions">Actions</a></h2>
+<p>In a betting round you can raise, check, call or fold. They are represented as
+specified:</p>
+<div class="table-wrapper"><table><thead><tr><th>Action</th><th>Representation</th></tr></thead><tbody>
+<tr><td>Check</td><td><code>C</code></td></tr>
+<tr><td>Call</td><td><code>C</code></td></tr>
+<tr><td>Fold</td><td><code>F</code></td></tr>
+<tr><td>Raise</td><td><code>R&lt;N&gt;</code> (e.g. <code>R15</code> will raise by $15)</td></tr>
+</tbody></table>
+</div>
+<p>Note that checking and calling are the same action. This is because a check
+is equivalent to calling when you and your opponent have bet the same amount.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="building-a-bot"><a class="header" href="#building-a-bot">Building a Bot</a></h1>
+<h2 id="communicating-with-the-engine"><a class="header" href="#communicating-with-the-engine">Communicating with the engine</a></h2>
+<p>Pokerbots get the game state and make their moves by communicating through stdin and stdout. </p>
+<p>This is what a round looks like:</p>
+<ol>
+<li>A single line with an integer <code>0 &lt;= N &lt; = 1</code>. This is your player number.
+Player number <code>0</code> is always the button.</li>
+<li>A line containing 2 integers representing the amount of chips in player <code>0</code> 
+and player <code>1</code>'s stacks respectively.</li>
+<li>A line containing two cards, which are your starting hand. </li>
+<li>A betting round, but due to blinds the first line is <code>0 1 2</code>, and player <code>0</code> bets first.</li>
+<li>One line containing 3 cards. This is this flop.</li>
+<li>A betting round</li>
+<li>A line containing a single card. This is the turn.</li>
+<li>A betting round</li>
+<li>A line containing a single card. This is the river.</li>
+<li>There is a final betting round and the game ends.</li>
+<li>Your bot has the option to play another round against this opponent by outputting
+<code>P</code>, or stop by outputting <code>Q</code>. If both players output <code>P</code> then there will be another round.</li>
+</ol>
+<h2 id="representing-cards"><a class="header" href="#representing-cards">Representing cards</a></h2>
+<p>Cards are always 2 characters. The first represents value and the second represents suit. 
+The value of a card is either represented as a single digit (for 2-9), or as the first letter of its name
+(T=10, J=Jack, Q=Queen, K=King, A=Ace). The suit is represented as the first letter of its name 
+(S=Spades, H=Hearts, C=Clubs, D=Diamonds).</p>
+<p>For example:
+<code>2D</code> represents the 2 of diamonds, and <code>TC</code> represents the 10 of clubs.</p>
+<h2 id="programming-a-bot"><a class="header" href="#programming-a-bot">Programming a bot</a></h2>
+<p>Bots are uploaded as a zip containing a file named <code>bot.json</code>. This file contains a 
+command to run it. For example:</p>
+<pre><code class="language-json">{
+    &quot;run&quot;: &quot;python3 rngbot.py&quot;
+}
+</code></pre>
+<p>We will run the command in <code>bot.json</code> and interact with that.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="bot-testing-and-submission"><a class="header" href="#bot-testing-and-submission">Bot Testing and Submission</a></h1>
+<p>Currently, both testing and submission can be carried out on our platform at <a href="https://upac.dev/">upac.dev</a>.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="bot-requirements"><a class="header" href="#bot-requirements">Bot requirements</a></h1>
+<p>To ensure uninterrupted gameplay during a match, your bot must meet the following criteria at any point in time:</p>
+<ul>
+<li>Output response time after receiving a message is under 1 second.</li>
+<li>Maintain RAM usage below 1GB.</li>
+<li>Keep disk usage under 5MB.</li>
+</ul>
+<p>For Python users only: your bot only use the following packages: <code>numpy</code>, <code>pandas</code>, <code>scipy</code>, <code>scikit-learn</code>. </p>
+<p>If you want to use other python packages, please reach out the dev team on our <a href="https://discord.gg/4tupZUkUS7"><strong>Discord server</strong></a>.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="scoring"><a class="header" href="#scoring">Scoring</a></h1>
+<p>TBD</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="faq"><a class="header" href="#faq">FAQ</a></h1>
+<h3 id="what-technologies-can-i-use-to-build-my-bot"><a class="header" href="#what-technologies-can-i-use-to-build-my-bot">What technologies can I use to build my bot?</a></h3>
+<p>Participants are free to use any programming language they are comfortable with since all the communications with the engine are made through I/O. Just make sure to satisfy the <a href="bot_requirements.html">bot requirements</a>. </p>
+<h3 id="can-i-have-multiple-bots"><a class="header" href="#can-i-have-multiple-bots">Can I have multiple bots?</a></h3>
+<p>Yes, each team can build as many bots as they want!</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="appendices"><a class="header" href="#appendices">Appendices</a></h1>
+<p>This section will contain a variety of files that will be useful to participants.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="game-log"><a class="header" href="#game-log">Game log</a></h1>
+<p>Here is what a game log looks like when running a match:</p>
+<pre><code>0ms System &gt; round 1/100
+0ms BotA &lt; P 0
+0ms BotB &lt; P 1
+0ms BotA &lt; C 5h Kd
+0ms BotB &lt; C 6d As
+0ms BotA &lt; S 2 1 2 50 50
+1039ms BotA &gt; C
+1039ms BotB &lt; S 2 2 2 50 50
+1040ms BotB &gt; X
+1040ms BotA &lt; C 5h Kd Kc 5c 5s
+1040ms BotB &lt; C 6d As Kc 5c 5s
+1040ms BotB &lt; S 2 2 2 50 50
+1042ms BotB &gt; X
+1042ms BotA &lt; S 2 2 2 50 50
+1202ms BotA &gt; X
+1202ms BotA &lt; C 5h Kd Kc 5c 5s Ts
+1202ms BotB &lt; C 6d As Kc 5c 5s Ts
+1202ms BotB &lt; S 2 2 2 50 50
+1202ms BotB &gt; X
+1202ms BotA &lt; S 2 2 2 50 50
+1281ms BotA &gt; X
+1281ms BotA &lt; C 5h Kd Kc 5c 5s Ts Jh
+1281ms BotB &lt; C 6d As Kc 5c 5s Ts Jh
+1281ms BotB &lt; S 2 2 2 50 50
+1281ms BotB &gt; X
+1281ms BotA &lt; S 2 2 2 50 50
+1281ms BotA &gt; X
+1282ms BotA &lt; E
+1282ms BotB &lt; E
+1282ms System &gt; round 2/100
+1282ms BotA &lt; P 1
+1282ms BotB &lt; P 0
+1282ms BotA &lt; C 8d Tc
+1282ms BotB &lt; C 9h Kd
+1282ms BotB &lt; S 2 1 2 48 52
+1282ms BotB &gt; C
+1282ms BotA &lt; S 2 2 2 48 52
+1282ms BotA &gt; X
+1282ms BotA &lt; C 8d Tc 2h 7s 3d
+1282ms BotB &lt; C 9h Kd 2h 7s 3d
+1282ms BotA &lt; S 2 2 2 48 52
+1282ms BotA &gt; X
+1282ms BotB &lt; S 2 2 2 48 52
+1283ms BotB &gt; X
+1283ms BotA &lt; C 8d Tc 2h 7s 3d Th
+1283ms BotB &lt; C 9h Kd 2h 7s 3d Th
+1283ms BotA &lt; S 2 2 2 48 52
+1362ms BotA &gt; X
+1362ms BotB &lt; S 2 2 2 48 52
+1362ms BotB &gt; X
+1362ms BotA &lt; C 8d Tc 2h 7s 3d Th 5h
+1362ms BotB &lt; C 9h Kd 2h 7s 3d Th 5h
+1362ms BotA &lt; S 2 2 2 48 52
+1362ms BotA &gt; X
+1362ms BotB &lt; S 2 2 2 48 52
+1362ms BotB &gt; X
+1362ms BotA &lt; E
+1362ms BotB &lt; E
+1362ms System &gt; round 3/100
+1362ms BotA &lt; P 0
+1362ms BotB &lt; P 1
+1362ms BotA &lt; C 3s Ts
+1362ms BotB &lt; C 7c 9s
+1362ms BotA &lt; S 2 1 2 54 46
+1362ms BotA &gt; C
+1362ms BotB &lt; S 2 2 2 54 46
+1363ms BotB &gt; X
+1363ms BotA &lt; C 3s Ts Qs As Kh
+1363ms BotB &lt; C 7c 9s Qs As Kh
+1363ms BotB &lt; S 2 2 2 54 46
+1363ms BotB &gt; X
+1363ms BotA &lt; S 2 2 2 54 46
+1363ms BotA &gt; X
+1363ms BotA &lt; C 3s Ts Qs As Kh 7d
+1363ms BotB &lt; C 7c 9s Qs As Kh 7d
+1363ms BotB &lt; S 2 2 2 54 46
+1439ms BotB &gt; X
+1439ms BotA &lt; S 2 2 2 54 46
+1440ms BotA &gt; X
+1440ms BotA &lt; C 3s Ts Qs As Kh 7d Kd
+1440ms BotB &lt; C 7c 9s Qs As Kh 7d Kd
+1440ms BotB &lt; S 2 2 2 54 46
+1440ms BotB &gt; X
+1440ms BotA &lt; S 2 2 2 54 46
+1440ms BotA &gt; X
+1440ms BotA &lt; E
+1440ms BotB &lt; E
+1440ms System &gt; round 4/100
+1440ms BotA &lt; P 1
+1440ms BotB &lt; P 0
+1440ms BotA &lt; C Jh 4s
+1440ms BotB &lt; C 4c 3s
+1440ms BotB &lt; S 2 1 2 48 52
+1440ms BotB &gt; C
+1440ms BotA &lt; S 2 2 2 48 52
+1440ms BotA &gt; X
+1440ms BotA &lt; C Jh 4s Ks 2d 7s
+1440ms BotB &lt; C 4c 3s Ks 2d 7s
+1440ms BotA &lt; S 2 2 2 48 52
+1440ms BotA &gt; X
+1440ms BotB &lt; S 2 2 2 48 52
+1440ms BotB &gt; X
+1440ms BotA &lt; C Jh 4s Ks 2d 7s 9h
+1440ms BotB &lt; C 4c 3s Ks 2d 7s 9h
+1440ms BotA &lt; S 2 2 2 48 52
+1440ms BotA &gt; X
+1440ms BotB &lt; S 2 2 2 48 52
+1440ms BotB &gt; X
+1440ms BotA &lt; C Jh 4s Ks 2d 7s 9h 9s
+1440ms BotB &lt; C 4c 3s Ks 2d 7s 9h 9s
+1440ms BotA &lt; S 2 2 2 48 52
+1442ms BotA &gt; X
+1442ms BotB &lt; S 2 2 2 48 52
+1442ms BotB &gt; X
+1442ms BotA &lt; E
+1442ms BotB &lt; E
+1442ms System &gt; round 5/100
+1442ms BotA &lt; P 0
+1442ms BotB &lt; P 1
+1442ms BotA &lt; C Qc 6c
+1442ms BotB &lt; C Js 9s
+1442ms BotA &lt; S 2 1 2 54 46
+1442ms BotA &gt; C
+1442ms BotB &lt; S 2 2 2 54 46
+1442ms BotB &gt; X
+1442ms BotA &lt; C Qc 6c 6d Qs Jh
+1443ms BotB &lt; C Js 9s 6d Qs Jh
+1443ms BotB &lt; S 2 2 2 54 46
+1443ms BotB &gt; X
+1443ms BotA &lt; S 2 2 2 54 46
+1443ms BotA &gt; X
+1443ms BotA &lt; C Qc 6c 6d Qs Jh 8d
+1443ms BotB &lt; C Js 9s 6d Qs Jh 8d
+1443ms BotB &lt; S 2 2 2 54 46
+1443ms BotB &gt; X
+1443ms BotA &lt; S 2 2 2 54 46
+1519ms BotA &gt; X
+1519ms BotA &lt; C Qc 6c 6d Qs Jh 8d Ah
+1519ms BotB &lt; C Js 9s 6d Qs Jh 8d Ah
+1519ms BotB &lt; S 2 2 2 54 46
+1520ms BotB &gt; X
+1520ms BotA &lt; S 2 2 2 54 46
+1520ms BotA &gt; X
+1520ms BotA &lt; E
+1520ms BotB &lt; E
+1520ms System &gt; round 6/100
+1521ms BotA &lt; P 1
+1521ms BotB &lt; P 0
+1521ms BotA &lt; C 4c 4d
+1521ms BotB &lt; C Tc Jh
+1521ms BotB &lt; S 2 1 2 44 56
+1521ms BotB &gt; C
+1521ms BotA &lt; S 2 2 2 44 56
+1600ms BotA &gt; R5
+1600ms BotB &lt; S 7 2 7 44 56
+1600ms BotB &gt; C
+1600ms BotA &lt; C 4c 4d 6c Js Ah
+1600ms BotB &lt; C Tc Jh 6c Js Ah
+1600ms BotA &lt; S 7 7 7 44 56
+1600ms BotA &gt; R5
+1600ms BotB &lt; S 12 7 12 44 56
+1601ms BotB &gt; C
+1601ms BotA &lt; C 4c 4d 6c Js Ah 5c
+1601ms BotB &lt; C Tc Jh 6c Js Ah 5c
+1601ms BotA &lt; S 12 12 12 44 56
+1601ms BotA &gt; R5
+1601ms BotB &lt; S 17 12 17 44 56
+1601ms BotB &gt; C
+1601ms BotA &lt; C 4c 4d 6c Js Ah 5c 3h
+1601ms BotB &lt; C Tc Jh 6c Js Ah 5c 3h
+1601ms BotA &lt; S 17 17 17 44 56
+1601ms BotA &gt; R5
+1601ms BotB &lt; S 22 17 22 44 56
+1601ms BotB &gt; C
+1601ms BotA &lt; E
+1601ms BotB &lt; E
+1601ms System &gt; round 7/100
+1601ms BotA &lt; P 0
+1601ms BotB &lt; P 1
+1601ms BotA &lt; C 5s As
+1602ms BotB &lt; C Tc 5c
+1602ms BotA &lt; S 2 1 2 34 66
+1602ms BotA &gt; C
+1602ms BotB &lt; S 2 2 2 34 66
+1602ms BotB &gt; X
+1602ms BotA &lt; C 5s As Qc Td 8h
+1602ms BotB &lt; C Tc 5c Qc Td 8h
+1602ms BotB &lt; S 2 2 2 34 66
+1602ms BotB &gt; X
+1602ms BotA &lt; S 2 2 2 34 66
+1602ms BotA &gt; X
+1602ms BotA &lt; C 5s As Qc Td 8h 4d
+1602ms BotB &lt; C Tc 5c Qc Td 8h 4d
+1602ms BotB &lt; S 2 2 2 34 66
+1602ms BotB &gt; X
+1602ms BotA &lt; S 2 2 2 34 66
+1603ms BotA &gt; X
+1603ms BotA &lt; C 5s As Qc Td 8h 4d Ad
+1603ms BotB &lt; C Tc 5c Qc Td 8h 4d Ad
+1603ms BotB &lt; S 2 2 2 34 66
+1603ms BotB &gt; X
+1603ms BotA &lt; S 2 2 2 34 66
+1603ms BotA &gt; X
+1680ms BotA &lt; E
+1680ms BotB &lt; E
+1680ms System &gt; round 8/100
+1680ms BotA &lt; P 1
+1680ms BotB &lt; P 0
+1680ms BotA &lt; C 4s Ad
+1680ms BotB &lt; C Ts Th
+1680ms BotB &lt; S 2 1 2 64 36
+1680ms BotB &gt; C
+1680ms BotA &lt; S 2 2 2 64 36
+1680ms BotA &gt; X
+1680ms BotA &lt; C 4s Ad Kc 2c Ks
+1680ms BotB &lt; C Ts Th Kc 2c Ks
+1680ms BotA &lt; S 2 2 2 64 36
+1682ms BotA &gt; X
+1682ms BotB &lt; S 2 2 2 64 36
+1682ms BotB &gt; X
+1682ms BotA &lt; C 4s Ad Kc 2c Ks 4c
+1682ms BotB &lt; C Ts Th Kc 2c Ks 4c
+1682ms BotA &lt; S 2 2 2 64 36
+1683ms BotA &gt; X
+1683ms BotB &lt; S 2 2 2 64 36
+1683ms BotB &gt; X
+1683ms BotA &lt; C 4s Ad Kc 2c Ks 4c Qh
+1683ms BotB &lt; C Ts Th Kc 2c Ks 4c Qh
+1683ms BotA &lt; S 2 2 2 64 36
+1683ms BotA &gt; X
+1683ms BotB &lt; S 2 2 2 64 36
+1683ms BotB &gt; X
+1683ms BotA &lt; E
+1683ms BotB &lt; E
+1683ms System &gt; round 9/100
+1683ms BotA &lt; P 0
+1683ms BotB &lt; P 1
+1683ms BotA &lt; C 2s 7c
+1759ms BotB &lt; C Ks 8d
+1759ms BotA &lt; S 2 1 2 34 66
+1760ms BotA &gt; C
+1760ms BotB &lt; S 2 2 2 34 66
+1760ms BotB &gt; X
+1760ms BotA &lt; C 2s 7c 3c 8h Qd
+1760ms BotB &lt; C Ks 8d 3c 8h Qd
+1760ms BotB &lt; S 2 2 2 34 66
+1760ms BotB &gt; X
+1760ms BotA &lt; S 2 2 2 34 66
+1760ms BotA &gt; X
+1760ms BotA &lt; C 2s 7c 3c 8h Qd 2c
+1760ms BotB &lt; C Ks 8d 3c 8h Qd 2c
+1760ms BotB &lt; S 2 2 2 34 66
+1760ms BotB &gt; X
+1760ms BotA &lt; S 2 2 2 34 66
+1760ms BotA &gt; X
+1760ms BotA &lt; C 2s 7c 3c 8h Qd 2c 3h
+1760ms BotB &lt; C Ks 8d 3c 8h Qd 2c 3h
+1760ms BotB &lt; S 2 2 2 34 66
+1761ms BotB &gt; X
+1761ms BotA &lt; S 2 2 2 34 66
+1762ms BotA &gt; X
+1762ms BotA &lt; E
+1762ms BotB &lt; E
+1762ms System &gt; round 10/100
+1762ms BotA &lt; P 1
+1762ms BotB &lt; P 0
+1762ms BotA &lt; C 3s 5s
+1762ms BotB &lt; C 2c 2h
+1762ms BotB &lt; S 2 1 2 68 32
+1762ms BotB &gt; C
+1762ms BotA &lt; S 2 2 2 68 32
+1763ms BotA &gt; X
+1763ms BotA &lt; C 3s 5s Ad 6c 8d
+1763ms BotB &lt; C 2c 2h Ad 6c 8d
+1763ms BotA &lt; S 2 2 2 68 32
+1763ms BotA &gt; X
+1763ms BotB &lt; S 2 2 2 68 32
+1839ms BotB &gt; X
+1839ms BotA &lt; C 3s 5s Ad 6c 8d Ah
+1839ms BotB &lt; C 2c 2h Ad 6c 8d Ah
+1839ms BotA &lt; S 2 2 2 68 32
+1840ms BotA &gt; X
+1840ms BotB &lt; S 2 2 2 68 32
+1840ms BotB &gt; X
+1840ms BotA &lt; C 3s 5s Ad 6c 8d Ah Kd
+1840ms BotB &lt; C 2c 2h Ad 6c 8d Ah Kd
+1840ms BotA &lt; S 2 2 2 68 32
+1840ms BotA &gt; X
+1840ms BotB &lt; S 2 2 2 68 32
+1840ms BotB &gt; X
+1840ms BotA &lt; E
+1840ms BotB &lt; E
+1840ms System &gt; round 11/100
+1840ms BotA &lt; P 0
+1840ms BotB &lt; P 1
+1840ms BotA &lt; C Ac 3d
+1840ms BotB &lt; C 6s 4s
+1840ms BotA &lt; S 2 1 2 30 70
+1840ms BotA &gt; C
+1840ms BotB &lt; S 2 2 2 30 70
+1840ms BotB &gt; X
+1840ms BotA &lt; C Ac 3d 8d 5s 8c
+1840ms BotB &lt; C 6s 4s 8d 5s 8c
+1840ms BotB &lt; S 2 2 2 30 70
+1840ms BotB &gt; X
+1840ms BotA &lt; S 2 2 2 30 70
+1841ms BotA &gt; X
+1841ms BotA &lt; C Ac 3d 8d 5s 8c 6d
+1841ms BotB &lt; C 6s 4s 8d 5s 8c 6d
+1841ms BotB &lt; S 2 2 2 30 70
+1841ms BotB &gt; X
+1841ms BotA &lt; S 2 2 2 30 70
+1841ms BotA &gt; X
+1841ms BotA &lt; C Ac 3d 8d 5s 8c 6d Td
+1841ms BotB &lt; C 6s 4s 8d 5s 8c 6d Td
+1841ms BotB &lt; S 2 2 2 30 70
+1841ms BotB &gt; X
+1841ms BotA &lt; S 2 2 2 30 70
+1841ms BotA &gt; X
+1841ms BotA &lt; E
+1841ms BotB &lt; E
+1841ms System &gt; round 12/100
+1841ms BotA &lt; P 1
+1842ms BotB &lt; P 0
+1842ms BotA &lt; C 9s 4s
+1842ms BotB &lt; C Qc Js
+1842ms BotB &lt; S 2 1 2 72 28
+1842ms BotB &gt; C
+1842ms BotA &lt; S 2 2 2 72 28
+1842ms BotA &gt; X
+1842ms BotA &lt; C 9s 4s Jh As Qs
+1842ms BotB &lt; C Qc Js Jh As Qs
+1842ms BotA &lt; S 2 2 2 72 28
+1842ms BotA &gt; X
+1842ms BotB &lt; S 2 2 2 72 28
+1842ms BotB &gt; X
+1842ms BotA &lt; C 9s 4s Jh As Qs Ks
+1842ms BotB &lt; C Qc Js Jh As Qs Ks
+1842ms BotA &lt; S 2 2 2 72 28
+1842ms BotA &gt; X
+1842ms BotB &lt; S 2 2 2 72 28
+1842ms BotB &gt; X
+1842ms BotA &lt; C 9s 4s Jh As Qs Ks 6c
+1842ms BotB &lt; C Qc Js Jh As Qs Ks 6c
+1842ms BotA &lt; S 2 2 2 72 28
+1849ms BotA &gt; X
+1849ms BotB &lt; S 2 2 2 72 28
+1849ms BotB &gt; X
+1849ms BotA &lt; E
+1849ms BotB &lt; E
+1849ms System &gt; round 13/100
+1849ms BotA &lt; P 0
+1849ms BotB &lt; P 1
+1849ms BotA &lt; C Ac Qh
+1849ms BotB &lt; C 4c 9s
+1849ms BotA &lt; S 2 1 2 30 70
+1849ms BotA &gt; C
+1849ms BotB &lt; S 2 2 2 30 70
+1849ms BotB &gt; X
+1849ms BotA &lt; C Ac Qh 4s 6d 8h
+1849ms BotB &lt; C 4c 9s 4s 6d 8h
+1849ms BotB &lt; S 2 2 2 30 70
+1849ms BotB &gt; X
+1849ms BotA &lt; S 2 2 2 30 70
+1850ms BotA &gt; X
+1850ms BotA &lt; C Ac Qh 4s 6d 8h 3c
+1850ms BotB &lt; C 4c 9s 4s 6d 8h 3c
+1850ms BotB &lt; S 2 2 2 30 70
+1850ms BotB &gt; X
+1850ms BotA &lt; S 2 2 2 30 70
+1850ms BotA &gt; X
+1850ms BotA &lt; C Ac Qh 4s 6d 8h 3c Jd
+1850ms BotB &lt; C 4c 9s 4s 6d 8h 3c Jd
+1850ms BotB &lt; S 2 2 2 30 70
+1850ms BotB &gt; X
+1850ms BotA &lt; S 2 2 2 30 70
+1850ms BotA &gt; X
+1850ms BotA &lt; E
+1850ms BotB &lt; E
+1850ms System &gt; round 14/100
+1850ms BotA &lt; P 1
+1850ms BotB &lt; P 0
+1850ms BotA &lt; C Th 2c
+1850ms BotB &lt; C Kc 2d
+1850ms BotB &lt; S 2 1 2 72 28
+1850ms BotB &gt; C
+1850ms BotA &lt; S 2 2 2 72 28
+1850ms BotA &gt; X
+1850ms BotA &lt; C Th 2c 4c 4d Kd
+1850ms BotB &lt; C Kc 2d 4c 4d Kd
+1850ms BotA &lt; S 2 2 2 72 28
+1850ms BotA &gt; X
+1850ms BotB &lt; S 2 2 2 72 28
+1850ms BotB &gt; X
+1850ms BotA &lt; C Th 2c 4c 4d Kd Jc
+1850ms BotB &lt; C Kc 2d 4c 4d Kd Jc
+1850ms BotA &lt; S 2 2 2 72 28
+1850ms BotA &gt; X
+1851ms BotB &lt; S 2 2 2 72 28
+1851ms BotB &gt; X
+1851ms BotA &lt; C Th 2c 4c 4d Kd Jc Ac
+1851ms BotB &lt; C Kc 2d 4c 4d Kd Jc Ac
+1851ms BotA &lt; S 2 2 2 72 28
+1851ms BotA &gt; X
+1851ms BotB &lt; S 2 2 2 72 28
+1851ms BotB &gt; X
+1851ms BotA &lt; E
+1851ms BotB &lt; E
+1851ms System &gt; round 15/100
+1851ms BotA &lt; P 0
+1851ms BotB &lt; P 1
+1851ms BotA &lt; C 4c 8s
+1851ms BotB &lt; C 8c 4s
+1851ms BotA &lt; S 2 1 2 26 74
+1919ms BotA &gt; C
+1919ms BotB &lt; S 2 2 2 26 74
+1919ms BotB &gt; X
+1919ms BotA &lt; C 4c 8s 3s 5d Ah
+1919ms BotB &lt; C 8c 4s 3s 5d Ah
+1919ms BotB &lt; S 2 2 2 26 74
+1919ms BotB &gt; X
+1919ms BotA &lt; S 2 2 2 26 74
+1921ms BotA &gt; X
+1921ms BotA &lt; C 4c 8s 3s 5d Ah 2c
+1921ms BotB &lt; C 8c 4s 3s 5d Ah 2c
+1921ms BotB &lt; S 2 2 2 26 74
+1921ms BotB &gt; X
+1921ms BotA &lt; S 2 2 2 26 74
+1921ms BotA &gt; X
+1921ms BotA &lt; C 4c 8s 3s 5d Ah 2c Qh
+1921ms BotB &lt; C 8c 4s 3s 5d Ah 2c Qh
+1921ms BotB &lt; S 2 2 2 26 74
+1921ms BotB &gt; X
+1921ms BotA &lt; S 2 2 2 26 74
+1922ms BotA &gt; X
+1922ms BotA &lt; E
+1922ms BotB &lt; E
+1922ms System &gt; round 16/100
+1922ms BotA &lt; P 1
+1922ms BotB &lt; P 0
+1922ms BotA &lt; C 5c 7h
+1922ms BotB &lt; C 4c 3s
+1922ms BotB &lt; S 2 1 2 74 26
+1922ms BotB &gt; C
+1922ms BotA &lt; S 2 2 2 74 26
+1999ms BotA &gt; X
+1999ms BotA &lt; C 5c 7h Jc 3h 9s
+1999ms BotB &lt; C 4c 3s Jc 3h 9s
+1999ms BotA &lt; S 2 2 2 74 26
+1999ms BotA &gt; X
+1999ms BotB &lt; S 2 2 2 74 26
+1999ms BotB &gt; X
+1999ms BotA &lt; C 5c 7h Jc 3h 9s 4d
+1999ms BotB &lt; C 4c 3s Jc 3h 9s 4d
+1999ms BotA &lt; S 2 2 2 74 26
+2079ms BotA &gt; X
+2079ms BotB &lt; S 2 2 2 74 26
+2079ms BotB &gt; X
+2079ms BotA &lt; C 5c 7h Jc 3h 9s 4d 2d
+2079ms BotB &lt; C 4c 3s Jc 3h 9s 4d 2d
+2079ms BotA &lt; S 2 2 2 74 26
+2080ms BotA &gt; X
+2080ms BotB &lt; S 2 2 2 74 26
+2080ms BotB &gt; X
+2080ms BotA &lt; E
+2080ms BotB &lt; E
+2080ms System &gt; round 17/100
+2080ms BotA &lt; P 0
+2080ms BotB &lt; P 1
+2080ms BotA &lt; C Tc 3d
+2080ms BotB &lt; C Qs 2d
+2080ms BotA &lt; S 2 1 2 24 76
+2080ms BotA &gt; C
+2080ms BotB &lt; S 2 2 2 24 76
+2080ms BotB &gt; X
+2080ms BotA &lt; C Tc 3d 7s 6s Jh
+2080ms BotB &lt; C Qs 2d 7s 6s Jh
+2080ms BotB &lt; S 2 2 2 24 76
+2080ms BotB &gt; X
+2080ms BotA &lt; S 2 2 2 24 76
+2080ms BotA &gt; X
+2080ms BotA &lt; C Tc 3d 7s 6s Jh 5h
+2080ms BotB &lt; C Qs 2d 7s 6s Jh 5h
+2080ms BotB &lt; S 2 2 2 24 76
+2080ms BotB &gt; X
+2080ms BotA &lt; S 2 2 2 24 76
+2080ms BotA &gt; X
+2080ms BotA &lt; C Tc 3d 7s 6s Jh 5h 6d
+2080ms BotB &lt; C Qs 2d 7s 6s Jh 5h 6d
+2080ms BotB &lt; S 2 2 2 24 76
+2080ms BotB &gt; X
+2080ms BotA &lt; S 2 2 2 24 76
+2080ms BotA &gt; X
+2080ms BotA &lt; E
+2080ms BotB &lt; E
+2080ms System &gt; round 18/100
+2080ms BotA &lt; P 1
+2080ms BotB &lt; P 0
+2080ms BotA &lt; C Ah 7c
+2081ms BotB &lt; C 8h Jc
+2081ms BotB &lt; S 2 1 2 78 22
+2081ms BotB &gt; C
+2081ms BotA &lt; S 2 2 2 78 22
+2081ms BotA &gt; X
+2081ms BotA &lt; C Ah 7c 6d 9s 2d
+2081ms BotB &lt; C 8h Jc 6d 9s 2d
+2081ms BotA &lt; S 2 2 2 78 22
+2081ms BotA &gt; X
+2081ms BotB &lt; S 2 2 2 78 22
+2081ms BotB &gt; X
+2081ms BotA &lt; C Ah 7c 6d 9s 2d 6c
+2081ms BotB &lt; C 8h Jc 6d 9s 2d 6c
+2081ms BotA &lt; S 2 2 2 78 22
+2081ms BotA &gt; X
+2081ms BotB &lt; S 2 2 2 78 22
+2081ms BotB &gt; X
+2081ms BotA &lt; C Ah 7c 6d 9s 2d 6c 7s
+2081ms BotB &lt; C 8h Jc 6d 9s 2d 6c 7s
+2081ms BotA &lt; S 2 2 2 78 22
+2081ms BotA &gt; X
+2081ms BotB &lt; S 2 2 2 78 22
+2081ms BotB &gt; X
+2081ms BotA &lt; E
+2081ms BotB &lt; E
+2081ms System &gt; round 19/100
+2081ms BotA &lt; P 0
+2081ms BotB &lt; P 1
+2081ms BotA &lt; C Td 9c
+2081ms BotB &lt; C Jc 9s
+2081ms BotA &lt; S 2 1 2 24 76
+2081ms BotA &gt; C
+2081ms BotB &lt; S 2 2 2 24 76
+2082ms BotB &gt; X
+2082ms BotA &lt; C Td 9c Qd 7s 7c
+2082ms BotB &lt; C Jc 9s Qd 7s 7c
+2082ms BotB &lt; S 2 2 2 24 76
+2082ms BotB &gt; X
+2082ms BotA &lt; S 2 2 2 24 76
+2082ms BotA &gt; X
+2082ms BotA &lt; C Td 9c Qd 7s 7c 3c
+2082ms BotB &lt; C Jc 9s Qd 7s 7c 3c
+2082ms BotB &lt; S 2 2 2 24 76
+2082ms BotB &gt; X
+2082ms BotA &lt; S 2 2 2 24 76
+2082ms BotA &gt; X
+2082ms BotA &lt; C Td 9c Qd 7s 7c 3c Ts
+2082ms BotB &lt; C Jc 9s Qd 7s 7c 3c Ts
+2082ms BotB &lt; S 2 2 2 24 76
+2082ms BotB &gt; X
+2082ms BotA &lt; S 2 2 2 24 76
+2082ms BotA &gt; X
+2082ms BotA &lt; E
+2082ms BotB &lt; E
+2082ms System &gt; round 20/100
+2082ms BotA &lt; P 1
+2082ms BotB &lt; P 0
+2082ms BotA &lt; C 2s Ts
+2082ms BotB &lt; C 3d 8h
+2082ms BotB &lt; S 2 1 2 74 26
+2082ms BotB &gt; C
+2082ms BotA &lt; S 2 2 2 74 26
+2082ms BotA &gt; X
+2082ms BotA &lt; C 2s Ts As 9s Ah
+2082ms BotB &lt; C 3d 8h As 9s Ah
+2082ms BotA &lt; S 2 2 2 74 26
+2082ms BotA &gt; X
+2082ms BotB &lt; S 2 2 2 74 26
+2082ms BotB &gt; X
+2082ms BotA &lt; C 2s Ts As 9s Ah Js
+2082ms BotB &lt; C 3d 8h As 9s Ah Js
+2082ms BotA &lt; S 2 2 2 74 26
+2083ms BotA &gt; X
+2083ms BotB &lt; S 2 2 2 74 26
+2083ms BotB &gt; X
+2083ms BotA &lt; C 2s Ts As 9s Ah Js Qh
+2083ms BotB &lt; C 3d 8h As 9s Ah Js Qh
+2083ms BotA &lt; S 2 2 2 74 26
+2083ms BotA &gt; X
+2083ms BotB &lt; S 2 2 2 74 26
+2083ms BotB &gt; X
+2083ms BotA &lt; E
+2163ms BotB &lt; E
+2163ms System &gt; round 21/100
+2163ms BotA &lt; P 0
+2163ms BotB &lt; P 1
+2163ms BotA &lt; C 9h 7s
+2163ms BotB &lt; C 4h 2s
+2163ms BotA &lt; S 2 1 2 28 72
+2163ms BotA &gt; C
+2163ms BotB &lt; S 2 2 2 28 72
+2164ms BotB &gt; X
+2164ms BotA &lt; C 9h 7s Kd Qs Ah
+2164ms BotB &lt; C 4h 2s Kd Qs Ah
+2164ms BotB &lt; S 2 2 2 28 72
+2164ms BotB &gt; X
+2164ms BotA &lt; S 2 2 2 28 72
+2164ms BotA &gt; X
+2164ms BotA &lt; C 9h 7s Kd Qs Ah 2d
+2164ms BotB &lt; C 4h 2s Kd Qs Ah 2d
+2164ms BotB &lt; S 2 2 2 28 72
+2164ms BotB &gt; X
+2164ms BotA &lt; S 2 2 2 28 72
+2164ms BotA &gt; X
+2164ms BotA &lt; C 9h 7s Kd Qs Ah 2d 7h
+2164ms BotB &lt; C 4h 2s Kd Qs Ah 2d 7h
+2164ms BotB &lt; S 2 2 2 28 72
+2164ms BotB &gt; X
+2164ms BotA &lt; S 2 2 2 28 72
+2164ms BotA &gt; X
+2164ms BotA &lt; E
+2164ms BotB &lt; E
+2164ms System &gt; round 22/100
+2164ms BotA &lt; P 1
+2164ms BotB &lt; P 0
+2164ms BotA &lt; C 6d 7h
+2165ms BotB &lt; C 9c As
+2165ms BotB &lt; S 2 1 2 70 30
+2165ms BotB &gt; C
+2165ms BotA &lt; S 2 2 2 70 30
+2243ms BotA &gt; X
+2243ms BotA &lt; C 6d 7h 4c 5h Ac
+2243ms BotB &lt; C 9c As 4c 5h Ac
+2243ms BotA &lt; S 2 2 2 70 30
+2243ms BotA &gt; X
+2243ms BotB &lt; S 2 2 2 70 30
+2243ms BotB &gt; X
+2243ms BotA &lt; C 6d 7h 4c 5h Ac Ts
+2243ms BotB &lt; C 9c As 4c 5h Ac Ts
+2243ms BotA &lt; S 2 2 2 70 30
+2244ms BotA &gt; X
+2244ms BotB &lt; S 2 2 2 70 30
+2244ms BotB &gt; X
+2244ms BotA &lt; C 6d 7h 4c 5h Ac Ts Kd
+2244ms BotB &lt; C 9c As 4c 5h Ac Ts Kd
+2244ms BotA &lt; S 2 2 2 70 30
+2244ms BotA &gt; X
+2244ms BotB &lt; S 2 2 2 70 30
+2244ms BotB &gt; X
+2244ms BotA &lt; E
+2244ms BotB &lt; E
+2244ms System &gt; round 23/100
+2244ms BotA &lt; P 0
+2244ms BotB &lt; P 1
+2244ms BotA &lt; C 5d 4d
+2244ms BotB &lt; C Ac Kd
+2244ms BotA &lt; S 2 1 2 28 72
+2244ms BotA &gt; C
+2244ms BotB &lt; S 2 2 2 28 72
+2244ms BotB &gt; X
+2244ms BotA &lt; C 5d 4d Ad 4s Kc
+2244ms BotB &lt; C Ac Kd Ad 4s Kc
+2244ms BotB &lt; S 2 2 2 28 72
+2244ms BotB &gt; X
+2244ms BotA &lt; S 2 2 2 28 72
+2244ms BotA &gt; X
+2244ms BotA &lt; C 5d 4d Ad 4s Kc 6d
+2244ms BotB &lt; C Ac Kd Ad 4s Kc 6d
+2244ms BotB &lt; S 2 2 2 28 72
+2244ms BotB &gt; X
+2244ms BotA &lt; S 2 2 2 28 72
+2245ms BotA &gt; X
+2245ms BotA &lt; C 5d 4d Ad 4s Kc 6d 7d
+2245ms BotB &lt; C Ac Kd Ad 4s Kc 6d 7d
+2245ms BotB &lt; S 2 2 2 28 72
+2245ms BotB &gt; X
+2245ms BotA &lt; S 2 2 2 28 72
+2245ms BotA &gt; X
+2245ms BotA &lt; E
+2245ms BotB &lt; E
+2245ms System &gt; round 24/100
+2245ms BotA &lt; P 1
+2245ms BotB &lt; P 0
+2245ms BotA &lt; C 3s 7d
+2245ms BotB &lt; C 8s 4c
+2245ms BotB &lt; S 2 1 2 70 30
+2245ms BotB &gt; C
+2245ms BotA &lt; S 2 2 2 70 30
+2245ms BotA &gt; X
+2245ms BotA &lt; C 3s 7d 5c 3c Ks
+2245ms BotB &lt; C 8s 4c 5c 3c Ks
+2245ms BotA &lt; S 2 2 2 70 30
+2245ms BotA &gt; X
+2245ms BotB &lt; S 2 2 2 70 30
+2245ms BotB &gt; X
+2245ms BotA &lt; C 3s 7d 5c 3c Ks 5d
+2245ms BotB &lt; C 8s 4c 5c 3c Ks 5d
+2245ms BotA &lt; S 2 2 2 70 30
+2245ms BotA &gt; X
+2245ms BotB &lt; S 2 2 2 70 30
+2246ms BotB &gt; X
+2246ms BotA &lt; C 3s 7d 5c 3c Ks 5d 4s
+2246ms BotB &lt; C 8s 4c 5c 3c Ks 5d 4s
+2246ms BotA &lt; S 2 2 2 70 30
+2246ms BotA &gt; X
+2246ms BotB &lt; S 2 2 2 70 30
+2246ms BotB &gt; X
+2246ms BotA &lt; E
+2246ms BotB &lt; E
+2246ms System &gt; round 25/100
+2246ms BotA &lt; P 0
+2246ms BotB &lt; P 1
+2246ms BotA &lt; C Kc 5d
+2246ms BotB &lt; C Ah 3c
+2246ms BotA &lt; S 2 1 2 28 72
+2246ms BotA &gt; C
+2246ms BotB &lt; S 2 2 2 28 72
+2246ms BotB &gt; X
+2246ms BotA &lt; C Kc 5d 6d Ad 2s
+2246ms BotB &lt; C Ah 3c 6d Ad 2s
+2246ms BotB &lt; S 2 2 2 28 72
+2246ms BotB &gt; X
+2246ms BotA &lt; S 2 2 2 28 72
+2246ms BotA &gt; X
+2246ms BotA &lt; C Kc 5d 6d Ad 2s Td
+2246ms BotB &lt; C Ah 3c 6d Ad 2s Td
+2246ms BotB &lt; S 2 2 2 28 72
+2246ms BotB &gt; X
+2246ms BotA &lt; S 2 2 2 28 72
+2246ms BotA &gt; X
+2246ms BotA &lt; C Kc 5d 6d Ad 2s Td 7h
+2246ms BotB &lt; C Ah 3c 6d Ad 2s Td 7h
+2246ms BotB &lt; S 2 2 2 28 72
+2247ms BotB &gt; X
+2247ms BotA &lt; S 2 2 2 28 72
+2247ms BotA &gt; X
+2247ms BotA &lt; E
+2247ms BotB &lt; E
+2247ms System &gt; round 26/100
+2247ms BotA &lt; P 1
+2247ms BotB &lt; P 0
+2247ms BotA &lt; C 5c 2h
+2247ms BotB &lt; C Th 7d
+2247ms BotB &lt; S 2 1 2 74 26
+2247ms BotB &gt; C
+2247ms BotA &lt; S 2 2 2 74 26
+2263ms BotA &gt; X
+2263ms BotA &lt; C 5c 2h Ts 2d 5s
+2263ms BotB &lt; C Th 7d Ts 2d 5s
+2263ms BotA &lt; S 2 2 2 74 26
+2263ms BotA &gt; X
+2263ms BotB &lt; S 2 2 2 74 26
+2263ms BotB &gt; X
+2263ms BotA &lt; C 5c 2h Ts 2d 5s 6s
+2263ms BotB &lt; C Th 7d Ts 2d 5s 6s
+2263ms BotA &lt; S 2 2 2 74 26
+2264ms BotA &gt; X
+2264ms BotB &lt; S 2 2 2 74 26
+2264ms BotB &gt; X
+2264ms BotA &lt; C 5c 2h Ts 2d 5s 6s Ac
+2264ms BotB &lt; C Th 7d Ts 2d 5s 6s Ac
+2264ms BotA &lt; S 2 2 2 74 26
+2264ms BotA &gt; X
+2264ms BotB &lt; S 2 2 2 74 26
+2264ms BotB &gt; X
+2264ms BotA &lt; E
+2264ms BotB &lt; E
+2264ms System &gt; round 27/100
+2264ms BotA &lt; P 0
+2264ms BotB &lt; P 1
+2264ms BotA &lt; C 5d Ac
+2264ms BotB &lt; C 6d 7s
+2264ms BotA &lt; S 2 1 2 28 72
+2264ms BotA &gt; C
+2264ms BotB &lt; S 2 2 2 28 72
+2264ms BotB &gt; X
+2264ms BotA &lt; C 5d Ac 6s Ks 2h
+2264ms BotB &lt; C 6d 7s 6s Ks 2h
+2264ms BotB &lt; S 2 2 2 28 72
+2264ms BotB &gt; X
+2264ms BotA &lt; S 2 2 2 28 72
+2264ms BotA &gt; X
+2264ms BotA &lt; C 5d Ac 6s Ks 2h Jh
+2264ms BotB &lt; C 6d 7s 6s Ks 2h Jh
+2264ms BotB &lt; S 2 2 2 28 72
+2264ms BotB &gt; X
+2264ms BotA &lt; S 2 2 2 28 72
+2265ms BotA &gt; X
+2265ms BotA &lt; C 5d Ac 6s Ks 2h Jh Ad
+2265ms BotB &lt; C 6d 7s 6s Ks 2h Jh Ad
+2265ms BotB &lt; S 2 2 2 28 72
+2265ms BotB &gt; X
+2265ms BotA &lt; S 2 2 2 28 72
+2265ms BotA &gt; X
+2265ms BotA &lt; E
+2265ms BotB &lt; E
+2265ms System &gt; round 28/100
+2265ms BotA &lt; P 1
+2265ms BotB &lt; P 0
+2265ms BotA &lt; C 9s Qh
+2265ms BotB &lt; C Jh Jd
+2265ms BotB &lt; S 2 1 2 70 30
+2265ms BotB &gt; C
+2265ms BotA &lt; S 2 2 2 70 30
+2265ms BotA &gt; X
+2265ms BotA &lt; C 9s Qh Qc 3h 7s
+2265ms BotB &lt; C Jh Jd Qc 3h 7s
+2265ms BotA &lt; S 2 2 2 70 30
+2265ms BotA &gt; X
+2265ms BotB &lt; S 2 2 2 70 30
+2265ms BotB &gt; X
+2265ms BotA &lt; C 9s Qh Qc 3h 7s As
+2265ms BotB &lt; C Jh Jd Qc 3h 7s As
+2265ms BotA &lt; S 2 2 2 70 30
+2265ms BotA &gt; X
+2265ms BotB &lt; S 2 2 2 70 30
+2265ms BotB &gt; X
+2265ms BotA &lt; C 9s Qh Qc 3h 7s As 8h
+2265ms BotB &lt; C Jh Jd Qc 3h 7s As 8h
+2266ms BotA &lt; S 2 2 2 70 30
+2266ms BotA &gt; X
+2266ms BotB &lt; S 2 2 2 70 30
+2266ms BotB &gt; X
+2266ms BotA &lt; E
+2266ms BotB &lt; E
+2266ms System &gt; round 29/100
+2266ms BotA &lt; P 0
+2266ms BotB &lt; P 1
+2266ms BotA &lt; C 9c Kd
+2266ms BotB &lt; C Ad 8h
+2266ms BotA &lt; S 2 1 2 32 68
+2266ms BotA &gt; C
+2266ms BotB &lt; S 2 2 2 32 68
+2266ms BotB &gt; X
+2266ms BotA &lt; C 9c Kd 5h 8c 3d
+2266ms BotB &lt; C Ad 8h 5h 8c 3d
+2266ms BotB &lt; S 2 2 2 32 68
+2266ms BotB &gt; X
+2266ms BotA &lt; S 2 2 2 32 68
+2266ms BotA &gt; X
+2266ms BotA &lt; C 9c Kd 5h 8c 3d Js
+2266ms BotB &lt; C Ad 8h 5h 8c 3d Js
+2266ms BotB &lt; S 2 2 2 32 68
+2266ms BotB &gt; X
+2266ms BotA &lt; S 2 2 2 32 68
+2266ms BotA &gt; X
+2266ms BotA &lt; C 9c Kd 5h 8c 3d Js 6c
+2266ms BotB &lt; C Ad 8h 5h 8c 3d Js 6c
+2266ms BotB &lt; S 2 2 2 32 68
+2266ms BotB &gt; X
+2267ms BotA &lt; S 2 2 2 32 68
+2267ms BotA &gt; X
+2267ms BotA &lt; E
+2267ms BotB &lt; E
+2267ms System &gt; round 30/100
+2267ms BotA &lt; P 1
+2267ms BotB &lt; P 0
+2267ms BotA &lt; C 3s 9h
+2267ms BotB &lt; C 5s Tc
+2267ms BotB &lt; S 2 1 2 70 30
+2267ms BotB &gt; C
+2267ms BotA &lt; S 2 2 2 70 30
+2267ms BotA &gt; X
+2267ms BotA &lt; C 3s 9h Qd 8h 6d
+2323ms BotB &lt; C 5s Tc Qd 8h 6d
+2323ms BotA &lt; S 2 2 2 70 30
+2323ms BotA &gt; X
+2323ms BotB &lt; S 2 2 2 70 30
+2323ms BotB &gt; X
+2323ms BotA &lt; C 3s 9h Qd 8h 6d Kc
+2323ms BotB &lt; C 5s Tc Qd 8h 6d Kc
+2323ms BotA &lt; S 2 2 2 70 30
+2324ms BotA &gt; X
+2324ms BotB &lt; S 2 2 2 70 30
+2324ms BotB &gt; X
+2324ms BotA &lt; C 3s 9h Qd 8h 6d Kc 8s
+2324ms BotB &lt; C 5s Tc Qd 8h 6d Kc 8s
+2324ms BotA &lt; S 2 2 2 70 30
+2324ms BotA &gt; X
+2324ms BotB &lt; S 2 2 2 70 30
+2324ms BotB &gt; X
+2324ms BotA &lt; E
+2324ms BotB &lt; E
+2324ms System &gt; round 31/100
+2324ms BotA &lt; P 0
+2324ms BotB &lt; P 1
+2324ms BotA &lt; C 3s 6c
+2324ms BotB &lt; C As 8c
+2324ms BotA &lt; S 2 1 2 28 72
+2324ms BotA &gt; C
+2324ms BotB &lt; S 2 2 2 28 72
+2324ms BotB &gt; X
+2324ms BotA &lt; C 3s 6c 7s 4s Jh
+2324ms BotB &lt; C As 8c 7s 4s Jh
+2324ms BotB &lt; S 2 2 2 28 72
+2324ms BotB &gt; X
+2324ms BotA &lt; S 2 2 2 28 72
+2324ms BotA &gt; X
+2324ms BotA &lt; C 3s 6c 7s 4s Jh Ah
+2324ms BotB &lt; C As 8c 7s 4s Jh Ah
+2324ms BotB &lt; S 2 2 2 28 72
+2324ms BotB &gt; X
+2324ms BotA &lt; S 2 2 2 28 72
+2325ms BotA &gt; X
+2325ms BotA &lt; C 3s 6c 7s 4s Jh Ah Td
+2325ms BotB &lt; C As 8c 7s 4s Jh Ah Td
+2325ms BotB &lt; S 2 2 2 28 72
+2325ms BotB &gt; X
+2325ms BotA &lt; S 2 2 2 28 72
+2325ms BotA &gt; X
+2325ms BotA &lt; E
+2325ms BotB &lt; E
+2325ms System &gt; round 32/100
+2325ms BotA &lt; P 1
+2325ms BotB &lt; P 0
+2325ms BotA &lt; C 3d 6d
+2325ms BotB &lt; C 8c 7c
+2325ms BotB &lt; S 2 1 2 74 26
+2325ms BotB &gt; C
+2325ms BotA &lt; S 2 2 2 74 26
+2325ms BotA &gt; X
+2325ms BotA &lt; C 3d 6d 5h 2d Kc
+2325ms BotB &lt; C 8c 7c 5h 2d Kc
+2325ms BotA &lt; S 2 2 2 74 26
+2325ms BotA &gt; X
+2325ms BotB &lt; S 2 2 2 74 26
+2325ms BotB &gt; X
+2325ms BotA &lt; C 3d 6d 5h 2d Kc 9s
+2325ms BotB &lt; C 8c 7c 5h 2d Kc 9s
+2325ms BotA &lt; S 2 2 2 74 26
+2325ms BotA &gt; X
+2325ms BotB &lt; S 2 2 2 74 26
+2326ms BotB &gt; X
+2326ms BotA &lt; C 3d 6d 5h 2d Kc 9s Jh
+2326ms BotB &lt; C 8c 7c 5h 2d Kc 9s Jh
+2326ms BotA &lt; S 2 2 2 74 26
+2326ms BotA &gt; X
+2326ms BotB &lt; S 2 2 2 74 26
+2326ms BotB &gt; X
+2326ms BotA &lt; E
+2326ms BotB &lt; E
+2326ms System &gt; round 33/100
+2326ms BotA &lt; P 0
+2326ms BotB &lt; P 1
+2326ms BotA &lt; C 6c Jd
+2326ms BotB &lt; C 4s 7s
+2326ms BotA &lt; S 2 1 2 24 76
+2326ms BotA &gt; C
+2326ms BotB &lt; S 2 2 2 24 76
+2326ms BotB &gt; X
+2326ms BotA &lt; C 6c Jd Js Kc 4h
+2326ms BotB &lt; C 4s 7s Js Kc 4h
+2326ms BotB &lt; S 2 2 2 24 76
+2326ms BotB &gt; X
+2326ms BotA &lt; S 2 2 2 24 76
+2326ms BotA &gt; X
+2326ms BotA &lt; C 6c Jd Js Kc 4h 2c
+2326ms BotB &lt; C 4s 7s Js Kc 4h 2c
+2326ms BotB &lt; S 2 2 2 24 76
+2326ms BotB &gt; X
+2326ms BotA &lt; S 2 2 2 24 76
+2326ms BotA &gt; X
+2326ms BotA &lt; C 6c Jd Js Kc 4h 2c 8d
+2326ms BotB &lt; C 4s 7s Js Kc 4h 2c 8d
+2326ms BotB &lt; S 2 2 2 24 76
+2326ms BotB &gt; X
+2326ms BotA &lt; S 2 2 2 24 76
+2327ms BotA &gt; X
+2327ms BotA &lt; E
+2327ms BotB &lt; E
+2327ms System &gt; round 34/100
+2327ms BotA &lt; P 1
+2327ms BotB &lt; P 0
+2327ms BotA &lt; C 6h Tc
+2327ms BotB &lt; C 6d Th
+2327ms BotB &lt; S 2 1 2 74 26
+2327ms BotB &gt; C
+2327ms BotA &lt; S 2 2 2 74 26
+2327ms BotA &gt; X
+2327ms BotA &lt; C 6h Tc 3d 3c Ah
+2327ms BotB &lt; C 6d Th 3d 3c Ah
+2327ms BotA &lt; S 2 2 2 74 26
+2327ms BotA &gt; X
+2327ms BotB &lt; S 2 2 2 74 26
+2327ms BotB &gt; X
+2327ms BotA &lt; C 6h Tc 3d 3c Ah Qc
+2327ms BotB &lt; C 6d Th 3d 3c Ah Qc
+2327ms BotA &lt; S 2 2 2 74 26
+2327ms BotA &gt; X
+2327ms BotB &lt; S 2 2 2 74 26
+2327ms BotB &gt; X
+2327ms BotA &lt; C 6h Tc 3d 3c Ah Qc Ad
+2327ms BotB &lt; C 6d Th 3d 3c Ah Qc Ad
+2327ms BotA &lt; S 2 2 2 74 26
+2327ms BotA &gt; X
+2327ms BotB &lt; S 2 2 2 74 26
+2327ms BotB &gt; X
+2327ms BotA &lt; E
+2327ms BotB &lt; E
+2327ms System &gt; round 35/100
+2328ms BotA &lt; P 0
+2328ms BotB &lt; P 1
+2328ms BotA &lt; C 2s Jd
+2328ms BotB &lt; C Ks 2d
+2328ms BotA &lt; S 2 1 2 26 74
+2328ms BotA &gt; C
+2328ms BotB &lt; S 2 2 2 26 74
+2328ms BotB &gt; X
+2328ms BotA &lt; C 2s Jd Th 7c 3h
+2328ms BotB &lt; C Ks 2d Th 7c 3h
+2328ms BotB &lt; S 2 2 2 26 74
+2328ms BotB &gt; X
+2328ms BotA &lt; S 2 2 2 26 74
+2328ms BotA &gt; X
+2328ms BotA &lt; C 2s Jd Th 7c 3h Ts
+2328ms BotB &lt; C Ks 2d Th 7c 3h Ts
+2328ms BotB &lt; S 2 2 2 26 74
+2328ms BotB &gt; X
+2328ms BotA &lt; S 2 2 2 26 74
+2328ms BotA &gt; X
+2328ms BotA &lt; C 2s Jd Th 7c 3h Ts 6c
+2328ms BotB &lt; C Ks 2d Th 7c 3h Ts 6c
+2328ms BotB &lt; S 2 2 2 26 74
+2328ms BotB &gt; X
+2328ms BotA &lt; S 2 2 2 26 74
+2328ms BotA &gt; X
+2329ms BotA &lt; E
+2329ms BotB &lt; E
+2329ms System &gt; round 36/100
+2329ms BotA &lt; P 1
+2329ms BotB &lt; P 0
+2329ms BotA &lt; C 8h 8c
+2329ms BotB &lt; C 6d 8d
+2329ms BotB &lt; S 2 1 2 76 24
+2329ms BotB &gt; C
+2329ms BotA &lt; S 2 2 2 76 24
+2329ms BotA &gt; R5
+2329ms BotB &lt; S 7 2 7 76 24
+2329ms BotB &gt; C
+2329ms BotA &lt; C 8h 8c Tc Js 6c
+2329ms BotB &lt; C 6d 8d Tc Js 6c
+2329ms BotA &lt; S 7 7 7 76 24
+2329ms BotA &gt; R5
+2329ms BotB &lt; S 12 7 12 76 24
+2329ms BotB &gt; C
+2329ms BotA &lt; C 8h 8c Tc Js 6c 3d
+2329ms BotB &lt; C 6d 8d Tc Js 6c 3d
+2329ms BotA &lt; S 12 12 12 76 24
+2329ms BotA &gt; R5
+2329ms BotB &lt; S 17 12 17 76 24
+2329ms BotB &gt; C
+2329ms BotA &lt; C 8h 8c Tc Js 6c 3d 3c
+2329ms BotB &lt; C 6d 8d Tc Js 6c 3d 3c
+2329ms BotA &lt; S 17 17 17 76 24
+2399ms BotA &gt; R5
+2399ms BotB &lt; S 22 17 22 76 24
+2399ms BotB &gt; C
+2399ms BotA &lt; E
+2399ms BotB &lt; E
+2399ms System &gt; round 37/100
+2399ms BotA &lt; P 0
+2399ms BotB &lt; P 1
+2399ms BotA &lt; C As 6s
+2399ms BotB &lt; C Jh Qc
+2399ms BotA &lt; S 2 1 2 46 54
+2400ms BotA &gt; C
+2400ms BotB &lt; S 2 2 2 46 54
+2400ms BotB &gt; X
+2400ms BotA &lt; C As 6s 6d 4d 6h
+2400ms BotB &lt; C Jh Qc 6d 4d 6h
+2400ms BotB &lt; S 2 2 2 46 54
+2400ms BotB &gt; X
+2400ms BotA &lt; S 2 2 2 46 54
+2400ms BotA &gt; X
+2400ms BotA &lt; C As 6s 6d 4d 6h Ks
+2400ms BotB &lt; C Jh Qc 6d 4d 6h Ks
+2400ms BotB &lt; S 2 2 2 46 54
+2400ms BotB &gt; X
+2400ms BotA &lt; S 2 2 2 46 54
+2400ms BotA &gt; X
+2400ms BotA &lt; C As 6s 6d 4d 6h Ks Th
+2400ms BotB &lt; C Jh Qc 6d 4d 6h Ks Th
+2400ms BotB &lt; S 2 2 2 46 54
+2400ms BotB &gt; X
+2400ms BotA &lt; S 2 2 2 46 54
+2400ms BotA &gt; X
+2400ms BotA &lt; E
+2400ms BotB &lt; E
+2400ms System &gt; round 38/100
+2400ms BotA &lt; P 1
+2400ms BotB &lt; P 0
+2400ms BotA &lt; C 6h Js
+2400ms BotB &lt; C 5h Qs
+2400ms BotB &lt; S 2 1 2 52 48
+2400ms BotB &gt; C
+2400ms BotA &lt; S 2 2 2 52 48
+2400ms BotA &gt; X
+2400ms BotA &lt; C 6h Js Ah Ac Td
+2400ms BotB &lt; C 5h Qs Ah Ac Td
+2400ms BotA &lt; S 2 2 2 52 48
+2400ms BotA &gt; X
+2400ms BotB &lt; S 2 2 2 52 48
+2401ms BotB &gt; X
+2401ms BotA &lt; C 6h Js Ah Ac Td Ts
+2401ms BotB &lt; C 5h Qs Ah Ac Td Ts
+2401ms BotA &lt; S 2 2 2 52 48
+2401ms BotA &gt; X
+2401ms BotB &lt; S 2 2 2 52 48
+2401ms BotB &gt; X
+2401ms BotA &lt; C 6h Js Ah Ac Td Ts 5s
+2401ms BotB &lt; C 5h Qs Ah Ac Td Ts 5s
+2401ms BotA &lt; S 2 2 2 52 48
+2401ms BotA &gt; X
+2401ms BotB &lt; S 2 2 2 52 48
+2401ms BotB &gt; X
+2401ms BotA &lt; E
+2401ms BotB &lt; E
+2401ms System &gt; round 39/100
+2401ms BotA &lt; P 0
+2401ms BotB &lt; P 1
+2401ms BotA &lt; C 7d 6c
+2401ms BotB &lt; C Ts 6d
+2401ms BotA &lt; S 2 1 2 46 54
+2401ms BotA &gt; C
+2401ms BotB &lt; S 2 2 2 46 54
+2401ms BotB &gt; X
+2401ms BotA &lt; C 7d 6c 8c Ac 9c
+2401ms BotB &lt; C Ts 6d 8c Ac 9c
+2401ms BotB &lt; S 2 2 2 46 54
+2401ms BotB &gt; X
+2401ms BotA &lt; S 2 2 2 46 54
+2401ms BotA &gt; X
+2401ms BotA &lt; C 7d 6c 8c Ac 9c As
+2401ms BotB &lt; C Ts 6d 8c Ac 9c As
+2401ms BotB &lt; S 2 2 2 46 54
+2402ms BotB &gt; X
+2402ms BotA &lt; S 2 2 2 46 54
+2402ms BotA &gt; X
+2402ms BotA &lt; C 7d 6c 8c Ac 9c As 8h
+2402ms BotB &lt; C Ts 6d 8c Ac 9c As 8h
+2402ms BotB &lt; S 2 2 2 46 54
+2402ms BotB &gt; X
+2402ms BotA &lt; S 2 2 2 46 54
+2402ms BotA &gt; X
+2402ms BotA &lt; E
+2402ms BotB &lt; E
+2402ms System &gt; round 40/100
+2402ms BotA &lt; P 1
+2402ms BotB &lt; P 0
+2402ms BotA &lt; C 5s 3c
+2402ms BotB &lt; C 2h Th
+2402ms BotB &lt; S 2 1 2 56 44
+2402ms BotB &gt; C
+2402ms BotA &lt; S 2 2 2 56 44
+2402ms BotA &gt; X
+2402ms BotA &lt; C 5s 3c Jc 4c Jh
+2402ms BotB &lt; C 2h Th Jc 4c Jh
+2402ms BotA &lt; S 2 2 2 56 44
+2402ms BotA &gt; X
+2402ms BotB &lt; S 2 2 2 56 44
+2402ms BotB &gt; X
+2402ms BotA &lt; C 5s 3c Jc 4c Jh Kd
+2402ms BotB &lt; C 2h Th Jc 4c Jh Kd
+2402ms BotA &lt; S 2 2 2 56 44
+2402ms BotA &gt; X
+2402ms BotB &lt; S 2 2 2 56 44
+2402ms BotB &gt; X
+2402ms BotA &lt; C 5s 3c Jc 4c Jh Kd 6h
+2402ms BotB &lt; C 2h Th Jc 4c Jh Kd 6h
+2402ms BotA &lt; S 2 2 2 56 44
+2403ms BotA &gt; X
+2403ms BotB &lt; S 2 2 2 56 44
+2403ms BotB &gt; X
+2403ms BotA &lt; E
+2403ms BotB &lt; E
+2403ms System &gt; round 41/100
+2403ms BotA &lt; P 0
+2403ms BotB &lt; P 1
+2403ms BotA &lt; C Kd Td
+2403ms BotB &lt; C Qs 4s
+2403ms BotA &lt; S 2 1 2 42 58
+2403ms BotA &gt; C
+2403ms BotB &lt; S 2 2 2 42 58
+2959ms BotB &gt; X
+2959ms BotA &lt; C Kd Td Tc 7c Jd
+2959ms BotB &lt; C Qs 4s Tc 7c Jd
+2959ms BotB &lt; S 2 2 2 42 58
+3039ms BotB &gt; X
+3039ms BotA &lt; S 2 2 2 42 58
+3039ms BotA &gt; X
+3039ms BotA &lt; C Kd Td Tc 7c Jd 9c
+3039ms BotB &lt; C Qs 4s Tc 7c Jd 9c
+3039ms BotB &lt; S 2 2 2 42 58
+3120ms BotB &gt; X
+3120ms BotA &lt; S 2 2 2 42 58
+3120ms BotA &gt; X
+3120ms BotA &lt; C Kd Td Tc 7c Jd 9c 9d
+3120ms BotB &lt; C Qs 4s Tc 7c Jd 9c 9d
+3120ms BotB &lt; S 2 2 2 42 58
+3123ms BotB &gt; X
+3123ms BotA &lt; S 2 2 2 42 58
+3123ms BotA &gt; X
+3199ms BotA &lt; E
+3199ms BotB &lt; E
+3199ms System &gt; round 42/100
+3199ms BotA &lt; P 1
+3199ms BotB &lt; P 0
+3199ms BotA &lt; C Qc Kd
+3199ms BotB &lt; C 4s 5c
+3199ms BotB &lt; S 2 1 2 56 44
+3200ms BotB &gt; C
+3200ms BotA &lt; S 2 2 2 56 44
+3200ms BotA &gt; X
+3200ms BotA &lt; C Qc Kd Ac 8c 8d
+3200ms BotB &lt; C 4s 5c Ac 8c 8d
+3200ms BotA &lt; S 2 2 2 56 44
+3200ms BotA &gt; X
+3200ms BotB &lt; S 2 2 2 56 44
+3200ms BotB &gt; X
+3200ms BotA &lt; C Qc Kd Ac 8c 8d Js
+3200ms BotB &lt; C 4s 5c Ac 8c 8d Js
+3200ms BotA &lt; S 2 2 2 56 44
+3200ms BotA &gt; X
+3200ms BotB &lt; S 2 2 2 56 44
+3201ms BotB &gt; X
+3201ms BotA &lt; C Qc Kd Ac 8c 8d Js Ts
+3201ms BotB &lt; C 4s 5c Ac 8c 8d Js Ts
+3201ms BotA &lt; S 2 2 2 56 44
+3201ms BotA &gt; X
+3201ms BotB &lt; S 2 2 2 56 44
+3201ms BotB &gt; X
+3201ms BotA &lt; E
+3201ms BotB &lt; E
+3201ms System &gt; round 43/100
+3201ms BotA &lt; P 0
+3201ms BotB &lt; P 1
+3201ms BotA &lt; C Qd Ts
+3201ms BotB &lt; C 3d Qh
+3201ms BotA &lt; S 2 1 2 46 54
+3201ms BotA &gt; C
+3201ms BotB &lt; S 2 2 2 46 54
+3279ms BotB &gt; X
+3279ms BotA &lt; C Qd Ts 8c 7c Td
+3279ms BotB &lt; C 3d Qh 8c 7c Td
+3279ms BotB &lt; S 2 2 2 46 54
+3282ms BotB &gt; X
+3282ms BotA &lt; S 2 2 2 46 54
+3282ms BotA &gt; X
+3282ms BotA &lt; C Qd Ts 8c 7c Td 2d
+3282ms BotB &lt; C 3d Qh 8c 7c Td 2d
+3282ms BotB &lt; S 2 2 2 46 54
+3283ms BotB &gt; X
+3283ms BotA &lt; S 2 2 2 46 54
+3283ms BotA &gt; X
+3283ms BotA &lt; C Qd Ts 8c 7c Td 2d Tc
+3283ms BotB &lt; C 3d Qh 8c 7c Td 2d Tc
+3283ms BotB &lt; S 2 2 2 46 54
+3283ms BotB &gt; X
+3283ms BotA &lt; S 2 2 2 46 54
+3359ms BotA &gt; X
+3359ms BotA &lt; E
+3359ms BotB &lt; E
+3359ms System &gt; round 44/100
+3359ms BotA &lt; P 1
+3359ms BotB &lt; P 0
+3359ms BotA &lt; C 3c 8s
+3359ms BotB &lt; C 9d 7d
+3359ms BotB &lt; S 2 1 2 52 48
+3439ms BotB &gt; C
+3439ms BotA &lt; S 2 2 2 52 48
+3439ms BotA &gt; X
+3439ms BotA &lt; C 3c 8s Ks Qh 6c
+3439ms BotB &lt; C 9d 7d Ks Qh 6c
+3439ms BotA &lt; S 2 2 2 52 48
+3439ms BotA &gt; X
+3439ms BotB &lt; S 2 2 2 52 48
+3441ms BotB &gt; X
+3441ms BotA &lt; C 3c 8s Ks Qh 6c Qs
+3441ms BotB &lt; C 9d 7d Ks Qh 6c Qs
+3441ms BotA &lt; S 2 2 2 52 48
+3442ms BotA &gt; X
+3442ms BotB &lt; S 2 2 2 52 48
+3442ms BotB &gt; X
+3442ms BotA &lt; C 3c 8s Ks Qh 6c Qs 2s
+3442ms BotB &lt; C 9d 7d Ks Qh 6c Qs 2s
+3442ms BotA &lt; S 2 2 2 52 48
+3442ms BotA &gt; X
+3442ms BotB &lt; S 2 2 2 52 48
+3443ms BotB &gt; X
+3443ms BotA &lt; E
+3443ms BotB &lt; E
+3443ms System &gt; round 45/100
+3443ms BotA &lt; P 0
+3443ms BotB &lt; P 1
+3443ms BotA &lt; C 6d 2c
+3443ms BotB &lt; C Ah 5s
+3443ms BotA &lt; S 2 1 2 46 54
+3443ms BotA &gt; C
+3443ms BotB &lt; S 2 2 2 46 54
+3519ms BotB &gt; X
+3519ms BotA &lt; C 6d 2c 3s Ad 9d
+3519ms BotB &lt; C Ah 5s 3s Ad 9d
+3519ms BotB &lt; S 2 2 2 46 54
+3599ms BotB &gt; X
+3599ms BotA &lt; S 2 2 2 46 54
+3599ms BotA &gt; X
+3599ms BotA &lt; C 6d 2c 3s Ad 9d 6c
+3599ms BotB &lt; C Ah 5s 3s Ad 9d 6c
+3599ms BotB &lt; S 2 2 2 46 54
+3679ms BotB &gt; X
+3679ms BotA &lt; S 2 2 2 46 54
+3679ms BotA &gt; X
+3679ms BotA &lt; C 6d 2c 3s Ad 9d 6c Kh
+3679ms BotB &lt; C Ah 5s 3s Ad 9d 6c Kh
+3679ms BotB &lt; S 2 2 2 46 54
+3680ms BotB &gt; X
+3680ms BotA &lt; S 2 2 2 46 54
+3680ms BotA &gt; X
+3680ms BotA &lt; E
+3680ms BotB &lt; E
+3680ms System &gt; round 46/100
+3680ms BotA &lt; P 1
+3680ms BotB &lt; P 0
+3680ms BotA &lt; C 9h Kc
+3680ms BotB &lt; C 6h Th
+3680ms BotB &lt; S 2 1 2 56 44
+3681ms BotB &gt; C
+3681ms BotA &lt; S 2 2 2 56 44
+3682ms BotA &gt; X
+3682ms BotA &lt; C 9h Kc Qh Td 5h
+3683ms BotB &lt; C 6h Th Qh Td 5h
+3683ms BotA &lt; S 2 2 2 56 44
+3683ms BotA &gt; X
+3683ms BotB &lt; S 2 2 2 56 44
+3759ms BotB &gt; X
+3759ms BotA &lt; C 9h Kc Qh Td 5h Ks
+3759ms BotB &lt; C 6h Th Qh Td 5h Ks
+3759ms BotA &lt; S 2 2 2 56 44
+3761ms BotA &gt; X
+3761ms BotB &lt; S 2 2 2 56 44
+3761ms BotB &gt; X
+3761ms BotA &lt; C 9h Kc Qh Td 5h Ks 5d
+3761ms BotB &lt; C 6h Th Qh Td 5h Ks 5d
+3761ms BotA &lt; S 2 2 2 56 44
+3762ms BotA &gt; X
+3762ms BotB &lt; S 2 2 2 56 44
+3762ms BotB &gt; X
+3762ms BotA &lt; E
+3762ms BotB &lt; E
+3762ms System &gt; round 47/100
+3762ms BotA &lt; P 0
+3762ms BotB &lt; P 1
+3762ms BotA &lt; C 5d 7s
+3762ms BotB &lt; C 7d 8c
+3762ms BotA &lt; S 2 1 2 46 54
+3762ms BotA &gt; C
+3762ms BotB &lt; S 2 2 2 46 54
+3762ms BotB &gt; X
+3762ms BotA &lt; C 5d 7s 9d Kd 8h
+3762ms BotB &lt; C 7d 8c 9d Kd 8h
+3762ms BotB &lt; S 2 2 2 46 54
+3763ms BotB &gt; X
+3763ms BotA &lt; S 2 2 2 46 54
+3763ms BotA &gt; X
+3763ms BotA &lt; C 5d 7s 9d Kd 8h Td
+3763ms BotB &lt; C 7d 8c 9d Kd 8h Td
+3763ms BotB &lt; S 2 2 2 46 54
+3839ms BotB &gt; X
+3839ms BotA &lt; S 2 2 2 46 54
+3839ms BotA &gt; X
+3839ms BotA &lt; C 5d 7s 9d Kd 8h Td Ts
+3839ms BotB &lt; C 7d 8c 9d Kd 8h Td Ts
+3839ms BotB &lt; S 2 2 2 46 54
+4081ms BotB &gt; X
+4081ms BotA &lt; S 2 2 2 46 54
+4081ms BotA &gt; X
+4081ms BotA &lt; E
+4081ms BotB &lt; E
+4082ms System &gt; round 48/100
+4082ms BotA &lt; P 1
+4082ms BotB &lt; P 0
+4082ms BotA &lt; C 5h Tc
+4082ms BotB &lt; C Kh 7s
+4082ms BotB &lt; S 2 1 2 56 44
+4320ms BotB &gt; C
+4320ms BotA &lt; S 2 2 2 56 44
+4320ms BotA &gt; X
+4320ms BotA &lt; C 5h Tc Kd 5s Qh
+4320ms BotB &lt; C Kh 7s Kd 5s Qh
+4320ms BotA &lt; S 2 2 2 56 44
+4320ms BotA &gt; X
+4320ms BotB &lt; S 2 2 2 56 44
+4400ms BotB &gt; X
+4400ms BotA &lt; C 5h Tc Kd 5s Qh Jh
+4400ms BotB &lt; C Kh 7s Kd 5s Qh Jh
+4400ms BotA &lt; S 2 2 2 56 44
+4400ms BotA &gt; X
+4400ms BotB &lt; S 2 2 2 56 44
+4401ms BotB &gt; X
+4401ms BotA &lt; C 5h Tc Kd 5s Qh Jh 9c
+4401ms BotB &lt; C Kh 7s Kd 5s Qh Jh 9c
+4401ms BotA &lt; S 2 2 2 56 44
+4401ms BotA &gt; X
+4401ms BotB &lt; S 2 2 2 56 44
+4480ms BotB &gt; X
+4480ms BotA &lt; E
+4480ms BotB &lt; E
+4480ms System &gt; round 49/100
+4480ms BotA &lt; P 0
+4480ms BotB &lt; P 1
+4480ms BotA &lt; C Jc 2c
+4480ms BotB &lt; C 6h Qc
+4480ms BotA &lt; S 2 1 2 46 54
+4482ms BotA &gt; C
+4482ms BotB &lt; S 2 2 2 46 54
+4482ms BotB &gt; X
+4482ms BotA &lt; C Jc 2c 4s 2h Th
+4482ms BotB &lt; C 6h Qc 4s 2h Th
+4482ms BotB &lt; S 2 2 2 46 54
+4482ms BotB &gt; X
+4482ms BotA &lt; S 2 2 2 46 54
+4482ms BotA &gt; X
+4482ms BotA &lt; C Jc 2c 4s 2h Th 4d
+4482ms BotB &lt; C 6h Qc 4s 2h Th 4d
+4482ms BotB &lt; S 2 2 2 46 54
+4559ms BotB &gt; X
+4559ms BotA &lt; S 2 2 2 46 54
+4559ms BotA &gt; X
+4559ms BotA &lt; C Jc 2c 4s 2h Th 4d 3s
+4559ms BotB &lt; C 6h Qc 4s 2h Th 4d 3s
+4559ms BotB &lt; S 2 2 2 46 54
+4561ms BotB &gt; X
+4561ms BotA &lt; S 2 2 2 46 54
+4561ms BotA &gt; X
+4561ms BotA &lt; E
+4561ms BotB &lt; E
+4561ms System &gt; round 50/100
+4561ms BotA &lt; P 1
+4561ms BotB &lt; P 0
+4561ms BotA &lt; C 5c 8h
+4561ms BotB &lt; C Qh 3d
+4561ms BotB &lt; S 2 1 2 52 48
+4639ms BotB &gt; C
+4639ms BotA &lt; S 2 2 2 52 48
+4639ms BotA &gt; X
+4639ms BotA &lt; C 5c 8h 7h 8d Kc
+4639ms BotB &lt; C Qh 3d 7h 8d Kc
+4639ms BotA &lt; S 2 2 2 52 48
+4639ms BotA &gt; X
+4639ms BotB &lt; S 2 2 2 52 48
+4639ms BotB &gt; X
+4640ms BotA &lt; C 5c 8h 7h 8d Kc 4d
+4640ms BotB &lt; C Qh 3d 7h 8d Kc 4d
+4640ms BotA &lt; S 2 2 2 52 48
+4640ms BotA &gt; X
+4640ms BotB &lt; S 2 2 2 52 48
+4640ms BotB &gt; X
+4640ms BotA &lt; C 5c 8h 7h 8d Kc 4d 2h
+4640ms BotB &lt; C Qh 3d 7h 8d Kc 4d 2h
+4640ms BotA &lt; S 2 2 2 52 48
+4640ms BotA &gt; X
+4640ms BotB &lt; S 2 2 2 52 48
+4640ms BotB &gt; X
+4640ms BotA &lt; E
+4640ms BotB &lt; E
+4640ms System &gt; round 51/100
+4640ms BotA &lt; P 0
+4640ms BotB &lt; P 1
+4640ms BotA &lt; C Qs 6s
+4640ms BotB &lt; C 3s Qc
+4640ms BotA &lt; S 2 1 2 50 50
+4640ms BotA &gt; C
+4640ms BotB &lt; S 2 2 2 50 50
+4640ms BotB &gt; X
+4640ms BotA &lt; C Qs 6s 3c 2c Ac
+4640ms BotB &lt; C 3s Qc 3c 2c Ac
+4640ms BotB &lt; S 2 2 2 50 50
+4641ms BotB &gt; X
+4641ms BotA &lt; S 2 2 2 50 50
+4641ms BotA &gt; X
+4641ms BotA &lt; C Qs 6s 3c 2c Ac 7h
+4641ms BotB &lt; C 3s Qc 3c 2c Ac 7h
+4641ms BotB &lt; S 2 2 2 50 50
+4719ms BotB &gt; X
+4719ms BotA &lt; S 2 2 2 50 50
+4719ms BotA &gt; X
+4719ms BotA &lt; C Qs 6s 3c 2c Ac 7h 4h
+4719ms BotB &lt; C 3s Qc 3c 2c Ac 7h 4h
+4719ms BotB &lt; S 2 2 2 50 50
+4721ms BotB &gt; X
+4721ms BotA &lt; S 2 2 2 50 50
+4721ms BotA &gt; X
+4721ms BotA &lt; E
+4721ms BotB &lt; E
+4721ms System &gt; round 52/100
+4721ms BotA &lt; P 1
+4721ms BotB &lt; P 0
+4721ms BotA &lt; C 9h 7c
+4721ms BotB &lt; C 5s Kd
+4721ms BotB &lt; S 2 1 2 52 48
+4879ms BotB &gt; C
+4879ms BotA &lt; S 2 2 2 52 48
+4879ms BotA &gt; X
+4879ms BotA &lt; C 9h 7c 2c Qs 4h
+4879ms BotB &lt; C 5s Kd 2c Qs 4h
+4879ms BotA &lt; S 2 2 2 52 48
+4879ms BotA &gt; X
+4879ms BotB &lt; S 2 2 2 52 48
+4880ms BotB &gt; X
+4880ms BotA &lt; C 9h 7c 2c Qs 4h 8c
+4880ms BotB &lt; C 5s Kd 2c Qs 4h 8c
+4880ms BotA &lt; S 2 2 2 52 48
+4880ms BotA &gt; X
+4880ms BotB &lt; S 2 2 2 52 48
+4880ms BotB &gt; X
+4880ms BotA &lt; C 9h 7c 2c Qs 4h 8c 8d
+4880ms BotB &lt; C 5s Kd 2c Qs 4h 8c 8d
+4880ms BotA &lt; S 2 2 2 52 48
+4881ms BotA &gt; X
+4881ms BotB &lt; S 2 2 2 52 48
+4881ms BotB &gt; X
+4881ms BotA &lt; E
+4881ms BotB &lt; E
+4881ms System &gt; round 53/100
+4881ms BotA &lt; P 0
+4881ms BotB &lt; P 1
+4881ms BotA &lt; C 9d 8d
+4881ms BotB &lt; C 6c As
+4881ms BotA &lt; S 2 1 2 46 54
+4881ms BotA &gt; C
+4881ms BotB &lt; S 2 2 2 46 54
+4882ms BotB &gt; X
+4882ms BotA &lt; C 9d 8d Qh 9c 4h
+4882ms BotB &lt; C 6c As Qh 9c 4h
+4882ms BotB &lt; S 2 2 2 46 54
+4882ms BotB &gt; X
+4882ms BotA &lt; S 2 2 2 46 54
+4882ms BotA &gt; X
+4882ms BotA &lt; C 9d 8d Qh 9c 4h 9h
+4882ms BotB &lt; C 6c As Qh 9c 4h 9h
+4882ms BotB &lt; S 2 2 2 46 54
+4882ms BotB &gt; X
+4882ms BotA &lt; S 2 2 2 46 54
+4882ms BotA &gt; X
+4882ms BotA &lt; C 9d 8d Qh 9c 4h 9h 3c
+4882ms BotB &lt; C 6c As Qh 9c 4h 9h 3c
+4882ms BotB &lt; S 2 2 2 46 54
+4959ms BotB &gt; X
+4959ms BotA &lt; S 2 2 2 46 54
+4960ms BotA &gt; X
+4960ms BotA &lt; E
+4960ms BotB &lt; E
+4960ms System &gt; round 54/100
+4960ms BotA &lt; P 1
+4960ms BotB &lt; P 0
+4960ms BotA &lt; C 7d Jh
+4960ms BotB &lt; C As 4d
+4960ms BotB &lt; S 2 1 2 52 48
+4960ms BotB &gt; C
+4960ms BotA &lt; S 2 2 2 52 48
+4960ms BotA &gt; X
+4960ms BotA &lt; C 7d Jh Qc 6h Kc
+4960ms BotB &lt; C As 4d Qc 6h Kc
+4960ms BotA &lt; S 2 2 2 52 48
+4960ms BotA &gt; X
+4960ms BotB &lt; S 2 2 2 52 48
+4961ms BotB &gt; X
+4961ms BotA &lt; C 7d Jh Qc 6h Kc 8c
+4961ms BotB &lt; C As 4d Qc 6h Kc 8c
+4961ms BotA &lt; S 2 2 2 52 48
+4961ms BotA &gt; X
+4961ms BotB &lt; S 2 2 2 52 48
+4961ms BotB &gt; X
+4961ms BotA &lt; C 7d Jh Qc 6h Kc 8c 3d
+4961ms BotB &lt; C As 4d Qc 6h Kc 8c 3d
+4961ms BotA &lt; S 2 2 2 52 48
+4961ms BotA &gt; X
+4961ms BotB &lt; S 2 2 2 52 48
+4962ms BotB &gt; X
+4962ms BotA &lt; E
+4962ms BotB &lt; E
+4962ms System &gt; round 55/100
+4962ms BotA &lt; P 0
+4962ms BotB &lt; P 1
+4962ms BotA &lt; C 4s Jh
+4962ms BotB &lt; C As 8h
+4962ms BotA &lt; S 2 1 2 46 54
+4962ms BotA &gt; C
+4962ms BotB &lt; S 2 2 2 46 54
+4962ms BotB &gt; X
+4962ms BotA &lt; C 4s Jh 5s Jd 6c
+4962ms BotB &lt; C As 8h 5s Jd 6c
+4962ms BotB &lt; S 2 2 2 46 54
+4962ms BotB &gt; X
+4962ms BotA &lt; S 2 2 2 46 54
+4962ms BotA &gt; X
+4962ms BotA &lt; C 4s Jh 5s Jd 6c Qh
+4962ms BotB &lt; C As 8h 5s Jd 6c Qh
+4962ms BotB &lt; S 2 2 2 46 54
+5040ms BotB &gt; X
+5040ms BotA &lt; S 2 2 2 46 54
+5040ms BotA &gt; X
+5040ms BotA &lt; C 4s Jh 5s Jd 6c Qh Th
+5040ms BotB &lt; C As 8h 5s Jd 6c Qh Th
+5040ms BotB &lt; S 2 2 2 46 54
+5040ms BotB &gt; X
+5040ms BotA &lt; S 2 2 2 46 54
+5041ms BotA &gt; X
+5041ms BotA &lt; E
+5041ms BotB &lt; E
+5041ms System &gt; round 56/100
+5041ms BotA &lt; P 1
+5041ms BotB &lt; P 0
+5041ms BotA &lt; C 9c 9s
+5041ms BotB &lt; C Kd Qs
+5041ms BotB &lt; S 2 1 2 52 48
+5041ms BotB &gt; C
+5041ms BotA &lt; S 2 2 2 52 48
+5041ms BotA &gt; R5
+5041ms BotB &lt; S 7 2 7 52 48
+5041ms BotB &gt; C
+5041ms BotA &lt; C 9c 9s 3s Jh 7c
+5041ms BotB &lt; C Kd Qs 3s Jh 7c
+5041ms BotA &lt; S 7 7 7 52 48
+5042ms BotA &gt; R5
+5042ms BotB &lt; S 12 7 12 52 48
+5042ms BotB &gt; C
+5042ms BotA &lt; C 9c 9s 3s Jh 7c 3c
+5042ms BotB &lt; C Kd Qs 3s Jh 7c 3c
+5042ms BotA &lt; S 12 12 12 52 48
+5042ms BotA &gt; R5
+5042ms BotB &lt; S 17 12 17 52 48
+5119ms BotB &gt; C
+5119ms BotA &lt; C 9c 9s 3s Jh 7c 3c As
+5119ms BotB &lt; C Kd Qs 3s Jh 7c 3c As
+5119ms BotA &lt; S 17 17 17 52 48
+5119ms BotA &gt; R5
+5119ms BotB &lt; S 22 17 22 52 48
+5120ms BotB &gt; C
+5120ms BotA &lt; E
+5120ms BotB &lt; E
+5120ms System &gt; round 57/100
+5120ms BotA &lt; P 0
+5120ms BotB &lt; P 1
+5120ms BotA &lt; C Kd 3h
+5120ms BotB &lt; C 6h 5d
+5120ms BotA &lt; S 2 1 2 70 30
+5120ms BotA &gt; C
+5120ms BotB &lt; S 2 2 2 70 30
+5120ms BotB &gt; X
+5120ms BotA &lt; C Kd 3h 8d Qh Tc
+5120ms BotB &lt; C 6h 5d 8d Qh Tc
+5120ms BotB &lt; S 2 2 2 70 30
+5120ms BotB &gt; X
+5120ms BotA &lt; S 2 2 2 70 30
+5120ms BotA &gt; X
+5120ms BotA &lt; C Kd 3h 8d Qh Tc 5c
+5120ms BotB &lt; C 6h 5d 8d Qh Tc 5c
+5120ms BotB &lt; S 2 2 2 70 30
+5120ms BotB &gt; X
+5120ms BotA &lt; S 2 2 2 70 30
+5120ms BotA &gt; X
+5120ms BotA &lt; C Kd 3h 8d Qh Tc 5c 8s
+5120ms BotB &lt; C 6h 5d 8d Qh Tc 5c 8s
+5120ms BotB &lt; S 2 2 2 70 30
+5121ms BotB &gt; X
+5121ms BotA &lt; S 2 2 2 70 30
+5121ms BotA &gt; X
+5121ms BotA &lt; E
+5121ms BotB &lt; E
+5121ms System &gt; round 58/100
+5121ms BotA &lt; P 1
+5121ms BotB &lt; P 0
+5121ms BotA &lt; C 9d 6h
+5121ms BotB &lt; C 2h 2d
+5121ms BotB &lt; S 2 1 2 32 68
+5121ms BotB &gt; C
+5121ms BotA &lt; S 2 2 2 32 68
+5121ms BotA &gt; X
+5121ms BotA &lt; C 9d 6h 5s 3d Qh
+5121ms BotB &lt; C 2h 2d 5s 3d Qh
+5121ms BotA &lt; S 2 2 2 32 68
+5121ms BotA &gt; X
+5121ms BotB &lt; S 2 2 2 32 68
+5122ms BotB &gt; X
+5122ms BotA &lt; C 9d 6h 5s 3d Qh 8c
+5122ms BotB &lt; C 2h 2d 5s 3d Qh 8c
+5122ms BotA &lt; S 2 2 2 32 68
+5122ms BotA &gt; X
+5122ms BotB &lt; S 2 2 2 32 68
+5199ms BotB &gt; X
+5199ms BotA &lt; C 9d 6h 5s 3d Qh 8c 3c
+5199ms BotB &lt; C 2h 2d 5s 3d Qh 8c 3c
+5199ms BotA &lt; S 2 2 2 32 68
+5200ms BotA &gt; X
+5200ms BotB &lt; S 2 2 2 32 68
+5200ms BotB &gt; X
+5200ms BotA &lt; E
+5200ms BotB &lt; E
+5200ms System &gt; round 59/100
+5200ms BotA &lt; P 0
+5200ms BotB &lt; P 1
+5200ms BotA &lt; C 5s Jd
+5200ms BotB &lt; C 7s Qh
+5200ms BotA &lt; S 2 1 2 66 34
+5200ms BotA &gt; C
+5200ms BotB &lt; S 2 2 2 66 34
+5200ms BotB &gt; X
+5200ms BotA &lt; C 5s Jd Ah 8s Td
+5200ms BotB &lt; C 7s Qh Ah 8s Td
+5200ms BotB &lt; S 2 2 2 66 34
+5200ms BotB &gt; X
+5200ms BotA &lt; S 2 2 2 66 34
+5200ms BotA &gt; X
+5200ms BotA &lt; C 5s Jd Ah 8s Td 8c
+5200ms BotB &lt; C 7s Qh Ah 8s Td 8c
+5200ms BotB &lt; S 2 2 2 66 34
+5200ms BotB &gt; X
+5200ms BotA &lt; S 2 2 2 66 34
+5201ms BotA &gt; X
+5201ms BotA &lt; C 5s Jd Ah 8s Td 8c 3d
+5201ms BotB &lt; C 7s Qh Ah 8s Td 8c 3d
+5201ms BotB &lt; S 2 2 2 66 34
+5201ms BotB &gt; X
+5201ms BotA &lt; S 2 2 2 66 34
+5202ms BotA &gt; X
+5202ms BotA &lt; E
+5202ms BotB &lt; E
+5202ms System &gt; round 60/100
+5202ms BotA &lt; P 1
+5202ms BotB &lt; P 0
+5202ms BotA &lt; C As 8s
+5202ms BotB &lt; C Ts 2h
+5202ms BotB &lt; S 2 1 2 36 64
+5202ms BotB &gt; C
+5202ms BotA &lt; S 2 2 2 36 64
+5202ms BotA &gt; X
+5202ms BotA &lt; C As 8s 8h 4c 3d
+5202ms BotB &lt; C Ts 2h 8h 4c 3d
+5202ms BotA &lt; S 2 2 2 36 64
+5202ms BotA &gt; X
+5202ms BotB &lt; S 2 2 2 36 64
+5202ms BotB &gt; X
+5202ms BotA &lt; C As 8s 8h 4c 3d 8c
+5202ms BotB &lt; C Ts 2h 8h 4c 3d 8c
+5202ms BotA &lt; S 2 2 2 36 64
+5281ms BotA &gt; X
+5281ms BotB &lt; S 2 2 2 36 64
+5281ms BotB &gt; X
+5281ms BotA &lt; C As 8s 8h 4c 3d 8c 4h
+5281ms BotB &lt; C Ts 2h 8h 4c 3d 8c 4h
+5281ms BotA &lt; S 2 2 2 36 64
+5281ms BotA &gt; X
+5281ms BotB &lt; S 2 2 2 36 64
+5282ms BotB &gt; X
+5282ms BotA &lt; E
+5282ms BotB &lt; E
+5282ms System &gt; round 61/100
+5282ms BotA &lt; P 0
+5282ms BotB &lt; P 1
+5282ms BotA &lt; C 9d 7d
+5282ms BotB &lt; C Kd 6s
+5282ms BotA &lt; S 2 1 2 66 34
+5282ms BotA &gt; C
+5282ms BotB &lt; S 2 2 2 66 34
+5282ms BotB &gt; X
+5282ms BotA &lt; C 9d 7d As Kc Tc
+5282ms BotB &lt; C Kd 6s As Kc Tc
+5282ms BotB &lt; S 2 2 2 66 34
+5282ms BotB &gt; X
+5282ms BotA &lt; S 2 2 2 66 34
+5282ms BotA &gt; X
+5282ms BotA &lt; C 9d 7d As Kc Tc Qh
+5282ms BotB &lt; C Kd 6s As Kc Tc Qh
+5282ms BotB &lt; S 2 2 2 66 34
+5282ms BotB &gt; X
+5282ms BotA &lt; S 2 2 2 66 34
+5282ms BotA &gt; X
+5282ms BotA &lt; C 9d 7d As Kc Tc Qh 3h
+5282ms BotB &lt; C Kd 6s As Kc Tc Qh 3h
+5282ms BotB &lt; S 2 2 2 66 34
+5283ms BotB &gt; X
+5283ms BotA &lt; S 2 2 2 66 34
+5443ms BotA &gt; X
+5521ms BotA &lt; E
+5521ms BotB &lt; E
+5521ms System &gt; round 62/100
+5521ms BotA &lt; P 1
+5521ms BotB &lt; P 0
+5521ms BotA &lt; C 6h Jc
+5521ms BotB &lt; C 6d 9d
+5521ms BotB &lt; S 2 1 2 36 64
+5522ms BotB &gt; C
+5522ms BotA &lt; S 2 2 2 36 64
+5522ms BotA &gt; X
+5522ms BotA &lt; C 6h Jc 9s 4c 8c
+5522ms BotB &lt; C 6d 9d 9s 4c 8c
+5522ms BotA &lt; S 2 2 2 36 64
+5522ms BotA &gt; X
+5522ms BotB &lt; S 2 2 2 36 64
+5522ms BotB &gt; X
+5522ms BotA &lt; C 6h Jc 9s 4c 8c Kd
+5522ms BotB &lt; C 6d 9d 9s 4c 8c Kd
+5522ms BotA &lt; S 2 2 2 36 64
+5522ms BotA &gt; X
+5522ms BotB &lt; S 2 2 2 36 64
+5522ms BotB &gt; X
+5522ms BotA &lt; C 6h Jc 9s 4c 8c Kd Qh
+5522ms BotB &lt; C 6d 9d 9s 4c 8c Kd Qh
+5522ms BotA &lt; S 2 2 2 36 64
+5522ms BotA &gt; X
+5522ms BotB &lt; S 2 2 2 36 64
+5523ms BotB &gt; X
+5523ms BotA &lt; E
+5523ms BotB &lt; E
+5523ms System &gt; round 63/100
+5523ms BotA &lt; P 0
+5523ms BotB &lt; P 1
+5523ms BotA &lt; C 7s Jc
+5523ms BotB &lt; C 4h 6d
+5523ms BotA &lt; S 2 1 2 62 38
+5523ms BotA &gt; C
+5523ms BotB &lt; S 2 2 2 62 38
+5523ms BotB &gt; X
+5523ms BotA &lt; C 7s Jc Td 2s 7h
+5523ms BotB &lt; C 4h 6d Td 2s 7h
+5523ms BotB &lt; S 2 2 2 62 38
+5600ms BotB &gt; X
+5600ms BotA &lt; S 2 2 2 62 38
+5600ms BotA &gt; X
+5600ms BotA &lt; C 7s Jc Td 2s 7h Ts
+5600ms BotB &lt; C 4h 6d Td 2s 7h Ts
+5600ms BotB &lt; S 2 2 2 62 38
+5600ms BotB &gt; X
+5600ms BotA &lt; S 2 2 2 62 38
+5679ms BotA &gt; X
+5679ms BotA &lt; C 7s Jc Td 2s 7h Ts 4c
+5679ms BotB &lt; C 4h 6d Td 2s 7h Ts 4c
+5679ms BotB &lt; S 2 2 2 62 38
+5681ms BotB &gt; X
+5681ms BotA &lt; S 2 2 2 62 38
+5761ms BotA &gt; X
+5761ms BotA &lt; E
+5761ms BotB &lt; E
+5761ms System &gt; round 64/100
+5761ms BotA &lt; P 1
+5761ms BotB &lt; P 0
+5761ms BotA &lt; C 4h 9h
+5762ms BotB &lt; C Ks 6c
+5762ms BotB &lt; S 2 1 2 36 64
+5842ms BotB &gt; C
+5842ms BotA &lt; S 2 2 2 36 64
+5843ms BotA &gt; X
+5843ms BotA &lt; C 4h 9h Kh 7d Td
+5843ms BotB &lt; C Ks 6c Kh 7d Td
+5843ms BotA &lt; S 2 2 2 36 64
+5843ms BotA &gt; X
+5843ms BotB &lt; S 2 2 2 36 64
+5843ms BotB &gt; X
+5843ms BotA &lt; C 4h 9h Kh 7d Td 4d
+5843ms BotB &lt; C Ks 6c Kh 7d Td 4d
+5843ms BotA &lt; S 2 2 2 36 64
+5843ms BotA &gt; X
+5843ms BotB &lt; S 2 2 2 36 64
+5843ms BotB &gt; X
+5843ms BotA &lt; C 4h 9h Kh 7d Td 4d Ad
+5843ms BotB &lt; C Ks 6c Kh 7d Td 4d Ad
+5922ms BotA &lt; S 2 2 2 36 64
+5922ms BotA &gt; X
+5922ms BotB &lt; S 2 2 2 36 64
+5922ms BotB &gt; X
+5922ms BotA &lt; E
+5922ms BotB &lt; E
+5922ms System &gt; round 65/100
+5922ms BotA &lt; P 0
+5922ms BotB &lt; P 1
+5922ms BotA &lt; C 2h 9s
+5922ms BotB &lt; C 5s 3c
+5922ms BotA &lt; S 2 1 2 62 38
+5922ms BotA &gt; C
+5922ms BotB &lt; S 2 2 2 62 38
+5922ms BotB &gt; X
+5922ms BotA &lt; C 2h 9s Kd 7h Jh
+5922ms BotB &lt; C 5s 3c Kd 7h Jh
+5922ms BotB &lt; S 2 2 2 62 38
+5922ms BotB &gt; X
+5922ms BotA &lt; S 2 2 2 62 38
+5922ms BotA &gt; X
+5923ms BotA &lt; C 2h 9s Kd 7h Jh Jd
+5923ms BotB &lt; C 5s 3c Kd 7h Jh Jd
+5923ms BotB &lt; S 2 2 2 62 38
+5923ms BotB &gt; X
+5923ms BotA &lt; S 2 2 2 62 38
+5923ms BotA &gt; X
+5923ms BotA &lt; C 2h 9s Kd 7h Jh Jd Ts
+5923ms BotB &lt; C 5s 3c Kd 7h Jh Jd Ts
+5923ms BotB &lt; S 2 2 2 62 38
+5923ms BotB &gt; X
+5923ms BotA &lt; S 2 2 2 62 38
+5923ms BotA &gt; X
+5923ms BotA &lt; E
+5923ms BotB &lt; E
+5923ms System &gt; round 66/100
+5923ms BotA &lt; P 1
+5923ms BotB &lt; P 0
+5923ms BotA &lt; C Qs 2d
+5923ms BotB &lt; C 5s 3d
+5923ms BotB &lt; S 2 1 2 36 64
+5923ms BotB &gt; C
+5923ms BotA &lt; S 2 2 2 36 64
+5924ms BotA &gt; X
+5924ms BotA &lt; C Qs 2d 3s 7d Jc
+5924ms BotB &lt; C 5s 3d 3s 7d Jc
+5924ms BotA &lt; S 2 2 2 36 64
+5924ms BotA &gt; X
+5924ms BotB &lt; S 2 2 2 36 64
+5924ms BotB &gt; X
+5924ms BotA &lt; C Qs 2d 3s 7d Jc 9d
+5924ms BotB &lt; C 5s 3d 3s 7d Jc 9d
+5924ms BotA &lt; S 2 2 2 36 64
+5924ms BotA &gt; X
+5924ms BotB &lt; S 2 2 2 36 64
+5924ms BotB &gt; X
+5924ms BotA &lt; C Qs 2d 3s 7d Jc 9d 2h
+5924ms BotB &lt; C 5s 3d 3s 7d Jc 9d 2h
+5924ms BotA &lt; S 2 2 2 36 64
+5925ms BotA &gt; X
+5925ms BotB &lt; S 2 2 2 36 64
+5925ms BotB &gt; X
+5925ms BotA &lt; E
+5925ms BotB &lt; E
+5925ms System &gt; round 67/100
+5925ms BotA &lt; P 0
+5925ms BotB &lt; P 1
+5925ms BotA &lt; C 6h 3d
+5925ms BotB &lt; C 4c 9d
+5925ms BotA &lt; S 2 1 2 62 38
+5925ms BotA &gt; C
+5925ms BotB &lt; S 2 2 2 62 38
+5925ms BotB &gt; X
+5925ms BotA &lt; C 6h 3d 9h 5c Jh
+5925ms BotB &lt; C 4c 9d 9h 5c Jh
+5925ms BotB &lt; S 2 2 2 62 38
+5926ms BotB &gt; X
+5926ms BotA &lt; S 2 2 2 62 38
+5926ms BotA &gt; X
+5926ms BotA &lt; C 6h 3d 9h 5c Jh 8h
+5926ms BotB &lt; C 4c 9d 9h 5c Jh 8h
+5926ms BotB &lt; S 2 2 2 62 38
+5926ms BotB &gt; X
+5926ms BotA &lt; S 2 2 2 62 38
+5926ms BotA &gt; X
+5926ms BotA &lt; C 6h 3d 9h 5c Jh 8h 6d
+5926ms BotB &lt; C 4c 9d 9h 5c Jh 8h 6d
+5926ms BotB &lt; S 2 2 2 62 38
+5927ms BotB &gt; X
+5927ms BotA &lt; S 2 2 2 62 38
+5927ms BotA &gt; X
+5927ms BotA &lt; E
+5927ms BotB &lt; E
+5927ms System &gt; round 68/100
+5927ms BotA &lt; P 1
+5927ms BotB &lt; P 0
+5927ms BotA &lt; C Qs 7d
+5927ms BotB &lt; C 6c 9h
+5927ms BotB &lt; S 2 1 2 40 60
+5927ms BotB &gt; C
+5927ms BotA &lt; S 2 2 2 40 60
+5927ms BotA &gt; X
+5927ms BotA &lt; C Qs 7d 6d Js 9d
+5927ms BotB &lt; C 6c 9h 6d Js 9d
+5927ms BotA &lt; S 2 2 2 40 60
+5927ms BotA &gt; X
+5927ms BotB &lt; S 2 2 2 40 60
+5928ms BotB &gt; X
+5928ms BotA &lt; C Qs 7d 6d Js 9d Ts
+5928ms BotB &lt; C 6c 9h 6d Js 9d Ts
+5928ms BotA &lt; S 2 2 2 40 60
+5928ms BotA &gt; X
+5928ms BotB &lt; S 2 2 2 40 60
+5928ms BotB &gt; X
+5928ms BotA &lt; C Qs 7d 6d Js 9d Ts Td
+5928ms BotB &lt; C 6c 9h 6d Js 9d Ts Td
+5928ms BotA &lt; S 2 2 2 40 60
+5928ms BotA &gt; X
+5928ms BotB &lt; S 2 2 2 40 60
+5928ms BotB &gt; X
+5928ms BotA &lt; E
+5928ms BotB &lt; E
+5928ms System &gt; round 69/100
+5928ms BotA &lt; P 0
+5928ms BotB &lt; P 1
+5928ms BotA &lt; C Jd 9s
+5928ms BotB &lt; C 4c Jc
+5928ms BotA &lt; S 2 1 2 58 42
+5929ms BotA &gt; C
+5929ms BotB &lt; S 2 2 2 58 42
+5929ms BotB &gt; X
+5929ms BotA &lt; C Jd 9s 5d 2s 7d
+5929ms BotB &lt; C 4c Jc 5d 2s 7d
+5929ms BotB &lt; S 2 2 2 58 42
+5929ms BotB &gt; X
+5929ms BotA &lt; S 2 2 2 58 42
+5929ms BotA &gt; X
+5929ms BotA &lt; C Jd 9s 5d 2s 7d Ah
+5929ms BotB &lt; C 4c Jc 5d 2s 7d Ah
+5929ms BotB &lt; S 2 2 2 58 42
+5929ms BotB &gt; X
+5929ms BotA &lt; S 2 2 2 58 42
+5929ms BotA &gt; X
+5929ms BotA &lt; C Jd 9s 5d 2s 7d Ah 8s
+5929ms BotB &lt; C 4c Jc 5d 2s 7d Ah 8s
+5929ms BotB &lt; S 2 2 2 58 42
+5929ms BotB &gt; X
+5929ms BotA &lt; S 2 2 2 58 42
+5930ms BotA &gt; X
+5930ms BotA &lt; E
+5930ms BotB &lt; E
+5930ms System &gt; round 70/100
+5930ms BotA &lt; P 1
+5930ms BotB &lt; P 0
+5930ms BotA &lt; C Qs 7c
+5930ms BotB &lt; C Tc 6c
+5930ms BotB &lt; S 2 1 2 40 60
+5930ms BotB &gt; C
+5930ms BotA &lt; S 2 2 2 40 60
+5930ms BotA &gt; X
+5930ms BotA &lt; C Qs 7c Kd 5s 5h
+5930ms BotB &lt; C Tc 6c Kd 5s 5h
+5930ms BotA &lt; S 2 2 2 40 60
+5930ms BotA &gt; X
+5930ms BotB &lt; S 2 2 2 40 60
+5930ms BotB &gt; X
+5930ms BotA &lt; C Qs 7c Kd 5s 5h 6d
+5930ms BotB &lt; C Tc 6c Kd 5s 5h 6d
+5930ms BotA &lt; S 2 2 2 40 60
+5930ms BotA &gt; X
+5930ms BotB &lt; S 2 2 2 40 60
+5930ms BotB &gt; X
+5930ms BotA &lt; C Qs 7c Kd 5s 5h 6d 6s
+5930ms BotB &lt; C Tc 6c Kd 5s 5h 6d 6s
+5930ms BotA &lt; S 2 2 2 40 60
+5930ms BotA &gt; X
+5930ms BotB &lt; S 2 2 2 40 60
+5931ms BotB &gt; X
+5931ms BotA &lt; E
+5931ms BotB &lt; E
+5931ms System &gt; round 71/100
+5931ms BotA &lt; P 0
+5931ms BotB &lt; P 1
+5931ms BotA &lt; C 3d 7h
+5931ms BotB &lt; C Qd As
+5931ms BotA &lt; S 2 1 2 58 42
+5931ms BotA &gt; C
+5931ms BotB &lt; S 2 2 2 58 42
+5931ms BotB &gt; X
+5931ms BotA &lt; C 3d 7h 4d 5d Ac
+5931ms BotB &lt; C Qd As 4d 5d Ac
+5931ms BotB &lt; S 2 2 2 58 42
+6085ms BotB &gt; X
+6085ms BotA &lt; S 2 2 2 58 42
+6085ms BotA &gt; X
+6085ms BotA &lt; C 3d 7h 4d 5d Ac 8h
+6085ms BotB &lt; C Qd As 4d 5d Ac 8h
+6085ms BotB &lt; S 2 2 2 58 42
+6085ms BotB &gt; X
+6085ms BotA &lt; S 2 2 2 58 42
+6086ms BotA &gt; X
+6086ms BotA &lt; C 3d 7h 4d 5d Ac 8h 9c
+6086ms BotB &lt; C Qd As 4d 5d Ac 8h 9c
+6086ms BotB &lt; S 2 2 2 58 42
+6086ms BotB &gt; X
+6086ms BotA &lt; S 2 2 2 58 42
+6086ms BotA &gt; X
+6086ms BotA &lt; E
+6086ms BotB &lt; E
+6086ms System &gt; round 72/100
+6086ms BotA &lt; P 1
+6086ms BotB &lt; P 0
+6086ms BotA &lt; C Kc 7d
+6086ms BotB &lt; C Jh 6d
+6086ms BotB &lt; S 2 1 2 44 56
+6086ms BotB &gt; C
+6086ms BotA &lt; S 2 2 2 44 56
+6086ms BotA &gt; X
+6086ms BotA &lt; C Kc 7d 6h 8h 4c
+6086ms BotB &lt; C Jh 6d 6h 8h 4c
+6086ms BotA &lt; S 2 2 2 44 56
+6086ms BotA &gt; X
+6086ms BotB &lt; S 2 2 2 44 56
+6086ms BotB &gt; X
+6086ms BotA &lt; C Kc 7d 6h 8h 4c 5c
+6086ms BotB &lt; C Jh 6d 6h 8h 4c 5c
+6086ms BotA &lt; S 2 2 2 44 56
+6086ms BotA &gt; X
+6086ms BotB &lt; S 2 2 2 44 56
+6086ms BotB &gt; X
+6086ms BotA &lt; C Kc 7d 6h 8h 4c 5c Qh
+6086ms BotB &lt; C Jh 6d 6h 8h 4c 5c Qh
+6086ms BotA &lt; S 2 2 2 44 56
+6087ms BotA &gt; X
+6087ms BotB &lt; S 2 2 2 44 56
+6087ms BotB &gt; X
+6087ms BotA &lt; E
+6087ms BotB &lt; E
+6087ms System &gt; round 73/100
+6087ms BotA &lt; P 0
+6087ms BotB &lt; P 1
+6087ms BotA &lt; C Js Ac
+6087ms BotB &lt; C Jh 2c
+6087ms BotA &lt; S 2 1 2 58 42
+6087ms BotA &gt; C
+6087ms BotB &lt; S 2 2 2 58 42
+6087ms BotB &gt; X
+6087ms BotA &lt; C Js Ac 7s Ks Ts
+6087ms BotB &lt; C Jh 2c 7s Ks Ts
+6087ms BotB &lt; S 2 2 2 58 42
+6087ms BotB &gt; X
+6087ms BotA &lt; S 2 2 2 58 42
+6087ms BotA &gt; X
+6087ms BotA &lt; C Js Ac 7s Ks Ts Jc
+6087ms BotB &lt; C Jh 2c 7s Ks Ts Jc
+6087ms BotB &lt; S 2 2 2 58 42
+6087ms BotB &gt; X
+6087ms BotA &lt; S 2 2 2 58 42
+6087ms BotA &gt; X
+6087ms BotA &lt; C Js Ac 7s Ks Ts Jc Qh
+6087ms BotB &lt; C Jh 2c 7s Ks Ts Jc Qh
+6087ms BotB &lt; S 2 2 2 58 42
+6088ms BotB &gt; X
+6088ms BotA &lt; S 2 2 2 58 42
+6088ms BotA &gt; X
+6088ms BotA &lt; E
+6088ms BotB &lt; E
+6088ms System &gt; round 74/100
+6088ms BotA &lt; P 1
+6088ms BotB &lt; P 0
+6088ms BotA &lt; C 7c 3c
+6088ms BotB &lt; C 5d 8c
+6088ms BotB &lt; S 2 1 2 40 60
+6088ms BotB &gt; C
+6088ms BotA &lt; S 2 2 2 40 60
+6088ms BotA &gt; X
+6088ms BotA &lt; C 7c 3c As Tc Jh
+6088ms BotB &lt; C 5d 8c As Tc Jh
+6088ms BotA &lt; S 2 2 2 40 60
+6159ms BotA &gt; X
+6159ms BotB &lt; S 2 2 2 40 60
+6409ms BotB &gt; X
+6409ms BotA &lt; C 7c 3c As Tc Jh Kh
+6409ms BotB &lt; C 5d 8c As Tc Jh Kh
+6409ms BotA &lt; S 2 2 2 40 60
+6409ms BotA &gt; X
+6409ms BotB &lt; S 2 2 2 40 60
+6409ms BotB &gt; X
+6409ms BotA &lt; C 7c 3c As Tc Jh Kh 4d
+6409ms BotB &lt; C 5d 8c As Tc Jh Kh 4d
+6409ms BotA &lt; S 2 2 2 40 60
+6409ms BotA &gt; X
+6409ms BotB &lt; S 2 2 2 40 60
+6409ms BotB &gt; X
+6409ms BotA &lt; E
+6410ms BotB &lt; E
+6410ms System &gt; round 75/100
+6410ms BotA &lt; P 0
+6410ms BotB &lt; P 1
+6410ms BotA &lt; C 5s 4c
+6410ms BotB &lt; C 6h 4d
+6410ms BotA &lt; S 2 1 2 58 42
+6410ms BotA &gt; C
+6410ms BotB &lt; S 2 2 2 58 42
+6410ms BotB &gt; X
+6410ms BotA &lt; C 5s 4c Jd Kd 2c
+6410ms BotB &lt; C 6h 4d Jd Kd 2c
+6410ms BotB &lt; S 2 2 2 58 42
+6410ms BotB &gt; X
+6410ms BotA &lt; S 2 2 2 58 42
+6410ms BotA &gt; X
+6410ms BotA &lt; C 5s 4c Jd Kd 2c Ah
+6410ms BotB &lt; C 6h 4d Jd Kd 2c Ah
+6410ms BotB &lt; S 2 2 2 58 42
+6410ms BotB &gt; X
+6410ms BotA &lt; S 2 2 2 58 42
+6410ms BotA &gt; X
+6410ms BotA &lt; C 5s 4c Jd Kd 2c Ah Th
+6410ms BotB &lt; C 6h 4d Jd Kd 2c Ah Th
+6410ms BotB &lt; S 2 2 2 58 42
+6410ms BotB &gt; X
+6410ms BotA &lt; S 2 2 2 58 42
+6410ms BotA &gt; X
+6410ms BotA &lt; E
+6410ms BotB &lt; E
+6410ms System &gt; round 76/100
+6410ms BotA &lt; P 1
+6411ms BotB &lt; P 0
+6411ms BotA &lt; C Js 5c
+6411ms BotB &lt; C Kd 5d
+6411ms BotB &lt; S 2 1 2 44 56
+6411ms BotB &gt; C
+6411ms BotA &lt; S 2 2 2 44 56
+6411ms BotA &gt; X
+6411ms BotA &lt; C Js 5c 9h Qd Ac
+6411ms BotB &lt; C Kd 5d 9h Qd Ac
+6411ms BotA &lt; S 2 2 2 44 56
+6411ms BotA &gt; X
+6411ms BotB &lt; S 2 2 2 44 56
+6480ms BotB &gt; X
+6480ms BotA &lt; C Js 5c 9h Qd Ac 7c
+6480ms BotB &lt; C Kd 5d 9h Qd Ac 7c
+6480ms BotA &lt; S 2 2 2 44 56
+6480ms BotA &gt; X
+6480ms BotB &lt; S 2 2 2 44 56
+6480ms BotB &gt; X
+6480ms BotA &lt; C Js 5c 9h Qd Ac 7c 9s
+6480ms BotB &lt; C Kd 5d 9h Qd Ac 7c 9s
+6480ms BotA &lt; S 2 2 2 44 56
+6480ms BotA &gt; X
+6480ms BotB &lt; S 2 2 2 44 56
+6480ms BotB &gt; X
+6480ms BotA &lt; E
+6480ms BotB &lt; E
+6480ms System &gt; round 77/100
+6480ms BotA &lt; P 0
+6480ms BotB &lt; P 1
+6480ms BotA &lt; C 3h 3c
+6481ms BotB &lt; C Qc Jd
+6481ms BotA &lt; S 2 1 2 54 46
+6561ms BotA &gt; R5
+6561ms BotB &lt; S 7 7 2 54 46
+6561ms BotB &gt; C
+6561ms BotA &lt; C 3h 3c Ts 9h 8d
+6561ms BotB &lt; C Qc Jd Ts 9h 8d
+6561ms BotB &lt; S 7 7 7 54 46
+6561ms BotB &gt; X
+6561ms BotA &lt; S 7 7 7 54 46
+6561ms BotA &gt; R5
+6561ms BotB &lt; S 12 12 7 54 46
+6563ms BotB &gt; C
+6563ms BotA &lt; C 3h 3c Ts 9h 8d Qh
+6563ms BotB &lt; C Qc Jd Ts 9h 8d Qh
+6563ms BotB &lt; S 12 12 12 54 46
+6563ms BotB &gt; X
+6563ms BotA &lt; S 12 12 12 54 46
+6563ms BotA &gt; R5
+6563ms BotB &lt; S 17 17 12 54 46
+6563ms BotB &gt; C
+6563ms BotA &lt; C 3h 3c Ts 9h 8d Qh 7h
+6564ms BotB &lt; C Qc Jd Ts 9h 8d Qh 7h
+6564ms BotB &lt; S 17 17 17 54 46
+6564ms BotB &gt; X
+6564ms BotA &lt; S 17 17 17 54 46
+6564ms BotA &gt; R5
+6564ms BotB &lt; S 22 22 17 54 46
+6564ms BotB &gt; C
+6564ms BotA &lt; E
+6564ms BotB &lt; E
+6564ms System &gt; round 78/100
+6564ms BotA &lt; P 1
+6564ms BotB &lt; P 0
+6564ms BotA &lt; C 9c 8h
+6564ms BotB &lt; C 7s 7c
+6564ms BotB &lt; S 2 1 2 68 32
+6564ms BotB &gt; C
+6564ms BotA &lt; S 2 2 2 68 32
+6639ms BotA &gt; X
+6639ms BotA &lt; C 9c 8h Ks 3d Js
+6639ms BotB &lt; C 7s 7c Ks 3d Js
+6639ms BotA &lt; S 2 2 2 68 32
+6648ms BotA &gt; X
+6649ms BotB &lt; S 2 2 2 68 32
+6649ms BotB &gt; X
+6649ms BotA &lt; C 9c 8h Ks 3d Js Kh
+6649ms BotB &lt; C 7s 7c Ks 3d Js Kh
+6649ms BotA &lt; S 2 2 2 68 32
+6722ms BotA &gt; X
+6722ms BotB &lt; S 2 2 2 68 32
+6722ms BotB &gt; X
+6722ms BotA &lt; C 9c 8h Ks 3d Js Kh Qs
+6723ms BotB &lt; C 7s 7c Ks 3d Js Kh Qs
+6723ms BotA &lt; S 2 2 2 68 32
+7120ms BotA &gt; X
+7120ms BotB &lt; S 2 2 2 68 32
+7123ms BotB &gt; X
+7124ms BotA &lt; E
+7124ms BotB &lt; E
+7124ms System &gt; round 79/100
+7124ms BotA &lt; P 0
+7124ms BotB &lt; P 1
+7124ms BotA &lt; C 8h Ah
+7124ms BotB &lt; C Jd 8c
+7124ms BotA &lt; S 2 1 2 30 70
+7129ms BotA &gt; C
+7129ms BotB &lt; S 2 2 2 30 70
+7209ms BotB &gt; X
+7209ms BotA &lt; C 8h Ah Qh 7c 4d
+7209ms BotB &lt; C Jd 8c Qh 7c 4d
+7209ms BotB &lt; S 2 2 2 30 70
+7280ms BotB &gt; X
+7280ms BotA &lt; S 2 2 2 30 70
+7283ms BotA &gt; X
+7283ms BotA &lt; C 8h Ah Qh 7c 4d 3h
+7284ms BotB &lt; C Jd 8c Qh 7c 4d 3h
+7284ms BotB &lt; S 2 2 2 30 70
+7284ms BotB &gt; X
+7284ms BotA &lt; S 2 2 2 30 70
+7284ms BotA &gt; X
+7284ms BotA &lt; C 8h Ah Qh 7c 4d 3h 9h
+7284ms BotB &lt; C Jd 8c Qh 7c 4d 3h 9h
+7284ms BotB &lt; S 2 2 2 30 70
+7361ms BotB &gt; X
+7361ms BotA &lt; S 2 2 2 30 70
+7442ms BotA &gt; X
+7442ms BotA &lt; E
+7442ms BotB &lt; E
+7442ms System &gt; round 80/100
+7442ms BotA &lt; P 1
+7442ms BotB &lt; P 0
+7442ms BotA &lt; C Tc 9s
+7442ms BotB &lt; C 8d Ts
+7442ms BotB &lt; S 2 1 2 68 32
+7443ms BotB &gt; C
+7443ms BotA &lt; S 2 2 2 68 32
+7443ms BotA &gt; X
+7443ms BotA &lt; C Tc 9s 5h 7d Kh
+7443ms BotB &lt; C 8d Ts 5h 7d Kh
+7444ms BotA &lt; S 2 2 2 68 32
+7444ms BotA &gt; X
+7444ms BotB &lt; S 2 2 2 68 32
+7521ms BotB &gt; X
+7601ms BotA &lt; C Tc 9s 5h 7d Kh 9c
+7679ms BotB &lt; C 8d Ts 5h 7d Kh 9c
+7679ms BotA &lt; S 2 2 2 68 32
+7679ms BotA &gt; X
+7679ms BotB &lt; S 2 2 2 68 32
+8002ms BotB &gt; X
+8003ms BotA &lt; C Tc 9s 5h 7d Kh 9c 3d
+8003ms BotB &lt; C 8d Ts 5h 7d Kh 9c 3d
+8082ms BotA &lt; S 2 2 2 68 32
+8082ms BotA &gt; X
+8082ms BotB &lt; S 2 2 2 68 32
+8159ms BotB &gt; X
+8159ms BotA &lt; E
+8159ms BotB &lt; E
+8320ms System &gt; round 81/100
+8480ms BotA &lt; P 0
+8480ms BotB &lt; P 1
+8480ms BotA &lt; C 2h Jh
+8480ms BotB &lt; C 9h 5s
+8480ms BotA &lt; S 2 1 2 34 66
+8480ms BotA &gt; C
+8480ms BotB &lt; S 2 2 2 34 66
+8481ms BotB &gt; X
+8481ms BotA &lt; C 2h Jh 8h Td Jd
+8481ms BotB &lt; C 9h 5s 8h Td Jd
+8481ms BotB &lt; S 2 2 2 34 66
+8481ms BotB &gt; X
+8481ms BotA &lt; S 2 2 2 34 66
+8481ms BotA &gt; X
+8481ms BotA &lt; C 2h Jh 8h Td Jd As
+8481ms BotB &lt; C 9h 5s 8h Td Jd As
+8481ms BotB &lt; S 2 2 2 34 66
+8481ms BotB &gt; X
+8481ms BotA &lt; S 2 2 2 34 66
+8481ms BotA &gt; X
+8481ms BotA &lt; C 2h Jh 8h Td Jd As Qh
+8481ms BotB &lt; C 9h 5s 8h Td Jd As Qh
+8481ms BotB &lt; S 2 2 2 34 66
+8481ms BotB &gt; X
+8481ms BotA &lt; S 2 2 2 34 66
+8481ms BotA &gt; X
+8481ms BotA &lt; E
+8481ms BotB &lt; E
+8482ms System &gt; round 82/100
+8482ms BotA &lt; P 1
+8482ms BotB &lt; P 0
+8482ms BotA &lt; C 4h 3d
+8482ms BotB &lt; C 4s 9c
+8482ms BotB &lt; S 2 1 2 68 32
+8482ms BotB &gt; C
+8482ms BotA &lt; S 2 2 2 68 32
+8482ms BotA &gt; X
+8482ms BotA &lt; C 4h 3d Ad Jd 7c
+8482ms BotB &lt; C 4s 9c Ad Jd 7c
+8482ms BotA &lt; S 2 2 2 68 32
+8482ms BotA &gt; X
+8482ms BotB &lt; S 2 2 2 68 32
+8483ms BotB &gt; X
+8483ms BotA &lt; C 4h 3d Ad Jd 7c Qd
+8483ms BotB &lt; C 4s 9c Ad Jd 7c Qd
+8483ms BotA &lt; S 2 2 2 68 32
+8483ms BotA &gt; X
+8483ms BotB &lt; S 2 2 2 68 32
+8483ms BotB &gt; X
+8483ms BotA &lt; C 4h 3d Ad Jd 7c Qd 5d
+8483ms BotB &lt; C 4s 9c Ad Jd 7c Qd 5d
+8483ms BotA &lt; S 2 2 2 68 32
+8560ms BotA &gt; X
+8560ms BotB &lt; S 2 2 2 68 32
+8560ms BotB &gt; X
+8560ms BotA &lt; E
+8560ms BotB &lt; E
+8560ms System &gt; round 83/100
+8560ms BotA &lt; P 0
+8560ms BotB &lt; P 1
+8560ms BotA &lt; C 9h Kh
+8561ms BotB &lt; C 9c 8s
+8561ms BotA &lt; S 2 1 2 34 66
+8561ms BotA &gt; C
+8561ms BotB &lt; S 2 2 2 34 66
+8561ms BotB &gt; X
+8561ms BotA &lt; C 9h Kh 4c Kd Tc
+8561ms BotB &lt; C 9c 8s 4c Kd Tc
+8561ms BotB &lt; S 2 2 2 34 66
+8561ms BotB &gt; X
+8561ms BotA &lt; S 2 2 2 34 66
+8561ms BotA &gt; X
+8561ms BotA &lt; C 9h Kh 4c Kd Tc Ad
+8561ms BotB &lt; C 9c 8s 4c Kd Tc Ad
+8561ms BotB &lt; S 2 2 2 34 66
+8561ms BotB &gt; X
+8561ms BotA &lt; S 2 2 2 34 66
+8561ms BotA &gt; X
+8561ms BotA &lt; C 9h Kh 4c Kd Tc Ad Ks
+8561ms BotB &lt; C 9c 8s 4c Kd Tc Ad Ks
+8561ms BotB &lt; S 2 2 2 34 66
+8561ms BotB &gt; X
+8561ms BotA &lt; S 2 2 2 34 66
+8561ms BotA &gt; X
+8561ms BotA &lt; E
+8561ms BotB &lt; E
+8561ms System &gt; round 84/100
+8561ms BotA &lt; P 1
+8561ms BotB &lt; P 0
+8561ms BotA &lt; C Kc 3s
+8562ms BotB &lt; C Td 9d
+8562ms BotB &lt; S 2 1 2 64 36
+8562ms BotB &gt; C
+8562ms BotA &lt; S 2 2 2 64 36
+8562ms BotA &gt; X
+8562ms BotA &lt; C Kc 3s 2s Jc Tc
+8562ms BotB &lt; C Td 9d 2s Jc Tc
+8562ms BotA &lt; S 2 2 2 64 36
+8562ms BotA &gt; X
+8562ms BotB &lt; S 2 2 2 64 36
+8562ms BotB &gt; X
+8562ms BotA &lt; C Kc 3s 2s Jc Tc 7s
+8562ms BotB &lt; C Td 9d 2s Jc Tc 7s
+8562ms BotA &lt; S 2 2 2 64 36
+8562ms BotA &gt; X
+8562ms BotB &lt; S 2 2 2 64 36
+8562ms BotB &gt; X
+8562ms BotA &lt; C Kc 3s 2s Jc Tc 7s Js
+8562ms BotB &lt; C Td 9d 2s Jc Tc 7s Js
+8562ms BotA &lt; S 2 2 2 64 36
+8562ms BotA &gt; X
+9600ms BotB &lt; S 2 2 2 64 36
+9609ms BotB &gt; X
+9609ms BotA &lt; E
+9609ms BotB &lt; E
+9609ms System &gt; round 85/100
+9609ms BotA &lt; P 0
+9609ms BotB &lt; P 1
+9609ms BotA &lt; C Qh Jh
+9609ms BotB &lt; C 7s Ad
+9609ms BotA &lt; S 2 1 2 34 66
+9609ms BotA &gt; C
+9609ms BotB &lt; S 2 2 2 34 66
+9609ms BotB &gt; X
+9609ms BotA &lt; C Qh Jh As 9c 7d
+9610ms BotB &lt; C 7s Ad As 9c 7d
+9610ms BotB &lt; S 2 2 2 34 66
+9610ms BotB &gt; X
+9610ms BotA &lt; S 2 2 2 34 66
+9610ms BotA &gt; X
+9610ms BotA &lt; C Qh Jh As 9c 7d 3c
+9610ms BotB &lt; C 7s Ad As 9c 7d 3c
+9610ms BotB &lt; S 2 2 2 34 66
+9610ms BotB &gt; X
+9610ms BotA &lt; S 2 2 2 34 66
+9610ms BotA &gt; X
+9610ms BotA &lt; C Qh Jh As 9c 7d 3c 9h
+9610ms BotB &lt; C 7s Ad As 9c 7d 3c 9h
+9610ms BotB &lt; S 2 2 2 34 66
+9610ms BotB &gt; X
+9610ms BotA &lt; S 2 2 2 34 66
+9610ms BotA &gt; X
+9610ms BotA &lt; E
+9610ms BotB &lt; E
+9610ms System &gt; round 86/100
+9610ms BotA &lt; P 1
+9610ms BotB &lt; P 0
+9610ms BotA &lt; C Ad 5c
+9610ms BotB &lt; C Jh 2c
+9610ms BotB &lt; S 2 1 2 68 32
+9610ms BotB &gt; C
+9610ms BotA &lt; S 2 2 2 68 32
+9610ms BotA &gt; X
+9610ms BotA &lt; C Ad 5c 7c 9d 7h
+9610ms BotB &lt; C Jh 2c 7c 9d 7h
+9611ms BotA &lt; S 2 2 2 68 32
+9611ms BotA &gt; X
+9611ms BotB &lt; S 2 2 2 68 32
+9611ms BotB &gt; X
+9611ms BotA &lt; C Ad 5c 7c 9d 7h Qd
+9611ms BotB &lt; C Jh 2c 7c 9d 7h Qd
+9611ms BotA &lt; S 2 2 2 68 32
+9611ms BotA &gt; X
+9611ms BotB &lt; S 2 2 2 68 32
+9611ms BotB &gt; X
+10079ms BotA &lt; C Ad 5c 7c 9d 7h Qd Qh
+10080ms BotB &lt; C Jh 2c 7c 9d 7h Qd Qh
+10080ms BotA &lt; S 2 2 2 68 32
+10080ms BotA &gt; X
+10080ms BotB &lt; S 2 2 2 68 32
+10080ms BotB &gt; X
+10080ms BotA &lt; E
+10080ms BotB &lt; E
+10080ms System &gt; round 87/100
+10080ms BotA &lt; P 0
+10080ms BotB &lt; P 1
+10080ms BotA &lt; C 4c 3h
+10080ms BotB &lt; C Qd Tc
+10080ms BotA &lt; S 2 1 2 34 66
+10080ms BotA &gt; C
+10080ms BotB &lt; S 2 2 2 34 66
+10080ms BotB &gt; X
+10080ms BotA &lt; C 4c 3h Ts Kh 6s
+10080ms BotB &lt; C Qd Tc Ts Kh 6s
+10080ms BotB &lt; S 2 2 2 34 66
+10080ms BotB &gt; X
+10080ms BotA &lt; S 2 2 2 34 66
+10080ms BotA &gt; X
+10080ms BotA &lt; C 4c 3h Ts Kh 6s 9d
+10080ms BotB &lt; C Qd Tc Ts Kh 6s 9d
+10081ms BotB &lt; S 2 2 2 34 66
+10081ms BotB &gt; X
+10081ms BotA &lt; S 2 2 2 34 66
+10081ms BotA &gt; X
+10081ms BotA &lt; C 4c 3h Ts Kh 6s 9d Js
+10081ms BotB &lt; C Qd Tc Ts Kh 6s 9d Js
+10081ms BotB &lt; S 2 2 2 34 66
+10081ms BotB &gt; X
+10081ms BotA &lt; S 2 2 2 34 66
+10081ms BotA &gt; X
+10081ms BotA &lt; E
+10081ms BotB &lt; E
+10081ms System &gt; round 88/100
+10081ms BotA &lt; P 1
+10081ms BotB &lt; P 0
+10081ms BotA &lt; C 3h 8h
+10081ms BotB &lt; C 5d 7c
+10081ms BotB &lt; S 2 1 2 68 32
+10081ms BotB &gt; C
+10081ms BotA &lt; S 2 2 2 68 32
+10081ms BotA &gt; X
+10081ms BotA &lt; C 3h 8h As 2d Qd
+10081ms BotB &lt; C 5d 7c As 2d Qd
+10081ms BotA &lt; S 2 2 2 68 32
+10081ms BotA &gt; X
+10081ms BotB &lt; S 2 2 2 68 32
+10081ms BotB &gt; X
+10081ms BotA &lt; C 3h 8h As 2d Qd 3d
+10082ms BotB &lt; C 5d 7c As 2d Qd 3d
+10082ms BotA &lt; S 2 2 2 68 32
+10082ms BotA &gt; X
+10082ms BotB &lt; S 2 2 2 68 32
+10082ms BotB &gt; X
+10082ms BotA &lt; C 3h 8h As 2d Qd 3d Td
+10082ms BotB &lt; C 5d 7c As 2d Qd 3d Td
+10082ms BotA &lt; S 2 2 2 68 32
+10082ms BotA &gt; X
+10082ms BotB &lt; S 2 2 2 68 32
+10082ms BotB &gt; X
+10082ms BotA &lt; E
+10082ms BotB &lt; E
+10082ms System &gt; round 89/100
+10082ms BotA &lt; P 0
+10082ms BotB &lt; P 1
+10082ms BotA &lt; C 9s 5h
+10082ms BotB &lt; C 4h 9d
+10082ms BotA &lt; S 2 1 2 30 70
+10082ms BotA &gt; C
+10082ms BotB &lt; S 2 2 2 30 70
+10082ms BotB &gt; X
+10082ms BotA &lt; C 9s 5h Jh Qc Ah
+10082ms BotB &lt; C 4h 9d Jh Qc Ah
+10082ms BotB &lt; S 2 2 2 30 70
+10082ms BotB &gt; X
+10082ms BotA &lt; S 2 2 2 30 70
+10083ms BotA &gt; X
+10083ms BotA &lt; C 9s 5h Jh Qc Ah 2c
+10083ms BotB &lt; C 4h 9d Jh Qc Ah 2c
+10083ms BotB &lt; S 2 2 2 30 70
+10083ms BotB &gt; X
+10083ms BotA &lt; S 2 2 2 30 70
+10083ms BotA &gt; X
+10083ms BotA &lt; C 9s 5h Jh Qc Ah 2c Td
+10083ms BotB &lt; C 4h 9d Jh Qc Ah 2c Td
+10083ms BotB &lt; S 2 2 2 30 70
+10159ms BotB &gt; X
+10159ms BotA &lt; S 2 2 2 30 70
+10159ms BotA &gt; X
+10159ms BotA &lt; E
+10159ms BotB &lt; E
+10159ms System &gt; round 90/100
+10159ms BotA &lt; P 1
+10159ms BotB &lt; P 0
+10159ms BotA &lt; C 7d Kd
+10159ms BotB &lt; C 5c 7h
+10160ms BotB &lt; S 2 1 2 70 30
+10160ms BotB &gt; C
+10160ms BotA &lt; S 2 2 2 70 30
+10160ms BotA &gt; X
+10160ms BotA &lt; C 7d Kd 5d 4d Kc
+10160ms BotB &lt; C 5c 7h 5d 4d Kc
+10160ms BotA &lt; S 2 2 2 70 30
+10160ms BotA &gt; X
+10160ms BotB &lt; S 2 2 2 70 30
+10160ms BotB &gt; X
+10160ms BotA &lt; C 7d Kd 5d 4d Kc Ad
+10160ms BotB &lt; C 5c 7h 5d 4d Kc Ad
+10160ms BotA &lt; S 2 2 2 70 30
+10160ms BotA &gt; X
+10160ms BotB &lt; S 2 2 2 70 30
+10160ms BotB &gt; X
+10160ms BotA &lt; C 7d Kd 5d 4d Kc Ad 6c
+10160ms BotB &lt; C 5c 7h 5d 4d Kc Ad 6c
+10160ms BotA &lt; S 2 2 2 70 30
+10160ms BotA &gt; X
+10160ms BotB &lt; S 2 2 2 70 30
+10160ms BotB &gt; X
+10160ms BotA &lt; E
+10160ms BotB &lt; E
+10160ms System &gt; round 91/100
+10160ms BotA &lt; P 0
+10160ms BotB &lt; P 1
+10160ms BotA &lt; C Jd 7s
+10161ms BotB &lt; C Ad 3d
+10161ms BotA &lt; S 2 1 2 32 68
+10161ms BotA &gt; C
+10161ms BotB &lt; S 2 2 2 32 68
+10161ms BotB &gt; X
+10161ms BotA &lt; C Jd 7s 9d 4d 9c
+10161ms BotB &lt; C Ad 3d 9d 4d 9c
+10161ms BotB &lt; S 2 2 2 32 68
+10161ms BotB &gt; X
+10161ms BotA &lt; S 2 2 2 32 68
+10161ms BotA &gt; X
+10161ms BotA &lt; C Jd 7s 9d 4d 9c 2h
+10161ms BotB &lt; C Ad 3d 9d 4d 9c 2h
+10161ms BotB &lt; S 2 2 2 32 68
+10161ms BotB &gt; X
+10161ms BotA &lt; S 2 2 2 32 68
+10161ms BotA &gt; X
+10161ms BotA &lt; C Jd 7s 9d 4d 9c 2h Kh
+10161ms BotB &lt; C Ad 3d 9d 4d 9c 2h Kh
+10161ms BotB &lt; S 2 2 2 32 68
+10161ms BotB &gt; X
+10161ms BotA &lt; S 2 2 2 32 68
+10161ms BotA &gt; X
+10161ms BotA &lt; E
+10161ms BotB &lt; E
+10161ms System &gt; round 92/100
+10161ms BotA &lt; P 1
+10161ms BotB &lt; P 0
+10162ms BotA &lt; C 2d Qd
+10162ms BotB &lt; C 6h Js
+10162ms BotB &lt; S 2 1 2 70 30
+10162ms BotB &gt; C
+10162ms BotA &lt; S 2 2 2 70 30
+10162ms BotA &gt; X
+10162ms BotA &lt; C 2d Qd 8c Th Tc
+10162ms BotB &lt; C 6h Js 8c Th Tc
+10162ms BotA &lt; S 2 2 2 70 30
+10162ms BotA &gt; X
+10162ms BotB &lt; S 2 2 2 70 30
+10162ms BotB &gt; X
+10162ms BotA &lt; C 2d Qd 8c Th Tc 4d
+10162ms BotB &lt; C 6h Js 8c Th Tc 4d
+10162ms BotA &lt; S 2 2 2 70 30
+10162ms BotA &gt; X
+10162ms BotB &lt; S 2 2 2 70 30
+10162ms BotB &gt; X
+10162ms BotA &lt; C 2d Qd 8c Th Tc 4d 5c
+10162ms BotB &lt; C 6h Js 8c Th Tc 4d 5c
+10162ms BotA &lt; S 2 2 2 70 30
+10162ms BotA &gt; X
+10162ms BotB &lt; S 2 2 2 70 30
+10162ms BotB &gt; X
+10162ms BotA &lt; E
+10162ms BotB &lt; E
+10162ms System &gt; round 93/100
+10162ms BotA &lt; P 0
+10162ms BotB &lt; P 1
+10163ms BotA &lt; C 7c 6d
+10163ms BotB &lt; C Ks Ah
+10163ms BotA &lt; S 2 1 2 32 68
+10163ms BotA &gt; C
+10163ms BotB &lt; S 2 2 2 32 68
+10163ms BotB &gt; X
+10163ms BotA &lt; C 7c 6d Kc 4h 3d
+10163ms BotB &lt; C Ks Ah Kc 4h 3d
+10163ms BotB &lt; S 2 2 2 32 68
+10163ms BotB &gt; X
+10163ms BotA &lt; S 2 2 2 32 68
+10239ms BotA &gt; X
+10239ms BotA &lt; C 7c 6d Kc 4h 3d 6h
+10239ms BotB &lt; C Ks Ah Kc 4h 3d 6h
+10239ms BotB &lt; S 2 2 2 32 68
+10239ms BotB &gt; X
+10239ms BotA &lt; S 2 2 2 32 68
+10239ms BotA &gt; X
+10239ms BotA &lt; C 7c 6d Kc 4h 3d 6h Kh
+10240ms BotB &lt; C Ks Ah Kc 4h 3d 6h Kh
+10240ms BotB &lt; S 2 2 2 32 68
+10240ms BotB &gt; X
+10240ms BotA &lt; S 2 2 2 32 68
+10240ms BotA &gt; X
+10240ms BotA &lt; E
+10240ms BotB &lt; E
+10240ms System &gt; round 94/100
+10241ms BotA &lt; P 1
+10241ms BotB &lt; P 0
+10241ms BotA &lt; C Ad Jh
+10241ms BotB &lt; C 7s 8d
+10241ms BotB &lt; S 2 1 2 70 30
+10241ms BotB &gt; C
+10241ms BotA &lt; S 2 2 2 70 30
+10241ms BotA &gt; X
+10241ms BotA &lt; C Ad Jh Tc 3s 4h
+10241ms BotB &lt; C 7s 8d Tc 3s 4h
+10241ms BotA &lt; S 2 2 2 70 30
+10809ms BotA &gt; X
+10809ms BotB &lt; S 2 2 2 70 30
+10969ms BotB &gt; X
+10969ms BotA &lt; C Ad Jh Tc 3s 4h 3c
+11049ms BotB &lt; C 7s 8d Tc 3s 4h 3c
+11119ms BotA &lt; S 2 2 2 70 30
+11122ms BotA &gt; X
+11122ms BotB &lt; S 2 2 2 70 30
+11199ms BotB &gt; X
+11199ms BotA &lt; C Ad Jh Tc 3s 4h 3c 5c
+11209ms BotB &lt; C 7s 8d Tc 3s 4h 3c 5c
+11359ms BotA &lt; S 2 2 2 70 30
+11439ms BotA &gt; X
+11439ms BotB &lt; S 2 2 2 70 30
+11519ms BotB &gt; X
+11519ms BotA &lt; E
+11519ms BotB &lt; E
+11519ms System &gt; round 95/100
+11599ms BotA &lt; P 0
+11602ms BotB &lt; P 1
+11602ms BotA &lt; C Ts Ad
+11602ms BotB &lt; C 9d 8c
+11679ms BotA &lt; S 2 1 2 32 68
+11679ms BotA &gt; C
+11679ms BotB &lt; S 2 2 2 32 68
+11759ms BotB &gt; X
+11759ms BotA &lt; C Ts Ad 9s 2d 3d
+11839ms BotB &lt; C 9d 8c 9s 2d 3d
+11839ms BotB &lt; S 2 2 2 32 68
+11921ms BotB &gt; X
+11921ms BotA &lt; S 2 2 2 32 68
+11929ms BotA &gt; X
+11929ms BotA &lt; C Ts Ad 9s 2d 3d 6c
+11929ms BotB &lt; C 9d 8c 9s 2d 3d 6c
+11929ms BotB &lt; S 2 2 2 32 68
+12001ms BotB &gt; X
+12001ms BotA &lt; S 2 2 2 32 68
+12009ms BotA &gt; X
+12009ms BotA &lt; C Ts Ad 9s 2d 3d 6c 2s
+12009ms BotB &lt; C 9d 8c 9s 2d 3d 6c 2s
+12009ms BotB &lt; S 2 2 2 32 68
+12080ms BotB &gt; X
+12080ms BotA &lt; S 2 2 2 32 68
+12080ms BotA &gt; X
+12080ms BotA &lt; E
+12080ms BotB &lt; E
+12080ms System &gt; round 96/100
+12080ms BotA &lt; P 1
+12080ms BotB &lt; P 0
+12081ms BotA &lt; C Qs 9c
+12081ms BotB &lt; C 2c 3c
+12081ms BotB &lt; S 2 1 2 70 30
+12081ms BotB &gt; C
+12081ms BotA &lt; S 2 2 2 70 30
+12081ms BotA &gt; X
+12081ms BotA &lt; C Qs 9c 7c Qh 2s
+12081ms BotB &lt; C 2c 3c 7c Qh 2s
+12081ms BotA &lt; S 2 2 2 70 30
+12081ms BotA &gt; X
+12081ms BotB &lt; S 2 2 2 70 30
+12081ms BotB &gt; X
+12081ms BotA &lt; C Qs 9c 7c Qh 2s Jd
+12081ms BotB &lt; C 2c 3c 7c Qh 2s Jd
+12081ms BotA &lt; S 2 2 2 70 30
+12089ms BotA &gt; X
+12089ms BotB &lt; S 2 2 2 70 30
+12159ms BotB &gt; X
+12159ms BotA &lt; C Qs 9c 7c Qh 2s Jd 4s
+12159ms BotB &lt; C 2c 3c 7c Qh 2s Jd 4s
+12159ms BotA &lt; S 2 2 2 70 30
+12161ms BotA &gt; X
+12161ms BotB &lt; S 2 2 2 70 30
+12161ms BotB &gt; X
+12161ms BotA &lt; E
+12162ms BotB &lt; E
+12162ms System &gt; round 97/100
+12162ms BotA &lt; P 0
+12162ms BotB &lt; P 1
+12162ms BotA &lt; C 4d 8h
+12162ms BotB &lt; C 4c 7c
+12162ms BotA &lt; S 2 1 2 32 68
+12239ms BotA &gt; C
+12239ms BotB &lt; S 2 2 2 32 68
+12241ms BotB &gt; X
+12241ms BotA &lt; C 4d 8h Kh 5s 7s
+12241ms BotB &lt; C 4c 7c Kh 5s 7s
+12241ms BotB &lt; S 2 2 2 32 68
+12249ms BotB &gt; X
+12249ms BotA &lt; S 2 2 2 32 68
+12321ms BotA &gt; X
+12321ms BotA &lt; C 4d 8h Kh 5s 7s Kc
+12321ms BotB &lt; C 4c 7c Kh 5s 7s Kc
+12321ms BotB &lt; S 2 2 2 32 68
+12321ms BotB &gt; X
+12321ms BotA &lt; S 2 2 2 32 68
+12399ms BotA &gt; X
+12399ms BotA &lt; C 4d 8h Kh 5s 7s Kc Ts
+12399ms BotB &lt; C 4c 7c Kh 5s 7s Kc Ts
+12399ms BotB &lt; S 2 2 2 32 68
+12401ms BotB &gt; X
+12401ms BotA &lt; S 2 2 2 32 68
+12409ms BotA &gt; X
+12409ms BotA &lt; E
+12409ms BotB &lt; E
+12409ms System &gt; round 98/100
+12409ms BotA &lt; P 1
+12409ms BotB &lt; P 0
+12409ms BotA &lt; C 4h 7s
+12409ms BotB &lt; C Qd 3h
+12409ms BotB &lt; S 2 1 2 70 30
+12481ms BotB &gt; C
+12481ms BotA &lt; S 2 2 2 70 30
+12489ms BotA &gt; X
+12489ms BotA &lt; C 4h 7s Qs Jh 6c
+12489ms BotB &lt; C Qd 3h Qs Jh 6c
+12489ms BotA &lt; S 2 2 2 70 30
+12561ms BotA &gt; X
+12561ms BotB &lt; S 2 2 2 70 30
+12561ms BotB &gt; X
+12561ms BotA &lt; C 4h 7s Qs Jh 6c Ac
+12561ms BotB &lt; C Qd 3h Qs Jh 6c Ac
+12561ms BotA &lt; S 2 2 2 70 30
+12569ms BotA &gt; X
+12569ms BotB &lt; S 2 2 2 70 30
+12639ms BotB &gt; X
+12639ms BotA &lt; C 4h 7s Qs Jh 6c Ac 9s
+12639ms BotB &lt; C Qd 3h Qs Jh 6c Ac 9s
+12639ms BotA &lt; S 2 2 2 70 30
+12641ms BotA &gt; X
+12641ms BotB &lt; S 2 2 2 70 30
+12641ms BotB &gt; X
+12641ms BotA &lt; E
+12641ms BotB &lt; E
+12641ms System &gt; round 99/100
+12641ms BotA &lt; P 0
+12641ms BotB &lt; P 1
+12641ms BotA &lt; C Ad 8c
+12641ms BotB &lt; C 7d 4c
+12641ms BotA &lt; S 2 1 2 28 72
+12719ms BotA &gt; C
+12719ms BotB &lt; S 2 2 2 28 72
+12721ms BotB &gt; X
+12721ms BotA &lt; C Ad 8c 7h 6s Ks
+12721ms BotB &lt; C 7d 4c 7h 6s Ks
+12721ms BotB &lt; S 2 2 2 28 72
+12729ms BotB &gt; X
+12729ms BotA &lt; S 2 2 2 28 72
+12801ms BotA &gt; X
+12801ms BotA &lt; C Ad 8c 7h 6s Ks 3s
+12801ms BotB &lt; C 7d 4c 7h 6s Ks 3s
+12801ms BotB &lt; S 2 2 2 28 72
+12801ms BotB &gt; X
+12801ms BotA &lt; S 2 2 2 28 72
+12879ms BotA &gt; X
+12879ms BotA &lt; C Ad 8c 7h 6s Ks 3s 5d
+12879ms BotB &lt; C 7d 4c 7h 6s Ks 3s 5d
+12879ms BotB &lt; S 2 2 2 28 72
+12881ms BotB &gt; X
+12881ms BotA &lt; S 2 2 2 28 72
+12959ms BotA &gt; X
+12959ms BotA &lt; E
+12959ms BotB &lt; E
+12959ms System &gt; round 100/100
+12959ms BotA &lt; P 1
+12959ms BotB &lt; P 0
+12959ms BotA &lt; C Qd Jc
+12959ms BotB &lt; C 4c 8s
+12959ms BotB &lt; S 2 1 2 74 26
+12961ms BotB &gt; C
+12961ms BotA &lt; S 2 2 2 74 26
+12961ms BotA &gt; X
+12961ms BotA &lt; C Qd Jc As 5h 7d
+12961ms BotB &lt; C 4c 8s As 5h 7d
+12961ms BotA &lt; S 2 2 2 74 26
+12961ms BotA &gt; X
+12961ms BotB &lt; S 2 2 2 74 26
+12961ms BotB &gt; X
+12961ms BotA &lt; C Qd Jc As 5h 7d 3d
+12961ms BotB &lt; C 4c 8s As 5h 7d 3d
+12961ms BotA &lt; S 2 2 2 74 26
+12962ms BotA &gt; X
+12962ms BotB &lt; S 2 2 2 74 26
+12962ms BotB &gt; X
+12962ms BotA &lt; C Qd Jc As 5h 7d 3d 8c
+12962ms BotB &lt; C 4c 8s As 5h 7d 3d 8c
+12962ms BotA &lt; S 2 2 2 74 26
+13039ms BotA &gt; X
+13039ms BotB &lt; S 2 2 2 74 26
+13039ms BotB &gt; X
+13039ms BotA &lt; E
+13039ms BotB &lt; E
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="sample-bot"><a class="header" href="#sample-bot">Sample bot</a></h1>
+<p>Here is what a sample bot looks like (both files are then zipped into a bot.zip):</p>
+<ul>
+<li>
+<p><code>bot.json</code></p>
+<pre><code class="language-json">{
+    &quot;name&quot;: &quot;Raise with pocket pairs&quot;,
+    &quot;build&quot;: &quot;g++ main.cpp -o main&quot;,
+    &quot;run&quot;: &quot;./main&quot;
+}
+</code></pre>
+</li>
+<li>
+<p><code>main.cpp</code></p>
+<pre><code class="language-cpp">#include &lt;iostream&gt;
+using namespace std;
+
+int vals[4] = {2, 5, 6, 7};
+int inp[5] = {0};
+int main() {
+int round = -1, position = 0;
+bool pocket = false;
+while (true) {
+    char type;
+    cin &gt;&gt; type;
+    if (type == 'E') {
+    round = -1;
+    pocket = false;
+    cerr &lt;&lt; &quot;Round ended.&quot; &lt;&lt; endl &lt;&lt; endl;
+    } else if (type == 'P') {
+    cin &gt;&gt; position;
+    cerr &lt;&lt; &quot;My position is &quot; &lt;&lt; position &lt;&lt; endl;
+    } else if (type == 'C') {
+    round++;
+    char a;
+    cerr &lt;&lt; &quot;Cards: &quot;;
+    char val;
+    for (int i = 0; i &lt; vals[round]; i++) {
+        char nowVal;
+        cin &gt;&gt; nowVal;
+        cerr &lt;&lt; nowVal;
+        cin &gt;&gt; a;
+        if (i == 1)
+        pocket = (nowVal == val);
+        val = nowVal;
+        cerr &lt;&lt; a &lt;&lt; ' ';
+    }
+    cerr &lt;&lt; endl;
+    } else {
+    cerr &lt;&lt; &quot;Stacks: &quot;;
+    for (int i = 0; i &lt; 5; i++) {
+        cin &gt;&gt; inp[i];
+    }
+    for (int i = 0; i &lt; 5; i++) {
+        cerr &lt;&lt; inp[i] &lt;&lt; &quot; &quot;;
+    }
+    cerr &lt;&lt; endl;
+
+    cerr &lt;&lt; &quot;Deciding on an action: &quot;;
+    if (pocket &amp;&amp; inp[position + 1] &lt;= inp[position + 3] - 5) {
+        cerr &lt;&lt; &quot;raising for pocket pairs&quot; &lt;&lt; endl;
+        cout &lt;&lt; &quot;R5&quot; &lt;&lt; endl;
+    } else if (inp[position + 1] == inp[0]) {
+        cerr &lt;&lt; &quot;Check.&quot; &lt;&lt; endl;
+        cout &lt;&lt; 'X' &lt;&lt; endl;
+    } else {
+        cerr &lt;&lt; &quot;Call.&quot; &lt;&lt; endl;
+        cout &lt;&lt; 'C' &lt;&lt; endl;
+    }
+    cout.flush();
+    }
+    // cerr &lt;&lt; endl;
+}
+}
+</code></pre>
+</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="sponsorship"><a class="header" href="#sponsorship">Sponsorship</a></h1>
+<p>Contact us at contact@upac.dev!</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="support--community"><a class="header" href="#support--community">Support &amp; Community</a></h1>
+<p>Join our <a href="https://discord.gg/4tupZUkUS7"><strong>Discord server</strong></a>!</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="report-an-issue"><a class="header" href="#report-an-issue">Report an Issue</a></h1>
+<p>If you encounter any bugs while submitting your bot, notice any issues in the frontend, or identify errors in the documentation, kindly report the problem <a href="https://github.com/alexwaeseperlman/Pokerbots/issues">here</a>.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+        <script>
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+
+    </div>
+    </body>
+</html>
