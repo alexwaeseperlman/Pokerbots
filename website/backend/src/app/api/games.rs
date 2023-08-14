@@ -1,3 +1,4 @@
+use diesel::alias;
 use itertools::Itertools;
 use shared::db::{
     dao::bots::BotsDao,
@@ -131,6 +132,7 @@ pub async fn games(
         join_bots,
     }): web::Query<GameQuery>,
 ) -> ApiResult<GamesResponse> {
+    use schema::*;
     let conn = &mut (*DB_CONNECTION).get()?;
     let mut base = schema::games::dsl::games.into_boxed();
     if let Some(active) = active {
@@ -165,28 +167,47 @@ pub async fn games(
         .limit((page_size).into())
         .offset((page * page_size).into());
 
-    let result: Vec<Game> = base.load::<Game>(conn)?.into_iter().collect();
     //TODO: figure out how joins work
     // https://matrix.to/#/!lNGJpfiFVovXFJYmwx:matrix.org/$1691960077179zmkhf:gitter.im?via=gitter.im
+    let result: Vec<Game> = base.load::<Game>(conn)?.into_iter().collect();
     if join_bots.unwrap_or(false) {
-        let result: Vec<GameWithBots<BotWithTeam<Team>>> = result
+        let (defender_bots, challenger_bots, defender_teams, challenger_teams) = alias!(
+            bots as defender_bots,
+            bots as challenger_bots,
+            teams as defender_teams,
+            teams as challenger_teams
+        );
+        let x: Vec<(Game, Bot, Bot, Team, Team)> = games::table
+            .inner_join(
+                defender_bots.on(games::dsl::defender.eq(defender_bots.field(bots::dsl::id))),
+            )
+            .inner_join(
+                challenger_bots.on(games::dsl::challenger.eq(challenger_bots.field(bots::dsl::id))),
+            )
+            .inner_join(
+                defender_teams.on(defender_bots
+                    .field(bots::dsl::team)
+                    .eq(defender_teams.field(teams::dsl::id))),
+            )
+            .inner_join(
+                challenger_teams.on(challenger_bots
+                    .field(bots::dsl::team)
+                    .eq(challenger_teams.field(teams::dsl::id))),
+            )
+            .load::<(Game, Bot, Bot, Team, Team)>(conn)?;
+        let result: Vec<GameWithBots<BotWithTeam<Team>>> = x
             .into_iter()
-            .map(|game| {
-                let (defender, challenger): (BotWithTeam<_>, BotWithTeam<_>) = conn
-                    .get_bots_with_teams(vec![game.defender, game.challenger])
-                    .into_iter()
-                    .collect_tuple()
-                    .expect("Failed to get bots with teams");
-                GameWithBots {
+            .map(
+                |(game, defender, challenger, defender_team, challenger_team)| GameWithBots {
                     id: game.id,
-                    defender,
-                    challenger,
+                    defender: BotWithTeam::from_bot_and_team(defender, defender_team),
+                    challenger: BotWithTeam::from_bot_and_team(challenger, challenger_team),
                     score_change: game.score_change,
                     created: game.created,
                     error_type: game.error_type,
                     error_message: game.error_message,
-                }
-            })
+                },
+            )
             .collect();
         return Ok(web::Json(GamesResponse::GamesWithBots(result)));
     }

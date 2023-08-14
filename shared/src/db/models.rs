@@ -124,6 +124,21 @@ pub struct BotWithTeam<T> {
     pub build_status: BuildStatus,
 }
 
+impl<T> BotWithTeam<T> {
+    pub fn from_bot_and_team(bot: Bot, team: T) -> Self {
+        BotWithTeam {
+            id: bot.id,
+            team,
+            name: bot.name,
+            description: bot.description,
+            score: bot.score,
+            created: bot.created,
+            uploaded_by: bot.uploaded_by,
+            build_status: bot.build_status,
+        }
+    }
+}
+
 #[derive(Serialize, TS)]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
 pub struct GameWithBots<T> {
