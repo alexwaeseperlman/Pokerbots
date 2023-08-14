@@ -135,3 +135,22 @@ services:
     image: softwaremill/elasticmq
     volumes:
       - ./elasticmq.conf:/opt/elasticmq.conf:ro
+
+  nginx:
+    image: nginx:stable
+    command: |
+      sh -c '
+      while :; do
+        sed s/DOMAIN_NAME/${DOMAIN_NAME}/g /nginx.conf.template > /etc/nginx/nginx.conf
+        sleep 6h & wait $${!}
+        nginx -s reload
+      done & (sleep 1 && nginx -g "daemon off;")'
+    volumes:
+      - ./.volumes/certbot/conf:/etc/letsencrypt
+      - ./.volumes/certbot/www:/var/www/certbot
+    environment:
+      - DOMAIN_NAME=${DOMAIN_NAME}
+    ports:
+      - 80:80
+      - 443:443
+      - 9000:9000

@@ -10,7 +10,7 @@ services:
   gameplay-dev:
     build:
       context: .
-      dockerfile: ./workers/gameplay/Dockerfile.dev
+      dockerfile: ./workers/gameplay/dev-Dockerfile
     volumes:
       - .:/usr/src:ro
       - gameplay-target:/usr/src/target
@@ -26,7 +26,7 @@ services:
   builder-dev:
     build:
       context: .
-      dockerfile: ./workers/builder/Dockerfile.dev
+      dockerfile: ./workers/builder/dev-Dockerfile
     volumes:
       - .:/usr/src:ro
       - builder-target:/usr/src/target
@@ -42,7 +42,7 @@ services:
   results-dev:
     build:
       context: .
-      dockerfile: ./workers/results/Dockerfile.dev
+      dockerfile: ./workers/results/dev-Dockerfile
     volumes:
       - .:/usr/src:ro
       - results-target:/usr/src/target
@@ -60,9 +60,6 @@ services:
     extends:
       file: common-compose.yml
       service: s3
-    ports:
-      - 9000:9000
-      - 9999:9999
   createbuckets:
     depends_on:
       - s3
@@ -76,6 +73,20 @@ services:
       service: sqs
     ports:
       - 9324:9324
+
+  nginx:
+    extends:
+      file: common-compose.yml
+      service: nginx
+    volumes:
+      - ./dev-nginx.conf.template:/nginx.conf.template:ro
+    ports:
+      - 80:80
+      - 9000:9000
+      - 9999:9999
+    depends_on:
+      - s3
+      - sqs
 
 volumes:
   database:

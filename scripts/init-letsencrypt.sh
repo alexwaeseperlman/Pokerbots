@@ -1,11 +1,18 @@
 #!/bin/bash
 
+if ! [ -f scripts/init-letsencrypt.sh ]; then
+  echo 'Error: script must be run from project root.' >&2
+  exit 1
+fi
+
 if ! [ -x "$(command -v docker-compose)" ]; then
   echo 'Error: docker-compose is not installed.' >&2
   exit 1
 fi
 
-domains=($1 $2)
+source .env
+
+domains=($DOMAIN_NAME www.$DOMAIN_NAME)
 rsa_key_size=4096
 data_path="./.volumes/certbot"
 email="" # Adding a valid address is strongly recommended
