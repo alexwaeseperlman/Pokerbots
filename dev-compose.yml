@@ -26,7 +26,6 @@ services:
       service: website
     environment:
       - RUST_LOG=debug
-      - S3_ADDRESS=http://localhost:9000
   gameplay-dev:
     build:
       context: .
@@ -38,6 +37,7 @@ services:
     depends_on:
       - sqs
     restart: always
+    privileged: true
     extends:
       file: common-compose.yml
       service: gameplay
@@ -54,6 +54,7 @@ services:
     depends_on:
       - sqs
     restart: always
+    privileged: true
     extends:
       file: common-compose.yml
       service: builder
@@ -93,7 +94,6 @@ services:
       service: sqs
     ports:
       - 9324:9324
-
   nginx:
     extends:
       file: common-compose.yml

@@ -31,7 +31,8 @@ async fn main() {
                     challenger_logs_presigned,
                 } => {
                     let mut path = PathBuf::default();
-                    let result = run_game(&defender, &challenger, &s3, &id, rounds, &mut path).await;
+                    let result =
+                        run_game(&defender, &challenger, &s3, &id, rounds, &mut path).await;
 
                     if let Err(e) = result.clone() {
                         log::error!("Game failed: {:?}", e);

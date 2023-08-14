@@ -20,6 +20,7 @@ services:
     build:
       context: .
       dockerfile: ./workers/gameplay/Dockerfile
+    privileged: true
     depends_on:
       - sqs
     restart: always

@@ -203,7 +203,6 @@ pub struct GameLogQuery {
 pub async fn game_log(
     session: Session,
     web::Query::<GameLogQuery>(GameLogQuery { id, bot }): web::Query<GameLogQuery>,
-    sqs_client: web::Data<aws_sdk_sqs::Client>,
     s3_client: web::Data<aws_sdk_s3::Client>,
 ) -> Result<HttpResponse, ApiError> {
     let team = login::get_team_data(&session)
@@ -227,15 +226,12 @@ pub async fn game_log(
         bot.map(|b| b.to_string()).unwrap_or("public".into()),
         id
     );
-    let presign_config =
-        PresigningConfig::expires_in(std::time::Duration::from_secs(60 * 60 * 24 * 7))?;
-    let presigned = s3_client
+    let response = s3_client
         .get_object()
         .bucket(&*GAME_LOGS_S3_BUCKET)
         .key(key)
-        .presigned(presign_config.clone())
+        .send()
         .await?;
-    Ok(HttpResponse::Found()
-        .append_header(("Location", presigned.uri().to_string()))
-        .finish())
+
+    Ok(HttpResponse::Ok().streaming(response.body))
 }
