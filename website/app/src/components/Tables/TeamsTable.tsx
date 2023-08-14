@@ -54,7 +54,7 @@ export function TeamsTable() {
             height: 24,
             marginRight: 2,
           }}
-          src={`${apiUrl}/pfp?id=${params.value?.team?.id}`}
+          src={`${apiUrl}/pfp?id=${params.row?.id}`}
         />
         <Link
           to={`/team/${params.row?.id}`}
