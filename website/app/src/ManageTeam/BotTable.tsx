@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect } from "react";
-import { apiUrl, usePfpEndpoint, useTeam } from "../state";
+import { apiUrl, useTeam } from "../state";
 import Typography from "@mui/material/Typography";
 import { DataGrid } from "@mui/x-data-grid/DataGrid";
 import Chip from "@mui/material/Chip";
@@ -26,7 +26,6 @@ export default function BotTable({
     page: 0,
     pageSize: 10,
   });
-  const [pfpEndpoint, fetchPfpEndpoint] = usePfpEndpoint();
   const [loading, setLoading] = React.useState(true);
 
   const [menuEl, setMenuEl] = React.useState<null | {

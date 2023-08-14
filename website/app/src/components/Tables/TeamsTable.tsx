@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect } from "react";
-import { apiUrl, usePfpEndpoint, useTeam } from "../../state";
+import { apiUrl, useTeam } from "../../state";
 import Box from "@mui/system/Box";
 import MuiTableCell from "@mui/material/TableCell";
 import { styled } from "@mui/material/styles";
@@ -14,7 +14,6 @@ import { enqueueSnackbar } from "notistack";
 export function TeamsTable() {
   const [teams, setTeams] = React.useState<Team[]>([]);
   const [teamCount, setTeamCount] = React.useState(0);
-  const [pfpEndpoint, fetchPfpEndpoint] = usePfpEndpoint();
   const [paginationModel, setPaginationModel] = React.useState({
     page: 0,
     pageSize: 10,
@@ -55,7 +54,7 @@ export function TeamsTable() {
             height: 24,
             marginRight: 2,
           }}
-          src={`${pfpEndpoint}${params.row?.id}`}
+          src={`${apiUrl}/pfp?id=${params.value?.team?.id}`}
         />
         <Link
           to={`/team/${params.row?.id}`}

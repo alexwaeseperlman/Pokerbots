@@ -35,26 +35,6 @@ export const useUser = () => {
   return [user, fetchUser] as const;
 };
 
-export const pfpEndpointAtom = atomWithStorage<string | null>(
-  "pfpEndpoint",
-  null
-);
-
-export const usePfpEndpoint = () => {
-  const [pfpEndpoint, setPfpEndpoint] = useAtom(pfpEndpointAtom);
-  const fetchPfpEndpoint = async () => {
-    setPfpEndpoint(
-      await fetch(`${apiUrl}/pfp-endpoint`)
-        .then((res) => res.json())
-        .catch(() => null)
-    );
-  };
-  useEffect(() => {
-    fetchPfpEndpoint();
-  });
-  return [pfpEndpoint, fetchPfpEndpoint] as const;
-};
-
 // choose default value based on route
 const teamAtom = atomFamily<
   string | null,

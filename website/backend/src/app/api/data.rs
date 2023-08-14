@@ -252,7 +252,22 @@ pub async fn invite_code(
     }))
 }
 
-#[get("/pfp-endpoint")]
-pub async fn pfp_endpoint() -> ApiResult<String> {
-    Ok(web::Json((*APP_PFP_ENDPOINT).clone()))
+#[derive(Deserialize)]
+pub struct PfpQuery {
+    pub id: i32,
+}
+
+#[get("/pfp")]
+pub async fn pfp(
+    web::Query::<PfpQuery>(PfpQuery { id }): web::Query<PfpQuery>,
+    s3_client: web::Data<aws_sdk_s3::Client>,
+) -> Result<HttpResponse, ApiError> {
+    let response = s3_client
+        .get_object()
+        .bucket(&*PFP_S3_BUCKET)
+        .key(id.to_string())
+        .send()
+        .await?;
+
+    Ok(HttpResponse::Ok().streaming(response.body))
 }
