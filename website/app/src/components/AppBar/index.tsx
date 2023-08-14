@@ -99,7 +99,7 @@ export function TopBar() {
       <BarItem
         label="DOCUMENTATION"
         command={() => {
-          window.open("https://github.com/alexwaeseperlman/Pokerbots/wiki");
+          window.open("https://docs.upac.dev/");
         }}
       />
       {user && (
