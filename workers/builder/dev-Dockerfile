@@ -3,7 +3,7 @@ RUN apt-get update && apt-get install -y python3 pip ca-certificates
 
 # Install common python packages
 RUN pip install numpy pandas scipy scikit-learn
-RUN apt-get install -y unzip bubblewrap
+RUN apt-get install -y unzip bubblewrap zip
 
 RUN apt-get install -y entr
 

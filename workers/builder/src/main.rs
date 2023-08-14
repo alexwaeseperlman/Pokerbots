@@ -30,22 +30,28 @@ async fn process(
         result?;
     }
     // zip up the bot
+    log::debug!("Uploaded logs for {}", bot);
     Command::new("zip")
         .arg("-r")
-        .arg("bot.zip")
+        .arg("compiled_bot.zip")
         .arg("bot")
-        .stderr(Stdio::null())
-        .stdout(Stdio::null())
+        .stderr(Stdio::inherit())
+        .stdout(Stdio::inherit())
         .current_dir(format!("/tmp/{}/", bot))
         .status()
         .await?;
+    log::debug!("Zipped bot");
     // upload the file to s3
     // TODO: this should use a presigned url, like the logs
     if let Err(e) = s3
         .put_object()
         .bucket(compiled_challengerucket)
         .key(format!("{}", &bot))
-        .body(fs::read(format!("/tmp/{}/bot.zip", &bot)).await?.into())
+        .body(
+            fs::read(format!("/tmp/{}/compiled_bot.zip", &bot))
+                .await?
+                .into(),
+        )
         .send()
         .await
     {

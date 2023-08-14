@@ -193,13 +193,11 @@ pub async fn build_log(
     let key = format!("{}/build", bot);
     let presign_config =
         PresigningConfig::expires_in(std::time::Duration::from_secs(60 * 60 * 24 * 7))?;
-    let presigned = s3_client
+    let response = s3_client
         .get_object()
         .bucket(&*BUILD_LOGS_S3_BUCKET)
         .key(key)
-        .presigned(presign_config.clone())
+        .send()
         .await?;
-    Ok(HttpResponse::Found()
-        .append_header(("Location", presigned.uri().to_string()))
-        .finish())
+    Ok(HttpResponse::Ok().streaming(response.body))
 }
