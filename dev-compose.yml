@@ -26,6 +26,8 @@ services:
       service: website
     environment:
       - RUST_LOG=debug
+    ports:
+      - 3000:5173
   gameplay-dev:
     build:
       context: .
@@ -81,6 +83,7 @@ services:
     extends:
       file: common-compose.yml
       service: s3
+
   createbuckets:
     depends_on:
       - s3
@@ -94,19 +97,6 @@ services:
       service: sqs
     ports:
       - 9324:9324
-  nginx:
-    extends:
-      file: common-compose.yml
-      service: nginx
-    volumes:
-      - ./dev-nginx.conf.template:/nginx.conf.template:ro
-    ports:
-      - 3000:80
-      - 9000:9000
-      - 9999:9999
-    depends_on:
-      - s3
-      - sqs
 
 volumes:
   database:
