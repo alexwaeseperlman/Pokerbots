@@ -26,8 +26,9 @@ services:
       service: website
     environment:
       - RUST_LOG=debug
+      - S3_ADDRESS=http://localhost:9000
     ports:
-      - 5173:5173
+      - 3000:5173
   gameplay-dev:
     build:
       context: .

@@ -42,7 +42,7 @@ services:
 
       - RUST_LOG=debug
 
-      - APP_PFP_ENDPOINT=http://s3:9000/${PFP_S3_BUCKET}/
+      - APP_PFP_ENDPOINT=http://localhost:9000/${PFP_S3_BUCKET}/
       - S3_ADDRESS=http://s3:9000
       - SQS_ADDRESS=http://sqs:9324
       - PORT=3000
