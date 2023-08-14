@@ -97,12 +97,12 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
     }, 5000);
     return () => clearInterval(int);
   }, [getGames, paginationModel]);
-  const renderTeam = (score_mul) => (params) => {
-    if (params.value === null) return;
+  const renderTeam = (score_mul: number) => (params: { row?: Game }) => {
     let color: ChipProps["color"] = "success";
-    if (params.row.score_change * score_mul < 0) color = "error";
-    else if (params.row.score_change * score_mul == 0) color = "default";
-    if (params.row.error_type) {
+    if (params.row?.score_change == null) color = "info";
+    else if (params.row?.score_change * score_mul < 0) color = "error";
+    else if (params.row?.score_change * score_mul == 0) color = "default";
+    if (params.row?.error_type) {
       color = "warning";
     }
     return (

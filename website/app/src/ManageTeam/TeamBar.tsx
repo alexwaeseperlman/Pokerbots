@@ -35,7 +35,7 @@ function PfpUpload({ team, readonly }: { team: Team; readonly: boolean }) {
     })
       .then(async (res) => {
         const json = await res.json();
-        if (json.error) {
+        if (json !== null && json.error) {
           enqueueSnackbar(json.error, {
             variant: "error",
           });

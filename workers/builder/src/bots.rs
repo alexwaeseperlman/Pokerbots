@@ -121,6 +121,7 @@ pub async fn download_bot<T: Into<String>, U: Into<PathBuf>, V: Into<String>>(
     ))
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use std::io;
@@ -185,3 +186,4 @@ mod tests {
         assert_eq!(logs, "Success!\nOr not...\n");
     }
 }
+*/

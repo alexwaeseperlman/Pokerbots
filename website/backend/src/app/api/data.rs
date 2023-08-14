@@ -1,4 +1,4 @@
-use shared::db::models::{Team, TeamWithMembers};
+use shared::db::models::{BotWithTeam, Team, TeamWithMembers};
 
 use crate::{
     app::login::{TeamData, UserData},
@@ -154,6 +154,7 @@ pub struct BotQuery {
     pub page_size: Option<i32>,
     pub page: Option<i32>,
     pub count: Option<bool>,
+    pub join_team: Option<bool>,
 }
 
 #[derive(Serialize, TS)]
@@ -161,6 +162,7 @@ pub struct BotQuery {
 pub enum BotsResponse {
     Count(i64),
     Bots(Vec<Bot>),
+    BotsWithTeam(Vec<BotWithTeam<Team>>),
 }
 
 #[get("/bots")]
@@ -172,6 +174,7 @@ pub async fn bots(
         page_size,
         page,
         count,
+        join_team,
     }): web::Query<BotQuery>,
 ) -> ApiResult<BotsResponse> {
     let conn = &mut (*DB_CONNECTION).get()?;
@@ -196,6 +199,27 @@ pub async fn bots(
         .order_by(schema::bots::dsl::created.desc())
         .limit((page_size).into())
         .offset((page * page_size).into());
+    if join_team.unwrap_or(false) {
+        let result: Vec<BotWithTeam<Team>> = base
+            .inner_join(
+                schema::teams::dsl::teams.on(schema::bots::dsl::team.eq(schema::teams::dsl::id)),
+            )
+            .select((Bot::as_select(), Team::as_select()))
+            .load::<(Bot, Team)>(conn)?
+            .into_iter()
+            .map(|(b, t)| BotWithTeam {
+                build_status: b.build_status,
+                created: b.created,
+                id: b.id,
+                team: t,
+                description: b.description,
+                name: b.name,
+                uploaded_by: b.uploaded_by,
+                score: b.score,
+            })
+            .collect();
+        return Ok(web::Json(BotsResponse::BotsWithTeam(result)));
+    }
     let result: Vec<Bot> = base.load::<Bot>(conn)?.into_iter().collect();
     Ok(web::Json(BotsResponse::Bots(result)))
 }

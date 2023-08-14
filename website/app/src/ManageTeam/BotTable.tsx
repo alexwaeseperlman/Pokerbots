@@ -7,6 +7,9 @@ import { enqueueSnackbar } from "notistack";
 import { IconButton, Menu, MenuItem } from "@mui/material";
 import { GridMoreVertIcon } from "@mui/x-data-grid";
 import { Bot } from "@bindings/Bot";
+import { BotWithTeam } from "@bindings/BotWithTeam";
+import { Team } from "@bindings/Team";
+import { BotsResponse } from "@bindings/BotsResponse";
 
 export default function BotTable({
   readonly,
@@ -16,7 +19,7 @@ export default function BotTable({
   teamId: string | null;
 }) {
   const [team, fetchTeam] = useTeam(teamId ?? null);
-  const [bots, setBots] = React.useState<(Bot & { active: boolean })[]>([]);
+  const [bots, setBots] = React.useState<BotWithTeam<Team>[]>([]);
   const [botCount, setBotCount] = React.useState(0);
   const [myTeam, fetchMyTeam] = useTeam(null);
   const [paginationModel, setPaginationModel] = React.useState({
@@ -27,7 +30,7 @@ export default function BotTable({
   const [loading, setLoading] = React.useState(true);
 
   const [menuEl, setMenuEl] = React.useState<null | {
-    bot: Bot;
+    bot: BotWithTeam<Team>;
     el: HTMLElement;
   }>(null);
   const [menuOpen, setMenuOpen] = React.useState(false);
@@ -38,18 +41,18 @@ export default function BotTable({
       .then((data) => setBotCount(data.count));
 
     return fetch(
-      `${apiUrl}/bots?page=${paginationModel.page}&page_size=${paginationModel.pageSize}&team=${team?.id}`
+      `${apiUrl}/bots?join_team=true&page=${paginationModel.page}&page_size=${paginationModel.pageSize}&team=${team?.id}`
     )
       .then((res) => res.json())
-      .then(async (data) => {
-        // swap teama and teamb if teama is not the user's team
-        setLoading(false);
-        setBots(
-          data.map((bot: Bot) => ({
-            ...bot,
-            active: bot.id == team?.active_bot,
-          }))
-        );
+      .then(async (data: BotsResponse) => {
+        if ("BotsWithTeam" in data) {
+          setLoading(false);
+          setBots(data.BotsWithTeam);
+        } else {
+          setBots([]);
+          enqueueSnackbar("Error loading bots", { variant: "error" });
+          console.error("Received bots as", data);
+        }
       });
   };
   //TODO: only poll active games
