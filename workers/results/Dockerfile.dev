@@ -1,0 +1,9 @@
+FROM --platform=$BUILDARCH rust:1.70
+
+
+RUN apt-get update && apt-get install -y entr
+
+WORKDIR /usr/src/workers/results
+
+ENV ENTR_INOTIFY_WORKAROUND=1
+ENTRYPOINT while true; do git ls-files | entr -d -r sh -c "cargo test && cargo run"; done
