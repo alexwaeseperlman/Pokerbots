@@ -1,0 +1,1 @@
+ALTER TABLE bots ADD CONSTRAINT team_fk_teams_id FOREIGN KEY (team) REFERENCES teams(id) ON DELETE SET NULL;
