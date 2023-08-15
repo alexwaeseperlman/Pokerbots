@@ -45,6 +45,7 @@ export const TableButton = styled((props: ButtonProps) => (
 export function GameTable({ teamId }: { teamId?: string | null }) {
   type Game = GameWithBots<BotWithTeam<Team>>;
   const [team, fetchTeam] = useTeam(teamId ?? null);
+  const [myTeam, fetchMyTeam] = useTeam(null);
   const [games, setGames] = React.useState<Game[]>([]);
   const [gameCount, setGameCount] = React.useState(0);
   const [paginationModel, setPaginationModel] = React.useState({
@@ -228,7 +229,7 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
         onClose={() => setMenuOpen(false)}
         onClick={() => setMenuOpen(false)}
       >
-        {team && menuEl?.game?.defender?.team?.id == team.id && (
+        {team && menuEl?.game?.defender?.team?.id == myTeam?.id && (
           <MenuItem
             component="a"
             target="_tab"
@@ -237,7 +238,7 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
             Defender game log
           </MenuItem>
         )}
-        {team && menuEl?.game?.challenger?.team?.id == team.id && (
+        {team && menuEl?.game?.challenger?.team?.id == myTeam?.id && (
           <MenuItem
             component="a"
             target="_tab"
