@@ -8,6 +8,9 @@ use reqwest::header::{HeaderMap, HeaderName};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
+#[macro_use]
+extern crate num_derive;
+
 #[cfg(feature = "db")]
 pub mod db;
 
@@ -51,9 +54,11 @@ pub struct BuildTask {
     pub log_presigned: PresignedRequest,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, TS, FromPrimitive, ToPrimitive, Copy)]
 #[repr(i32)]
-#[ts(export)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
+#[cfg_attr(feature = "db", derive(diesel::FromSqlRow, diesel::AsExpression))]
+#[cfg_attr(feature="db", diesel(sql_type=diesel::sql_types::Integer))]
 pub enum BuildStatus {
     Unqueued = -1,
     Queued = 0,
@@ -75,14 +80,13 @@ pub struct BuildResultMessage {
 #[derive(Serialize, Deserialize, Debug, Clone, TS)]
 pub enum GameTask {
     Game {
-        bot_a: String,
-        bot_b: String,
+        defender: String,
+        challenger: String,
         id: String,
-        date: i64,
         rounds: usize,
         public_logs_presigned: PresignedRequest,
-        bot_a_logs_presigned: PresignedRequest,
-        bot_b_logs_presigned: PresignedRequest,
+        defender_logs_presigned: PresignedRequest,
+        challenger_logs_presigned: PresignedRequest,
     },
     TestGame {
         bot: String,
@@ -92,16 +96,17 @@ pub enum GameTask {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, TS)]
 #[repr(i32)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 pub enum WhichBot {
-    BotA = 0,
-    BotB = 1,
+    Defender = 0,
+    Challenger = 1,
 }
 
 impl Display for WhichBot {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            WhichBot::BotA => write!(f, "BotA"),
-            WhichBot::BotB => write!(f, "BotB"),
+            WhichBot::Defender => write!(f, "Defender"),
+            WhichBot::Challenger => write!(f, "Challenger"),
         }
     }
 }
@@ -115,7 +120,7 @@ pub enum GameActionError {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, TS)]
-#[ts(export)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 pub enum GameError {
     RunTimeError(WhichBot),
     TimeoutError(WhichBot),
@@ -139,7 +144,7 @@ pub struct GameStatusMessage {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, TS)]
-pub struct Bot {
+pub struct BotJson {
     pub name: String,
     pub description: Option<String>,
     pub build: Option<String>,

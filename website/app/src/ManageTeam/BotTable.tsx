@@ -1,11 +1,15 @@
 import React, { useCallback, useEffect } from "react";
-import { Bot, Team, apiUrl, usePfpEndpoint, useTeam } from "../state";
+import { apiUrl, useTeam } from "../state";
 import Typography from "@mui/material/Typography";
 import { DataGrid } from "@mui/x-data-grid/DataGrid";
 import Chip from "@mui/material/Chip";
 import { enqueueSnackbar } from "notistack";
 import { IconButton, Menu, MenuItem } from "@mui/material";
 import { GridMoreVertIcon } from "@mui/x-data-grid";
+import { Bot } from "@bindings/Bot";
+import { BotWithTeam } from "@bindings/BotWithTeam";
+import { Team } from "@bindings/Team";
+import { BotsResponse } from "@bindings/BotsResponse";
 
 export default function BotTable({
   readonly,
@@ -15,18 +19,17 @@ export default function BotTable({
   teamId: string | null;
 }) {
   const [team, fetchTeam] = useTeam(teamId ?? null);
-  const [bots, setBots] = React.useState<(Bot & { active: boolean })[]>([]);
+  const [bots, setBots] = React.useState<BotWithTeam<Team>[]>([]);
   const [botCount, setBotCount] = React.useState(0);
   const [myTeam, fetchMyTeam] = useTeam(null);
   const [paginationModel, setPaginationModel] = React.useState({
     page: 0,
     pageSize: 10,
   });
-  const [pfpEndpoint, fetchPfpEndpoint] = usePfpEndpoint();
   const [loading, setLoading] = React.useState(true);
 
   const [menuEl, setMenuEl] = React.useState<null | {
-    bot: Bot;
+    bot: BotWithTeam<Team>;
     el: HTMLElement;
   }>(null);
   const [menuOpen, setMenuOpen] = React.useState(false);
@@ -34,21 +37,23 @@ export default function BotTable({
   const getBots = () => {
     fetch(`${apiUrl}/bots?team=${team?.id}&count=true`)
       .then((res) => res.json())
-      .then((data) => setBotCount(data.count));
+      .then((data: BotsResponse) =>
+        setBotCount("Count" in data ? Number(data.Count) : 0)
+      );
 
     return fetch(
-      `${apiUrl}/bots?page=${paginationModel.page}&page_size=${paginationModel.pageSize}&team=${team?.id}`
+      `${apiUrl}/bots?join_team=true&page=${paginationModel.page}&page_size=${paginationModel.pageSize}&team=${team?.id}`
     )
       .then((res) => res.json())
-      .then(async (data) => {
-        // swap teama and teamb if teama is not the user's team
-        setLoading(false);
-        setBots(
-          data.map((bot: Bot) => ({
-            ...bot,
-            active: bot.id == team?.active_bot,
-          }))
-        );
+      .then(async (data: BotsResponse) => {
+        if ("BotsWithTeam" in data) {
+          setLoading(false);
+          setBots(data.BotsWithTeam);
+        } else {
+          setBots([]);
+          enqueueSnackbar("Error loading bots", { variant: "error" });
+          console.error("Received bots as", data);
+        }
       });
   };
   //TODO: only poll active games
@@ -69,26 +74,26 @@ export default function BotTable({
             field: "score",
             headerName: "Result",
             renderCell: (params) => {
-              if (params.row.build_status === -1)
+              if (params.row.build_status === "Unqueued")
                 return <Chip color="warning" label={"Not in queue"}></Chip>;
-              if (params.row.build_status === 0)
+              if (params.row.build_status === "Queued")
                 return <Chip color="default" label={"In queue"}></Chip>;
-              if (params.row.build_status === 1)
+              if (params.row.build_status === "Building")
                 return <Chip color="default" label={"Building"}></Chip>;
-              if (params.row.build_status === 2)
+              if (params.row.build_status === "BuildSucceeded")
                 return (
                   <Chip color="default" label={"Built successfully"}></Chip>
                 );
-              if (params.row.build_status === 3)
+              if (params.row.build_status === "PlayingTestGame")
                 return (
                   <Chip color="default" label={"Playing test game"}></Chip>
                 );
               // 4 means the bot succeeded in the test game, so we show its score
-              if (params.row.build_status === 4)
+              if (params.row.build_status === "TestGameSucceeded")
                 return <Chip label={"Ready to play"} color={"success"} />;
-              if (params.row.build_status === 5)
+              if (params.row.build_status === "BuildFailed")
                 return <Chip color="error" label={"Build failed"}></Chip>;
-              if (params.row.build_status == 6)
+              if (params.row.build_status == "TestGameFailed")
                 return <Chip color="error" label={"Test game failed"}></Chip>;
             },
             minWidth: 100,
@@ -199,14 +204,16 @@ export default function BotTable({
               });
           }}
         >
-          {menuEl?.bot.active ? "Currently active" : "Set active"}
+          {menuEl?.bot.id == team?.active_bot
+            ? "Currently active"
+            : "Set active"}
         </MenuItem>
 
         <MenuItem
           component="a"
           onClick={() => {
             fetch(
-              `${apiUrl}/create-game?bot_a=${myTeam?.active_bot}&bot_b=${menuEl?.bot.id}`
+              `${apiUrl}/create-game?challenger=${myTeam?.active_bot}&defender=${menuEl?.bot.id}`
             ).then(async (r) => {
               const data = await r.json();
               if (data.error) {

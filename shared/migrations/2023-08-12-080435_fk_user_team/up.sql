@@ -1,0 +1,1 @@
+ALTER TABLE users ADD CONSTRAINT team_fk_teams_id FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE SET NULL;

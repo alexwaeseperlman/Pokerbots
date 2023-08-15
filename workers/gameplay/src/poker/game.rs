@@ -1,19 +1,10 @@
 use core::panic;
-use std::{
-    cmp::{min, Ordering},
-    future::Future,
-};
+use std::cmp::{min, Ordering};
 
 use rand::{seq::SliceRandom, Rng};
 use shared::GameActionError;
 
 use super::hands::{self, Card, Suite};
-
-pub trait Player {
-    fn get_action(&self, state: GameState) -> Box<dyn Future<Output = Action>>;
-    fn post_response(&self, state: GameState, response: EngineResponse);
-    fn post_action(&self, state: GameState, action: Action, player: usize);
-}
 
 #[derive(PartialEq, Debug)]
 pub enum Action {
@@ -32,7 +23,6 @@ pub enum Round {
     River,
     End,
 }
-pub enum EngineResponse {}
 
 #[derive(Clone, Debug)]
 pub struct PlayerState {
@@ -602,34 +592,34 @@ mod tests {
     #[test]
     pub fn snapshot_1() {
         /*
-        99ms BotA <<< P 1
-        99ms BotB <<< P 0
-        99ms BotA <<< C 7s 7h
-        99ms BotB <<< C Jc 9h
-        99ms BotB <<< S 2 1 2 48 52
-        99ms BotB >>> C
-        99ms BotA <<< S 2 2 2 48 52
-        99ms BotA >>> R5
-        99ms BotB <<< S 7 2 7 48 52
-        99ms BotB >>> C
-        99ms BotA <<< C 7s 7h Qh 7d Qc
-        99ms BotB <<< C Jc 9h Qh 7d Qc
-        99ms BotA <<< S 7 7 7 48 52
-        99ms BotA >>> R5
-        99ms BotB <<< S 12 7 12 48 52
-        99ms BotB >>> C
-        99ms BotA <<< C 7s 7h Qh 7d Qc 6h
-        99ms BotB <<< C Jc 9h Qh 7d Qc 6h
-        99ms BotA <<< S 12 12 12 48 52
-        99ms BotA >>> R5
-        99ms BotB <<< S 17 12 17 48 52
-        99ms BotB >>> C
-        99ms BotA <<< C 7s 7h Qh 7d Qc 6h 4c
-        99ms BotB <<< C Jc 9h Qh 7d Qc 6h 4c
-        99ms BotA <<< S 17 17 17 48 52
-        99ms BotA >>> R5
-        99ms BotB <<< S 22 17 22 48 52
-        99ms BotB >>> C
+        99ms Defender <<< P 1
+        99ms Challenger <<< P 0
+        99ms Defender <<< C 7s 7h
+        99ms Challenger <<< C Jc 9h
+        99ms Challenger <<< S 2 1 2 48 52
+        99ms Challenger >>> C
+        99ms Defender <<< S 2 2 2 48 52
+        99ms Defender >>> R5
+        99ms Challenger <<< S 7 2 7 48 52
+        99ms Challenger >>> C
+        99ms Defender <<< C 7s 7h Qh 7d Qc
+        99ms Challenger <<< C Jc 9h Qh 7d Qc
+        99ms Defender <<< S 7 7 7 48 52
+        99ms Defender >>> R5
+        99ms Challenger <<< S 12 7 12 48 52
+        99ms Challenger >>> C
+        99ms Defender <<< C 7s 7h Qh 7d Qc 6h
+        99ms Challenger <<< C Jc 9h Qh 7d Qc 6h
+        99ms Defender <<< S 12 12 12 48 52
+        99ms Defender >>> R5
+        99ms Challenger <<< S 17 12 17 48 52
+        99ms Challenger >>> C
+        99ms Defender <<< C 7s 7h Qh 7d Qc 6h 4c
+        99ms Challenger <<< C Jc 9h Qh 7d Qc 6h 4c
+        99ms Defender <<< S 17 17 17 48 52
+        99ms Defender >>> R5
+        99ms Challenger <<< S 22 17 22 48 52
+        99ms Challenger >>> C
          */
         let mut state = GameState::new(
             [48, 52],

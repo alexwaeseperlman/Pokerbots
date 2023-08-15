@@ -1,11 +1,5 @@
 import React, { useCallback, useEffect } from "react";
-import {
-  Game,
-  apiUrl,
-  usePfpEndpoint,
-  fillInGames,
-  useTeam,
-} from "../../state";
+import { apiUrl, useTeam } from "../../state";
 import Box from "@mui/system/Box";
 import MuiTableCell from "@mui/material/TableCell";
 import { styled } from "@mui/material/styles";
@@ -21,6 +15,12 @@ import {
 } from "@mui/material";
 import { Link } from "react-router-dom";
 import { GridMoreVertIcon } from "@mui/x-data-grid";
+import { GameWithBots } from "@bindings/GameWithBots";
+import { BotWithTeam } from "@bindings/BotWithTeam";
+import { Team } from "@bindings/Team";
+import { GamesResponse } from "@bindings/GamesResponse";
+import { enqueueSnackbar } from "notistack";
+import { WhichBot } from "@bindings/WhichBot";
 
 export const DataGrid = React.lazy(() =>
   import("@mui/x-data-grid").then((mod) => ({ default: mod.DataGrid }))
@@ -44,10 +44,11 @@ export const TableButton = styled((props: ButtonProps) => (
   color: "#bbb",
 }));
 export function GameTable({ teamId }: { teamId?: string | null }) {
+  type Game = GameWithBots<BotWithTeam<Team>>;
   const [team, fetchTeam] = useTeam(teamId ?? null);
+  const [myTeam, fetchMyTeam] = useTeam(null);
   const [games, setGames] = React.useState<Game[]>([]);
   const [gameCount, setGameCount] = React.useState(0);
-  const [pfpEndpoint, fetchPfpEndpoint] = usePfpEndpoint();
   const [paginationModel, setPaginationModel] = React.useState({
     page: 0,
     pageSize: 10,
@@ -67,19 +68,27 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
       }&count=true`
     )
       .then((res) => res.json())
-      .then((data) => setGameCount(data.count));
+      .then((data: GamesResponse) =>
+        setGameCount("Count" in data ? Number(data.Count) : 0)
+      );
 
     fetch(
-      `${apiUrl}/games?page=${paginationModel.page}&page_size=${
+      `${apiUrl}/games?join_bots=true&page=${paginationModel.page}&page_size=${
         paginationModel.pageSize
       }&${teamId === undefined ? "" : `team=${team?.id}`}`
     )
       .then((res) => res.json())
-      .then(async (data) => {
+      .then(async (data: GamesResponse) => {
         // swap teama and teamb if teama is not the user's team
-        const games = data;
         setLoading(false);
-        setGames(await fillInGames(games));
+        console.log(data);
+        if ("GamesWithBots" in data) {
+          setGames(data.GamesWithBots);
+        } else {
+          setGames([]);
+          enqueueSnackbar("Error loading games", { variant: "error" });
+          console.error("Received games as", data);
+        }
       });
   }, [team?.id, paginationModel.page, paginationModel.pageSize]);
   //TODO: only poll active games
@@ -91,73 +100,76 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
     }, 5000);
     return () => clearInterval(int);
   }, [getGames, paginationModel]);
-  const renderTeam = (score_mul) => (params) => {
-    if (params.value === null) return;
-    let color: ChipProps["color"] = "success";
-    if (params.row.score_change * score_mul < 0) color = "error";
-    else if (params.row.score_change * score_mul == 0) color = "default";
-    if (params.row.error_type) {
-      color = "warning";
-    }
-    return (
-      <>
-        <Avatar
-          sx={{
-            width: 24,
-            height: 24,
-            marginRight: 2,
-          }}
-          src={`${pfpEndpoint}${params.value?.team?.id}`}
-        />
-
-        <Chip
-          sx={{
-            width: "50px !important",
-          }}
-          label={
-            params.row.score_change === null
-              ? "Running"
-              : params.row.error_type ?? params.row.score_change * score_mul
-          }
-          color={color}
-        />
-
-        <Box ml={2} mr={2} flexDirection={"column"}>
-          <Link
-            to={`/team/${params.value?.team?.id}`}
-            style={{
-              color: "inherit",
-              textDecoration: "none",
+  const renderTeam =
+    (score_mul: number) =>
+    (params: { row?: Game; value?: BotWithTeam<Team> }) => {
+      let color: ChipProps["color"] = "success";
+      if (params.row?.score_change == null) color = "default";
+      else if (params.row?.score_change * score_mul < 0) color = "error";
+      else if (params.row?.score_change * score_mul == 0) color = "default";
+      if (params.row?.error_type) {
+        color = "warning";
+      }
+      return (
+        <>
+          <Avatar
+            sx={{
+              width: 24,
+              height: 24,
+              marginRight: 2,
             }}
-          >
-            <Typography>
-              {params.value?.team?.team_name ?? "Deleted team"}
-            </Typography>
-          </Link>
+            src={`${apiUrl}/pfp?id=${params.value?.team?.id}`}
+          />
 
-          <Typography fontSize="small" color={"text.secondary"}>
-            {params.value?.name ?? "Deleted bot"}
-          </Typography>
-        </Box>
-      </>
-    );
-  };
+          <Chip
+            sx={{
+              width: "50px !important",
+            }}
+            label={
+              params.row?.score_change === null
+                ? "Running"
+                : params.row?.error_type ??
+                  (params.row?.score_change ?? 0) * score_mul
+            }
+            color={color}
+          />
+
+          <Box ml={2} mr={2} flexDirection={"column"}>
+            <Link
+              to={`/team/${params.value?.team?.id}`}
+              style={{
+                color: "inherit",
+                textDecoration: "none",
+              }}
+            >
+              <Typography>
+                {params.value?.team?.team_name ?? "Deleted team"}
+              </Typography>
+            </Link>
+
+            <Typography fontSize="small" color={"text.secondary"}>
+              {params.value?.name ?? "Deleted bot"}
+            </Typography>
+          </Box>
+        </>
+      );
+    };
 
   return (
     <>
       <DataGrid
         columns={[
           {
-            field: "bot_b",
-            headerName: "Defender",
-            renderCell: renderTeam(-1),
+            field: "challenger",
+            headerName: "Challenger",
+            renderCell: renderTeam(1),
             flex: 1,
             sortable: false,
           },
           {
-            field: "bot_a",
-            headerName: "Challenger",
-            renderCell: renderTeam(1),
+            field: "defender",
+            headerName: "Defender",
+            renderCell: renderTeam(-1),
             flex: 1,
             sortable: false,
           },
@@ -168,10 +180,10 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
             sortable: false,
             renderCell: (params) => {
               let bot = undefined;
-              if (params.row.bot_a?.team?.id === team?.id) {
-                bot = params.row.bot_a?.id;
-              } else if (params.row.bot_b?.team?.id === team?.id) {
-                bot = params.row.bot_b?.id;
+              if (params.row.defender?.team?.id === team?.id) {
+                bot = params.row.defender?.id;
+              } else if (params.row.challenger?.team?.id === team?.id) {
+                bot = params.row.challenger?.id;
               }
 
               const ref = React.createRef<HTMLButtonElement>();
@@ -220,20 +232,24 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
         onClose={() => setMenuOpen(false)}
         onClick={() => setMenuOpen(false)}
       >
-        {team && menuEl?.game?.bot_a?.team?.id == team.id && (
+        {team && menuEl?.game?.defender?.team?.id == myTeam?.id && (
           <MenuItem
             component="a"
             target="_tab"
-            href={`${apiUrl}/game-log?id=${menuEl?.game.id}&bot=${menuEl?.game?.bot_a.id}`}
+            href={`${apiUrl}/game-log?id=${menuEl?.game.id}&which_bot=${
+              "Defender" as WhichBot
+            }`}
           >
             Defender game log
           </MenuItem>
         )}
-        {team && menuEl?.game?.bot_b?.team?.id == team.id && (
+        {team && menuEl?.game?.challenger?.team?.id == myTeam?.id && (
           <MenuItem
             component="a"
             target="_tab"
-            href={`${apiUrl}/game-log?id=${menuEl?.game.id}&bot=${menuEl?.game?.bot_b.id}`}
+            href={`${apiUrl}/game-log?id=${menuEl?.game.id}&which_bot=${
+              "Challenger" as WhichBot
+            }`}
           >
             Challenger game log
           </MenuItem>

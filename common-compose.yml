@@ -26,7 +26,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - MICROSOFT_CLIENT_ID=${MICROSOFT_CLIENT_ID}
       - MICROSOFT_TENANT_ID=${MICROSOFT_TENANT_ID}
-      - REDIRECT_URI=https://${DOMAIN_NAME}/api/login
+      - REDIRECT_URI=${REDIRECT_URI}
 
       - PFP_S3_BUCKET=${PFP_S3_BUCKET}
       - BOT_S3_BUCKET=${BOT_S3_BUCKET}
@@ -43,12 +43,13 @@ services:
       - RUST_LOG=info
 
       - APP_PFP_ENDPOINT=https://${DOMAIN_NAME}:9000/${PFP_S3_BUCKET}/
-      - S3_ADDRESS=https://${DOMAIN_NAME}:9000
+      - S3_ADDRESS=http://s3:9000
       - SQS_ADDRESS=http://sqs:9324
       - PORT=3000
 
       - S3_ACCESS_KEY=${S3_ACCESS_KEY}
       - S3_SECRET_KEY=${S3_SECRET_KEY}
+
   gameplay:
     volumes:
       - ~/.aws/:/root/.aws:ro
@@ -60,14 +61,16 @@ services:
       - NEW_GAMES_QUEUE_URL=http://sqs:9324/queue/new_games
       - GAME_RESULTS_QUEUE_URL=http://sqs:9324/queue/game_results
 
-      - S3_ADDRESS=https://${DOMAIN_NAME}:9000
+      - S3_ADDRESS=http://s3:9000
       - SQS_ADDRESS=http://sqs:9324
 
       - COMPILED_BOT_S3_BUCKET=${COMPILED_BOT_S3_BUCKET}
       - GAME_LOGS_S3_BUCKET=${GAME_LOGS_S3_BUCKET}
+
   builder:
     volumes:
       - ~/.aws/:/root/.aws:ro
+    privileged: true
     environment:
       - RUST_LOG=info
       - COMPILED_BOT_S3_BUCKET=${COMPILED_BOT_S3_BUCKET}
@@ -79,7 +82,7 @@ services:
 
       - S3_ACCESS_KEY=${S3_ACCESS_KEY}
       - S3_SECRET_KEY=${S3_SECRET_KEY}
-      - S3_ADDRESS=https://${DOMAIN_NAME}:9000
+      - S3_ADDRESS=http://s3:9000
       - SQS_ADDRESS=http://sqs:9324
   results:
     volumes:
@@ -96,7 +99,7 @@ services:
       - S3_ACCESS_KEY=${S3_ACCESS_KEY}
       - S3_SECRET_KEY=${S3_SECRET_KEY}
       - RUST_LOG=info
-      - S3_ADDRESS=https://${DOMAIN_NAME}:9000
+      - S3_ADDRESS=http://s3:9000
       - SQS_ADDRESS=http://sqs:9324
       - GAME_LOGS_S3_BUCKET=${GAME_LOGS_S3_BUCKET}
       - BUILD_LOGS_S3_BUCKET=${BUILD_LOGS_S3_BUCKET}

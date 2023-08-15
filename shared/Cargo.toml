@@ -16,6 +16,10 @@ ts-rs = "6.2"
 lazy_static = {version="1.4.0", optional=true}
 log = "0.4"
 reqwest = "0.11.18"
+num = "0.4.1"
+num-derive = "0.4.0"
+num-traits = "0.2.16"
 
 [features]
 db=["dep:diesel", "dep:diesel_migrations", "dep:lazy_static"]
+ts-bindings = []

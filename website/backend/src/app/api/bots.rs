@@ -1,24 +1,9 @@
+use shared::db::models::NewBot;
 use std::io::Read;
 
-use crate::{
-    app::{api::ApiResult, login},
-    config::{BOT_S3_BUCKET, BOT_SIZE, BUILD_LOGS_S3_BUCKET},
-};
-use actix_session::Session;
-use actix_web::{get, post, web, HttpResponse};
-use aws_sdk_s3::presigning::PresigningConfig;
-use diesel::*;
-use futures_util::StreamExt;
-use serde::Deserialize;
-use serde_json::json;
-use shared::{
-    db::{
-        conn::DB_CONNECTION,
-        models::{Bot, NewBot},
-        schema,
-    },
-    PresignedRequest,
-};
+use crate::config::{BOT_S3_BUCKET, BOT_SIZE, BUILD_LOGS_S3_BUCKET};
+
+use super::*;
 
 #[derive(Deserialize)]
 pub struct DeleteBot {
@@ -29,7 +14,7 @@ pub struct DeleteBot {
 pub async fn delete_bot(
     session: Session,
     web::Query::<DeleteBot>(DeleteBot { id }): web::Query<DeleteBot>,
-) -> ApiResult {
+) -> ApiResult<()> {
     use shared::db::schema::bots;
     let team = login::get_team_data(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
@@ -40,7 +25,7 @@ pub async fn delete_bot(
         .filter(bots::dsl::team.eq(team.id))
         .execute(conn)?;
 
-    Ok(HttpResponse::Ok().body("{}"))
+    Ok(web::Json(()))
 }
 
 #[derive(Deserialize)]
@@ -51,7 +36,7 @@ pub struct ActiveBot {
 pub async fn set_active_bot(
     session: Session,
     web::Query::<ActiveBot>(ActiveBot { id }): web::Query<ActiveBot>,
-) -> ApiResult {
+) -> ApiResult<()> {
     use shared::db::schema::teams;
     let user = login::get_user_data(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
@@ -59,13 +44,33 @@ pub async fn set_active_bot(
         .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
 
     let conn = &mut (*DB_CONNECTION).get()?;
+    // ensure the bot belongs to the team
+    if let Some(id) = id {
+        let bot: Vec<Bot> = schema::bots::dsl::bots
+            .filter(schema::bots::dsl::id.eq(id))
+            .filter(schema::bots::dsl::team.eq(team.id))
+            .load::<Bot>(conn)?;
+        if bot.len() == 0 {
+            return Err(actix_web::error::ErrorUnauthorized(
+                "Only the owner can set a bot as active.",
+            )
+            .into());
+        }
+    }
+
     diesel::update(teams::dsl::teams)
         .filter(teams::dsl::id.eq(team.id))
         .filter(teams::dsl::owner.eq(user.clone().email))
         .set(teams::dsl::active_bot.eq(id))
         .execute(conn)?;
 
-    Ok(HttpResponse::Ok().body("{}"))
+    Ok(web::Json(()))
+}
+
+#[derive(Serialize, TS)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
+pub struct UploadBotResponse {
+    id: i32,
 }
 
 #[post("/upload-bot")]
@@ -74,7 +79,7 @@ pub async fn upload_bot(
     sqs_client: actix_web::web::Data<aws_sdk_sqs::Client>,
     session: Session,
     mut payload: web::Payload,
-) -> ApiResult {
+) -> ApiResult<UploadBotResponse> {
     use shared::db::schema::{bots, teams};
     let user = login::get_user_data(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
@@ -103,7 +108,7 @@ pub async fn upload_bot(
     bot_file.read_to_string(&mut bot_json)?;
     log::debug!("bot.json: {}", bot_json);
 
-    let bot: shared::Bot = serde_json::from_str(&bot_json)?;
+    let bot: shared::BotJson = serde_json::from_str(&bot_json)?;
 
     println!("{:?}", bot);
     // Create a bot entry in the database
@@ -115,7 +120,7 @@ pub async fn upload_bot(
             description: bot.description,
             score: 0.0,
             uploaded_by: user.email,
-            build_status: 0,
+            build_status: shared::BuildStatus::Queued,
         })
         .returning(bots::dsl::id)
         .get_result::<i32>(conn)?;
@@ -158,7 +163,7 @@ pub async fn upload_bot(
         })?)
         .send()
         .await?;
-    Ok(HttpResponse::Ok().json(json!({ "id": id })))
+    Ok(web::Json(UploadBotResponse { id }))
 }
 
 #[derive(Deserialize)]
@@ -171,7 +176,7 @@ pub async fn build_log(
     web::Query::<BuildLogQuery>(BuildLogQuery { bot }): web::Query<BuildLogQuery>,
     sqs_client: web::Data<aws_sdk_sqs::Client>,
     s3_client: web::Data<aws_sdk_s3::Client>,
-) -> ApiResult {
+) -> Result<HttpResponse, ApiError> {
     let team = login::get_team_data(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
     let conn = &mut (*DB_CONNECTION).get()?;
@@ -188,13 +193,11 @@ pub async fn build_log(
     let key = format!("{}/build", bot);
     let presign_config =
         PresigningConfig::expires_in(std::time::Duration::from_secs(60 * 60 * 24 * 7))?;
-    let presigned = s3_client
+    let response = s3_client
         .get_object()
         .bucket(&*BUILD_LOGS_S3_BUCKET)
         .key(key)
-        .presigned(presign_config.clone())
+        .send()
         .await?;
-    Ok(HttpResponse::Found()
-        .append_header(("Location", presigned.uri().to_string()))
-        .finish())
+    Ok(HttpResponse::Ok().streaming(response.body))
 }

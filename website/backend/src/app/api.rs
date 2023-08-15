@@ -1,23 +1,44 @@
 use std::{fmt, num::TryFromIntError};
 
+use actix_web::body::BoxBody;
 use actix_web::http::StatusCode;
 use actix_web::{error::PayloadError, HttpResponse, ResponseError};
 use aws_sdk_s3::presigning::PresigningConfigError;
 use reqwest::header::ToStrError;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use ts_rs::TS;
+
+use crate::{app::login, config::PFP_S3_BUCKET};
+use actix_session::Session;
+use actix_web::{delete, get, web};
+use aws_sdk_s3 as s3;
+use chrono;
+use diesel::prelude::*;
+use futures_util::StreamExt;
+use shared::db::conn::DB_CONNECTION;
+use shared::db::{
+    models::{NewInvite, NewTeam, TeamInvite, User},
+    schema::{team_invites, teams, users},
+};
+
+use crate::config::GAME_LOGS_S3_BUCKET;
+use actix_web::{post, put};
+use aws_sdk_s3::presigning::PresigningConfig;
+use futures_util::future::try_join3;
+use rand::{self, Rng};
+use shared::db::{
+    models::{Bot, Game, NewGame},
+    schema,
+};
+use shared::GameTask;
+use shared::PresignedRequest;
 
 pub mod bots;
 pub mod data;
 pub mod games;
 pub mod manage_team;
 pub mod signout;
-
-#[derive(Deserialize, Serialize, Clone, Debug)]
-pub struct ServerMessage {
-    pub message: String,
-    pub message_type: String,
-}
 
 pub fn api_service() -> actix_web::Scope {
     actix_web::web::scope("/api")
@@ -39,14 +60,15 @@ pub fn api_service() -> actix_web::Scope {
         .service(data::teams)
         .service(data::bots)
         .service(data::invite_code)
-        .service(data::pfp_endpoint)
+        .service(data::pfp)
         .service(games::create_game)
         .service(games::games)
         .service(games::game_log)
         .service(signout::signout)
 }
 
-type ApiResult = Result<HttpResponse, ApiError>;
+type ApiResult<T> = Result<actix_web::web::Json<T>, ApiError>;
+
 #[derive(Debug)]
 pub struct ApiError {
     pub status_code: actix_web::http::StatusCode,

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect } from "react";
-import { Team, apiUrl, usePfpEndpoint, useTeam } from "../../state";
+import { apiUrl, useTeam } from "../../state";
 import Box from "@mui/system/Box";
 import MuiTableCell from "@mui/material/TableCell";
 import { styled } from "@mui/material/styles";
@@ -7,11 +7,13 @@ import Button, { ButtonProps } from "@mui/material/Button";
 import { Avatar, Chip, ChipProps, Typography } from "@mui/material";
 import { DataGrid } from "./GameTable";
 import { Link } from "react-router-dom";
+import { Team } from "@bindings/Team";
+import { TeamsResponse } from "@bindings/TeamsResponse";
+import { enqueueSnackbar } from "notistack";
 
 export function TeamsTable() {
   const [teams, setTeams] = React.useState<Team[]>([]);
   const [teamCount, setTeamCount] = React.useState(0);
-  const [pfpEndpoint, fetchPfpEndpoint] = usePfpEndpoint();
   const [paginationModel, setPaginationModel] = React.useState({
     page: 0,
     pageSize: 10,
@@ -20,24 +22,32 @@ export function TeamsTable() {
   const getTeams = useCallback(() => {
     fetch(`${apiUrl}/teams?count=true`)
       .then((res) => res.json())
-      .then((data) => setTeamCount(data.count));
+      .then((data: TeamsResponse) =>
+        setTeamCount("Count" in data ? Number(data.Count) : 0)
+      );
 
     fetch(
       `${apiUrl}/teams?page=${paginationModel.page}&page_size=${paginationModel.pageSize}`
     )
       .then((res) => res.json())
-      .then(async (data) => {
-        // swap teama and teamb if teama is not the user's team
-        const teams = data;
-        setLoading(false);
-        setTeams(teams);
+      .then(async (data: TeamsResponse) => {
+        if ("Teams" in data) {
+          // swap teama and teamb if teama is not the user's team
+          const teams = data;
+          setLoading(false);
+          setTeams(teams.Teams);
+        } else {
+          enqueueSnackbar("Error loading teams", { variant: "error" });
+          console.error("Received teams as", data);
+        }
       });
   }, [paginationModel.page, paginationModel.pageSize]);
   useEffect(() => {
     setLoading(true);
     getTeams();
   }, [getTeams, paginationModel]);
-  const renderTeam = (params) => {
+  const renderTeam = (params: { row: Team }) => {
+    console.log(params);
     return (
       <>
         <Avatar
@@ -46,7 +56,7 @@ export function TeamsTable() {
             height: 24,
             marginRight: 2,
           }}
-          src={`${pfpEndpoint}${params.row?.id}`}
+          src={`${apiUrl}/pfp?id=${params.row?.id}`}
         />
         <Link
           to={`/team/${params.row?.id}`}
@@ -55,7 +65,7 @@ export function TeamsTable() {
             textDecoration: "none",
           }}
         >
-          <Typography>{params.value ?? "Deleted team"}</Typography>
+          <Typography>{params.row?.team_name ?? "Deleted team"}</Typography>
         </Link>
       </>
     );

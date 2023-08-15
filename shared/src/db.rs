@@ -4,6 +4,7 @@ use diesel_migrations::{embed_migrations, EmbeddedMigrations};
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
 pub mod conn;
+pub mod dao;
 pub mod models;
 pub mod schema;
 

@@ -22,17 +22,17 @@ async fn main() {
             log::info!("Received message: {:?}", message);
             let result = match message.clone() {
                 GameTask::Game {
-                    bot_a,
-                    bot_b,
+                    defender,
+                    challenger,
                     id,
-                    date: _,
                     rounds,
                     public_logs_presigned,
-                    bot_a_logs_presigned,
-                    bot_b_logs_presigned,
+                    defender_logs_presigned,
+                    challenger_logs_presigned,
                 } => {
                     let mut path = PathBuf::default();
-                    let result = run_game(&bot_a, &bot_b, &s3, &id, rounds, &mut path).await;
+                    let result =
+                        run_game(&defender, &challenger, &s3, &id, rounds, &mut path).await;
 
                     if let Err(e) = result.clone() {
                         log::error!("Game failed: {:?}", e);
@@ -42,20 +42,20 @@ async fn main() {
                     // ignore if they have errors
                     tokio::join!(
                         async {
-                            if let Ok(log) = tokio::fs::read(path.join("bot_a/logs")).await {
+                            if let Ok(log) = tokio::fs::read(path.join("defender/logs")).await {
                                 let _ = reqwest_client
-                                    .put(bot_a_logs_presigned.url)
-                                    .headers(bot_a_logs_presigned.headers.into())
+                                    .put(defender_logs_presigned.url)
+                                    .headers(defender_logs_presigned.headers.into())
                                     .body(log)
                                     .send()
                                     .await;
                             }
                         },
                         async {
-                            if let Ok(f) = tokio::fs::read(path.join("bot_b/logs")).await {
+                            if let Ok(f) = tokio::fs::read(path.join("challenger/logs")).await {
                                 let _ = reqwest_client
-                                    .put(bot_b_logs_presigned.url)
-                                    .headers(bot_b_logs_presigned.headers.into())
+                                    .put(challenger_logs_presigned.url)
+                                    .headers(challenger_logs_presigned.headers.into())
                                     .body(f)
                                     .send()
                                     .await;

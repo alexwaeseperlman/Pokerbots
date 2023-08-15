@@ -7,6 +7,27 @@ services:
       service: db
     ports:
       - 5432:5432
+  website-dev:
+    build:
+      context: .
+      dockerfile: ./website/dev-Dockerfile
+    volumes:
+      - ./website/app/package-lock.json:/usr/src/website/app/package-lock.json
+      - .:/usr/src:ro
+      - website-target:/usr/src/target
+      - website-registry:/usr/local/cargo/registry
+      - website-node_modules:/usr/src/website/app/node_modules
+    depends_on:
+      - sqs
+      - db
+    restart: always
+    extends:
+      file: common-compose.yml
+      service: website
+    environment:
+      - RUST_LOG=debug
+    ports:
+      - 5173:5173
   gameplay-dev:
     build:
       context: .
@@ -18,6 +39,7 @@ services:
     depends_on:
       - sqs
     restart: always
+    privileged: true
     extends:
       file: common-compose.yml
       service: gameplay
@@ -34,6 +56,7 @@ services:
     depends_on:
       - sqs
     restart: always
+    privileged: true
     extends:
       file: common-compose.yml
       service: builder
@@ -60,6 +83,10 @@ services:
     extends:
       file: common-compose.yml
       service: s3
+    ports:
+      - 9000:9000
+      - 9999:9999
+
   createbuckets:
     depends_on:
       - s3
@@ -74,23 +101,12 @@ services:
     ports:
       - 9324:9324
 
-  nginx:
-    extends:
-      file: common-compose.yml
-      service: nginx
-    volumes:
-      - ./dev-nginx.conf.template:/nginx.conf.template:ro
-    ports:
-      - 80:80
-      - 9000:9000
-      - 9999:9999
-    depends_on:
-      - s3
-      - sqs
-
 volumes:
   database:
   minio:
+  website-target:
+  website-registry:
+  website-node_modules:
   gameplay-target:
   gameplay-registry:
   builder-target:

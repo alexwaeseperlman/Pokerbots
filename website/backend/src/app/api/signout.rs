@@ -1,14 +1,20 @@
+use super::*;
 use actix_session::Session;
 use actix_web::get;
-use actix_web::HttpResponse;
-use actix_web::Result;
-use serde_json::json;
+use serde::Serialize;
+
+#[derive(Serialize, TS)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
+pub struct SignoutResponse {
+    pub message: String,
+    pub message_type: String,
+}
 
 #[get("/signout")]
-pub async fn signout(session: Session) -> Result<HttpResponse> {
+pub async fn signout(session: Session) -> ApiResult<SignoutResponse> {
     session.remove("me");
-    Ok(HttpResponse::Ok().json(json!({
-        "message": "You have been signed out.",
-        "message_type": "success"
-    })))
+    Ok(actix_web::web::Json(SignoutResponse {
+        message: "You have been signed out.".to_string(),
+        message_type: "success".to_string(),
+    }))
 }

@@ -1,6 +1,6 @@
 use itertools::Itertools;
 use rand::{thread_rng, Rng};
-use shared::{Bot, GameError, GameResult, WhichBot};
+use shared::{BotJson, GameError, GameResult, WhichBot};
 use std::{
     path::{Path, PathBuf},
     process::Stdio,
@@ -20,14 +20,14 @@ pub mod sandbox;
 pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>>(
     bot: U,
     bot_path: V,
-    bot_bucket: T,
+    challengerucket: T,
     s3_client: &aws_sdk_s3::Client,
 ) -> Result<tokio::process::Child, GameError> {
     let bot_path: PathBuf = bot_path.into();
     shared::s3::download_file(
         &bot.into(),
         &bot_path.join("bot.zip"),
-        &bot_bucket.into(),
+        &challengerucket.into(),
         &s3_client,
     )
     .await?;
@@ -41,9 +41,9 @@ pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>
         .await?;
     log::debug!("Bot unzipped to {:?}", bot_path);
 
-    let bot_json: Bot = async {
+    let bot_json: BotJson = async {
         let json = fs::read_to_string(&bot_path.join("bot/bot.json")).await?;
-        if let Ok(bot) = serde_json::from_str::<Bot>(&json) {
+        if let Ok(bot) = serde_json::from_str::<BotJson>(&json) {
             return Ok(bot);
         }
         Err(io::Error::new(
@@ -75,8 +75,8 @@ pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>
 }
 
 pub async fn run_game(
-    bot_a: &String,
-    bot_b: &String,
+    defender: &String,
+    challenger: &String,
     s3_client: &aws_sdk_s3::Client,
     task_id: &String,
     rounds: usize,
@@ -87,36 +87,36 @@ pub async fn run_game(
     let game_id = format!("{:x}", rand::thread_rng().gen::<u32>());
     let tmp_dir = Path::new("/tmp").join(&game_id);
     *game_path = tmp_dir.clone();
-    log::debug!("Playing {} against {}", bot_a, bot_b);
+    log::debug!("Playing {} against {}", defender, challenger);
     log::info!("Running game {} with local id {}", task_id, game_id);
-    let bot_bucket = std::env::var("COMPILED_BOT_S3_BUCKET").map_err(|e| {
+    let challengerucket = std::env::var("COMPILED_BOT_S3_BUCKET").map_err(|e| {
         log::error!("Error getting COMPILED_BOT_S3_BUCKET: {}", e);
         GameError::InternalError
     })?;
-    log::debug!("Bot bucket: {}", bot_bucket);
+    log::debug!("Bot bucket: {}", challengerucket);
 
     // download bots from s3
     log::debug!("Making bot directories");
-    let bot_a_path = tmp_dir.join("bot_a");
-    fs::create_dir_all(&bot_a_path).await.map_err(|e| {
-        log::error!("Error creating bot_a directory: {}", e);
+    let defender_path = tmp_dir.join("defender");
+    fs::create_dir_all(&defender_path).await.map_err(|e| {
+        log::error!("Error creating defender directory: {}", e);
         shared::GameError::InternalError
     })?;
-    let bot_b_path = tmp_dir.join("bot_b");
-    fs::create_dir_all(&bot_b_path).await.map_err(|e| {
-        log::error!("Error creating bot_b directory: {}", e);
+    let challenger_path = tmp_dir.join("challenger");
+    fs::create_dir_all(&challenger_path).await.map_err(|e| {
+        log::error!("Error creating challenger directory: {}", e);
         shared::GameError::InternalError
     })?;
     log::debug!("Downloading bots from aws");
-    let (bot_a, bot_b) = try_join!(
-        download_and_run(bot_a, bot_a_path, &bot_bucket, s3_client),
-        download_and_run(bot_b, bot_b_path, &bot_bucket, s3_client)
+    let (defender, challenger) = try_join!(
+        download_and_run(defender, defender_path, &challengerucket, s3_client),
+        download_and_run(challenger, challenger_path, &challengerucket, s3_client)
     )?;
 
     // run game
     let mut game = Game::new(
-        bot_a,
-        bot_b,
+        defender,
+        challenger,
         game_id,
         Duration::from_secs(1),
         tokio::fs::File::create(tmp_dir.join("logs")).await?,
@@ -126,8 +126,8 @@ pub async fn run_game(
 }
 
 pub struct Game {
-    bot_a: tokio::process::Child,
-    bot_b: tokio::process::Child,
+    defender: tokio::process::Child,
+    challenger: tokio::process::Child,
     stacks: [u32; 2],
     initial_stacks: [u32; 2],
     button: usize,
@@ -138,15 +138,15 @@ pub struct Game {
 }
 impl Game {
     pub fn new(
-        bot_a: tokio::process::Child,
-        bot_b: tokio::process::Child,
+        defender: tokio::process::Child,
+        challenger: tokio::process::Child,
         id: String,
         timeout: Duration,
         logs: tokio::fs::File,
     ) -> Self {
         Self {
-            bot_a,
-            bot_b,
+            defender,
+            challenger,
             stacks: [50, 50],
             initial_stacks: [50, 50],
             button: 0,
@@ -166,8 +166,8 @@ impl Game {
         self.write_log(format!("{} < {}", which_bot, message.clone()))
             .await?;
         let bot = match which_bot {
-            WhichBot::BotA => &mut self.bot_a,
-            WhichBot::BotB => &mut self.bot_b,
+            WhichBot::Defender => &mut self.defender,
+            WhichBot::Challenger => &mut self.challenger,
         };
         if let Some(ref mut stdin) = bot.stdin {
             stdin
@@ -195,7 +195,8 @@ impl Game {
                         which_bot
                     )
                     .as_bytes(),
-                ).await?;
+                )
+                .await?;
             // TODO: determine cause of close
             self.write_log(format!("System > Ending because {} lost stdin", which_bot))
                 .await?;
@@ -207,8 +208,8 @@ impl Game {
         let position = format!(
             "P {}",
             match which_bot {
-                WhichBot::BotA => self.button,
-                WhichBot::BotB => (self.button + 1) % 2,
+                WhichBot::Defender => self.button,
+                WhichBot::Challenger => (self.button + 1) % 2,
             }
         );
         self.write_bot(which_bot, position).await?;
@@ -227,8 +228,8 @@ impl Game {
     ) -> Result<(), shared::GameError> {
         let cards = [
             state.player_states[match which_bot {
-                WhichBot::BotA => self.button,
-                WhichBot::BotB => 1 - self.button,
+                WhichBot::Defender => self.button,
+                WhichBot::Challenger => 1 - self.button,
             }]
             .hole_cards
             .clone(),
@@ -261,8 +262,8 @@ impl Game {
 
     async fn play_round(
         &mut self,
-        bot_a_reader: &mut BufReader<ChildStdout>,
-        bot_b_reader: &mut BufReader<ChildStdout>,
+        defender_reader: &mut BufReader<ChildStdout>,
+        challenger_reader: &mut BufReader<ChildStdout>,
     ) -> Result<(), shared::GameError> {
         let mut rng = thread_rng();
         let mut state = crate::poker::game::GameState::new(
@@ -278,15 +279,17 @@ impl Game {
 
         let mut round = None;
 
-        self.print_position(WhichBot::BotA).await.map_err(|_| {
+        self.print_position(WhichBot::Defender).await.map_err(|_| {
             log::info!("Failed to print position to bot A.");
-            GameError::RunTimeError(WhichBot::BotA)
+            GameError::RunTimeError(WhichBot::Defender)
         })?;
 
-        self.print_position(WhichBot::BotB).await.map_err(|_| {
-            log::info!("Failed to print position to bot B.");
-            GameError::RunTimeError(WhichBot::BotB)
-        })?;
+        self.print_position(WhichBot::Challenger)
+            .await
+            .map_err(|_| {
+                log::info!("Failed to print position to bot B.");
+                GameError::RunTimeError(WhichBot::Challenger)
+            })?;
 
         loop {
             self.stacks = if self.button == 1 {
@@ -297,45 +300,49 @@ impl Game {
 
             if state.round_over() {
                 log::debug!("Round ended.");
-                self.print_round_end(WhichBot::BotA).await.map_err(|_| {
-                    log::info!("Failed to print round end to bot A.");
-                    GameError::RunTimeError(WhichBot::BotA)
-                })?;
+                self.print_round_end(WhichBot::Defender)
+                    .await
+                    .map_err(|_| {
+                        log::info!("Failed to print round end to bot A.");
+                        GameError::RunTimeError(WhichBot::Defender)
+                    })?;
 
-                self.print_round_end(WhichBot::BotB).await.map_err(|_| {
-                    log::info!("Failed to print round end to bot B.");
-                    GameError::RunTimeError(WhichBot::BotB)
-                })?;
+                self.print_round_end(WhichBot::Challenger)
+                    .await
+                    .map_err(|_| {
+                        log::info!("Failed to print round end to bot B.");
+                        GameError::RunTimeError(WhichBot::Challenger)
+                    })?;
                 break;
             }
             // Print community cards to both bots
             if round != Some(state.round) {
                 log::debug!("Printing community cards.");
                 round = Some(state.round);
-                self.print_cards(WhichBot::BotA, &state)
+                self.print_cards(WhichBot::Defender, &state)
                     .await
                     .map_err(|_| {
                         log::info!("Failed to print community cards to bot A.");
-                        GameError::RunTimeError(WhichBot::BotA)
+                        GameError::RunTimeError(WhichBot::Defender)
                     })?;
-                self.print_cards(WhichBot::BotB, &state)
+                self.print_cards(WhichBot::Challenger, &state)
                     .await
                     .map_err(|_| {
                         log::info!("Failed to print community cards to bot B.");
-                        GameError::RunTimeError(WhichBot::BotB)
+                        GameError::RunTimeError(WhichBot::Challenger)
                     })?;
             }
             // Assume state.whose_turn() is not None
             let whose_turn: WhichBot =
                 if state.whose_turn().ok_or(GameError::InternalError)? == self.button {
-                    WhichBot::BotA
+                    WhichBot::Defender
                 } else {
-                    WhichBot::BotB
+                    WhichBot::Challenger
                 };
 
             let target_reader = match whose_turn {
-                WhichBot::BotA => &mut *bot_a_reader,
-                WhichBot::BotB => &mut *bot_b_reader,
+                WhichBot::Defender => &mut *defender_reader,
+                WhichBot::Challenger => &mut *challenger_reader,
             };
 
             // write current game state to the bots stream
@@ -376,17 +383,17 @@ impl Game {
     /// Play a game of poker, returning a [shared::GameResult]
     pub async fn play(&mut self, rounds: usize) -> shared::GameResult {
         log::debug!("Playing game {} with {} rounds", self.id, rounds);
-        let mut bot_a_reader = BufReader::new(
-            self.bot_a
+        let mut defender_reader = BufReader::new(
+            self.defender
                 .stdout
                 .take()
-                .ok_or(GameError::RunTimeError(WhichBot::BotA))?,
+                .ok_or(GameError::RunTimeError(WhichBot::Defender))?,
         );
-        let mut bot_b_reader = BufReader::new(
-            self.bot_b
+        let mut challenger_reader = BufReader::new(
+            self.challenger
                 .stdout
                 .take()
-                .ok_or(GameError::RunTimeError(WhichBot::BotB))?,
+                .ok_or(GameError::RunTimeError(WhichBot::Challenger))?,
         );
 
         log::info!("Clients connected for {}", self.id);
@@ -399,7 +406,10 @@ impl Game {
             self.write_log(format!("System > round {}/{}", i + 1, rounds))
                 .await?;
             log::debug!("Playing round. Current stacks: {:?}.", self.stacks);
-            if let Err(e) = self.play_round(&mut bot_a_reader, &mut bot_b_reader).await {
+            if let Err(e) = self
+                .play_round(&mut defender_reader, &mut challenger_reader)
+                .await
+            {
                 self.write_log(format!("System > {:?}", e)).await?;
                 Err(e)?;
             }
@@ -417,12 +427,12 @@ extern "C" {
 
 impl Drop for Game {
     fn drop(&mut self) {
-        if let Some(id) = self.bot_a.id() {
+        if let Some(id) = self.defender.id() {
             unsafe {
                 kill(id.try_into().unwrap(), 9);
             }
         }
-        if let Some(id) = self.bot_b.id() {
+        if let Some(id) = self.challenger.id() {
             unsafe {
                 kill(id.try_into().unwrap(), 9);
             }

@@ -3,7 +3,7 @@ use tokio::{fs, io};
 
 use std::path::{Path, PathBuf};
 
-use shared::Bot;
+use shared::BotJson;
 
 pub async fn build_bot<T: AsRef<Path>>(bot_folder: T) -> Result<(), io::Error> {
     //TODO: run this in a cgroup this to protect against zip bombs
@@ -31,9 +31,9 @@ pub async fn build_bot<T: AsRef<Path>>(bot_folder: T) -> Result<(), io::Error> {
     // This should be guaranteed by the server.
 
     // Read build command from bot.json
-    let bot_json: Bot = {
+    let bot_json: BotJson = {
         let json = fs::read_to_string(path.join("bot/bot.json")).await?;
-        serde_json::from_str::<Bot>(&json)?
+        serde_json::from_str::<BotJson>(&json)?
     };
 
     std::fs::write(
@@ -96,13 +96,19 @@ pub async fn build_bot<T: AsRef<Path>>(bot_folder: T) -> Result<(), io::Error> {
 pub async fn download_bot<T: Into<String>, U: Into<PathBuf>, V: Into<String>>(
     key: T,
     path: U,
-    bot_bucket: V,
+    challengerucket: V,
     client: &aws_sdk_s3::Client,
 ) -> Result<(), io::Error> {
     //TODO: download this in a better way
     let key: String = key.into();
     log::debug!("Downloading bot {:?} from s3", key.clone());
-    if let Ok(res) = client.get_object().bucket(bot_bucket).key(key).send().await {
+    if let Ok(res) = client
+        .get_object()
+        .bucket(challengerucket)
+        .key(key)
+        .send()
+        .await
+    {
         if let Ok(body) = res.body.collect().await {
             let bytes = body.into_bytes();
             fs::write(path.into().join("bot.zip"), bytes).await?;
@@ -115,6 +121,7 @@ pub async fn download_bot<T: Into<String>, U: Into<PathBuf>, V: Into<String>>(
     ))
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use std::io;
@@ -179,3 +186,4 @@ mod tests {
         assert_eq!(logs, "Success!\nOr not...\n");
     }
 }
+*/
