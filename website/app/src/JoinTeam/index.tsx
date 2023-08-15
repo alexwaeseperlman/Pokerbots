@@ -1,10 +1,11 @@
 import { Button, Card, Skeleton, TextField, Typography } from "@mui/material";
 import { Box, Container } from "@mui/system";
 import React, { useState } from "react";
-import { Team, apiUrl, useTeam, useUser } from "../state";
+import { apiUrl, useTeam, useUser } from "../state";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { enqueueSnackbar } from "notistack";
 import Login from "../Login";
+import { Team } from "@bindings/Team";
 
 export default function JoinTeam() {
   const navigate = useNavigate();
