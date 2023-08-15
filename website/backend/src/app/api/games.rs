@@ -1,8 +1,11 @@
 use diesel::alias;
 use itertools::Itertools;
-use shared::db::{
-    dao::bots::BotsDao,
-    models::{BotWithTeam, GameWithBots, Team},
+use shared::{
+    db::{
+        dao::bots::BotsDao,
+        models::{BotWithTeam, GameWithBots, Team},
+    },
+    WhichBot,
 };
 
 use super::*;
@@ -53,12 +56,12 @@ pub async fn create_game(
         s3_client
             .put_object()
             .bucket(&*GAME_LOGS_S3_BUCKET)
-            .key(format!("{}/{}", defender, id))
+            .key(format!("{}/{}", WhichBot::Defender.to_string(), id))
             .presigned(presign_config.clone()),
         s3_client
             .put_object()
             .bucket(&*GAME_LOGS_S3_BUCKET)
-            .key(format!("{}/{}", challenger, id))
+            .key(format!("{}/{}", WhichBot::Challenger.to_string(), id))
             .presigned(presign_config.clone()),
     )
     .await?;
@@ -210,20 +213,27 @@ pub async fn games(
 #[derive(Deserialize)]
 pub struct GameLogQuery {
     id: String,
-    bot: Option<i32>,
+    which_bot: Option<WhichBot>,
 }
 
 #[get("/game-log")]
 pub async fn game_log(
     session: Session,
-    web::Query::<GameLogQuery>(GameLogQuery { id, bot }): web::Query<GameLogQuery>,
+    web::Query::<GameLogQuery>(GameLogQuery { id, which_bot }): web::Query<GameLogQuery>,
     s3_client: web::Data<aws_sdk_s3::Client>,
 ) -> Result<HttpResponse, ApiError> {
     let team = login::get_team_data(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
     let conn = &mut (*DB_CONNECTION).get()?;
     // If the bot is specified, make sure it belongs to the team
-    if let Some(bot) = bot {
+    if let Some(which_bot) = which_bot {
+        let game: Game = schema::games::dsl::games
+            .filter(schema::games::dsl::id.eq(&id))
+            .first::<Game>(conn)?;
+        let bot = match which_bot {
+            WhichBot::Defender => game.defender,
+            WhichBot::Challenger => game.challenger,
+        };
         let bot: Vec<Bot> = schema::bots::dsl::bots
             .filter(schema::bots::dsl::id.eq(bot))
             .filter(schema::bots::dsl::team.eq(team.id))
@@ -237,7 +247,7 @@ pub async fn game_log(
     }
     let key = format!(
         "{}/{}",
-        bot.map(|b| b.to_string()).unwrap_or("public".into()),
+        which_bot.map(|b| b.to_string()).unwrap_or("public".into()),
         id
     );
     let response = s3_client

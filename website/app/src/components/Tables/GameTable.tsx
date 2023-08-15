@@ -20,6 +20,7 @@ import { BotWithTeam } from "@bindings/BotWithTeam";
 import { Team } from "@bindings/Team";
 import { GamesResponse } from "@bindings/GamesResponse";
 import { enqueueSnackbar } from "notistack";
+import { WhichBot } from "@bindings/WhichBot";
 
 export const DataGrid = React.lazy(() =>
   import("@mui/x-data-grid").then((mod) => ({ default: mod.DataGrid }))
@@ -235,7 +236,9 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
           <MenuItem
             component="a"
             target="_tab"
-            href={`${apiUrl}/game-log?id=${menuEl?.game.id}&bot=${menuEl?.game?.defender.id}`}
+            href={`${apiUrl}/game-log?id=${menuEl?.game.id}&which_bot=${
+              "Defender" as WhichBot
+            }`}
           >
             Defender game log
           </MenuItem>
@@ -244,7 +247,9 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
           <MenuItem
             component="a"
             target="_tab"
-            href={`${apiUrl}/game-log?id=${menuEl?.game.id}&bot=${menuEl?.game?.challenger.id}`}
+            href={`${apiUrl}/game-log?id=${menuEl?.game.id}&which_bot=${
+              "Challenger" as WhichBot
+            }`}
           >
             Challenger game log
           </MenuItem>
