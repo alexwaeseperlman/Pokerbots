@@ -96,57 +96,60 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
     }, 5000);
     return () => clearInterval(int);
   }, [getGames, paginationModel]);
-  const renderTeam = (score_mul: number) => (params: { row?: Game }) => {
-    let color: ChipProps["color"] = "success";
-    if (params.row?.score_change == null) color = "info";
-    else if (params.row?.score_change * score_mul < 0) color = "error";
-    else if (params.row?.score_change * score_mul == 0) color = "default";
-    if (params.row?.error_type) {
-      color = "warning";
-    }
-    return (
-      <>
-        <Avatar
-          sx={{
-            width: 24,
-            height: 24,
-            marginRight: 2,
-          }}
-          src={`${apiUrl}/pfp?id=${params.value?.team?.id}`}
-        />
-
-        <Chip
-          sx={{
-            width: "50px !important",
-          }}
-          label={
-            params.row.score_change === null
-              ? "Running"
-              : params.row.error_type ?? params.row.score_change * score_mul
-          }
-          color={color}
-        />
-
-        <Box ml={2} mr={2} flexDirection={"column"}>
-          <Link
-            to={`/team/${params.value?.team?.id}`}
-            style={{
-              color: "inherit",
-              textDecoration: "none",
+  const renderTeam =
+    (score_mul: number) =>
+    (params: { row?: Game; value?: BotWithTeam<Team> }) => {
+      let color: ChipProps["color"] = "success";
+      if (params.row?.score_change == null) color = "info";
+      else if (params.row?.score_change * score_mul < 0) color = "error";
+      else if (params.row?.score_change * score_mul == 0) color = "default";
+      if (params.row?.error_type) {
+        color = "warning";
+      }
+      return (
+        <>
+          <Avatar
+            sx={{
+              width: 24,
+              height: 24,
+              marginRight: 2,
             }}
-          >
-            <Typography>
-              {params.value?.team?.team_name ?? "Deleted team"}
-            </Typography>
-          </Link>
+            src={`${apiUrl}/pfp?id=${params.value?.team?.id}`}
+          />
 
-          <Typography fontSize="small" color={"text.secondary"}>
-            {params.value?.name ?? "Deleted bot"}
-          </Typography>
-        </Box>
-      </>
-    );
-  };
+          <Chip
+            sx={{
+              width: "50px !important",
+            }}
+            label={
+              params.row?.score_change === null
+                ? "Running"
+                : params.row?.error_type ??
+                  (params.row?.score_change ?? 0) * score_mul
+            }
+            color={color}
+          />
+
+          <Box ml={2} mr={2} flexDirection={"column"}>
+            <Link
+              to={`/team/${params.value?.team?.id}`}
+              style={{
+                color: "inherit",
+                textDecoration: "none",
+              }}
+            >
+              <Typography>
+                {params.value?.team?.team_name ?? "Deleted team"}
+              </Typography>
+            </Link>
+
+            <Typography fontSize="small" color={"text.secondary"}>
+              {params.value?.name ?? "Deleted bot"}
+            </Typography>
+          </Box>
+        </>
+      );
+    };
 
   return (
     <>

@@ -14,6 +14,7 @@ import { UserData } from "@bindings/UserData";
 import { Game } from "@bindings/Game";
 import { Bot } from "@bindings/Bot";
 import { TeamWithMembers } from "@bindings/TeamWithMembers";
+import { TeamData } from "@bindings/TeamData";
 
 export const apiUrl = window.location.origin + "/api";
 
@@ -38,7 +39,7 @@ export const useUser = () => {
 // choose default value based on route
 const teamAtom = atomFamily<
   string | null,
-  PrimitiveAtom<Promise<TeamWithMembers | null>>
+  PrimitiveAtom<Promise<TeamData | null>>
 >((param) =>
   atom(
     param

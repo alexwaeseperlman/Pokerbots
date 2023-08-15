@@ -14,7 +14,6 @@ pub async fn my_account(session: Session) -> ApiResult<Option<UserData>> {
 
 #[get("/my-team")]
 pub async fn my_team(session: Session) -> ApiResult<Option<TeamData>> {
-    log::debug!("my-team");
     Ok(web::Json(login::get_team_data(&session)))
 }
 
