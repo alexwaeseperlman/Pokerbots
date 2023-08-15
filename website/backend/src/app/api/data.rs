@@ -228,8 +228,9 @@ pub struct InviteCodeQuery {
     pub code: String,
 }
 
-#[derive(Serialize)]
-pub struct TeamInviteWithTeam {
+#[derive(Serialize, TS)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
+pub struct InviteCodeResponse {
     pub invite_code: String,
     pub team: Team,
     pub expires: i64,
@@ -238,13 +239,13 @@ pub struct TeamInviteWithTeam {
 #[get("/invite-code")]
 pub async fn invite_code(
     web::Query::<InviteCodeQuery>(InviteCodeQuery { code }): web::Query<InviteCodeQuery>,
-) -> ApiResult<TeamInviteWithTeam> {
+) -> ApiResult<InviteCodeResponse> {
     let conn = &mut (*DB_CONNECTION).get()?;
     let (invite, team) = schema::team_invites::dsl::team_invites
         .inner_join(schema::teams::dsl::teams)
         .filter(schema::team_invites::dsl::invite_code.eq(&code))
         .first::<(TeamInvite, Team)>(conn)?;
-    Ok(web::Json(TeamInviteWithTeam {
+    Ok(web::Json(InviteCodeResponse {
         invite_code: code,
         expires: invite.expires,
         team,
