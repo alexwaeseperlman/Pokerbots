@@ -158,15 +158,15 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
         columns={[
           {
             field: "challenger",
-            headerName: "Defender",
-            renderCell: renderTeam(-1),
+            headerName: "Challenger",
+            renderCell: renderTeam(1),
             flex: 1,
             sortable: false,
           },
           {
             field: "defender",
-            headerName: "Challenger",
-            renderCell: renderTeam(1),
+            headerName: "Defender",
+            renderCell: renderTeam(-1),
             flex: 1,
             sortable: false,
           },

@@ -211,7 +211,7 @@ export default function BotTable({
           component="a"
           onClick={() => {
             fetch(
-              `${apiUrl}/create-game?defender=${myTeam?.active_bot}&challenger=${menuEl?.bot.id}`
+              `${apiUrl}/create-game?challenger=${myTeam?.active_bot}&defender=${menuEl?.bot.id}`
             ).then(async (r) => {
               const data = await r.json();
               if (data.error) {
