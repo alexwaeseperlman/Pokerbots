@@ -22,7 +22,9 @@ export function TeamsTable() {
   const getTeams = useCallback(() => {
     fetch(`${apiUrl}/teams?count=true`)
       .then((res) => res.json())
-      .then((data) => setTeamCount(data.count));
+      .then((data: TeamsResponse) =>
+        setTeamCount("Count" in data ? Number(data.Count) : 0)
+      );
 
     fetch(
       `${apiUrl}/teams?page=${paginationModel.page}&page_size=${paginationModel.pageSize}`

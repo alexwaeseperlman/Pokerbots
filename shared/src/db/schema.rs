@@ -55,10 +55,10 @@ diesel::table! {
 diesel::joinable!(team_invites -> teams (teamid));
 diesel::joinable!(teams -> bots (active_bot));
 
-diesel::allow_tables_to_appear_in_same_query!(
-    bots,
-    games,
-    team_invites,
-    teams,
-    users,
+diesel::allow_tables_to_appear_in_same_query!(bots, games, team_invites, teams, users,);
+diesel::alias!(
+    bots as defender_bots: DefenderBotsAlias,
+    bots as challenger_bots: ChallengerBotsAlias,
+    teams as defender_teams: DefenderTeamsAlias,
+    teams as challenger_teams: ChallengerTeamsAlias
 );

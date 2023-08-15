@@ -37,7 +37,9 @@ export default function BotTable({
   const getBots = () => {
     fetch(`${apiUrl}/bots?team=${team?.id}&count=true`)
       .then((res) => res.json())
-      .then((data) => setBotCount(data.count));
+      .then((data: BotsResponse) =>
+        setBotCount("Count" in data ? Number(data.Count) : 0)
+      );
 
     return fetch(
       `${apiUrl}/bots?join_team=true&page=${paginationModel.page}&page_size=${paginationModel.pageSize}&team=${team?.id}`

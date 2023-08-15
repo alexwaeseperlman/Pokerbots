@@ -134,7 +134,23 @@ pub async fn games(
 ) -> ApiResult<GamesResponse> {
     use schema::*;
     let conn = &mut (*DB_CONNECTION).get()?;
-    let mut base = schema::games::dsl::games.into_boxed();
+    // Is joining unconditionally bad?
+    let mut base = games::table
+        .inner_join(defender_bots.on(games::dsl::defender.eq(defender_bots.field(bots::dsl::id))))
+        .inner_join(
+            challenger_bots.on(games::dsl::challenger.eq(challenger_bots.field(bots::dsl::id))),
+        )
+        .inner_join(
+            defender_teams.on(defender_bots
+                .field(bots::dsl::team)
+                .eq(defender_teams.field(teams::dsl::id))),
+        )
+        .inner_join(
+            challenger_teams.on(challenger_bots
+                .field(bots::dsl::team)
+                .eq(challenger_teams.field(teams::dsl::id))),
+        )
+        .into_boxed();
     if let Some(active) = active {
         base = base.filter(schema::games::dsl::score_change.is_null().eq(active))
     }
@@ -167,35 +183,10 @@ pub async fn games(
         .limit((page_size).into())
         .offset((page * page_size).into());
 
-    //TODO: figure out how joins work
-    // https://matrix.to/#/!lNGJpfiFVovXFJYmwx:matrix.org/$1691960077179zmkhf:gitter.im?via=gitter.im
-    let result: Vec<Game> = base.load::<Game>(conn)?.into_iter().collect();
+    let result: Vec<(Game, Bot, Bot, Team, Team)> =
+        base.load::<(Game, Bot, Bot, Team, Team)>(conn)?;
     if join_bots.unwrap_or(false) {
-        let (defender_bots, challenger_bots, defender_teams, challenger_teams) = alias!(
-            bots as defender_bots,
-            bots as challenger_bots,
-            teams as defender_teams,
-            teams as challenger_teams
-        );
-        let x: Vec<(Game, Bot, Bot, Team, Team)> = games::table
-            .inner_join(
-                defender_bots.on(games::dsl::defender.eq(defender_bots.field(bots::dsl::id))),
-            )
-            .inner_join(
-                challenger_bots.on(games::dsl::challenger.eq(challenger_bots.field(bots::dsl::id))),
-            )
-            .inner_join(
-                defender_teams.on(defender_bots
-                    .field(bots::dsl::team)
-                    .eq(defender_teams.field(teams::dsl::id))),
-            )
-            .inner_join(
-                challenger_teams.on(challenger_bots
-                    .field(bots::dsl::team)
-                    .eq(challenger_teams.field(teams::dsl::id))),
-            )
-            .load::<(Game, Bot, Bot, Team, Team)>(conn)?;
-        let result: Vec<GameWithBots<BotWithTeam<Team>>> = x
+        let result: Vec<GameWithBots<BotWithTeam<Team>>> = result
             .into_iter()
             .map(
                 |(game, defender, challenger, defender_team, challenger_team)| GameWithBots {
@@ -211,7 +202,9 @@ pub async fn games(
             .collect();
         return Ok(web::Json(GamesResponse::GamesWithBots(result)));
     }
-    Ok(web::Json(GamesResponse::Games(result)))
+    Ok(web::Json(GamesResponse::Games(
+        result.into_iter().map(|(g, _, _, _, _)| g).collect(),
+    )))
 }
 
 #[derive(Deserialize)]

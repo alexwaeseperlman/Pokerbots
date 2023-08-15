@@ -67,7 +67,9 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
       }&count=true`
     )
       .then((res) => res.json())
-      .then((data) => setGameCount(data.count));
+      .then((data: GamesResponse) =>
+        setGameCount("Count" in data ? Number(data.Count) : 0)
+      );
 
     fetch(
       `${apiUrl}/games?join_bots=true&page=${paginationModel.page}&page_size=${
@@ -101,7 +103,7 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
     (score_mul: number) =>
     (params: { row?: Game; value?: BotWithTeam<Team> }) => {
       let color: ChipProps["color"] = "success";
-      if (params.row?.score_change == null) color = "info";
+      if (params.row?.score_change == null) color = "default";
       else if (params.row?.score_change * score_mul < 0) color = "error";
       else if (params.row?.score_change * score_mul == 0) color = "default";
       if (params.row?.error_type) {
