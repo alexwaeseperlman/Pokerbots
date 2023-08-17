@@ -29,6 +29,7 @@ services:
     extends:
       file: common-compose.yml
       service: gameplay
+    init: true
   builder:
     build:
       context: .
@@ -40,6 +41,7 @@ services:
     extends:
       file: common-compose.yml
       service: builder
+    init: true
   results:
     build:
       context: .
