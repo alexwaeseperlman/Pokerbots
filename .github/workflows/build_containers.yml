@@ -1,0 +1,48 @@
+name: Build and deploy containers
+on:
+  push:
+    branches:
+      - main
+      - staging
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  DOCKER_DEFAULT_PLATFORM: linux/arm64
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v2.2.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Cache Local Images
+        id: local-images
+        uses: actions/cache@v3
+        with:
+          path: /var/lib/docker/
+          key: local-docker-directory
+
+      - name: Build images
+        run: |
+          docker compose -f docker-compose.yml build
+
+      - name: Build push
+        run: |
+          docker compose -f docker-compose.yml build

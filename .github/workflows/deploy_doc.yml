@@ -1,4 +1,4 @@
-name: Deploy
+name: Deploy docs
 on:
   push:
     branches:
@@ -13,29 +13,28 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # To push a branch 
-      pull-requests: write  # To create a PR from that branch
+      contents: read
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-    - name: Install latest mdbook
-      run: |
-        tag=$(curl 'https://api.github.com/repos/rust-lang/mdbook/releases/latest' | jq -r '.tag_name')
-        url="https://github.com/rust-lang/mdbook/releases/download/${tag}/mdbook-${tag}-x86_64-unknown-linux-gnu.tar.gz"
-        mkdir mdbook
-        curl -sSL $url | tar -xz --directory=./mdbook
-        echo `pwd`/mdbook >> $GITHUB_PATH
-    - name: Build mdbook
-      run: |
-        # This assumes your book is in the root of your repository.
-        # Just add a `cd` here if you need to change to another directory.
-        cd docs
-        mdbook build
-        mv public ../_site
-    - name: Upload artifact
-      uses: actions/upload-pages-artifact@v2
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Install latest mdbook
+        run: |
+          tag=$(curl 'https://api.github.com/repos/rust-lang/mdbook/releases/latest' | jq -r '.tag_name')
+          url="https://github.com/rust-lang/mdbook/releases/download/${tag}/mdbook-${tag}-x86_64-unknown-linux-gnu.tar.gz"
+          mkdir mdbook
+          curl -sSL $url | tar -xz --directory=./mdbook
+          echo `pwd`/mdbook >> $GITHUB_PATH
+      - name: Build mdbook
+        run: |
+          # This assumes your book is in the root of your repository.
+          # Just add a `cd` here if you need to change to another directory.
+          cd docs
+          mdbook build
+          mv public ../_site
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
   deploy:
     environment:
       name: github-pages
