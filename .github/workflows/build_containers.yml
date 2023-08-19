@@ -32,24 +32,23 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
-      - name: Load local images
-        id: load-local-images
-        uses: actions/download-artifact@v2
+      - name: Cache Local Images
+        id: restore-local-images
+        uses: actions/cache/restore@v3
         with:
-          name: local-images
+          path: /var/lib/docker/
+          key: local-docker-directory
 
       - name: Build images
         run: |
           docker compose -f docker-compose.yml build
 
       - name: Cache Local Images
-        id: local-images
-        uses: actions/upload-artifact@v3
+        id: save-local-images
+        uses: actions/cache/save@v3
         with:
-          name: local-images
-          path: |
-            /var/lib/docker
-          retention-days: 5
+          path: /var/lib/docker/
+          key: local-docker-directory
 
       - name: Build push
         run: |
