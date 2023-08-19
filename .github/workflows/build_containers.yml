@@ -8,7 +8,6 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  #DOCKER_DEFAULT_PLATFORM: linux/arm64
 
 jobs:
   build-and-push:
@@ -32,20 +31,19 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
-      - name: Cache Local Images
-        id: local-images
-        uses: actions/cache@v3
-        with:
-          path: /var/lib/docker/
-          key: local-docker-directory
+      - name: Set default to arm build
+        run: |
+          echo "DOCKER_DEFAULT_PLATFORM=linux/arm64" >> $GITHUB_ENV
 
-      - name: Build images
+      - run: docker compose pull
+
+      - uses: satackey/action-docker-layer-caching@v0.0.11
+        continue-on-error: true
+
+      - name: Build push
         run: |
           docker compose -f docker-compose.yml build
 
       - name: Build push
         run: |
           docker compose -f docker-compose.yml push
-
-      - name: Set docker image ownership
-        run: sudo chown -R $(whoami):$(id -ng) /var/lib/docker
