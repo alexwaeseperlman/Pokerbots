@@ -19,6 +19,9 @@ jobs:
       packages: write
 
     steps:
+      - name: root suid tar to allow caching docker images
+        run: sudo chown root:wheel /bin/tar && sudo chmod u+s /bin/tar
+
       - name: Checkout
         uses: actions/checkout@v3
 
@@ -34,7 +37,7 @@ jobs:
 
       - name: Cache Local Images
         id: restore-local-images
-        uses: actions/cache/restore@v3
+        uses: actions/cache@v3
         with:
           path: /var/lib/docker/
           key: local-docker-directory
@@ -42,13 +45,6 @@ jobs:
       - name: Build images
         run: |
           docker compose -f docker-compose.yml build
-
-      - name: Cache Local Images
-        id: save-local-images
-        uses: actions/cache/save@v3
-        with:
-          path: /var/lib/docker/
-          key: local-docker-directory
 
       - name: Build push
         run: |
