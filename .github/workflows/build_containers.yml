@@ -19,9 +19,6 @@ jobs:
       packages: write
 
     steps:
-      - name: root suid tar to allow caching docker images
-        run: sudo chown root:wheel /bin/tar && sudo chmod u+s /bin/tar
-
       - name: Checkout
         uses: actions/checkout@v3
 
@@ -36,7 +33,7 @@ jobs:
         uses: docker/setup-qemu-action@v2
 
       - name: Cache Local Images
-        id: restore-local-images
+        id: local-images
         uses: actions/cache@v3
         with:
           path: /var/lib/docker/
@@ -49,3 +46,6 @@ jobs:
       - name: Build push
         run: |
           docker compose -f docker-compose.yml push
+
+      - name: Set docker image ownership
+        run: sudo chown -R $(whoami):$(id -ng) /var/lib/docker
