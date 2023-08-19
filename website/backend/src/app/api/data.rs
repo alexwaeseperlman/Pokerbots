@@ -2,7 +2,7 @@ use shared::db::models::{BotWithTeam, Team, TeamWithMembers};
 
 use crate::{
     app::login::{TeamData, UserData},
-    config::APP_PFP_ENDPOINT,
+    config::app_pfp_endpoint,
 };
 
 use super::*;
@@ -264,7 +264,7 @@ pub async fn pfp(
 ) -> Result<HttpResponse, ApiError> {
     let response = s3_client
         .get_object()
-        .bucket(&*PFP_S3_BUCKET)
+        .bucket(pfp_s3_bucket())
         .key(id.to_string())
         .send()
         .await?;

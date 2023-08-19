@@ -1,7 +1,7 @@
 use shared::db::models::NewBot;
 use std::io::Read;
 
-use crate::config::{BOT_S3_BUCKET, BOT_SIZE, BUILD_LOGS_S3_BUCKET};
+use crate::config::{bot_s3_bucket, bot_size, build_logs_s3_bucket};
 
 use super::*;
 
@@ -80,7 +80,7 @@ pub async fn upload_bot(
     session: Session,
     mut payload: web::Payload,
 ) -> ApiResult<UploadBotResponse> {
-    use shared::db::schema::{bots, teams};
+    use shared::db::schema::bots;
     let user = login::get_user_data(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
     let team = login::get_team_data(&session)
@@ -90,7 +90,7 @@ pub async fn upload_bot(
     while let Some(chunk) = payload.next().await {
         let chunk = chunk?;
         // limit max size of in-memory payload
-        if (body.len() + chunk.len()) > (*BOT_SIZE).try_into()? {
+        if (body.len() + chunk.len()) > bot_size().try_into()? {
             return Err(actix_web::error::ErrorBadRequest("Bot too large").into());
         }
         body.extend_from_slice(&chunk);
@@ -127,7 +127,7 @@ pub async fn upload_bot(
     // upload the file to s3
     if let Err(e) = s3_client
         .put_object()
-        .bucket(&*BOT_S3_BUCKET)
+        .bucket(bot_s3_bucket())
         .key(format!("{}", id))
         .body(body.to_vec().into())
         .send()
@@ -144,7 +144,7 @@ pub async fn upload_bot(
         PresigningConfig::expires_in(std::time::Duration::from_secs(60 * 60 * 24 * 7))?;
     let log_presigned = s3_client
         .put_object()
-        .bucket(&*BUILD_LOGS_S3_BUCKET)
+        .bucket(build_logs_s3_bucket())
         .key(format!("{}/build", id))
         .presigned(presign_config.clone())
         .await?;
@@ -191,11 +191,9 @@ pub async fn build_log(
         );
     }
     let key = format!("{}/build", bot);
-    let presign_config =
-        PresigningConfig::expires_in(std::time::Duration::from_secs(60 * 60 * 24 * 7))?;
     let response = s3_client
         .get_object()
-        .bucket(&*BUILD_LOGS_S3_BUCKET)
+        .bucket(build_logs_s3_bucket())
         .key(key)
         .send()
         .await?;

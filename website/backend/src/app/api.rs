@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use ts_rs::TS;
 
-use crate::{app::login, config::PFP_S3_BUCKET};
+use crate::{app::login, config::pfp_s3_bucket};
 use actix_session::Session;
 use actix_web::{delete, get, web};
 use aws_sdk_s3 as s3;
@@ -22,7 +22,7 @@ use shared::db::{
     schema::{team_invites, teams, users},
 };
 
-use crate::config::GAME_LOGS_S3_BUCKET;
+use crate::config::game_logs_s3_bucket;
 use actix_web::{post, put};
 use aws_sdk_s3::presigning::PresigningConfig;
 use futures_util::future::try_join3;

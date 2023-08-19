@@ -50,17 +50,17 @@ pub async fn create_game(
     let (public_logs, defender_logs, challenger_logs) = try_join3(
         s3_client
             .put_object()
-            .bucket(&*GAME_LOGS_S3_BUCKET)
+            .bucket(game_logs_s3_bucket())
             .key(format!("public/{}", id))
             .presigned(presign_config.clone()),
         s3_client
             .put_object()
-            .bucket(&*GAME_LOGS_S3_BUCKET)
+            .bucket(game_logs_s3_bucket())
             .key(format!("{}/{}", WhichBot::Defender.to_string(), id))
             .presigned(presign_config.clone()),
         s3_client
             .put_object()
-            .bucket(&*GAME_LOGS_S3_BUCKET)
+            .bucket(game_logs_s3_bucket())
             .key(format!("{}/{}", WhichBot::Challenger.to_string(), id))
             .presigned(presign_config.clone()),
     )
@@ -252,7 +252,7 @@ pub async fn game_log(
     );
     let response = s3_client
         .get_object()
-        .bucket(&*GAME_LOGS_S3_BUCKET)
+        .bucket(game_logs_s3_bucket())
         .key(key)
         .send()
         .await?;

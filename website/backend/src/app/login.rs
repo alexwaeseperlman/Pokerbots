@@ -5,7 +5,7 @@ use log::error;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::config::{CLIENT_ID, REDIRECT_URI};
+use crate::config::{client_id, redirect_uri};
 use shared::db::conn::DB_CONNECTION;
 
 use shared::db::{
@@ -51,8 +51,8 @@ pub fn microsoft_login_url(return_to: &str) -> String {
     v2.0/authorize?client_id={}&response_type=code&redirect_uri={}\
     &response_mode=query&scope=User.Read&state={}&prompt=select_account",
         "common",
-        CLIENT_ID.to_string(),
-        url_encode(&REDIRECT_URI),
+        client_id().to_string(),
+        url_encode(&redirect_uri()),
         url_encode(return_to)
     )
 }
@@ -161,9 +161,9 @@ pub async fn handle_login(
         .body(format!(
             "code={}&client_id={}&redirect_uri={}&grant_type=authorization_code&client_secret={}",
             code,
-            CLIENT_ID.to_string(),
-            url_encode(&REDIRECT_URI),
-            &*crate::config::AZURE_SECRET
+            client_id().to_string(),
+            url_encode(&redirect_uri()),
+            crate::config::azure_secret()
         ))
         .send()
         .await?
