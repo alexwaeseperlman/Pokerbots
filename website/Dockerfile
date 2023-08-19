@@ -37,9 +37,9 @@ RUN mkdir app
 WORKDIR /usr/src/website
 
 COPY --from=frontend /usr/src/app/dist ./app/dist
-COPY --from=backend /usr/src/backend/target/release/pokerbots ./pokerbots
+COPY --from=backend /usr/src/backend/target/release/upac_web ./upac_web
 
 RUN apt-get update && apt-get install -y libssl-dev ca-certificates libpq-dev openssl
 
-CMD ["./pokerbots"]
+CMD ["./upac_web"]
 

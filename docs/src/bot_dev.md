@@ -1,7 +1,7 @@
 # Building a Bot
 
 ## Communicating with the engine
-Pokerbots get the game state and make their moves by communicating through stdin and stdout. 
+Bots get the game state and make their moves by communicating through stdin and stdout. 
 
 This is what a round looks like:
 1. A single line with an integer `0 <= N < = 1`. This is your player number.

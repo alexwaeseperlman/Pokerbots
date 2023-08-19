@@ -2,7 +2,7 @@ import React, { Suspense } from "react";
 import { Route, Routes, useNavigate, useParams } from "react-router-dom";
 import HomePage from "./HomePage";
 import ManageTeam, { DisplayTeam } from "./ManageTeam";
-import { Team, useTeam, useUser } from "./state";
+import { useTeam, useUser } from "./state";
 
 import logoImage from "../static/assets/logo.webp";
 import { TopBar, BottomBar } from "./components/AppBar";
@@ -77,7 +77,7 @@ function TeamDashboard() {
   );
 }
 
-export default function PokerZero() {
+export default function UPAC() {
   return (
     <Routes>
       <Route path="/">

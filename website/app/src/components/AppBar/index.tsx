@@ -125,12 +125,12 @@ export function BottomBar() {
           flexGrow: 1,
         }}
       >
-        <BarItem label="© Poker Bot League 2023" />
+        <BarItem label="© UPAC 2023" />
       </Box>
       <BarItem
         label="REPORT AN ISSUE"
         command={() => {
-          window.open("https://github.com/alexwaeseperlman/Pokerbots/issues");
+          window.open("https://github.com/alexwaeseperlman/UPAC/issues");
         }}
       />
     </Box>
