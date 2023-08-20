@@ -1,5 +1,0 @@
-{
-    "name": "Raise with pocket pairs",
-    "build": "g++ main.cpp -o main",
-    "run": "./main"
-}

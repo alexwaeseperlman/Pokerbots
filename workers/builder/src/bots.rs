@@ -74,6 +74,7 @@ pub async fn build_bot<T: AsRef<Path>>(bot_folder: T) -> Result<(), io::Error> {
             format!("Build failed: {:?}", chmod_result),
         )),
     };
+
     let build_result = subprocess::Popen::create(
         &["su", "builder", "-c","bwrap --unshare-all --die-with-parent --dir /tmp --ro-bind /usr /usr --proc /proc --dev /dev --ro-bind /lib /lib --ro-bind /usr/bin /usr/bin --ro-bind /bin /bin --bind . /home/builder --chdir /home/builder ./build.sh" ],
         PopenConfig {
