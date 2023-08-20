@@ -9,11 +9,23 @@ async fn process(
     s3: &aws_sdk_s3::Client,
     reqwest_client: &reqwest::Client,
 ) -> Result<(), Box<dyn Error>> {
-    let challengerucket = std::env::var("BOT_S3_BUCKET")?;
-    let compiled_challengerucket = std::env::var("COMPILED_BOT_S3_BUCKET")?;
+    let bot_bucket = std::env::var("BOT_S3_BUCKET")?;
+    let compiled_bot_bucket = std::env::var("COMPILED_BOT_S3_BUCKET")?;
     fs::create_dir_all(format!("/tmp/{}", bot)).await?;
     let bot_path = std::path::Path::new("/tmp").join(&bot);
-    shared::s3::download_file(&bot, &bot_path.join("bot.zip"), &challengerucket, &s3).await?;
+    // Command::new("mount")
+    //     .arg("-t")
+    //     .arg("tmpfs")
+    //     .arg("-o")
+    //     .arg("rw,size=2G")
+    //     .arg(format!("{}", bot))
+    //     .arg(format!("/tmp/{}", bot))
+    //     .stderr(Stdio::null())
+    //     .stdout(Stdio::null())
+    //     .current_dir(format!("/tmp/{}", bot))
+    //     .status()
+    //     .await?;
+    shared::s3::download_file(&bot, &bot_path.join("bot.zip"), &bot_bucket, &s3).await?;
     let result = build_bot(bot_path).await;
     // upload the logs
     let log = fs::read(format!("/tmp/{}/logs", bot)).await?;
@@ -45,7 +57,7 @@ async fn process(
     // TODO: this should use a presigned url, like the logs
     if let Err(e) = s3
         .put_object()
-        .bucket(compiled_challengerucket)
+        .bucket(compiled_bot_bucket)
         .key(format!("{}", &bot))
         .body(
             fs::read(format!("/tmp/{}/compiled_bot.zip", &bot))
