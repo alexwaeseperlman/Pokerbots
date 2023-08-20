@@ -35,7 +35,7 @@ jobs:
         run: |
           echo "DOCKER_DEFAULT_PLATFORM=linux/arm64" >> $GITHUB_ENV
 
-      - run: docker compose pull
+      - run: docker compose pull --ignore-pull-failures
 
       - uses: satackey/action-docker-layer-caching@v0.0.11
         continue-on-error: true
