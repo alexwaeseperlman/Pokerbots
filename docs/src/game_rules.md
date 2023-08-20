@@ -1,7 +1,7 @@
 # Developing bots
 
 ## The game
-Pokerbots play 2-player Texas Holdem' with fixed blinds. We chose this format 
+Bots play 2-player Texas Holdem' with fixed blinds. We chose this format 
 instead of larger games or tournament style because it has fewer factors for bots to deal with.
 This way you can focus on understanding your opponent and betting intelligently.
 

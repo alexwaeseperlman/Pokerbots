@@ -5,7 +5,7 @@ import "./styles.module.css";
 import { SnackbarProvider } from "notistack";
 
 //import "../static/css/styles.css";
-import PokerZero from "./PokerZero";
+import UPAC from "./UPAC";
 import { ThemeProvider } from "@mui/material";
 import theme from "./theme";
 
@@ -14,7 +14,7 @@ function RootApp() {
     <SnackbarProvider maxSnack={3}>
       <ThemeProvider theme={theme}>
         <BrowserRouter>
-          <PokerZero />
+          <UPAC />
         </BrowserRouter>
       </ThemeProvider>
     </SnackbarProvider>

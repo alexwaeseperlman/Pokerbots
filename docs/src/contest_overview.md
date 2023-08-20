@@ -3,7 +3,7 @@
 
 ## What is UPAC?
 
-UPAC (University Poker Algorithm Competition) is a virtual contest that aims to bring together students from around the world to compete in developing the best poker bots.
+UPAC (University Poker Algorithm Competition) is a virtual contest that aims to bring together students from around the world to compete in developing the best poker algorithms.
 
 ## Schedule (TBD)
 

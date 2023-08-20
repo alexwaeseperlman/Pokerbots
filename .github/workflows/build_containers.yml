@@ -42,7 +42,7 @@ jobs:
       - name: Set version name
         run: |
           if [[ $GITHUB_REF_NAME == "staging" ]]; then
-            echo "IMAGE_SUFFIX=-staging" >> $GITHUB_ENV
+            echo "IMAGE_SUFFIX=_staging" >> $GITHUB_ENV
             exit 0
           fi
 
