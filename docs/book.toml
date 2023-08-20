@@ -1,0 +1,10 @@
+[book]
+authors = ["Santosh Passoubady"]
+language = "en"
+multilingual = false
+src = "src"
+title = "UPAC Documentation"
+description = "The official Documentation for UPAC"
+[build]
+build-dir = "public"
+create-missing = false

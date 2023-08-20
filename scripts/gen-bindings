@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# This script is used to generate the bindings for typescript
+
+# Ensure that the script is run from the root of the project
+if [ ! -f "scripts/gen-bindings" ]; then
+    echo "This script must be run from the root of the project"
+    exit 1
+fi
+
+rm -rf website/app/src/bindings
+mkdir bindings
+
+(cd website/backend && cargo test --features ts-bindings && mv bindings/* ../../bindings && rmdir bindings && echo "done backend")
+(cd shared && cargo test --features ts-bindings,db && mv bindings/* ../bindings && rmdir bindings && echo "done shared")
+
+mv bindings website/app/src

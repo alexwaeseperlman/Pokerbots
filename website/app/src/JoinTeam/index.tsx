@@ -1,10 +1,12 @@
 import { Button, Card, Skeleton, TextField, Typography } from "@mui/material";
 import { Box, Container } from "@mui/system";
 import React, { useState } from "react";
-import { Team, apiUrl, useTeam, useUser } from "../state";
+import { apiUrl, useTeam, useUser } from "../state";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { enqueueSnackbar } from "notistack";
 import Login from "../Login";
+import { Team } from "@bindings/Team";
+import { InviteCodeResponse } from "@bindings/InviteCodeResponse";
 
 export default function JoinTeam() {
   const navigate = useNavigate();
@@ -23,12 +25,12 @@ export default function JoinTeam() {
     }
     fetch(`${apiUrl}/invite-code?code=${code}`)
       .then((res) => res.json())
-      .then((data) => {
-        if (data.error) {
+      .then((data: InviteCodeResponse | { error: string }) => {
+        if ("error" in data) {
           navigate("/");
           enqueueSnackbar(data.error, { variant: "error" });
         }
-        setTeam(data[1]);
+        setTeam(data.team);
       });
   }, [code]);
 
@@ -74,7 +76,7 @@ export default function JoinTeam() {
             fetch(`${apiUrl}/join-team?invite_code=${code}`)
               .then((res) => res.json())
               .then((data) => {
-                if (data.error) {
+                if (data) {
                   enqueueSnackbar(data.error, { variant: "error" });
                 } else {
                   navigate("/manage-team");

@@ -1,5 +1,5 @@
 use diesel::prelude::*;
-use shared::{GameError, GameResult, GameStatus, GameStatusMessage};
+use shared::{GameError, GameStatus, GameStatusMessage};
 
 pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
     use shared::db::schema::{bots, games};
@@ -37,29 +37,29 @@ pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
                 GameError::InvalidActionError(which_bot) => {
                     error_type = Some("INVALID_ACTION".into());
                     score_change = match which_bot {
-                        shared::WhichBot::BotA => -100,
-                        shared::WhichBot::BotB => 100,
+                        shared::WhichBot::Defender => -100,
+                        shared::WhichBot::Challenger => 100,
                     };
                 }
                 GameError::MemoryError(which_bot) => {
                     error_type = Some("MEMORY".into());
                     score_change = match which_bot {
-                        shared::WhichBot::BotA => -100,
-                        shared::WhichBot::BotB => 100,
+                        shared::WhichBot::Defender => -100,
+                        shared::WhichBot::Challenger => 100,
                     };
                 }
                 GameError::RunTimeError(which_bot) => {
                     error_type = Some("RUNTIME".into());
                     score_change = match which_bot {
-                        shared::WhichBot::BotA => -100,
-                        shared::WhichBot::BotB => 100,
+                        shared::WhichBot::Defender => -100,
+                        shared::WhichBot::Challenger => 100,
                     };
                 }
                 GameError::TimeoutError(which_bot) => {
                     error_type = Some("TIMEOUT".into());
                     score_change = match which_bot {
-                        shared::WhichBot::BotA => -100,
-                        shared::WhichBot::BotB => 100,
+                        shared::WhichBot::Defender => -100,
+                        shared::WhichBot::Challenger => 100,
                     };
                 }
             }

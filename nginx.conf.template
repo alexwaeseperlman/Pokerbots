@@ -1,0 +1,57 @@
+user nginx;
+
+events {
+	worker_connections   1000;
+}
+
+http {
+	server {
+		listen 80;
+		listen 443 ssl;
+
+		ssl_certificate /etc/letsencrypt/live/DOMAIN_NAME/fullchain.pem;
+		ssl_certificate_key /etc/letsencrypt/live/DOMAIN_NAME/privkey.pem;
+
+		include /etc/letsencrypt/options-ssl-nginx.conf;
+		ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+		location /.well-known/acme-challenge/ {
+			root /var/www/certbot;
+		}
+
+		location / {
+			proxy_pass http://website:3000;
+		}
+	}
+	server {
+		listen 9000 ssl;
+		location /.well-known/acme-challenge/ {
+			root /var/www/certbot;
+		}
+		ssl_certificate /etc/letsencrypt/live/DOMAIN_NAME/fullchain.pem;
+		ssl_certificate_key /etc/letsencrypt/live/DOMAIN_NAME/privkey.pem;
+
+		include /etc/letsencrypt/options-ssl-nginx.conf;
+		ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+
+		# Allow special characters in headers
+		ignore_invalid_headers off;
+		# Allow any size file to be uploaded.
+		# Set to a value such as 1000m; to restrict file size to a specific value
+		client_max_body_size 0;
+		# Disable buffering
+		proxy_buffering off;
+		proxy_request_buffering off;
+
+		location / {
+			proxy_pass http://s3:9000;
+
+			proxy_set_header Host $http_host;
+			proxy_set_header X-Real-IP $remote_addr;
+			proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+			proxy_set_header X-Forwarded-Proto $scheme;
+			proxy_set_header X-NginX-Proxy true;
+		}
+	}
+}

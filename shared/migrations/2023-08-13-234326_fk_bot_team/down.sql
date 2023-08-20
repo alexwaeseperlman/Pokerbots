@@ -1,0 +1,1 @@
+ALTER TABLE bots DROP CONSTRAINT team_fk_teams_id;

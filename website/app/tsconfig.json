@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "paths": {
+      "@bindings/*": ["src/bindings/*"]
+    },
+    "baseUrl": ".",
+    "target": "ES2015",
+    "moduleResolution": "NodeNext",
+    "module": "NodeNext",
+    "jsx": "react",
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "noImplicitAny": true
+  }
+}

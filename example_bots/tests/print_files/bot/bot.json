@@ -1,0 +1,5 @@
+{
+	"name": "Find /tmp",
+	"build": "find /tmp",
+	"run": "curl http://google.com"
+}

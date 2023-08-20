@@ -1,0 +1,5 @@
+{
+  "name": "Raise with pocket pairs and monitor time",
+  "build": "g++ main.cpp -o main && g++ tim.cpp -o tim",
+  "run": "./time.sh & ./main"
+}

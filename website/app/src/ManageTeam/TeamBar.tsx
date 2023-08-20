@@ -1,5 +1,5 @@
 import React, { useState, useLayoutEffect, useEffect } from "react";
-import { Team, apiUrl, usePfpEndpoint, useTeam, useUser } from "../state";
+import { apiUrl, useTeam, useUser } from "../state";
 import Box from "@mui/system/Box";
 import { Container } from "@mui/system";
 import AddIcon from "@mui/icons-material/Add";
@@ -16,12 +16,12 @@ import { Button, Icon, TextField, useTheme } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import CopyIcon from "@mui/icons-material/ContentCopy";
 import { enqueueSnackbar } from "notistack";
+import { Team } from "@bindings/Team";
 
 function PfpUpload({ team, readonly }: { team: Team; readonly: boolean }) {
   const [drag, setDrag] = useState(false);
   const fetchTeam = useTeam(null)[1];
 
-  const [pfpEndpoint, fetchPfpEndpoint] = usePfpEndpoint();
   const [boxWidth, setBoxWidth] = useState(0);
   const [uploading, setUploading] = useState(false);
 
@@ -35,7 +35,7 @@ function PfpUpload({ team, readonly }: { team: Team; readonly: boolean }) {
     })
       .then(async (res) => {
         const json = await res.json();
-        if (json.error) {
+        if (json !== null && json.error) {
           enqueueSnackbar(json.error, {
             variant: "error",
           });
@@ -92,17 +92,7 @@ function PfpUpload({ team, readonly }: { team: Team; readonly: boolean }) {
           handleUpload(e.dataTransfer.files[0]);
           setDrag(false);
         }}
-        src={
-          uploading
-            ? ""
-            : `${pfpEndpoint}${team?.id}?${
-                readonly
-                  ? ""
-                  : Math.floor(
-                      Date.now() / 1000
-                    ) /* Reset the cache every second */
-              }`
-        }
+        src={uploading ? "" : `${apiUrl}/pfp?id=${team?.id}`}
       ></Avatar>
 
       <Box

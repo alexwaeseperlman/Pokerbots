@@ -1,4 +1,4 @@
-name: Rust
+name: Run tests
 
 on:
   push:
@@ -10,14 +10,26 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  gen-bindings:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Generate bindings
+        run: ./scripts/gen-bindings
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Update bindings
+
   build:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y python3 pip bubblewrap
       - name: Build
         run: cargo build --verbose
       - name: Run tests
-        run: cargo test --verbose
-      - name: Run workers/gameplayker tests
-        run: cd workers/gameplay; cargo test --verbose
+        run: cargo test --verbose --workspace

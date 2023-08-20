@@ -26,7 +26,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - MICROSOFT_CLIENT_ID=${MICROSOFT_CLIENT_ID}
       - MICROSOFT_TENANT_ID=${MICROSOFT_TENANT_ID}
-      - REDIRECT_URI=http://localhost:3000/api/login
+      - REDIRECT_URI=${REDIRECT_URI}
 
       - PFP_S3_BUCKET=${PFP_S3_BUCKET}
       - BOT_S3_BUCKET=${BOT_S3_BUCKET}
@@ -40,20 +40,21 @@ services:
       - BOT_UPLOADS_QUEUE_URL=http://sqs:9324/queue/bot_uploads
       - NEW_GAMES_QUEUE_URL=http://sqs:9324/queue/new_games
 
-      - RUST_LOG=debug
+      - RUST_LOG=info
 
-      - APP_PFP_ENDPOINT=http://s3:9000/${PFP_S3_BUCKET}/
+      - APP_PFP_ENDPOINT=https://${DOMAIN_NAME}:9000/${PFP_S3_BUCKET}/
       - S3_ADDRESS=http://s3:9000
       - SQS_ADDRESS=http://sqs:9324
       - PORT=3000
 
       - S3_ACCESS_KEY=${S3_ACCESS_KEY}
       - S3_SECRET_KEY=${S3_SECRET_KEY}
+
   gameplay:
     volumes:
       - ~/.aws/:/root/.aws:ro
     environment:
-      - RUST_LOG=debug
+      - RUST_LOG=info
       - S3_ACCESS_KEY=${S3_ACCESS_KEY}
       - S3_SECRET_KEY=${S3_SECRET_KEY}
 
@@ -65,11 +66,13 @@ services:
 
       - COMPILED_BOT_S3_BUCKET=${COMPILED_BOT_S3_BUCKET}
       - GAME_LOGS_S3_BUCKET=${GAME_LOGS_S3_BUCKET}
+
   builder:
     volumes:
       - ~/.aws/:/root/.aws:ro
+    privileged: true
     environment:
-      - RUST_LOG=debug
+      - RUST_LOG=info
       - COMPILED_BOT_S3_BUCKET=${COMPILED_BOT_S3_BUCKET}
       - BOT_S3_BUCKET=${BOT_S3_BUCKET}
       - BUILD_LOGS_S3_BUCKET=${BUILD_LOGS_S3_BUCKET}
@@ -95,7 +98,7 @@ services:
 
       - S3_ACCESS_KEY=${S3_ACCESS_KEY}
       - S3_SECRET_KEY=${S3_SECRET_KEY}
-      - RUST_LOG=debug
+      - RUST_LOG=info
       - S3_ADDRESS=http://s3:9000
       - SQS_ADDRESS=http://sqs:9324
       - GAME_LOGS_S3_BUCKET=${GAME_LOGS_S3_BUCKET}
@@ -135,3 +138,22 @@ services:
     image: softwaremill/elasticmq
     volumes:
       - ./elasticmq.conf:/opt/elasticmq.conf:ro
+
+  nginx:
+    image: nginx:stable
+    command: |
+      sh -c '
+      while :; do
+        sed s/DOMAIN_NAME/${DOMAIN_NAME}/g /nginx.conf.template > /etc/nginx/nginx.conf
+        sleep 6h & wait $${!}
+        nginx -s reload
+      done & (sleep 1 && nginx -g "daemon off;")'
+    volumes:
+      - ./.volumes/certbot/conf:/etc/letsencrypt
+      - ./.volumes/certbot/www:/var/www/certbot
+    environment:
+      - DOMAIN_NAME=${DOMAIN_NAME}
+    ports:
+      - 80:80
+      - 443:443
+      - 9000:9000
