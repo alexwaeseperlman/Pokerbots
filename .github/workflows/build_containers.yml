@@ -44,10 +44,10 @@ jobs:
           restore-keys: |
             docker-cache-
 
-      - name: Build push
+      - name: Build containers
         run: |
           docker compose -f docker-compose.yml build
 
-      - name: Build push
+      - name: Push containers
         run: |
           docker compose -f docker-compose.yml push
