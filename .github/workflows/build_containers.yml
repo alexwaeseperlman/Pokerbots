@@ -1,0 +1,55 @@
+name: Build and deploy containers
+on:
+  push:
+    branches:
+      - main
+      - staging
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v2.2.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set default to arm build
+        run: |
+          echo "DOCKER_DEFAULT_PLATFORM=linux/arm64" >> $GITHUB_ENV
+
+      - run: docker compose pull --ignore-pull-failures
+
+      - uses: satackey/action-docker-layer-caching@v0.0.11
+        continue-on-error: true
+
+      - name: Set version name
+        run: |
+          if [[ $GITHUB_REF_NAME == "staging" ]]; then
+            echo "IMAGE_SUFFIX=_staging" >> $GITHUB_ENV
+            exit 0
+          fi
+
+      - name: Build containers
+        run: |
+          docker compose -f docker-compose.yml build
+
+      - name: Push containers
+        run: |
+          docker compose -f docker-compose.yml push

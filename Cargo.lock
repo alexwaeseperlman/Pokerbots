@@ -3369,42 +3369,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "26072860ba924cbfa98ea39c8c19b4dd6a4a25423dbdf219c1eca91aa0cf6964"
 
 [[package]]
-name = "pokerbots"
-version = "0.1.0"
-dependencies = [
- "actix",
- "actix-files",
- "actix-multipart",
- "actix-service",
- "actix-session",
- "actix-web",
- "aws-config",
- "aws-sdk-s3",
- "aws-sdk-sqs",
- "cargo-watch",
- "chrono",
- "diesel",
- "dotenvy",
- "env_logger",
- "futures",
- "futures-util",
- "itertools 0.11.0",
- "lazy_static",
- "log",
- "r2d2",
- "rand 0.8.5",
- "reqwest",
- "serde",
- "serde_json",
- "serde_yaml",
- "shared",
- "tokio",
- "ts-rs",
- "url",
- "zip",
-]
-
-[[package]]
 name = "polling"
 version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4528,6 +4492,42 @@ name = "untrusted"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a156c684c91ea7d62626509bce3cb4e1d9ed5c4d978f7b4352658f96a4c26b4a"
+
+[[package]]
+name = "upac_web"
+version = "0.1.0"
+dependencies = [
+ "actix",
+ "actix-files",
+ "actix-multipart",
+ "actix-service",
+ "actix-session",
+ "actix-web",
+ "aws-config",
+ "aws-sdk-s3",
+ "aws-sdk-sqs",
+ "cargo-watch",
+ "chrono",
+ "diesel",
+ "dotenvy",
+ "env_logger",
+ "futures",
+ "futures-util",
+ "itertools 0.11.0",
+ "lazy_static",
+ "log",
+ "r2d2",
+ "rand 0.8.5",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "shared",
+ "tokio",
+ "ts-rs",
+ "url",
+ "zip",
+]
 
 [[package]]
 name = "url"

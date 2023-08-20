@@ -1,5 +1,5 @@
 # Build frontend in one container, backend in another, then copy the results into a third container
-FROM --platform=$BUILDARCH node:20.2.0-bullseye-slim as frontend
+FROM --platform=linux/arm64 node:20.2.0-bullseye-slim as frontend
 WORKDIR /usr/src/app
 COPY website/app/package.json package.json
 COPY website/app/package-lock.json ./package-lock.json
@@ -8,7 +8,7 @@ RUN npm ci
 COPY website/app .
 RUN npm run build
 
-FROM --platform=$BUILDARCH rust:1.70 as backend
+FROM --platform=linux/arm64 rust:1.70 as backend
 WORKDIR /usr/src/backend
 RUN apt-get update && apt-get install pkg-config libssl-dev libpq-dev curl build-essential -y
 
@@ -29,7 +29,7 @@ RUN touch src/main.rs
 RUN cargo build --release
 
 # Copy files and build
-FROM --platform=$BUILDARCH debian:bullseye
+FROM --platform=linux/arm64 debian:bullseye
 
 WORKDIR /usr/src/website
 
@@ -37,9 +37,9 @@ RUN mkdir app
 WORKDIR /usr/src/website
 
 COPY --from=frontend /usr/src/app/dist ./app/dist
-COPY --from=backend /usr/src/backend/target/release/pokerbots ./pokerbots
+COPY --from=backend /usr/src/backend/target/release/upac_web ./upac_web
 
 RUN apt-get update && apt-get install -y libssl-dev ca-certificates libpq-dev openssl
 
-CMD ["./pokerbots"]
+CMD ["./upac_web"]
 
