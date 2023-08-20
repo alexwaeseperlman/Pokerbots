@@ -72,7 +72,7 @@ export default function HomePage() {
               height: "100px",
             }}
           />
-          <Typography variant="h2">Poker Bot League</Typography>
+          <Typography variant="h2">UPAC</Typography>
         </Box>
         <Box
           sx={{
