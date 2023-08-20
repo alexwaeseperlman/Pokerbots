@@ -1,4 +1,4 @@
-FROM --platform=$BUILDARCH rust:1.71
+FROM --platform=linux/arm64 rust:1.71
 RUN apt-get update && apt-get install -y python3 pip ca-certificates
 
 # Install common python packages

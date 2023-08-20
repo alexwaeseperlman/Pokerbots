@@ -1,4 +1,4 @@
-FROM --platform=$BUILDARCH rust:1.70 as builder
+FROM --platform=linux/arm64 rust:1.70 as builder
 
 WORKDIR /usr/src/results
 
@@ -16,7 +16,7 @@ RUN touch src/main.rs
 RUN cargo build --release 
 
 # Install python3 and pip so people can use common packages in their bots
-FROM --platform=$BUILDARCH debian:bullseye
+FROM --platform=linux/arm64 debian:bullseye
 
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 RUN echo 'source $HOME/.cargo/env' >> $HOME/.bashrc
