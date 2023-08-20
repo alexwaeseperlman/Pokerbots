@@ -63,7 +63,7 @@ export const useTeam = (selectedTeam: string | null) => {
     if (!selectedTeam)
       setTeam(
         fetch(`${apiUrl}/my-team`)
-          .then((res: TeamWithMembers) => res.json())
+          .then((res) => res.json())
           .catch(() => null)
       );
     else {
