@@ -4,9 +4,6 @@ on:
     branches:
       - main
       - staging
-  pull_request:
-    branches:
-      - main
 
 env:
   REGISTRY: ghcr.io
@@ -44,11 +41,9 @@ jobs:
 
       - name: Set version name
         run: |
-          if [[ $GITHUB_REF_NAME == "main" ]]; then
-            echo "VERSION=${GITHUB_SHA}" >> $GITHUB_ENV
+          if [[ $GITHUB_REF_NAME == "staging" ]]; then
+            echo "IMAGE_SUFFIX=-staging" >> $GITHUB_ENV
             exit 0
-          else
-            echo "VERSION=${GITHUB_REF_NAME}-${GITHUB_SHA}" >> $GITHUB_ENV
           fi
 
       - name: Build containers
