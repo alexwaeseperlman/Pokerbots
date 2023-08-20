@@ -4,14 +4,12 @@ on:
     branches:
       - main
       - staging
+  pull_request:
+    branches:
+      - main
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
-
-permissions:
-  contents: read
-  packages: write
 
 jobs:
   build-and-push:
@@ -43,10 +41,15 @@ jobs:
 
       - uses: satackey/action-docker-layer-caching@v0.0.11
         continue-on-error: true
-        with:
-          key: docker-cache-{hash}
-          restore-keys: |
-            docker-cache-
+
+      - name: Set version name
+        run: |
+          if [[ $GITHUB_REF_NAME == "main" ]]; then
+            echo "VERSION=${GITHUB_SHA}" >> $GITHUB_ENV
+            exit 0
+          else
+            echo "VERSION=${GITHUB_REF_NAME}-${GITHUB_SHA}" >> $GITHUB_ENV
+          fi
 
       - name: Build containers
         run: |

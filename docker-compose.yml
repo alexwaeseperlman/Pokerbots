@@ -7,7 +7,7 @@ services:
       service: db
   # Frontend and backend
   website:
-    image: ghcr.io/alexwaeseperlman/upac_website
+    image: ghcr.io/alexwaeseperlman/upac_website:${VERSION:-latest}
     build:
       context: .
       dockerfile: ./website/Dockerfile
@@ -18,7 +18,7 @@ services:
       file: common-compose.yml
       service: website
   gameplay:
-    image: ghcr.io/alexwaeseperlman/upac_gameplay
+    image: ghcr.io/alexwaeseperlman/upac_gameplay:${VERSION:-latest}
     build:
       context: .
       dockerfile: ./workers/gameplay/Dockerfile
@@ -30,7 +30,7 @@ services:
       file: common-compose.yml
       service: gameplay
   builder:
-    image: ghcr.io/alexwaeseperlman/upac_builder
+    image: ghcr.io/alexwaeseperlman/upac_builder:${VERSION:-latest}
     build:
       context: .
       dockerfile: ./workers/builder/Dockerfile
@@ -42,7 +42,7 @@ services:
       file: common-compose.yml
       service: builder
   results:
-    image: ghcr.io/alexwaeseperlman/upac_results
+    image: ghcr.io/alexwaeseperlman/upac_results:${VERSION:-latest}
     build:
       context: .
       dockerfile: ./workers/results/Dockerfile
