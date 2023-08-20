@@ -15,6 +15,7 @@ import { Game } from "@bindings/Game";
 import { Bot } from "@bindings/Bot";
 import { TeamWithMembers } from "@bindings/TeamWithMembers";
 import { TeamData } from "@bindings/TeamData";
+import { TeamsResponse } from "@bindings/TeamsResponse";
 
 export const apiUrl = window.location.origin + "/api";
 
@@ -45,7 +46,10 @@ const teamAtom = atomFamily<
     param
       ? fetch(`${apiUrl}/teams?ids=${param ?? ""}&fill_members=true`)
           .then((res) => res.json())
-          .then((teams) => teams[0])
+          .then((teams: TeamsResponse) => {
+            if ("TeamsWithMembers" in teams) return teams.TeamsWithMembers[0];
+            return null;
+          })
           .catch(() => null)
       : fetch(`${apiUrl}/my-team`)
           .then((res) => res.json())
@@ -59,7 +63,7 @@ export const useTeam = (selectedTeam: string | null) => {
     if (!selectedTeam)
       setTeam(
         fetch(`${apiUrl}/my-team`)
-          .then((res) => res.json())
+          .then((res: TeamWithMembers) => res.json())
           .catch(() => null)
       );
     else {
