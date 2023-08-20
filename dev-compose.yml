@@ -12,8 +12,8 @@ services:
       context: .
       dockerfile: ./website/dev-Dockerfile
     volumes:
-      - ./website/app/package-lock.json:/usr/src/website/app/package-lock.json
       - .:/usr/src:ro
+      - ./website/app/package-lock.json:/usr/src/website/app/package-lock.json
       - website-target:/usr/src/target
       - website-registry:/usr/local/cargo/registry
       - website-node_modules:/usr/src/website/app/node_modules

@@ -22,7 +22,7 @@ pub mod sandbox;
 pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>>(
     bot: U,
     bot_path: V,
-    challengerucket: T,
+    bot_bucket: T,
     s3_client: &aws_sdk_s3::Client,
 ) -> Result<tokio::process::Child, GameError> {
     let bot_path: PathBuf = bot_path.into();
@@ -40,7 +40,7 @@ pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>
     shared::s3::download_file(
         &bot.into(),
         &bot_path.join("bot.zip"),
-        &challengerucket.into(),
+        &bot_bucket.into(),
         &s3_client,
     )
     .await?;
@@ -149,11 +149,11 @@ pub async fn run_game(
     *game_path = tmp_dir.clone();
     log::debug!("Playing {} against {}", defender, challenger);
     log::info!("Running game {} with local id {}", task_id, game_id);
-    let challengerucket = std::env::var("COMPILED_BOT_S3_BUCKET").map_err(|e| {
+    let bot_bucket = std::env::var("COMPILED_BOT_S3_BUCKET").map_err(|e| {
         log::error!("Error getting COMPILED_BOT_S3_BUCKET: {}", e);
         GameError::InternalError
     })?;
-    log::debug!("Bot bucket: {}", challengerucket);
+    log::debug!("Bot bucket: {}", bot_bucket);
 
     // download bots from s3
     log::debug!("Making bot directories");
@@ -169,8 +169,8 @@ pub async fn run_game(
     })?;
     log::debug!("Downloading bots from aws");
     let (defender, challenger) = try_join!(
-        download_and_run(defender, defender_path, &challengerucket, s3_client),
-        download_and_run(challenger, challenger_path, &challengerucket, s3_client)
+        download_and_run(defender, defender_path, &bot_bucket, s3_client),
+        download_and_run(challenger, challenger_path, &bot_bucket, s3_client)
     )?;
 
     // run game
