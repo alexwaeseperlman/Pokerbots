@@ -101,7 +101,7 @@ export default function HomePage() {
           }}
         >
           The competition will start in 2024. For sponsorship inquiries, please
-          contact pokerbotleague@mcgill.ca.
+          contact alexwaeseperlman@gmail.com.
         </Container>
       </Box>
     </Box>
