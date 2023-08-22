@@ -1,0 +1,112 @@
+@import url("https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700&family=Roboto+Slab&family=Roboto:wght@400;900&display=swap");
+
+* {
+  font-family: "Figtree", sans-serif;
+  box-sizing: border-box;
+}
+
+body {
+  --gradient: linear-gradient(269.89deg, #392889 0%, #191335 100%);
+  color: white;
+}
+
+.nav .logo {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  border: none;
+  gap: 10px;
+  padding: 6px 20px;
+
+  flex-direction: row;
+}
+
+.nav-item {
+  display: block;
+  font-family: "Figtree";
+  font-style: normal;
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 17px;
+
+  letter-spacing: 1.25px;
+
+  color: #ffffff;
+  align-items: center;
+  cursor: pointer;
+
+  text-decoration: none;
+}
+
+.nav-item.clickable {
+  user-select: none;
+}
+
+.nav-item.selectable::after {
+  content: "";
+  display: block;
+  width: 0;
+  height: 2px;
+  background: #ffffff;
+  transition: width 0.1s ease-out;
+}
+
+.nav-item.selectable.selected::after {
+  width: 100%;
+}
+
+.nav-item.selectable:hover::after {
+  width: 100%;
+}
+
+.background {
+  background: var(--gradient);
+}
+
+.page-container {
+  display: flex;
+  flex-grow: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.headline {
+  font-family: "Figtree";
+  font-style: normal;
+  font-weight: 700;
+  font-size: 48px;
+
+  color: #ffffff;
+}
+
+.background-graphic {
+  z-index: -1;
+  filter: grayscale(100%);
+  background-position: center;
+  opacity: 0.4;
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-size: contain;
+  background-repeat: no-repeat;
+  mix-blend-mode: screen;
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.not-found-graphic {
+  background-image: url("/static/not_found_graphic.png"),
+    url("/static/not_found_graphic_tiny.png");
+}

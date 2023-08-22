@@ -4,7 +4,6 @@ use actix_web::http::StatusCode;
 use actix_web::{error::PayloadError, HttpResponse, ResponseError};
 use aws_sdk_s3::presigning::PresigningConfigError;
 use reqwest::header::ToStrError;
-use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 pub mod bots;
@@ -12,12 +11,6 @@ pub mod data;
 pub mod games;
 pub mod manage_team;
 pub mod signout;
-
-#[derive(Deserialize, Serialize, Clone, Debug)]
-pub struct ServerMessage {
-    pub message: String,
-    pub message_type: String,
-}
 
 pub fn api_service() -> actix_web::Scope {
     actix_web::web::scope("/api")

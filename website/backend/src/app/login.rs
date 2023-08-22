@@ -8,7 +8,6 @@ use std::env;
 use crate::config::{CLIENT_ID, REDIRECT_URI};
 use shared::db::conn::DB_CONNECTION;
 
-use super::api::ServerMessage;
 use shared::db::{
     models::{NewUser, Team, TeamInvite, User},
     schema::{team_invites, teams, users},
@@ -194,13 +193,6 @@ pub async fn handle_login(
                 },
             )?;
         } else {
-            session.insert(
-                "message",
-                ServerMessage {
-                    message: "There was an issue logging you in.".to_owned(),
-                    message_type: "error".to_owned(),
-                },
-            )?;
         }
         Ok(HttpResponse::Found()
             .append_header(("Location", state.unwrap_or("/manage-team".to_string())))

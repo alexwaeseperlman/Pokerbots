@@ -1,0 +1,44 @@
+.logo-big {
+  width: 100px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.poker-bot-background-graphic {
+  background-image: url("/static/poker_bots_graphic.png"),
+    url("/static/poker_bots_graphic_small.png");
+}
+
+.discord-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #7289da;
+  border-radius: 4px;
+  padding: 10px 20px;
+  color: white;
+  font-family: "Figtree";
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  margin-bottom: 20px;
+  transition: all 0.1s ease-out;
+}
+
+.discord-button:hover {
+  background: #677bc4;
+  box-shadow: 5px 7px 7px 1px #0006;
+}
+
+.discord-logo {
+  width: 24px;
+  height: 24px;
+  margin-right: 10px;
+}
+
+.home-page-text {
+  max-width: 600px;
+  text-align: center;
+}

@@ -12,8 +12,6 @@ use shared::db::{
     schema,
 };
 
-use super::ServerMessage;
-
 #[get("/my-account")]
 pub async fn my_account(session: Session) -> ApiResult {
     Ok(HttpResponse::Ok().json(login::get_user_data(&session)))

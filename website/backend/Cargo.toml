@@ -31,6 +31,7 @@ shared = { path = "../../shared", features=["db"] }
 tokio = "1.28.1"
 zip = "0.6.6"
 lazy_static="1.4.0"
+maud = { version = "*", features = ["actix-web"] }
 
 [dev-dependencies]
 cargo-watch = "8.4.0"
