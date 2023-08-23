@@ -15,6 +15,7 @@ import { Game } from "@bindings/Game";
 import { Bot } from "@bindings/Bot";
 import { TeamWithMembers } from "@bindings/TeamWithMembers";
 import { TeamData } from "@bindings/TeamData";
+import { TeamsResponse } from "@bindings/TeamsResponse";
 
 export const apiUrl = window.location.origin + "/api";
 
@@ -36,40 +37,34 @@ export const useUser = () => {
   return [user, fetchUser] as const;
 };
 
+function fetchTeam(team: string | null) {
+  return team
+    ? fetch(`${apiUrl}/teams?ids=${team ?? ""}&fill_members=true`)
+        .then((res) => res.json())
+        .then((teams: TeamsResponse) => {
+          if ("TeamsWithMembers" in teams) {
+            const out: TeamData = { ...teams.TeamsWithMembers[0], invites: [] };
+            return out;
+          }
+          return null;
+        })
+        .catch(() => null)
+    : fetch(`${apiUrl}/my-team`)
+        .then((res) => res.json())
+        .then((team) => team as TeamData)
+        .catch(() => null);
+}
+
 // choose default value based on route
 const teamAtom = atomFamily<
   string | null,
   PrimitiveAtom<Promise<TeamData | null>>
->((param) =>
-  atom(
-    param
-      ? fetch(`${apiUrl}/teams?ids=${param ?? ""}&fill_members=true`)
-          .then((res) => res.json())
-          .then((teams) => teams[0])
-          .catch(() => null)
-      : fetch(`${apiUrl}/my-team`)
-          .then((res) => res.json())
-          .catch(() => null)
-  )
-);
+>((param) => atom(fetchTeam(param)));
 
 export const useTeam = (selectedTeam: string | null) => {
   const [team, setTeam] = useAtom(teamAtom(selectedTeam));
-  const fetchTeam = () => {
-    if (!selectedTeam)
-      setTeam(
-        fetch(`${apiUrl}/my-team`)
-          .then((res) => res.json())
-          .catch(() => null)
-      );
-    else {
-      setTeam(
-        fetch(`${apiUrl}/teams?ids=${selectedTeam}&fill_members=true`)
-          .then((res) => res.json())
-          .then((teams) => teams[0])
-          .catch(() => null)
-      );
-    }
+  const fetch = () => {
+    setTeam(fetchTeam(selectedTeam));
   };
-  return [team, fetchTeam] as const;
+  return [team, fetch] as const;
 };

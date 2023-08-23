@@ -1,17 +1,19 @@
+#include <chrono>
 #include <iostream>
+#include <stdlib.h>
+#include <thread>
+#include <unistd.h>
 using namespace std;
 
 int vals[4] = {2, 5, 6, 7};
 int inp[5] = {0};
 int main() {
   int round = -1, position = 0;
-  bool pocket = false;
   while (true) {
     char type;
     cin >> type;
     if (type == 'E') {
       round = -1;
-      pocket = false;
       cerr << "Round ended." << endl << endl;
     } else if (type == 'P') {
       cin >> position;
@@ -20,15 +22,10 @@ int main() {
       round++;
       char a;
       cerr << "Cards: ";
-      char val;
       for (int i = 0; i < vals[round]; i++) {
-        char nowVal;
-        cin >> nowVal;
-        cerr << nowVal;
         cin >> a;
-        if (i == 1)
-          pocket = (nowVal == val);
-        val = nowVal;
+        cerr << a;
+        cin >> a;
         cerr << a << ' ';
       }
       cerr << endl;
@@ -41,12 +38,9 @@ int main() {
         cerr << inp[i] << " ";
       }
       cerr << endl;
-
+      std::this_thread::sleep_for(std::chrono::milliseconds(50));
       cerr << "Deciding on an action: ";
-      if (pocket && inp[position + 1] <= inp[position + 3] - 5) {
-        cerr << "raising for pocket pairs" << endl;
-        cout << "R5" << endl;
-      } else if (inp[position + 1] == inp[0]) {
+      if (inp[position + 1] == inp[0]) {
         cerr << "Check." << endl;
         cout << 'X' << endl;
       } else {

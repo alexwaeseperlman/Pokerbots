@@ -86,7 +86,7 @@ export default function HomePage() {
         >
           <Typography level="body-md" textColor="white">
             The competition will start in 2024. For sponsorship inquiries,
-            please contact pokerbotleague@mcgill.ca.
+            please contact alexwaeseperlman@gmail.com.
           </Typography>
         </Container>
       </Box>

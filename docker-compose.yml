@@ -29,6 +29,7 @@ services:
     extends:
       file: common-compose.yml
       service: gameplay
+    init: true
   builder:
     image: ghcr.io/alexwaeseperlman/upac_builder${IMAGE_SUFFIX}
     build:
@@ -41,6 +42,7 @@ services:
     extends:
       file: common-compose.yml
       service: builder
+    init: true
   results:
     image: ghcr.io/alexwaeseperlman/upac_results${IMAGE_SUFFIX}
     build:
