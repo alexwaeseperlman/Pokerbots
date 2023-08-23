@@ -32,7 +32,7 @@ function BarItem(props: {
           },
         }}
       >
-        <Typography fontWeight={700} level="title-sm" textColor="white">
+        <Typography fontWeight={700} level="title-sm">
           {props.label}
         </Typography>
       </Box>

@@ -32,11 +32,14 @@ export default function HomePage() {
           display: "block",
           overflow: "hidden",
           pointerEvents: "none",
+          zIndex: 1,
         }}
       ></Box>
       <Box
         sx={{
           width: "100%",
+          zIndex: 2,
+          position: "relative",
         }}
       >
         <Box
@@ -53,9 +56,7 @@ export default function HomePage() {
               height: "100px",
             }}
           />
-          <Typography level="h2" textColor="white">
-            UPAC
-          </Typography>
+          <Typography level="h2">UPAC</Typography>
         </Box>
         <Box
           sx={{
@@ -78,13 +79,13 @@ export default function HomePage() {
         </Box>
 
         <Container
+          maxWidth="sm"
           sx={{
-            maxWidth: "700px !important",
             textAlign: "center",
             mt: 6,
           }}
         >
-          <Typography level="body-md" textColor="white">
+          <Typography level="body-md">
             The competition will start in 2024. For sponsorship inquiries,
             please contact alexwaeseperlman@gmail.com.
           </Typography>

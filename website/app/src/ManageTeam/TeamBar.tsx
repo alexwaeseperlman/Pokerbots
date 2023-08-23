@@ -195,7 +195,6 @@ export function TeamBar({
             <Typography
               level="h1"
               ref={headerRef}
-              textColor="white"
               contentEditable={editing}
               suppressContentEditableWarning={true}
               id={`team-name-${team?.id}-${editing}`}
@@ -261,9 +260,7 @@ export function TeamBar({
                     .map((member) => (
                       <tr key={member.email}>
                         <td>
-                          <Typography textColor="white">
-                            {member.display_name}
-                          </Typography>
+                          <Typography>{member.display_name}</Typography>
                         </td>
                         <td>
                           {(team.owner === user?.email ||

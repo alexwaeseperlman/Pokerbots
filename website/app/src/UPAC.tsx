@@ -24,7 +24,6 @@ function HeaderFooter(props: React.PropsWithChildren<{}>) {
         minHeight: "100vh",
         position: "relative",
         display: "flex",
-        pb: 4,
       }}
       variant="solid"
     >
