@@ -5,54 +5,6 @@ import { Button, Sheet, Typography } from "@mui/joy";
 import { DiscordLogo } from "./Discord";
 import Container from "@mui/joy/Container";
 import graphic_small from "./graphic_small.png";
-import DataTable from "../components/DataTable";
-
-type DataType = {
-  asdf: string;
-  fdsa: string;
-  zxcv: string;
-};
-
-const columns = [
-  {
-    name: "asdf",
-    render: (row: DataType) => (
-      <Typography level="body-md">{row.asdf}</Typography>
-    ),
-  },
-  {
-    name: "fdsa",
-    render: (row: DataType) => (
-      <Typography level="body-md">{row.fdsa}</Typography>
-    ),
-  },
-  {
-    name: "zxcv",
-    render: (row: DataType) => (
-      <Typography level="body-md">{row.zxcv}</Typography>
-    ),
-  },
-];
-
-const data: DataType[] = [];
-
-function randomString(len: number) {
-  let result = "";
-  const characters = "abcdefghijklmnopqrstuvwxyz";
-  const charactersLength = characters.length;
-  for (let i = 0; i < len; i++) {
-    result += characters.charAt(Math.floor(Math.random() * charactersLength));
-  }
-  return result;
-}
-
-for (let i = 0; i < 100; i++) {
-  data.push({
-    asdf: randomString(10),
-    fdsa: randomString(10),
-    zxcv: randomString(10),
-  });
-}
 
 export default function HomePage() {
   return (
@@ -138,9 +90,6 @@ export default function HomePage() {
           </Typography>
         </Container>
       </Box>
-      <Sheet>
-        <DataTable data={data} columns={columns} perPage={9} />
-      </Sheet>
     </Container>
   );
 }
