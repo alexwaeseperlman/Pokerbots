@@ -108,7 +108,6 @@ export default function BotTable({
           {
             name: "",
             width: 40,
-            align: "center",
             render: ({ row: bot }) => {
               const ref = React.useRef(null);
               return (

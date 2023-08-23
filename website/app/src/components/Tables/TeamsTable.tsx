@@ -1,10 +1,9 @@
 import React, { useCallback, useEffect } from "react";
 import { apiUrl, useTeam } from "../../state";
 import Box from "@mui/system/Box";
-import MuiTableCell from "@mui/material/TableCell";
-import { styled } from "@mui/material/styles";
-import Button, { ButtonProps } from "@mui/material/Button";
-import { Avatar, Chip, ChipProps, Typography } from "@mui/material";
+import { styled } from "@mui/joy/styles";
+import Button, { ButtonProps } from "@mui/joy/Button";
+import { Avatar, Chip, ChipProps, Typography } from "@mui/joy";
 import { Link } from "react-router-dom";
 import { Team } from "@bindings/Team";
 import { TeamsResponse } from "@bindings/TeamsResponse";
@@ -77,9 +76,9 @@ export function TeamsTable() {
           render: (props) => {
             const score = props.row.score ?? 0;
             let color: ChipProps["color"] = "success";
-            if (score < 0) color = "error";
-            else if (score == 0) color = "default";
-            return <Chip label={score} color={color} />;
+            if (score < 0) color = "danger";
+            else if (score == 0) color = "neutral";
+            return <Chip color={color}>{score}</Chip>;
           },
         },
         {
@@ -89,21 +88,10 @@ export function TeamsTable() {
       ]}
       loading={loading}
       data={teams}
-      pagination
-      pageSizeOptions={[10, 25, 50, 100]}
-      paginationMode="server"
-      paginationModel={paginationModel}
+      perPage={paginationModel.pageSize}
+      serverPagination
       total={teamCount ?? 0}
-      onPaginationModelChange={setPaginationModel}
-      disableColumnFilter
-      disableColumnMenu
-      disableColumnSelector
-      disableDensitySelector
-      disableRowSelectionOnClick
-      sx={{
-        width: "100%",
-        height: "100%",
-      }}
+      onPageChange={(page) => setPaginationModel({ ...paginationModel, page })}
     />
   );
 }
