@@ -6,7 +6,7 @@ import { useTeam, useUser } from "./state";
 
 import logoImage from "../static/assets/logo.webp";
 import { TopBar, BottomBar } from "./components/AppBar";
-import { Box, Container } from "@mui/joy";
+import { Box, Container, Sheet } from "@mui/joy";
 import Leaderboard from "./Leaderboard";
 import { CircularProgress, LinearProgress } from "@mui/joy";
 import { useAtom } from "jotai";
@@ -18,13 +18,13 @@ function HeaderFooter(props: React.PropsWithChildren<{}>) {
   const navigate = useNavigate();
 
   return (
-    <Box
-      flexDirection={"column"}
-      minHeight="100vh"
-      position="relative"
-      display={"flex"}
+    <Sheet
       sx={{
-        background: (theme) => theme.palette.background.body,
+        flexDirection: "column",
+        minHeight: "100vh",
+        position: "relative",
+        display: "flex",
+        background: "linear-gradient(269.89deg, #392889 0%, #191335 100%)",
       }}
     >
       <TopBar />
@@ -56,7 +56,7 @@ function HeaderFooter(props: React.PropsWithChildren<{}>) {
       >
         <BottomBar />
       </Box>
-    </Box>
+    </Sheet>
   );
 }
 

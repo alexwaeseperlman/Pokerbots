@@ -1,24 +1,65 @@
 import React from "react";
 import Box from "@mui/joy/Box";
 import Logo from "../components/Logo";
-import { Button, Typography } from "@mui/joy";
+import { Button, Sheet, Typography } from "@mui/joy";
 import { DiscordLogo } from "./Discord";
 import Container from "@mui/joy/Container";
 import graphic_small from "./graphic_small.png";
+import DataTable from "../components/DataTable";
+
+type DataType = {
+  asdf: string;
+  fdsa: string;
+  zxcv: string;
+};
+
+const columns = [
+  {
+    name: "asdf",
+    render: (row: DataType) => (
+      <Typography level="body-md">{row.asdf}</Typography>
+    ),
+  },
+  {
+    name: "fdsa",
+    render: (row: DataType) => (
+      <Typography level="body-md">{row.fdsa}</Typography>
+    ),
+  },
+  {
+    name: "zxcv",
+    render: (row: DataType) => (
+      <Typography level="body-md">{row.zxcv}</Typography>
+    ),
+  },
+];
+
+const data: DataType[] = [];
+
+function randomString(len: number) {
+  let result = "";
+  const characters = "abcdefghijklmnopqrstuvwxyz";
+  const charactersLength = characters.length;
+  for (let i = 0; i < len; i++) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+  return result;
+}
+
+for (let i = 0; i < 100; i++) {
+  data.push({
+    asdf: randomString(10),
+    fdsa: randomString(10),
+    zxcv: randomString(10),
+  });
+}
 
 export default function HomePage() {
   return (
-    <Box
-      id="home"
+    <Container
       sx={{
-        width: "100%",
-        p: 4,
+        margin: "auto",
         pb: 16,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        flexGrow: 1,
       }}
     >
       <Box
@@ -60,7 +101,9 @@ export default function HomePage() {
               height: "100px",
             }}
           />
-          <Typography level="h2">UPAC</Typography>
+          <Typography level="h2" textColor="white">
+            UPAC
+          </Typography>
         </Box>
         <Box
           sx={{
@@ -89,12 +132,15 @@ export default function HomePage() {
             mt: 6,
           }}
         >
-          <Typography level="body-md">
+          <Typography level="body-md" textColor="white">
             The competition will start in 2024. For sponsorship inquiries,
             please contact pokerbotleague@mcgill.ca.
           </Typography>
         </Container>
       </Box>
-    </Box>
+      <Sheet>
+        <DataTable data={data} columns={columns} perPage={9} />
+      </Sheet>
+    </Container>
   );
 }

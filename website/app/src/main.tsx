@@ -5,20 +5,18 @@ import { SnackbarProvider } from "notistack";
 
 //import "../static/css/styles.css";
 import UPAC from "./UPAC";
-import { ThemeProvider, CssVarsProvider } from "@mui/joy";
+import { ThemeProvider, CssVarsProvider, CssBaseline } from "@mui/joy";
 import theme from "./theme";
 
 function RootApp() {
   return (
-    <SnackbarProvider maxSnack={3}>
-      <CssVarsProvider defaultMode="light">
-        <ThemeProvider theme={theme}>
-          <BrowserRouter>
-            <UPAC />
-          </BrowserRouter>
-        </ThemeProvider>
-      </CssVarsProvider>
-    </SnackbarProvider>
+    <CssVarsProvider theme={theme}>
+      <SnackbarProvider maxSnack={3}>
+        <BrowserRouter>
+          <UPAC />
+        </BrowserRouter>
+      </SnackbarProvider>
+    </CssVarsProvider>
   );
 }
 

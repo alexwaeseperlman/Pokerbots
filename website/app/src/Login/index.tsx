@@ -1,4 +1,4 @@
-import Container from "@mui/system/Container";
+import Container from "@mui/joy/Container";
 import React from "react";
 import { Button, SvgIcon, SvgIconProps, Box, Input } from "@mui/joy";
 import styled from "@mui/system/styled";
@@ -53,7 +53,7 @@ function GoogleLogo(props: SvgIconProps) {
 }
 
 const LoginButton = styled((props: ButtonProps) => (
-  <Button {...props} variant="outlined" />
+  <Button variant="outlined" {...props} />
 ))(({ theme }) => ({
   "& svg": {
     marginRight: theme.spacing(1),
@@ -62,27 +62,40 @@ const LoginButton = styled((props: ButtonProps) => (
 
 export default function Login() {
   return (
-    <Sheet
+    <Box
       sx={{
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
         flexGrow: 1,
-        mr: "25%",
-        borderRadius: (theme) => theme.radius?.lg ?? 2,
       }}
     >
-      <LoginButton
-        onClick={() => {
-          window.location.href = `/api/login-provider?provider=google&state=${encodeURIComponent(
-            window.location.href
-          )}`;
+      <Container
+        maxWidth="sm"
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "stretch",
+          justifyContent: "center",
+          gap: 2,
         }}
       >
-        <GoogleLogo />
-        Sign in with Google
-      </LoginButton>
+        <Input placeholder="Username" />
+        <Input placeholder="Password" />
+        <Button variant="solid">Log in</Button>
+        <LoginButton
+          variant="plain"
+          onClick={() => {
+            window.location.href = `/api/login-provider?provider=google&state=${encodeURIComponent(
+              window.location.href
+            )}`;
+          }}
+        >
+          <GoogleLogo />
+          Sign in with Google
+        </LoginButton>
+      </Container>
       {/*<LoginButton
           onClick={() => {
             window.location.href = "/api/login-provider?provider=google";
@@ -91,6 +104,6 @@ export default function Login() {
           <GoogleLogo />
           With Google
         </LoginButton>*/}
-    </Sheet>
+    </Box>
   );
 }

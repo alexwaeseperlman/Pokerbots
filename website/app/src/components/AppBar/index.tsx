@@ -7,6 +7,7 @@ import IconButton from "@mui/joy/IconButton";
 
 import { useNavigate } from "react-router-dom";
 import Typography from "@mui/joy/Typography";
+import Sheet from "@mui/joy/Sheet";
 
 function BarItem(props: {
   label: string;
@@ -31,7 +32,9 @@ function BarItem(props: {
           },
         }}
       >
-        <Typography level="title-sm">{props.label}</Typography>
+        <Typography fontWeight={700} level="title-sm" textColor="white">
+          {props.label}
+        </Typography>
       </Box>
     </Box>
   );
