@@ -1,7 +1,14 @@
 import * as React from "react";
 import Table, { TableProps } from "@mui/joy/Table";
 import Sheet from "@mui/joy/Sheet";
-import { Box, BoxProps, IconButton, Typography } from "@mui/joy";
+import {
+  Box,
+  BoxProps,
+  Divider,
+  IconButton,
+  Stack,
+  Typography,
+} from "@mui/joy";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 
@@ -70,73 +77,119 @@ export default function DataTable<T>({
           keyLookups.set(row, key);
         }
         return (
-          <tr key={key.toString()}>
-            {columns.map((col, i) => (
-              <td key={i}>{<col.render row={row} />}</td>
-            ))}
-          </tr>
+          <>
+            <Stack
+              key={key}
+              sx={{
+                display: {
+                  xs: "flex",
+                  sm: "none",
+                },
+              }}
+              gap={1}
+            >
+              {columns.map((col, i) => (
+                <Stack key={i} direction="column">
+                  <Box>
+                    <Typography level={"title-sm"}>
+                      {columns[i].name}
+                    </Typography>
+                  </Box>
+                  {<col.render row={row} />}
+                </Stack>
+              ))}
+            </Stack>
+            <Box key={key} component={(props: any) => <tr {...props} />}>
+              {columns.map((col, i) => (
+                <td key={i}>{<col.render row={row} />}</td>
+              ))}
+            </Box>
+          </>
         );
       }),
     [pagedData, columns]
   );
 
   return (
-    <Table {...props}>
-      <thead>
-        <tr>{...headers}</tr>
-      </thead>
-      <tbody>{...rows}</tbody>
-      <tfoot>
-        <tr>
-          <td colSpan={columns.length}>
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 2,
-                justifyContent: "flex-end",
-              }}
-            >
-              <Typography
-                textAlign="center"
-                level="body-sm"
-                sx={{ minWidth: 80 }}
-              >
-                {`${rows.length === 0 ? 0 : page * perPage + 1}-${Math.min(
-                  page * perPage + perPage,
-                  total
-                )} of ${total}`}
-              </Typography>
-              <Box sx={{ display: "flex", gap: 1, userSelect: "none" }}>
-                <IconButton
-                  size="sm"
-                  color="neutral"
-                  variant="outlined"
-                  disabled={page === 0}
-                  onClick={() => handleChangePage(page - 1)}
-                  sx={{ bgcolor: "background.surface" }}
+    <Box>
+      <Box
+        sx={{
+          display: {
+            xs: "block",
+            sm: "none",
+          },
+        }}
+      >
+        <Sheet>
+          <Stack gap={4}>{rows}</Stack>
+        </Sheet>
+      </Box>
+      <Box
+        sx={{
+          display: {
+            xs: "none",
+            sm: "block",
+          },
+        }}
+      >
+        <Table {...props}>
+          <thead>
+            <tr>{...headers}</tr>
+          </thead>
+          <tbody>{...rows}</tbody>
+          <tfoot>
+            <tr>
+              <td colSpan={columns.length}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 2,
+                    justifyContent: "flex-end",
+                  }}
                 >
-                  <KeyboardArrowLeftIcon />
-                </IconButton>
-                <IconButton
-                  size="sm"
-                  color="neutral"
-                  variant="outlined"
-                  disabled={
-                    total !== -1
-                      ? page >= Math.ceil(total / perPage) - 1
-                      : false
-                  }
-                  onClick={() => handleChangePage(page + 1)}
-                  sx={{ bgcolor: "background.surface" }}
-                >
-                  <KeyboardArrowRightIcon />
-                </IconButton>
-              </Box>
-            </Box>
-          </td>
-        </tr>
-      </tfoot>
-    </Table>
+                  <Typography
+                    textAlign="center"
+                    level="body-sm"
+                    sx={{ minWidth: 80 }}
+                  >
+                    {`${rows.length === 0 ? 0 : page * perPage + 1}-${Math.min(
+                      page * perPage + perPage,
+                      total
+                    )} of ${total}`}
+                  </Typography>
+                  <Box sx={{ display: "flex", gap: 1, userSelect: "none" }}>
+                    <IconButton
+                      size="sm"
+                      color="neutral"
+                      variant="outlined"
+                      disabled={page === 0}
+                      onClick={() => handleChangePage(page - 1)}
+                      sx={{ bgcolor: "background.surface" }}
+                    >
+                      <KeyboardArrowLeftIcon />
+                    </IconButton>
+                    <IconButton
+                      size="sm"
+                      color="neutral"
+                      variant="outlined"
+                      disabled={
+                        total !== -1
+                          ? page >= Math.ceil(total / perPage) - 1
+                          : false
+                      }
+                      onClick={() => handleChangePage(page + 1)}
+                      sx={{ bgcolor: "background.surface" }}
+                    >
+                      <KeyboardArrowRightIcon />
+                    </IconButton>
+                  </Box>
+                </Box>
+              </td>
+            </tr>
+          </tfoot>
+        </Table>
+      </Box>
+    </Box>
   );
 }
