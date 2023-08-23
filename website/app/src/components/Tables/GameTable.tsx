@@ -102,7 +102,12 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
       color = "warning";
     }
     return (
-      <>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "row",
+        }}
+      >
         <Avatar
           sx={{
             width: 24,
@@ -111,17 +116,6 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
           }}
           src={`${apiUrl}/pfp?id=${team?.id}`}
         />
-
-        <Chip
-          sx={{
-            width: "50px !important",
-          }}
-          color={color}
-        >
-          {props.row.score_change === null
-            ? "Running"
-            : props.row.error_type ?? (props.row.score_change ?? 0) * scoreMul}
-        </Chip>
 
         <Box ml={2} mr={2} flexDirection={"column"}>
           <Link
@@ -138,7 +132,13 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
             {bot.name ?? "Deleted bot"}
           </Typography>
         </Box>
-      </>
+
+        <Chip color={color} size="sm">
+          {props.row.score_change === null
+            ? "Running"
+            : props.row.error_type ?? (props.row.score_change ?? 0) * scoreMul}
+        </Chip>
+      </Box>
     );
   };
 
