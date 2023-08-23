@@ -57,7 +57,7 @@ export default function HomePage() {
               height: "100px",
             }}
           />
-          <Typography textColor="inherit" level="h2">
+          <Typography textColor="inherit" level="h1" fontSize={64}>
             UPAC
           </Typography>
         </Box>

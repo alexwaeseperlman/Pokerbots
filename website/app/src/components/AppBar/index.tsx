@@ -64,13 +64,15 @@ export function TopBar() {
         onClick={() => {
           navigate("/");
         }}
-        color="primary"
-        variant="solid"
       >
-        <Logo color="inherit" />
+        <Logo
+          sx={{
+            color: "white",
+          }}
+        />
       </IconButton>
       <BarItem
-        label="MANAGE TEAM"
+        label="TEAM"
         selected={window.location.pathname === "/manage-team"}
         command={() => {
           navigate("/manage-team");
@@ -85,7 +87,7 @@ export function TopBar() {
       />
 
       <BarItem
-        label="RECENT GAMES"
+        label="GAMES"
         selected={window.location.pathname === "/recent_games"}
         command={() => {
           navigate("/recent_games");

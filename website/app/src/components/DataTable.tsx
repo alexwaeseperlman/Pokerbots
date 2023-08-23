@@ -114,6 +114,51 @@ export default function DataTable<T>({
     [pagedData, columns]
   );
 
+  const paginationControls = React.useMemo(
+    () => (
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 2,
+          justifyContent: "flex-end",
+        }}
+      >
+        <Typography textAlign="center" level="body-sm" sx={{ minWidth: 80 }}>
+          {`${rows.length === 0 ? 0 : page * perPage + 1}-${Math.min(
+            page * perPage + perPage,
+            total
+          )} of ${total}`}
+        </Typography>
+        <Box sx={{ display: "flex", gap: 1, userSelect: "none" }}>
+          <IconButton
+            size="sm"
+            color="neutral"
+            variant="outlined"
+            disabled={page === 0}
+            onClick={() => handleChangePage(page - 1)}
+            sx={{ bgcolor: "background.surface" }}
+          >
+            <KeyboardArrowLeftIcon />
+          </IconButton>
+          <IconButton
+            size="sm"
+            color="neutral"
+            variant="outlined"
+            disabled={
+              total !== -1 ? page >= Math.ceil(total / perPage) - 1 : false
+            }
+            onClick={() => handleChangePage(page + 1)}
+            sx={{ bgcolor: "background.surface" }}
+          >
+            <KeyboardArrowRightIcon />
+          </IconButton>
+        </Box>
+      </Box>
+    ),
+    [page, perPage, total, handleChangePage, rows.length]
+  );
+
   return (
     <Box>
       <Box
@@ -125,7 +170,10 @@ export default function DataTable<T>({
         }}
       >
         <Sheet>
-          <Stack gap={4}>{cards}</Stack>
+          <Stack gap={4}>
+            {cards}
+            {paginationControls}
+          </Stack>
         </Sheet>
       </Box>
       <Box
@@ -143,53 +191,7 @@ export default function DataTable<T>({
           <tbody>{...rows}</tbody>
           <tfoot>
             <tr>
-              <td colSpan={columns.length}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 2,
-                    justifyContent: "flex-end",
-                  }}
-                >
-                  <Typography
-                    textAlign="center"
-                    level="body-sm"
-                    sx={{ minWidth: 80 }}
-                  >
-                    {`${rows.length === 0 ? 0 : page * perPage + 1}-${Math.min(
-                      page * perPage + perPage,
-                      total
-                    )} of ${total}`}
-                  </Typography>
-                  <Box sx={{ display: "flex", gap: 1, userSelect: "none" }}>
-                    <IconButton
-                      size="sm"
-                      color="neutral"
-                      variant="outlined"
-                      disabled={page === 0}
-                      onClick={() => handleChangePage(page - 1)}
-                      sx={{ bgcolor: "background.surface" }}
-                    >
-                      <KeyboardArrowLeftIcon />
-                    </IconButton>
-                    <IconButton
-                      size="sm"
-                      color="neutral"
-                      variant="outlined"
-                      disabled={
-                        total !== -1
-                          ? page >= Math.ceil(total / perPage) - 1
-                          : false
-                      }
-                      onClick={() => handleChangePage(page + 1)}
-                      sx={{ bgcolor: "background.surface" }}
-                    >
-                      <KeyboardArrowRightIcon />
-                    </IconButton>
-                  </Box>
-                </Box>
-              </td>
+              <td colSpan={columns.length}>{paginationControls}</td>
             </tr>
           </tfoot>
         </Table>

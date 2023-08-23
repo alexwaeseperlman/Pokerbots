@@ -73,6 +73,7 @@ export function TeamsTable() {
       columns={[
         {
           name: "Score",
+          width: "100px",
           render: (props) => {
             const score = props.row.score ?? 0;
             let color: ChipProps["color"] = "success";
