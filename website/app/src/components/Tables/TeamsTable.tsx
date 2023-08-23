@@ -5,11 +5,11 @@ import MuiTableCell from "@mui/material/TableCell";
 import { styled } from "@mui/material/styles";
 import Button, { ButtonProps } from "@mui/material/Button";
 import { Avatar, Chip, ChipProps, Typography } from "@mui/material";
-import { DataGrid } from "./GameTable";
 import { Link } from "react-router-dom";
 import { Team } from "@bindings/Team";
 import { TeamsResponse } from "@bindings/TeamsResponse";
 import { enqueueSnackbar } from "notistack";
+import DataTable from "../DataTable";
 
 export function TeamsTable() {
   const [teams, setTeams] = React.useState<Team[]>([]);
@@ -46,8 +46,7 @@ export function TeamsTable() {
     setLoading(true);
     getTeams();
   }, [getTeams, paginationModel]);
-  const renderTeam = (params: { row: Team }) => {
-    console.log(params);
+  const renderTeam = ({ row: team }: { row: Team }) => {
     return (
       <>
         <Avatar
@@ -56,51 +55,45 @@ export function TeamsTable() {
             height: 24,
             marginRight: 2,
           }}
-          src={`${apiUrl}/pfp?id=${params.row?.id}`}
+          src={`${apiUrl}/pfp?id=${team.id}`}
         />
         <Link
-          to={`/team/${params.row?.id}`}
+          to={`/team/${team.id}`}
           style={{
             color: "inherit",
             textDecoration: "none",
           }}
         >
-          <Typography>{params.row?.team_name ?? "Deleted team"}</Typography>
+          <Typography>{team.team_name ?? "Deleted team"}</Typography>
         </Link>
       </>
     );
   };
   return (
-    <DataGrid
+    <DataTable<Team>
       columns={[
         {
-          field: "score",
-          headerName: "Score",
-          renderCell: (params) => {
-            const score = params.value ?? 0;
+          name: "Score",
+          render: (props) => {
+            const score = props.row.score ?? 0;
             let color: ChipProps["color"] = "success";
             if (score < 0) color = "error";
             else if (score == 0) color = "default";
             return <Chip label={score} color={color} />;
           },
-          flex: 1,
-          sortable: false,
         },
         {
-          field: "team_name",
-          headerName: "Team name",
-          renderCell: renderTeam,
-          flex: 1,
-          sortable: false,
+          name: "Team name",
+          render: renderTeam,
         },
       ]}
       loading={loading}
-      rows={teams}
+      data={teams}
       pagination
       pageSizeOptions={[10, 25, 50, 100]}
       paginationMode="server"
       paginationModel={paginationModel}
-      rowCount={teamCount ?? 0}
+      total={teamCount ?? 0}
       onPaginationModelChange={setPaginationModel}
       disableColumnFilter
       disableColumnMenu

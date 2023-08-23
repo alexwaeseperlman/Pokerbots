@@ -10,6 +10,8 @@ import { TeamBar } from "./TeamBar";
 import BotTable from "./BotTable";
 import { BotUpload } from "./BotUpload";
 import { GameTable } from "../components/Tables/GameTable";
+import Sheet from "@mui/joy/Sheet";
+import Stack from "@mui/joy/Stack";
 
 function NoTeam() {
   return (
@@ -39,19 +41,21 @@ export function DisplayTeam({
       <TeamBar readonly={readonly} teamId={teamId} />
       <Box
         sx={{
-          width: "100%",
           flexGrow: 1,
-          padding: "20px",
         }}
       >
-        <Container>
-          <h2>Bots</h2>
-          {!readonly && <BotUpload />}
+        <Stack gap={2}>
+          <Sheet sx={{ p: 4 }}>
+            <h2>Bots</h2>
+            {!readonly && <BotUpload />}
 
-          <BotTable readonly={readonly} teamId={teamId} />
-          <h2>Games</h2>
-          <GameTable teamId={teamId} />
-        </Container>
+            <BotTable readonly={readonly} teamId={teamId} />
+          </Sheet>
+          <Sheet sx={{ p: 4, mb: 4 }}>
+            <h2>Games</h2>
+            <GameTable teamId={teamId} />
+          </Sheet>
+        </Stack>
       </Box>
     </>
   );

@@ -25,6 +25,7 @@ function HeaderFooter(props: React.PropsWithChildren<{}>) {
         position: "relative",
         display: "flex",
         background: "linear-gradient(269.89deg, #392889 0%, #191335 100%)",
+        pb: 4,
       }}
     >
       <TopBar />

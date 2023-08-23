@@ -1,20 +1,21 @@
 import * as React from "react";
 import Table, { TableProps } from "@mui/joy/Table";
 import Sheet from "@mui/joy/Sheet";
-import { Box, IconButton, Typography } from "@mui/joy";
+import { Box, BoxProps, IconButton, Typography } from "@mui/joy";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 
 export interface DataTableProps<T> {
   data: T[];
-  columns: {
+  columns: ({
     name: string;
-    render: (row: T) => React.ReactNode;
-  }[];
+    render: (props: { row: T }) => React.ReactElement;
+  } & BoxProps)[];
   onPageChange?: (page: number) => void;
   perPage?: number;
   total?: number;
   serverPagination?: boolean;
+  loading: boolean;
 }
 
 let keyCounter = 0;
@@ -27,10 +28,16 @@ export default function DataTable<T>({
   perPage = Infinity,
   total = data.length,
   serverPagination = false,
+  loading = false,
   ...props
 }: DataTableProps<T> & TableProps) {
   const headers = React.useMemo(
-    () => columns.map((col) => <th>{col.name}</th>),
+    () =>
+      columns.map(({ name, render, ...props }) => (
+        <Box component={(props: any) => <td {...props} />} {...props}>
+          {name}
+        </Box>
+      )),
     [columns]
   );
 
@@ -65,7 +72,7 @@ export default function DataTable<T>({
         return (
           <tr key={key.toString()}>
             {columns.map((col, i) => (
-              <td key={i}>{col.render(row)}</td>
+              <td key={i}>{<col.render row={row} />}</td>
             ))}
           </tr>
         );
@@ -75,7 +82,9 @@ export default function DataTable<T>({
 
   return (
     <Table {...props}>
-      <thead>{...headers}</thead>
+      <thead>
+        <tr>{...headers}</tr>
+      </thead>
       <tbody>{...rows}</tbody>
       <tfoot>
         <tr>

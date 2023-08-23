@@ -3,15 +3,12 @@ import { apiUrl, useTeam, useUser } from "../state";
 import Box from "@mui/system/Box";
 import { Container } from "@mui/system";
 import AddIcon from "@mui/icons-material/Add";
-import TableBody from "@mui/material/TableBody";
-import TableContainer from "@mui/material/TableContainer";
-import TableRow from "@mui/material/TableRow";
-import Table from "@mui/material/Table";
-import Avatar from "@mui/material/Avatar";
-import CircularProgress from "@mui/material/CircularProgress";
+import Table from "@mui/joy/Table";
+import Avatar from "@mui/joy/Avatar";
+import CircularProgress from "@mui/joy/CircularProgress";
 import { BotUpload } from "./BotUpload";
-import { TableCell, TableButton } from "../components/Tables/GameTable";
-import { Button, Icon, TextField, useTheme } from "@mui/material";
+import { TableButton } from "../components/Tables/GameTable";
+import { Button, TextField, useTheme } from "@mui/joy";
 import EditIcon from "@mui/icons-material/Edit";
 import CopyIcon from "@mui/icons-material/ContentCopy";
 import { enqueueSnackbar } from "notistack";
@@ -234,154 +231,151 @@ export function TeamBar({
             }}
           >
             <Box display="flex">
-              <TableContainer>
-                <Table size="small">
-                  <TableBody>
-                    {team.members
-                      .map((member) => (
-                        <TableRow key={member.email}>
-                          <TableCell>{member.display_name}</TableCell>
-                          {(team.owner === user?.email ||
-                            member.email === user?.email) && (
-                            <TableCell>
-                              {readonly || (
-                                <TableButton
-                                  onClick={() => {
-                                    const confirmed = confirm(
-                                      `Are you sure you want to ${
-                                        member.email == user.email
-                                          ? team.owner == user.email
-                                            ? "delete the team"
-                                            : "leave the team"
-                                          : "kick this member"
-                                      }?`
-                                    );
-                                    if (!confirmed) return;
+              <Table size="sm">
+                <tbody>
+                  {team.members
+                    .map((member) => (
+                      <tr key={member.email}>
+                        <td>{member.display_name}</td>
+                        {(team.owner === user?.email ||
+                          member.email === user?.email) && (
+                          <td>
+                            {readonly || (
+                              <TableButton
+                                onClick={() => {
+                                  const confirmed = confirm(
+                                    `Are you sure you want to ${
+                                      member.email == user.email
+                                        ? team.owner == user.email
+                                          ? "delete the team"
+                                          : "leave the team"
+                                        : "kick this member"
+                                    }?`
+                                  );
+                                  if (!confirmed) return;
 
-                                    if (member.email == user.email) {
-                                      if (team.owner == user.email) {
-                                        fetch(`${apiUrl}/delete-team`).then(
-                                          (response) => {
-                                            fetchTeam();
-                                          }
-                                        );
-                                      } else {
-                                        fetch(`${apiUrl}/leave-team`).then(
-                                          (response) => {
-                                            fetchTeam();
-                                          }
-                                        );
-                                      }
-                                    } else {
-                                      fetch(
-                                        `${apiUrl}/kick-member?email=${member.email}`
-                                      ).then((response) => {
-                                        fetchTeam();
-                                      });
-                                    }
-                                  }}
-                                >
-                                  {member.email === user.email
-                                    ? team.owner === user.email
-                                      ? "Delete team"
-                                      : "Leave"
-                                    : "Kick"}
-                                </TableButton>
-                              )}
-                            </TableCell>
-                          )}
-                        </TableRow>
-                      ))
-                      .concat(
-                        !team.invites
-                          ? []
-                          : team.invites.map((invite) => (
-                              <TableRow key={invite}>
-                                <TableCell
-                                  sx={{
-                                    justifyContent: "center",
-                                    display: "flex",
-                                  }}
-                                >
-                                  <input
-                                    value={`${window.location.origin}/join-team?invite_code=${invite}`}
-                                    readOnly
-                                    style={{
-                                      background: "none",
-                                      marginRight: "8px",
-                                      border: "1px solid white ",
-                                      borderRadius: "5px",
-                                    }}
-                                    onClick={(e) => {
-                                      const input =
-                                        e.target as HTMLInputElement;
-                                      input.select();
-                                      // modern version of the following command
-                                      navigator.clipboard.writeText(
-                                        input.value
+                                  if (member.email == user.email) {
+                                    if (team.owner == user.email) {
+                                      fetch(`${apiUrl}/delete-team`).then(
+                                        (response) => {
+                                          fetchTeam();
+                                        }
                                       );
-                                      enqueueSnackbar("Copied to clipboard", {
-                                        variant: "success",
-                                      });
-                                    }}
-                                  />
-                                  {/*<CopyIcon
+                                    } else {
+                                      fetch(`${apiUrl}/leave-team`).then(
+                                        (response) => {
+                                          fetchTeam();
+                                        }
+                                      );
+                                    }
+                                  } else {
+                                    fetch(
+                                      `${apiUrl}/kick-member?email=${member.email}`
+                                    ).then((response) => {
+                                      fetchTeam();
+                                    });
+                                  }
+                                }}
+                              >
+                                {member.email === user.email
+                                  ? team.owner === user.email
+                                    ? "Delete team"
+                                    : "Leave"
+                                  : "Kick"}
+                              </TableButton>
+                            )}
+                          </td>
+                        )}
+                      </tr>
+                    ))
+                    .concat(
+                      !team.invites
+                        ? []
+                        : team.invites.map((invite) => (
+                            <tr key={invite}>
+                              <Box
+                                component={(props: any) => <td {...props}></td>}
+                                sx={{
+                                  justifyContent: "center",
+                                  display: "flex",
+                                }}
+                              >
+                                <input
+                                  value={`${window.location.origin}/join-team?invite_code=${invite}`}
+                                  readOnly
+                                  style={{
+                                    background: "none",
+                                    marginRight: "8px",
+                                    border: "1px solid white ",
+                                    borderRadius: "5px",
+                                  }}
+                                  onClick={(e) => {
+                                    const input = e.target as HTMLInputElement;
+                                    input.select();
+                                    // modern version of the following command
+                                    navigator.clipboard.writeText(input.value);
+                                    enqueueSnackbar("Copied to clipboard", {
+                                      variant: "success",
+                                    });
+                                  }}
+                                />
+                                {/*<CopyIcon
                                     style={{
                                       cursor: "pointer",
                                     }}
                                     color="secondary"
                                     fontSize="small"
                                   />*/}
-                                </TableCell>
-                                {!readonly && (
-                                  <TableCell>
-                                    <TableButton
-                                      onClick={() => {
-                                        fetch(
-                                          `${apiUrl}/cancel-invite?invite_code=${invite}`
-                                        ).then(() => fetchTeam());
-                                      }}
-                                    >
-                                      Cancel invitation
-                                    </TableButton>
-                                  </TableCell>
-                                )}
-                              </TableRow>
-                            ))
-                      )
-                      .concat(
-                        readonly ||
-                          (team.invites?.length ?? 0) + team.members.length >=
-                            5 ? (
-                          []
-                        ) : (
-                          <TableRow key="create-invite">
-                            <TableCell
-                              sx={{
-                                alignItems: "center",
-                                justifyContent: "left",
-                                display: "flex",
-                              }}
+                              </Box>
+                              {!readonly && (
+                                <td>
+                                  <TableButton
+                                    onClick={() => {
+                                      fetch(
+                                        `${apiUrl}/cancel-invite?invite_code=${invite}`
+                                      ).then(() => fetchTeam());
+                                    }}
+                                  >
+                                    Cancel invitation
+                                  </TableButton>
+                                </td>
+                              )}
+                            </tr>
+                          ))
+                    )
+                    .concat(
+                      readonly ||
+                        (team.invites?.length ?? 0) + team.members.length >=
+                          5 ? (
+                        []
+                      ) : (
+                        <tr key="create-invite">
+                          <Box
+                            component={(props: any) => <td {...props}></td>}
+                            sx={{
+                              alignItems: "center",
+                              justifyContent: "left",
+                              display: "flex",
+                            }}
+                          >
+                            <TableButton
+                              startDecorator={<AddIcon />}
+                              onClick={() =>
+                                fetch(`${apiUrl}/create-invite`).then(
+                                  async (a) => {
+                                    fetchTeam();
+                                  }
+                                )
+                              }
                             >
-                              <TableButton
-                                startIcon={<AddIcon />}
-                                onClick={() =>
-                                  fetch(`${apiUrl}/create-invite`).then(
-                                    async (a) => {
-                                      fetchTeam();
-                                    }
-                                  )
-                                }
-                              >
-                                Add a member
-                              </TableButton>
-                            </TableCell>
-                          </TableRow>
-                        )
-                      )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                              Add a member
+                            </TableButton>
+                          </Box>
+                        </tr>
+                      )
+                    )}
+                </tbody>
+              </Table>
             </Box>
           </Box>
           <Box></Box>

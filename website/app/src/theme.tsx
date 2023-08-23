@@ -6,25 +6,9 @@ import { ColorSystemOptions } from "@mui/joy/styles/extendTheme";
 const light: ColorSystemOptions = {
   palette: {
     mode: "light",
-    background: {
-      body: "white",
-      level1: "white",
-      level2: "#ffffff",
-      popup: "#f5f5f5",
-      surface: "white",
-      backdrop: "white",
-      level3: "#f5f5f5",
-    },
 
-    text: {
-      primary: "black",
-      secondary: "black",
-      tertiary: "black",
-    },
-
-    neutral: {
-      solidBg: "#392889",
-      solidColor: "white",
+    primary: {
+      plainHoverBg: "#0a6bcb11",
     },
   },
 };
