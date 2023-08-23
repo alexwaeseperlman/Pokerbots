@@ -12,6 +12,7 @@ import { BotUpload } from "./BotUpload";
 import { GameTable } from "../components/Tables/GameTable";
 import Sheet from "@mui/joy/Sheet";
 import Stack from "@mui/joy/Stack";
+import { Typography } from "@mui/joy";
 
 function NoTeam() {
   return (
@@ -45,15 +46,15 @@ export function DisplayTeam({
           flexGrow: 1,
         }}
       >
-        <Stack gap={2}>
-          <Sheet sx={{ p: 4 }}>
-            <h2>Bots</h2>
+        <Stack gap={2} pl={8} pr={8}>
+          <Sheet sx={{ p: 4, pt: 4, mb: 4 }}>
+            <Typography level="h2">Bots</Typography>
             {!readonly && <BotUpload />}
 
             <BotTable readonly={readonly} teamId={teamId} />
           </Sheet>
-          <Sheet sx={{ p: 4, mb: 4 }}>
-            <h2>Games</h2>
+          <Sheet sx={{ p: 4, pt: 4, mb: 4 }}>
+            <Typography level="h2">Games</Typography>
             <GameTable teamId={teamId} />
           </Sheet>
         </Stack>

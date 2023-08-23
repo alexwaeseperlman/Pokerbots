@@ -13,6 +13,7 @@ import { useAtom } from "jotai";
 import JoinTeam from "./JoinTeam";
 import NotFound from "./NotFound";
 import RecentGames from "./RecentGames";
+import Profile from "./Profile";
 
 function HeaderFooter(props: React.PropsWithChildren<{}>) {
   return (
@@ -23,6 +24,8 @@ function HeaderFooter(props: React.PropsWithChildren<{}>) {
         position: "relative",
         display: "flex",
         background: "linear-gradient(269.89deg,#392889 0%,#191335 100%)",
+        pb: 4,
+        boxSizing: "border-box",
       }}
       color="primary"
       variant="solid"
@@ -104,10 +107,19 @@ export default function UPAC() {
           }
         />
         <Route
-          path="recent_games"
+          path="recent-games"
           element={
             <HeaderFooter>
               <RecentGames />
+            </HeaderFooter>
+          }
+        />
+
+        <Route
+          path="profile"
+          element={
+            <HeaderFooter>
+              <Profile />
             </HeaderFooter>
           }
         />

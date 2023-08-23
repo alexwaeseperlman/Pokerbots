@@ -1,4 +1,4 @@
-import React from "react";
+import React, { PropsWithChildren } from "react";
 import { menu_bar, nav_group, bar_item } from "./styles.module.css";
 import { apiUrl, useUser } from "../../state";
 import Box from "@mui/joy/Box";
@@ -9,12 +9,11 @@ import { useNavigate } from "react-router-dom";
 import Typography from "@mui/joy/Typography";
 import Sheet from "@mui/joy/Sheet";
 import { useTheme } from "@mui/joy";
+import { Person } from "@mui/icons-material";
 
-function BarItem(props: {
-  label: string;
-  selected?: boolean;
-  command?: () => void;
-}) {
+function RawBarItem(
+  props: PropsWithChildren<{ selected?: boolean; command?: () => void }>
+) {
   return (
     <Box onClick={props.command}>
       <Box
@@ -33,11 +32,23 @@ function BarItem(props: {
           },
         })}
       >
-        <Typography textColor="inherit" fontWeight={700} level="title-sm">
-          {props.label}
-        </Typography>
+        {props.children}
       </Box>
     </Box>
+  );
+}
+
+function BarItem(props: {
+  label?: string;
+  selected?: boolean;
+  command?: () => void;
+}) {
+  return (
+    <RawBarItem selected={props.selected} command={props.command}>
+      <Typography textColor="inherit" fontWeight={700} level="title-sm">
+        {props.label}
+      </Typography>
+    </RawBarItem>
   );
 }
 
@@ -88,9 +99,9 @@ export function TopBar() {
 
       <BarItem
         label="GAMES"
-        selected={window.location.pathname === "/recent_games"}
+        selected={window.location.pathname === "/recent-games"}
         command={() => {
-          navigate("/recent_games");
+          navigate("/recent-games");
         }}
       />
 
@@ -110,14 +121,24 @@ export function TopBar() {
         }}
       />
       {user && (
-        <BarItem
-          label="SIGN OUT"
-          command={() => {
-            fetch(`${apiUrl}/signout`).then(() => {
-              fetchUser();
-            });
-          }}
-        />
+        <>
+          <BarItem
+            label="SIGN OUT"
+            command={() => {
+              fetch(`${apiUrl}/signout`).then(() => {
+                fetchUser();
+              });
+            }}
+          />
+          <RawBarItem
+            selected={window.location.pathname === "/profile"}
+            command={() => {
+              navigate("/profile");
+            }}
+          >
+            <Person />
+          </RawBarItem>
+        </>
       )}
     </Box>
   );

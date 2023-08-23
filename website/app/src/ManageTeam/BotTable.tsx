@@ -11,7 +11,7 @@ import { Team } from "@bindings/Team";
 import { BotsResponse } from "@bindings/BotsResponse";
 import { BuildStatus } from "@bindings/BuildStatus";
 import DataTable from "../components/DataTable";
-import { MoreVert } from "@mui/icons-material";
+import { Check, MoreVert } from "@mui/icons-material";
 
 export default function BotTable({
   readonly,
@@ -64,6 +64,17 @@ export default function BotTable({
     <>
       <DataTable
         columns={[
+          {
+            name: "Active",
+            width: "75px",
+            render: ({ row: bot }) => {
+              if (bot.id == team?.active_bot)
+                <Check
+                  display={bot.id == team?.active_bot ? "block" : "none"}
+                />;
+              return <></>;
+            },
+          },
           {
             name: "Result",
             render: ({ row: bot }) => {
