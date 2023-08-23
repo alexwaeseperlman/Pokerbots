@@ -23,7 +23,7 @@ export default function Leaderboard() {
             overflow: "hidden",
           }}
         >
-          <TeamsTable />
+          <GameTable />
         </Box>
       </Sheet>
     </Box>

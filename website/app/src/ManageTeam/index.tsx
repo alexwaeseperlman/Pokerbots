@@ -35,6 +35,7 @@ export function DisplayTeam({
   teamId: string | null;
 }) {
   const team = useTeam(teamId)[0];
+  console.log(team);
   if (!team) return <NoTeam />;
   return (
     <>

@@ -53,6 +53,7 @@ function PfpUpload({ team, readonly }: { team: Team; readonly: boolean }) {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
+        m: 2,
       })}
     >
       <Avatar
@@ -201,6 +202,7 @@ export function TeamBar({
               onFocus={(e) => {
                 window.getSelection()?.selectAllChildren(e.target);
               }}
+              textColor="inherit"
               onBlur={(e) => {
                 setEditing(false);
                 fetch(`${apiUrl}/rename-team?to=${e.target.textContent}`).then(
@@ -260,9 +262,16 @@ export function TeamBar({
                     .map((member) => (
                       <tr key={member.email}>
                         <td>
-                          <Typography>{member.display_name}</Typography>
+                          <Typography textColor="white" level="title-sm">
+                            {member.display_name}
+                          </Typography>
                         </td>
-                        <td>
+                        <Box
+                          sx={{
+                            width: "150px",
+                          }}
+                          component={(props: any) => <td {...props}></td>}
+                        >
                           {(team.owner === user?.email ||
                             member.email === user?.email) &&
                             (readonly || (
@@ -309,7 +318,7 @@ export function TeamBar({
                                   : "Kick"}
                               </TableButton>
                             ))}
-                        </td>
+                        </Box>
                       </tr>
                     ))
                     .concat(

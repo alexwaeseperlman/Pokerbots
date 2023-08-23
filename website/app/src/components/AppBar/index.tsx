@@ -8,6 +8,7 @@ import IconButton from "@mui/joy/IconButton";
 import { useNavigate } from "react-router-dom";
 import Typography from "@mui/joy/Typography";
 import Sheet from "@mui/joy/Sheet";
+import { useTheme } from "@mui/joy";
 
 function BarItem(props: {
   label: string;
@@ -18,7 +19,7 @@ function BarItem(props: {
     <Box onClick={props.command}>
       <Box
         className={bar_item}
-        sx={{
+        sx={(theme) => ({
           "::after": {
             content: "''",
             display: "block",
@@ -30,9 +31,9 @@ function BarItem(props: {
           ":hover::after": {
             width: props.command ? "100%" : "0",
           },
-        }}
+        })}
       >
-        <Typography fontWeight={700} level="title-sm">
+        <Typography textColor="inherit" fontWeight={700} level="title-sm">
           {props.label}
         </Typography>
       </Box>
@@ -63,8 +64,10 @@ export function TopBar() {
         onClick={() => {
           navigate("/");
         }}
+        color="primary"
+        variant="solid"
       >
-        <Logo />
+        <Logo color="inherit" />
       </IconButton>
       <BarItem
         label="MANAGE TEAM"
@@ -78,6 +81,14 @@ export function TopBar() {
         selected={window.location.pathname === "/leaderboard"}
         command={() => {
           navigate("/leaderboard");
+        }}
+      />
+
+      <BarItem
+        label="RECENT GAMES"
+        selected={window.location.pathname === "/recent_games"}
+        command={() => {
+          navigate("/recent_games");
         }}
       />
 

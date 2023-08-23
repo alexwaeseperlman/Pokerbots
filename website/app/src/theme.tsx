@@ -9,13 +9,13 @@ const light: ColorSystemOptions = {
 
     primary: {
       plainHoverBg: "#0a6bcb11",
+      solidColor: "white",
     },
   },
 };
 const theme = extendTheme({
   colorSchemes: {
     light,
-    dark: light,
   },
   fontFamily: {
     body: "Figtree",

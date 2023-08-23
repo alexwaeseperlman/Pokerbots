@@ -42,7 +42,10 @@ function fetchTeam(team: string | null) {
     ? fetch(`${apiUrl}/teams?ids=${team ?? ""}&fill_members=true`)
         .then((res) => res.json())
         .then((teams: TeamsResponse) => {
-          if ("TeamsWithMembers" in teams) {
+          if (
+            "TeamsWithMembers" in teams &&
+            teams.TeamsWithMembers.length > 0
+          ) {
             const out: TeamData = { ...teams.TeamsWithMembers[0], invites: [] };
             return out;
           }
@@ -64,6 +67,7 @@ const teamAtom = atomFamily<
 export const useTeam = (selectedTeam: string | null) => {
   const [team, setTeam] = useAtom(teamAtom(selectedTeam));
   const fetch = () => {
+    console.log(selectedTeam);
     setTeam(fetchTeam(selectedTeam));
   };
   return [team, fetch] as const;

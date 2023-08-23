@@ -51,12 +51,15 @@ export default function HomePage() {
           }}
         >
           <Logo
+            color="inherit"
             sx={{
               width: "100px",
               height: "100px",
             }}
           />
-          <Typography level="h2">UPAC</Typography>
+          <Typography textColor="inherit" level="h2">
+            UPAC
+          </Typography>
         </Box>
         <Box
           sx={{
@@ -85,7 +88,7 @@ export default function HomePage() {
             mt: 6,
           }}
         >
-          <Typography level="body-md">
+          <Typography textColor="inherit" level="body-md">
             The competition will start in 2024. For sponsorship inquiries,
             please contact alexwaeseperlman@gmail.com.
           </Typography>

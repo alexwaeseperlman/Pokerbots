@@ -12,11 +12,9 @@ import { CircularProgress, LinearProgress } from "@mui/joy";
 import { useAtom } from "jotai";
 import JoinTeam from "./JoinTeam";
 import NotFound from "./NotFound";
+import RecentGames from "./RecentGames";
 
 function HeaderFooter(props: React.PropsWithChildren<{}>) {
-  const user = useUser()[0];
-  const navigate = useNavigate();
-
   return (
     <Sheet
       sx={{
@@ -24,7 +22,9 @@ function HeaderFooter(props: React.PropsWithChildren<{}>) {
         minHeight: "100vh",
         position: "relative",
         display: "flex",
+        background: "linear-gradient(269.89deg,#392889 0%,#191335 100%)",
       }}
+      color="primary"
       variant="solid"
     >
       <TopBar />
@@ -65,8 +65,6 @@ function TeamDashboard() {
 
   const teamId = useParams().teamId ?? null;
 
-  const user = useUser()[0];
-
   //TODO: Use suspense here
 
   return (
@@ -102,6 +100,14 @@ export default function UPAC() {
           element={
             <HeaderFooter>
               <Leaderboard />
+            </HeaderFooter>
+          }
+        />
+        <Route
+          path="recent_games"
+          element={
+            <HeaderFooter>
+              <RecentGames />
             </HeaderFooter>
           }
         />
