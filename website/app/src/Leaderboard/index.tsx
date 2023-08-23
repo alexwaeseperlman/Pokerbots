@@ -1,6 +1,6 @@
 import React from "react";
-import Box from "@mui/system/Box";
-import { Grid, Paper, Typography } from "@mui/material";
+import Box from "@mui/joy/Box";
+import { Grid, Sheet, Typography } from "@mui/joy";
 import { GameTable } from "../components/Tables/GameTable";
 import { TeamsTable } from "../components/Tables/TeamsTable";
 
@@ -13,8 +13,8 @@ export default function Leaderboard() {
         maxWidth: "100vw",
       }}
     >
-      <Paper sx={{ p: 2, flexGrow: 1, maxWidth: "100%", mb: 2 }}>
-        <Typography variant="h3" mb={2}>
+      <Sheet sx={{ p: 2, flexGrow: 1, maxWidth: "100%", mb: 2 }}>
+        <Typography level="h3" mb={2}>
           Top teams
         </Typography>
         <Box
@@ -25,9 +25,9 @@ export default function Leaderboard() {
         >
           <TeamsTable />
         </Box>
-      </Paper>
-      <Paper sx={{ p: 2, flexGrow: 1, maxWidth: "100%", mb: 2 }}>
-        <Typography variant="h3" mb={2}>
+      </Sheet>
+      <Sheet sx={{ p: 2, flexGrow: 1, maxWidth: "100%", mb: 2 }}>
+        <Typography level="h3" mb={2}>
           Recent games
         </Typography>
         <Box
@@ -38,7 +38,7 @@ export default function Leaderboard() {
         >
           <GameTable />
         </Box>
-      </Paper>
+      </Sheet>
     </Box>
   );
 }

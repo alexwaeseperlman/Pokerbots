@@ -1,4 +1,4 @@
-import { Button, Card, Skeleton, TextField, Typography } from "@mui/material";
+import { Button, Card, Skeleton, Input, Typography } from "@mui/joy";
 import { Box, Container } from "@mui/system";
 import React, { useState } from "react";
 import { apiUrl, useTeam, useUser } from "../state";
@@ -26,11 +26,12 @@ export default function JoinTeam() {
     fetch(`${apiUrl}/invite-code?code=${code}`)
       .then((res) => res.json())
       .then((data: InviteCodeResponse | { error: string }) => {
-        if ("error" in data) {
+        if ("error" in data || !("team" in data)) {
           navigate("/");
           enqueueSnackbar(data.error, { variant: "error" });
+        } else if ("team" in data) {
+          setTeam(data.team);
         }
-        setTeam(data.team);
       });
   }, [code]);
 
@@ -54,7 +55,7 @@ export default function JoinTeam() {
           p: 4,
         }}
       >
-        <Typography variant="h3">
+        <Typography level="h3">
           {team?.team_name ? (
             `You are invited to join "${team?.team_name}"`
           ) : (
@@ -66,7 +67,7 @@ export default function JoinTeam() {
           )}
         </Typography>
         <Button
-          variant="contained"
+          variant="plain"
           color="primary"
           sx={{
             mt: 2,

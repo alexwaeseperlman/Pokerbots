@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import Box from "@mui/system/Box";
 import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
 import { apiUrl } from "../state";
-import { CircularProgress, LinearProgress } from "@mui/material";
+import { CircularProgress } from "@mui/joy";
 import { useSnackbar } from "notistack";
 
 export function BotUpload() {

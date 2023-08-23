@@ -1,7 +1,8 @@
 import Container from "@mui/system/Container";
 import React from "react";
-import { Button, SvgIcon, SvgIconProps, Box } from "@mui/material";
+import { Button, SvgIcon, SvgIconProps, Box, Input } from "@mui/joy";
 import styled from "@mui/system/styled";
+import { ButtonProps, Sheet } from "@mui/joy";
 function MicrosoftLogo(props: SvgIconProps) {
   return (
     <SvgIcon {...props}>
@@ -51,15 +52,9 @@ function GoogleLogo(props: SvgIconProps) {
   );
 }
 
-const LoginButton = styled(Button)(({ theme }) => ({
-  width: "100%",
-  maxWidth: "300px",
-  margin: theme.spacing(1),
-  padding: theme.spacing(1),
-  color: "white",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
+const LoginButton = styled((props: ButtonProps) => (
+  <Button {...props} variant="outlined" />
+))(({ theme }) => ({
   "& svg": {
     marginRight: theme.spacing(1),
   },
@@ -67,40 +62,28 @@ const LoginButton = styled(Button)(({ theme }) => ({
 
 export default function Login() {
   return (
-    <Box
+    <Sheet
       sx={{
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        height: "100%",
         flexGrow: 1,
+        mr: "25%",
+        borderRadius: (theme) => theme.radius?.lg ?? 2,
       }}
     >
-      <Container
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          maxWidth: "500px",
-          color: "white",
-          textAlign: "center",
+      <LoginButton
+        onClick={() => {
+          window.location.href = `/api/login-provider?provider=google&state=${encodeURIComponent(
+            window.location.href
+          )}`;
         }}
       >
-        Log in to your university email account with one of the following
-        providers:
-        <LoginButton
-          onClick={() => {
-            window.location.href = `/api/login-provider?provider=microsoft&state=${encodeURIComponent(
-              window.location.href
-            )}`;
-          }}
-        >
-          <MicrosoftLogo />
-          With Microsoft
-        </LoginButton>
-        {/*<LoginButton
+        <GoogleLogo />
+        Sign in with Google
+      </LoginButton>
+      {/*<LoginButton
           onClick={() => {
             window.location.href = "/api/login-provider?provider=google";
           }}
@@ -108,7 +91,6 @@ export default function Login() {
           <GoogleLogo />
           With Google
         </LoginButton>*/}
-      </Container>
-    </Box>
+    </Sheet>
   );
 }

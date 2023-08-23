@@ -9,7 +9,6 @@ import TableRow from "@mui/material/TableRow";
 import Table from "@mui/material/Table";
 import Avatar from "@mui/material/Avatar";
 import CircularProgress from "@mui/material/CircularProgress";
-import { primary_background } from "../styles.module.css";
 import { BotUpload } from "./BotUpload";
 import { TableCell, TableButton } from "../components/Tables/GameTable";
 import { Button, Icon, TextField, useTheme } from "@mui/material";
@@ -140,9 +139,7 @@ export function TeamBar({
   }, [team.team_name]);
   return (
     <Box
-      className={primary_background}
       sx={{
-        color: "white",
         padding: 2,
       }}
     >
@@ -243,20 +240,10 @@ export function TeamBar({
                     {team.members
                       .map((member) => (
                         <TableRow key={member.email}>
-                          <TableCell
-                            sx={{
-                              color: "white",
-                            }}
-                          >
-                            {member.display_name}
-                          </TableCell>
+                          <TableCell>{member.display_name}</TableCell>
                           {(team.owner === user?.email ||
                             member.email === user?.email) && (
-                            <TableCell
-                              sx={{
-                                color: "white",
-                              }}
-                            >
+                            <TableCell>
                               {readonly || (
                                 <TableButton
                                   onClick={() => {
@@ -312,7 +299,6 @@ export function TeamBar({
                               <TableRow key={invite}>
                                 <TableCell
                                   sx={{
-                                    color: "white",
                                     justifyContent: "center",
                                     display: "flex",
                                   }}
@@ -323,7 +309,6 @@ export function TeamBar({
                                     style={{
                                       background: "none",
                                       marginRight: "8px",
-                                      color: "white",
                                       border: "1px solid white ",
                                       borderRadius: "5px",
                                     }}
@@ -349,11 +334,7 @@ export function TeamBar({
                                   />*/}
                                 </TableCell>
                                 {!readonly && (
-                                  <TableCell
-                                    sx={{
-                                      color: "white",
-                                    }}
-                                  >
+                                  <TableCell>
                                     <TableButton
                                       onClick={() => {
                                         fetch(

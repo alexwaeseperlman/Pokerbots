@@ -1,18 +1,12 @@
 import React from "react";
-import {
-  menu_bar,
-  inner_bar,
-  bar_item,
-  nav_group,
-  bar_item_clickable,
-} from "./styles.module.css";
+import { menu_bar, nav_group, bar_item } from "./styles.module.css";
 import { apiUrl, useUser } from "../../state";
-import Box from "@mui/system/Box";
+import Box from "@mui/joy/Box";
 import Logo from "../Logo";
-import IconButton from "@mui/material/IconButton";
+import IconButton from "@mui/joy/IconButton";
 
-import { primary_background } from "../../styles.module.css";
 import { useNavigate } from "react-router-dom";
+import Typography from "@mui/joy/Typography";
 
 function BarItem(props: {
   label: string;
@@ -20,13 +14,10 @@ function BarItem(props: {
   command?: () => void;
 }) {
   return (
-    <Box
-      className={`${bar_item} ${props.command && bar_item_clickable}`}
-      onClick={props.command}
-    >
+    <Box onClick={props.command}>
       <Box
+        className={bar_item}
         sx={{
-          display: "inline-block",
           "::after": {
             content: "''",
             display: "block",
@@ -40,7 +31,7 @@ function BarItem(props: {
           },
         }}
       >
-        {props.label}
+        <Typography level="title-sm">{props.label}</Typography>
       </Box>
     </Box>
   );
@@ -53,7 +44,7 @@ export function TopBar() {
 
   return (
     <Box
-      className={`${menu_bar} ${primary_background}`}
+      className={`${menu_bar}`}
       sx={(theme) => ({
         // small screen
         [theme.breakpoints.down("sm")]: {
@@ -118,7 +109,7 @@ export function TopBar() {
 
 export function BottomBar() {
   return (
-    <Box className={`${menu_bar} ${primary_background}`}>
+    <Box className={menu_bar}>
       <Box
         className={nav_group}
         style={{

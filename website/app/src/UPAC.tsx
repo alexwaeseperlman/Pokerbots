@@ -6,10 +6,9 @@ import { useTeam, useUser } from "./state";
 
 import logoImage from "../static/assets/logo.webp";
 import { TopBar, BottomBar } from "./components/AppBar";
-import { Box, Container } from "@mui/system";
+import { Box, Container } from "@mui/joy";
 import Leaderboard from "./Leaderboard";
-import { primary_background } from "./styles.module.css";
-import { CircularProgress, LinearProgress } from "@mui/material";
+import { CircularProgress, LinearProgress } from "@mui/joy";
 import { useAtom } from "jotai";
 import JoinTeam from "./JoinTeam";
 import NotFound from "./NotFound";
@@ -24,8 +23,9 @@ function HeaderFooter(props: React.PropsWithChildren<{}>) {
       minHeight="100vh"
       position="relative"
       display={"flex"}
-      className={primary_background}
-      pb={4}
+      sx={{
+        background: (theme) => theme.palette.background.body,
+      }}
     >
       <TopBar />
       <Suspense

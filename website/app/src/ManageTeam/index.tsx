@@ -1,12 +1,11 @@
 import React from "react";
-import { useUser, Team, useTeam, User } from "../state";
+import { useUser, useTeam } from "../state";
 import CreateTeam from "./CreateTeam";
 import Login from "../Login";
 import Box from "@mui/system/Box";
 import { Container } from "@mui/system";
 import { team_member_table_row } from "./styles.module.css";
 
-import { secondary_background } from "../styles.module.css";
 import { TeamBar } from "./TeamBar";
 import BotTable from "./BotTable";
 import { BotUpload } from "./BotUpload";
@@ -15,7 +14,6 @@ import { GameTable } from "../components/Tables/GameTable";
 function NoTeam() {
   return (
     <Box
-      className={secondary_background}
       sx={{
         width: "100%",
         flexGrow: 1,
@@ -40,7 +38,6 @@ export function DisplayTeam({
     <>
       <TeamBar readonly={readonly} teamId={teamId} />
       <Box
-        className={secondary_background}
         sx={{
           width: "100%",
           flexGrow: 1,

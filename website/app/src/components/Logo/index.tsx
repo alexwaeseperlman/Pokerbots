@@ -1,8 +1,8 @@
 import Box from "@mui/system/Box";
-import SvgIcon from "@mui/material/SvgIcon";
+import SvgIcon, { SvgIconProps } from "@mui/material/SvgIcon";
 import React from "react";
 
-export default function Logo(props) {
+export default function Logo(props: SvgIconProps) {
   return (
     <SvgIcon {...props}>
       <svg viewBox="0 0 46 36" fill="none" xmlns="http://www.w3.org/2000/svg">

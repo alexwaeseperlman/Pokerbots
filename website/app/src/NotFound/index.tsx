@@ -1,15 +1,12 @@
 import { Box, Typography } from "@mui/material";
 import graphic from "./graphic.png";
 import React from "react";
-import { primary_background } from "../styles.module.css";
 
 export default function NotFound() {
   return (
     <Box
-      className={`${primary_background}`}
       sx={{
         width: "100%",
-        color: "white",
         p: 4,
         pb: 16,
         display: "flex",

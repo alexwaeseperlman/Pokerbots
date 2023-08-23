@@ -1,29 +1,17 @@
 import React from "react";
-import Box from "@mui/system/Box";
+import Box from "@mui/joy/Box";
 import Logo from "../components/Logo";
-import {
-  Button,
-  FormControl,
-  FormGroup,
-  Input,
-  TextField,
-  Typography,
-} from "@mui/material";
+import { Button, Typography } from "@mui/joy";
 import { DiscordLogo } from "./Discord";
-import { signup_input, signup_button } from "./styles.module.css";
-import Container from "@mui/system/Container";
-import graphic from "./graphic.png";
+import Container from "@mui/joy/Container";
 import graphic_small from "./graphic_small.png";
-import styled from "@mui/system/styled";
-import { primary_background } from "../styles.module.css";
 
 export default function HomePage() {
   return (
     <Box
-      className={`${primary_background}`}
+      id="home"
       sx={{
         width: "100%",
-        color: "white",
         p: 4,
         pb: 16,
         display: "flex",
@@ -72,7 +60,7 @@ export default function HomePage() {
               height: "100px",
             }}
           />
-          <Typography variant="h2">UPAC</Typography>
+          <Typography level="h2">UPAC</Typography>
         </Box>
         <Box
           sx={{
@@ -85,8 +73,9 @@ export default function HomePage() {
           }}
         >
           <Button
-            variant="contained"
-            startIcon={<DiscordLogo />}
+            variant="solid"
+            as="a"
+            startDecorator={<DiscordLogo />}
             href="https://discord.gg/h4GNcUkAag"
           >
             Join our discord
@@ -100,8 +89,10 @@ export default function HomePage() {
             mt: 6,
           }}
         >
-          The competition will start in 2024. For sponsorship inquiries, please
-          contact pokerbotleague@mcgill.ca.
+          <Typography level="body-md">
+            The competition will start in 2024. For sponsorship inquiries,
+            please contact pokerbotleague@mcgill.ca.
+          </Typography>
         </Container>
       </Box>
     </Box>

@@ -2,28 +2,19 @@
   display: flex;
   margin: 0;
   border: none;
-  gap: 10px;
+  gap: 20px;
   padding: 6px 20px;
 
+  align-items: center;
   flex-direction: row;
 }
 
 .bar_item {
-  display: flex;
-  font-family: "Figtree";
-  font-style: normal;
   font-weight: 700;
   font-size: 12px;
   line-height: 17px;
-
-  letter-spacing: 1.25px;
-
-  color: #ffffff;
   align-items: center;
   cursor: pointer;
-}
-
-.bar_item_clickable:hover {
   user-select: none;
 }
 
