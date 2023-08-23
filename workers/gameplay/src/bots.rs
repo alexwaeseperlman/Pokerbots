@@ -1,7 +1,9 @@
 use itertools::Itertools;
 use rand::{thread_rng, Rng};
 use shared::{BotJson, GameError, GameResult, WhichBot};
+use std::borrow::BorrowMut;
 use std::{
+    env,
     path::{Path, PathBuf},
     process::Stdio,
     time::Duration,
@@ -20,14 +22,25 @@ pub mod sandbox;
 pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>>(
     bot: U,
     bot_path: V,
-    challengerucket: T,
+    bot_bucket: T,
     s3_client: &aws_sdk_s3::Client,
 ) -> Result<tokio::process::Child, GameError> {
     let bot_path: PathBuf = bot_path.into();
+    Command::new("mount")
+        .arg("-t")
+        .arg("tmpfs")
+        .arg("-o")
+        .arg("rw,size=2G")
+        .arg(format!("{}", bot_path.display()))
+        .arg(&bot_path)
+        .stderr(Stdio::null())
+        .stdout(Stdio::null())
+        .status()
+        .await?;
     shared::s3::download_file(
         &bot.into(),
         &bot_path.join("bot.zip"),
-        &challengerucket.into(),
+        &bot_bucket.into(),
         &s3_client,
     )
     .await?;
@@ -60,10 +73,54 @@ pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>
             format!("Failed to create log file: {}", e),
         )
     })?);
-    Command::new("sh")
-        .arg("-c")
-        .arg(bot_json.run)
+    std::fs::write(bot_path.join("bot/run.sh"), bot_json.run).expect("write to build.sh failed");
+    Command::new("chown")
+        .arg("-R")
+        .arg("runner:runner")
+        .arg(".")
         .current_dir(&bot_path.join("bot"))
+        .status()
+        .await?;
+    Command::new("chmod")
+        .arg("+x")
+        .arg("run.sh")
+        .current_dir(&bot_path.join("bot"))
+        .status()
+        .await?;
+
+    Command::new("bwrap")
+        .args([
+            "--unshare-all",
+            "--die-with-parent",
+            "--dir",
+            "/tmp",
+            "--ro-bind",
+            "/usr",
+            "/usr",
+            "--proc",
+            "/proc",
+            "--dev",
+            "/dev",
+            "--ro-bind",
+            "/lib",
+            "/lib",
+            "--ro-bind",
+            "/usr/bin",
+            "/usr/bin",
+            "--ro-bind",
+            "/bin",
+            "/bin",
+            "--bind",
+            ".",
+            "/home/runner",
+            "--chdir",
+            "/home/runner",
+            "./run.sh",
+        ])
+        .current_dir(&bot_path.join("bot"))
+        .uid(1000)
+        .gid(1000)
+        .process_group(0)
         .stderr(log_file)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -72,6 +129,9 @@ pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>
             log::error!("Error running bot: {}", e);
             GameError::InternalError
         })
+}
+extern "C" {
+    fn kill(pid: i32, sig: i32) -> i32;
 }
 
 pub async fn run_game(
@@ -89,11 +149,11 @@ pub async fn run_game(
     *game_path = tmp_dir.clone();
     log::debug!("Playing {} against {}", defender, challenger);
     log::info!("Running game {} with local id {}", task_id, game_id);
-    let challengerucket = std::env::var("COMPILED_BOT_S3_BUCKET").map_err(|e| {
+    let bot_bucket = std::env::var("COMPILED_BOT_S3_BUCKET").map_err(|e| {
         log::error!("Error getting COMPILED_BOT_S3_BUCKET: {}", e);
         GameError::InternalError
     })?;
-    log::debug!("Bot bucket: {}", challengerucket);
+    log::debug!("Bot bucket: {}", bot_bucket);
 
     // download bots from s3
     log::debug!("Making bot directories");
@@ -109,8 +169,8 @@ pub async fn run_game(
     })?;
     log::debug!("Downloading bots from aws");
     let (defender, challenger) = try_join!(
-        download_and_run(defender, defender_path, &challengerucket, s3_client),
-        download_and_run(challenger, challenger_path, &challengerucket, s3_client)
+        download_and_run(defender, defender_path, &bot_bucket, s3_client),
+        download_and_run(challenger, challenger_path, &bot_bucket, s3_client)
     )?;
 
     // run game
@@ -340,11 +400,25 @@ impl Game {
                     WhichBot::Challenger
                 };
 
-            let target_reader = match whose_turn {
-                WhichBot::Defender => &mut *defender_reader,
-                WhichBot::Challenger => &mut *challenger_reader,
+            let (target_reader, opponent_gid) = match whose_turn {
+                WhichBot::Defender => (
+                    &mut *defender_reader,
+                    self.challenger.id().unwrap_or_default(),
+                ),
+                WhichBot::Challenger => (
+                    &mut *challenger_reader,
+                    self.defender.id().unwrap_or_default(),
+                ),
             };
 
+            unsafe {
+                let status = kill(-(opponent_gid as i32), 19);
+                self.write_log(format!(
+                    "Sleeping process group {}, status: {}",
+                    opponent_gid, status
+                ))
+                .await?;
+            };
             // write current game state to the bots stream
             log::debug!("Writing current state.");
             let status = format!(
@@ -356,6 +430,7 @@ impl Game {
                 state.player_states[1].stack,
             );
             self.write_bot(whose_turn, status).await.map_err(|_| {
+                unsafe { kill(-(opponent_gid as i32), 18) };
                 log::info!("Failed to write current state to bot {:?}.", whose_turn);
                 GameError::RunTimeError(whose_turn)
             })?;
@@ -376,10 +451,20 @@ impl Game {
                         .map_err(|_| shared::GameError::InvalidActionError(whose_turn.clone()))?,
                 )
                 .map_err(|_| shared::GameError::InvalidActionError(whose_turn.clone()))?;
+
+            unsafe {
+                let status = kill(-(opponent_gid as i32), 18);
+                self.write_log(format!(
+                    "Waking up process group {}, status: {}",
+                    opponent_gid, status
+                ))
+                .await?;
+            };
         }
 
         Ok(())
     }
+
     /// Play a game of poker, returning a [shared::GameResult]
     pub async fn play(&mut self, rounds: usize) -> shared::GameResult {
         log::debug!("Playing game {} with {} rounds", self.id, rounds);
@@ -420,23 +505,20 @@ impl Game {
         ));
     }
 }
-
-extern "C" {
-    fn kill(pid: i32, sig: i32) -> i32;
-}
-
 impl Drop for Game {
     fn drop(&mut self) {
         if let Some(id) = self.defender.id() {
             unsafe {
-                kill(id.try_into().unwrap(), 9);
+                kill(-(id as i32), 18);
             }
         }
         if let Some(id) = self.challenger.id() {
             unsafe {
-                kill(id.try_into().unwrap(), 9);
+                kill(-(id as i32), 18);
             }
         }
+        self.defender.start_kill();
+        self.challenger.start_kill();
     }
 }
 

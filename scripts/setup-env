@@ -33,7 +33,9 @@ fixed_vars = {
     'BUILD_RESULTS_QUEUE_URL': 'http://localhost:9324/queue/build_results',
     'REDIRECT_URI': 'http://localhost:5173/api/login',
     'PORT': '3000',
-    'BOT_SIZE': '5000000'
+    'BOT_SIZE': '5000000',
+    'RUSTFLAGS': "--cfg tokio_unstable",
+    'IMAGE_SUFFIX': "_unstable"
 }
 
 # Check if we're in the root directory
@@ -62,7 +64,6 @@ for var in required_vars:
     # Check if it's already in the .env
     required = env.get(var) == None
     parser.add_argument(f'-{var}', required=required)
-
 
 args = parser.parse_args()
 

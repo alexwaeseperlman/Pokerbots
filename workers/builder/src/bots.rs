@@ -74,6 +74,7 @@ pub async fn build_bot<T: AsRef<Path>>(bot_folder: T) -> Result<(), io::Error> {
             format!("Build failed: {:?}", chmod_result),
         )),
     };
+
     let build_result = subprocess::Popen::create(
         &["su", "builder", "-c","bwrap --unshare-all --die-with-parent --dir /tmp --ro-bind /usr /usr --proc /proc --dev /dev --ro-bind /lib /lib --ro-bind /usr/bin /usr/bin --ro-bind /bin /bin --bind . /home/builder --chdir /home/builder ./build.sh" ],
         PopenConfig {
@@ -96,19 +97,13 @@ pub async fn build_bot<T: AsRef<Path>>(bot_folder: T) -> Result<(), io::Error> {
 pub async fn download_bot<T: Into<String>, U: Into<PathBuf>, V: Into<String>>(
     key: T,
     path: U,
-    challengerucket: V,
+    bot_bucket: V,
     client: &aws_sdk_s3::Client,
 ) -> Result<(), io::Error> {
     //TODO: download this in a better way
     let key: String = key.into();
     log::debug!("Downloading bot {:?} from s3", key.clone());
-    if let Ok(res) = client
-        .get_object()
-        .bucket(challengerucket)
-        .key(key)
-        .send()
-        .await
-    {
+    if let Ok(res) = client.get_object().bucket(bot_bucket).key(key).send().await {
         if let Ok(body) = res.body.collect().await {
             let bytes = body.into_bytes();
             fs::write(path.into().join("bot.zip"), bytes).await?;

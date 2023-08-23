@@ -2232,12 +2232,14 @@ dependencies = [
  "env_logger",
  "futures-lite",
  "itertools 0.10.5",
+ "libc",
  "log",
  "rand 0.8.5",
  "reqwest",
  "serde",
  "serde_json",
  "shared",
+ "syscalls",
  "tokio",
 ]
 
@@ -3045,9 +3047,9 @@ dependencies = [
 
 [[package]]
 name = "num-complex"
-version = "0.4.3"
+version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02e0d21255c828d6f128a1e41534206671e8c3ea0c62f32291e808dc82cff17d"
+checksum = "1ba157ca0885411de85d6ca030ba7e2a83a28636056c7c699b07c8b6f7383214"
 dependencies = [
  "num-traits",
 ]
@@ -3721,9 +3723,9 @@ dependencies = [
 
 [[package]]
 name = "rustls-webpki"
-version = "0.101.2"
+version = "0.101.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "513722fd73ad80a71f72b61009ea1b584bcfa1483ca93949c8f290298837fa59"
+checksum = "261e9e0888cba427c3316e6322805653c9425240b6fd96cee7cb671ab70ab8d0"
 dependencies = [
  "ring",
  "untrusted",
@@ -4069,6 +4071,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "syscalls"
+version = "0.6.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97feb70b9443edd79ca26f40122d271fa61df4ffb2220965a27711bfe6ceec7c"
+dependencies = [
+ "cc",
+ "serde",
+ "serde_repr",
 ]
 
 [[package]]

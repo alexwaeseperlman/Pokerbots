@@ -185,23 +185,23 @@ export default function BotTable({
       >
         <MenuItem
           onClick={() => {
-            fetch(`${apiUrl}/set-active-bot?id=${menuEl?.bot.id}`)
-              .then(async (r) => {
+            fetch(`${apiUrl}/set-active-bot?id=${menuEl?.bot.id}`).then(
+              async (r) => {
                 const data = await r.json();
                 if (data.error) {
                   enqueueSnackbar(data.error, {
                     variant: "error",
                   });
+                } else {
+                  enqueueSnackbar("Set active", {
+                    variant: "success",
+                  });
                 }
-              })
-              .then(() => {
-                enqueueSnackbar("Set active", {
-                  variant: "success",
-                });
                 setTimeout(() => {
                   fetchTeam();
-                }, 100);
-              });
+                });
+              }
+            );
           }}
         >
           {menuEl?.bot.id == team?.active_bot
