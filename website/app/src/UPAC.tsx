@@ -24,9 +24,9 @@ function HeaderFooter(props: React.PropsWithChildren<{}>) {
         minHeight: "100vh",
         position: "relative",
         display: "flex",
-        background: "linear-gradient(269.89deg, #392889 0%, #191335 100%)",
         pb: 4,
       }}
+      variant="solid"
     >
       <TopBar />
       <Suspense

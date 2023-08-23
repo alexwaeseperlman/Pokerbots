@@ -84,6 +84,8 @@ export default function BotTable({
           },
           {
             name: "Uploaded By",
+            minWidth: "200px",
+            maxWidth: "500px",
             render: ({ row: bot }) => (
               <Typography level="body-md">{bot.uploaded_by}</Typography>
             ),

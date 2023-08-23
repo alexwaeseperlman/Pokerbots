@@ -78,33 +78,37 @@ export default function DataTable<T>({
         }
         return (
           <>
-            <Stack
-              key={key}
-              sx={{
-                display: {
-                  xs: "flex",
-                  sm: "none",
-                },
-              }}
-              gap={1}
-            >
-              {columns.map((col, i) => (
-                <Stack key={i} direction="column">
-                  <Box>
-                    <Typography level={"title-sm"}>
-                      {columns[i].name}
-                    </Typography>
-                  </Box>
-                  {<col.render row={row} />}
-                </Stack>
-              ))}
-            </Stack>
             <Box key={key} component={(props: any) => <tr {...props} />}>
               {columns.map((col, i) => (
                 <td key={i}>{<col.render row={row} />}</td>
               ))}
             </Box>
           </>
+        );
+      }),
+    [pagedData, columns]
+  );
+
+  const cards = React.useMemo(
+    () =>
+      pagedData.map((row) => {
+        let key = keyLookups.get(row);
+        if (!key) {
+          key = keyCounter++ & ((1 << 52) - 1);
+          keyLookups.set(row, key);
+        }
+
+        return (
+          <Stack key={key} gap={1} alignItems="stretch">
+            {columns.map((col, i) => (
+              <Stack key={i} direction="column" alignItems="stretch">
+                <Box>
+                  <Typography level={"title-sm"}>{columns[i].name}</Typography>
+                </Box>
+                {<col.render row={row} />}
+              </Stack>
+            ))}
+          </Stack>
         );
       }),
     [pagedData, columns]
@@ -121,7 +125,7 @@ export default function DataTable<T>({
         }}
       >
         <Sheet>
-          <Stack gap={4}>{rows}</Stack>
+          <Stack gap={4}>{cards}</Stack>
         </Sheet>
       </Box>
       <Box

@@ -8,7 +8,7 @@ import Avatar from "@mui/joy/Avatar";
 import CircularProgress from "@mui/joy/CircularProgress";
 import { BotUpload } from "./BotUpload";
 import { TableButton } from "../components/Tables/GameTable";
-import { Button, TextField, useTheme } from "@mui/joy";
+import { Button, Input, TextField, Typography, useTheme } from "@mui/joy";
 import EditIcon from "@mui/icons-material/Edit";
 import CopyIcon from "@mui/icons-material/ContentCopy";
 import { enqueueSnackbar } from "notistack";
@@ -49,12 +49,10 @@ function PfpUpload({ team, readonly }: { team: Team; readonly: boolean }) {
     <Box
       sx={(theme) => ({
         height: "100%",
-        minWidth: "10px",
 
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        position: "relative",
       })}
     >
       <Avatar
@@ -115,6 +113,35 @@ function PfpUpload({ team, readonly }: { team: Team; readonly: boolean }) {
   );
 }
 
+function CopyableInput({ value }: { value: string }) {
+  const ref = React.useRef<HTMLInputElement>(null);
+  return (
+    <Input
+      value={value}
+      readOnly
+      slotProps={{
+        input: {
+          ref,
+        },
+      }}
+      size="sm"
+      endDecorator={<CopyIcon cursor="pointer" />}
+      sx={{
+        pointerEvents: "auto",
+      }}
+      onClick={(e) => {
+        const input = ref.current!;
+        input.select();
+        // modern version of the following command
+        navigator.clipboard.writeText(input.value);
+        enqueueSnackbar("Copied to clipboard", {
+          variant: "success",
+        });
+      }}
+    />
+  );
+}
+
 export function TeamBar({
   readonly,
   teamId,
@@ -163,19 +190,15 @@ export function TeamBar({
               display: "flex",
               flexDirection: "row",
               alignItems: "baseline",
-              [theme.breakpoints.down("sm")]: {
-                flexDirection: "column",
-              },
             })}
           >
-            <h1
+            <Typography
+              level="h1"
               ref={headerRef}
+              textColor="white"
               contentEditable={editing}
               suppressContentEditableWarning={true}
               id={`team-name-${team?.id}-${editing}`}
-              style={{
-                margin: "10px",
-              }}
               onFocus={(e) => {
                 window.getSelection()?.selectAllChildren(e.target);
               }}
@@ -203,24 +226,25 @@ export function TeamBar({
               }}
             >
               {team?.team_name}
-            </h1>
+            </Typography>
             {readonly || editing || (
-              <Box>
-                <TableButton
-                  onClick={() => {
-                    if (!readonly) setEditing(true);
-                    // set a timeout so that the focus happens after the contenteditable is enabled
-                    setTimeout(() => {
-                      if (headerRef.current) {
-                        headerRef.current.focus();
-                      }
-                    }, 5);
-                  }}
-                >
-                  <EditIcon sx={{ mr: "4px" }} fontSize="small" />
-                  Rename
-                </TableButton>
-              </Box>
+              <TableButton
+                sx={{
+                  margin: "10px",
+                }}
+                onClick={() => {
+                  if (!readonly) setEditing(true);
+                  // set a timeout so that the focus happens after the contenteditable is enabled
+                  setTimeout(() => {
+                    if (headerRef.current) {
+                      headerRef.current.focus();
+                    }
+                  }, 5);
+                }}
+              >
+                <EditIcon sx={{ mr: "4px" }} fontSize="small" />
+                Rename
+              </TableButton>
             )}
           </Box>
           <Box
@@ -236,11 +260,15 @@ export function TeamBar({
                   {team.members
                     .map((member) => (
                       <tr key={member.email}>
-                        <td>{member.display_name}</td>
-                        {(team.owner === user?.email ||
-                          member.email === user?.email) && (
-                          <td>
-                            {readonly || (
+                        <td>
+                          <Typography textColor="white">
+                            {member.display_name}
+                          </Typography>
+                        </td>
+                        <td>
+                          {(team.owner === user?.email ||
+                            member.email === user?.email) &&
+                            (readonly || (
                               <TableButton
                                 onClick={() => {
                                   const confirmed = confirm(
@@ -283,9 +311,8 @@ export function TeamBar({
                                     : "Leave"
                                   : "Kick"}
                               </TableButton>
-                            )}
-                          </td>
-                        )}
+                            ))}
+                        </td>
                       </tr>
                     ))
                     .concat(
@@ -293,31 +320,9 @@ export function TeamBar({
                         ? []
                         : team.invites.map((invite) => (
                             <tr key={invite}>
-                              <Box
-                                component={(props: any) => <td {...props}></td>}
-                                sx={{
-                                  justifyContent: "center",
-                                  display: "flex",
-                                }}
-                              >
-                                <input
+                              <td>
+                                <CopyableInput
                                   value={`${window.location.origin}/join-team?invite_code=${invite}`}
-                                  readOnly
-                                  style={{
-                                    background: "none",
-                                    marginRight: "8px",
-                                    border: "1px solid white ",
-                                    borderRadius: "5px",
-                                  }}
-                                  onClick={(e) => {
-                                    const input = e.target as HTMLInputElement;
-                                    input.select();
-                                    // modern version of the following command
-                                    navigator.clipboard.writeText(input.value);
-                                    enqueueSnackbar("Copied to clipboard", {
-                                      variant: "success",
-                                    });
-                                  }}
                                 />
                                 {/*<CopyIcon
                                     style={{
@@ -326,7 +331,7 @@ export function TeamBar({
                                     color="secondary"
                                     fontSize="small"
                                   />*/}
-                              </Box>
+                              </td>
                               {!readonly && (
                                 <td>
                                   <TableButton

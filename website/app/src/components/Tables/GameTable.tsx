@@ -26,19 +26,8 @@ import DataTable from "../DataTable";
 import { MoreVert } from "@mui/icons-material";
 
 export const TableButton = styled((props: ButtonProps) => (
-  <Button {...props} />
-))(() => ({
-  fontSize: "12px",
-  fontWeight: 300,
-  textAlign: "left",
-  justifyContent: "left",
-  textTransform: "none",
-  cursor: "pointer",
-  padding: 0,
-  paddingLeft: "8px",
-  paddingRight: "8px",
-  color: "#bbb",
-}));
+  <Button {...props} variant="plain" size="sm" />
+))(() => ({}));
 export function GameTable({ teamId }: { teamId?: string | null }) {
   type Game = GameWithBots<BotWithTeam<Team>>;
   const [team, fetchTeam] = useTeam(teamId ?? null);
@@ -87,7 +76,7 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
     getGames();
     const int = setInterval(() => {
       getGames();
-    }, 5000);
+    }, 50000);
     return () => clearInterval(int);
   }, [getGames, paginationModel]);
   const renderTeam = (whichBot: WhichBot) => (props: { row: Game }) => {
@@ -106,31 +95,42 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
         sx={{
           display: "flex",
           flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
         }}
       >
-        <Avatar
+        <Box
           sx={{
-            width: 24,
-            height: 24,
-            marginRight: 2,
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "flex-start",
           }}
-          src={`${apiUrl}/pfp?id=${team?.id}`}
-        />
-
-        <Box ml={2} mr={2} flexDirection={"column"}>
-          <Link
-            to={`/team/${bot.team.id}`}
-            style={{
-              color: "inherit",
-              textDecoration: "none",
+        >
+          <Avatar
+            sx={{
+              width: 24,
+              height: 24,
+              marginRight: 2,
             }}
-          >
-            <Typography>{bot.team.team_name ?? "Deleted team"}</Typography>
-          </Link>
+            src={`${apiUrl}/pfp?id=${team?.id}`}
+          />
 
-          <Typography fontSize="small" textColor="text.secondary">
-            {bot.name ?? "Deleted bot"}
-          </Typography>
+          <Box ml={2} mr={2} flexDirection={"column"}>
+            <Link
+              to={`/team/${bot.team.id}`}
+              style={{
+                color: "inherit",
+                textDecoration: "none",
+              }}
+            >
+              <Typography>{bot.team.team_name ?? "Deleted team"}</Typography>
+            </Link>
+
+            <Typography fontSize="small" textColor="text.secondary">
+              {bot.name ?? "Deleted bot"}
+            </Typography>
+          </Box>
         </Box>
 
         <Chip color={color} size="sm">
