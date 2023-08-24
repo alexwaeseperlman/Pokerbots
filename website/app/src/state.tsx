@@ -19,22 +19,43 @@ import { TeamsResponse } from "@bindings/TeamsResponse";
 
 export const apiUrl = window.location.origin + "/api";
 
+// choose default value based on route
+const teamAtom = atomFamily<
+  string | null,
+  PrimitiveAtom<Promise<TeamData | null>>
+>((param) => atom(fetchTeam(param)));
+
 const userAtom = atom<Promise<UserData | null>>(
   fetch(`${apiUrl}/my-account`)
     .then((res) => res.json())
     .catch(() => null)
 );
 
-export const useUser = () => {
+export const useProfile = (selectedTeam: string | null) => {
   const [user, setUser] = useAtom(userAtom);
-  const fetchUser = async () => {
+  const [team, setTeam] = useAtom(teamAtom(selectedTeam ?? null));
+
+  const update = () => {
+    console.log(selectedTeam);
+    setTeam(fetchTeam(selectedTeam));
+
     setUser(
       fetch(`${apiUrl}/my-account`)
         .then((res) => res.json())
         .catch(() => null)
     );
   };
-  return [user, fetchUser] as const;
+  return [user, team, update];
+};
+
+export const useUser = () => {
+  const [user, team, update] = useProfile(null);
+  return [user, update] as const;
+};
+
+export const useTeam = (selectedTeam: string | null) => {
+  const [user, team, update] = useProfile(selectedTeam);
+  return [team, update] as const;
 };
 
 function fetchTeam(team: string | null) {
@@ -57,18 +78,3 @@ function fetchTeam(team: string | null) {
         .then((team) => team as TeamData)
         .catch(() => null);
 }
-
-// choose default value based on route
-const teamAtom = atomFamily<
-  string | null,
-  PrimitiveAtom<Promise<TeamData | null>>
->((param) => atom(fetchTeam(param)));
-
-export const useTeam = (selectedTeam: string | null) => {
-  const [team, setTeam] = useAtom(teamAtom(selectedTeam));
-  const fetch = () => {
-    console.log(selectedTeam);
-    setTeam(fetchTeam(selectedTeam));
-  };
-  return [team, fetch] as const;
-};
