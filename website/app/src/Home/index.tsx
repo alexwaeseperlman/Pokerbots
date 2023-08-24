@@ -5,6 +5,7 @@ import { Button, Sheet, Typography } from "@mui/joy";
 import { DiscordLogo } from "./Discord";
 import Container from "@mui/joy/Container";
 import graphic_small from "./graphic_small.png";
+import graphic from "./graphic.png";
 
 export default function HomePage() {
   return (
@@ -16,7 +17,7 @@ export default function HomePage() {
     >
       <Box
         sx={{
-          backgroundImage: `url(${graphic_small})`,
+          backgroundImage: `url(${graphic}), url(${graphic_small})`,
           filter: "grayscale(100%)",
           opacity: 0.4,
           backgroundPosition: "center",

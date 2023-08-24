@@ -1,6 +1,6 @@
 import React, { Suspense } from "react";
 import { Route, Routes, useNavigate, useParams } from "react-router-dom";
-import HomePage from "./HomePage";
+import Home from "./Home";
 import ManageTeam, { DisplayTeam } from "./ManageTeam";
 import { useTeam, useUser } from "./state";
 
@@ -14,6 +14,8 @@ import JoinTeam from "./JoinTeam";
 import NotFound from "./NotFound";
 import RecentGames from "./RecentGames";
 import Profile from "./Profile";
+import Login from "./Login";
+import Signup from "./Signup";
 
 function HeaderFooter(props: React.PropsWithChildren<{}>) {
   return (
@@ -92,7 +94,7 @@ export default function UPAC() {
           index
           element={
             <HeaderFooter>
-              <HomePage />
+              <Home />
             </HeaderFooter>
           }
         />
@@ -145,6 +147,24 @@ export default function UPAC() {
           element={
             <HeaderFooter>
               <JoinTeam />
+            </HeaderFooter>
+          }
+        />
+
+        <Route
+          path="login"
+          element={
+            <HeaderFooter>
+              <Login />
+            </HeaderFooter>
+          }
+        />
+
+        <Route
+          path="signup"
+          element={
+            <HeaderFooter>
+              <Signup />
             </HeaderFooter>
           }
         />

@@ -2,6 +2,7 @@ import React from "react";
 import Box, { BoxProps } from "@mui/joy/Box";
 import {
   Button,
+  Card,
   Grid,
   Input,
   Sheet,
@@ -22,14 +23,8 @@ const Cell = styled("td")(({ theme }) => ({
 export default function Profile() {
   const user = useUser()[0];
   return (
-    <Box
-      sx={{
-        flexGrow: 1,
-        p: 2,
-        maxWidth: "100vw",
-      }}
-    >
-      <Sheet sx={{ p: 2, flexGrow: 1, maxWidth: "100%", mb: 2 }}>
+    <Box>
+      <Card>
         <Typography level="h3" mb={2}>
           My profile
         </Typography>
@@ -123,7 +118,7 @@ export default function Profile() {
             </tr>
           </tfoot>
         </Table>
-      </Sheet>
+      </Card>
     </Box>
   );
 }

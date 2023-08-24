@@ -45,7 +45,7 @@ export const useProfile = (selectedTeam: string | null) => {
         .catch(() => null)
     );
   };
-  return [user, team, update];
+  return [user, team, update] as const;
 };
 
 export const useUser = () => {

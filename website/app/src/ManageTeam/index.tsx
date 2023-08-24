@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useUser, useTeam } from "../state";
 import CreateTeam from "./CreateTeam";
 import Login from "../Login";
@@ -13,6 +13,7 @@ import { GameTable } from "../components/Tables/GameTable";
 import Sheet from "@mui/joy/Sheet";
 import Stack from "@mui/joy/Stack";
 import { Card, CardContent, CardCover, Typography } from "@mui/joy";
+import { useNavigate } from "react-router-dom";
 
 function NoTeam() {
   return (
@@ -73,6 +74,12 @@ export default function ManageTeam({
 }) {
   const [team, fetchTeam] = useTeam(teamId);
   const [user, fetchUser] = useUser();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!user && !readonly) {
+      navigate("/login?redirect=%2Fmanage-team");
+    }
+  });
   if (readonly || (team && user)) {
     return <DisplayTeam readonly={readonly} teamId={teamId} />;
   } else if (user) {

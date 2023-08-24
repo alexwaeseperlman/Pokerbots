@@ -69,7 +69,7 @@ const LoginButton = styled((props: ButtonProps) => (
   flexGrow: 1,
 }));
 
-export default function Login() {
+export default function Signup() {
   const [params, setParams] = useSearchParams();
   const redirect = params.get("redirect") ?? "/manage-team";
   return (
@@ -85,11 +85,12 @@ export default function Login() {
       }}
     >
       <Typography textColor="inherit" level="h1">
-        Log in to your account
+        Join UPAC
       </Typography>
       <Input placeholder="Email" type="email" />
       <Input placeholder="Password" type="password" />
-      <Button variant="solid">Log in</Button>
+      <Input placeholder="Confirm your password" type="password" />
+      <Button variant="solid">Sign up</Button>
       <Stack direction="row" gap={2}>
         <LoginButton
           onClick={() => {
@@ -99,7 +100,7 @@ export default function Login() {
           }}
           startDecorator={<GoogleLogo />}
         >
-          Sign in with Google
+          Sign up with Google
         </LoginButton>
         <LoginButton
           onClick={() => {
@@ -109,7 +110,7 @@ export default function Login() {
           }}
           startDecorator={<MicrosoftLogo />}
         >
-          Sign in with Microsoft
+          Sign up with Microsoft
         </LoginButton>
       </Stack>
     </Container>

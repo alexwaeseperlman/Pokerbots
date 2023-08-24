@@ -41,7 +41,9 @@ export default function NotFound() {
           zIndex: 1,
         }}
       >
-        <Typography variant="h2">There is no page at this address.</Typography>
+        <Typography variant="h2" color="inherit">
+          There is no page at this address.
+        </Typography>
       </Box>
     </Box>
   );

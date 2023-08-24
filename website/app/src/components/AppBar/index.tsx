@@ -5,7 +5,7 @@ import Box from "@mui/joy/Box";
 import Logo from "../Logo";
 import IconButton from "@mui/joy/IconButton";
 
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Typography from "@mui/joy/Typography";
 import Sheet from "@mui/joy/Sheet";
 import { useTheme } from "@mui/joy";
@@ -56,6 +56,7 @@ export function TopBar() {
   const [user, fetchUser] = useUser();
   const [team, fetchTeam] = useUser();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   return (
     <Box
@@ -69,8 +70,11 @@ export function TopBar() {
       })}
     >
       <IconButton
+        color="neutral"
+        variant="solid"
         sx={{
           padding: 0,
+          background: "none",
         }}
         onClick={() => {
           navigate("/");
@@ -140,14 +144,15 @@ export function TopBar() {
           </RawBarItem>
         </>
       ) : (
-        <BarItem
-          label="CREATE AN ACCOUNT"
-          command={() => {
-            fetch(`${apiUrl}/signout`).then(() => {
-              fetchUser();
-            });
-          }}
-        />
+        <>
+          <BarItem
+            label="JOIN!"
+            selected={window.location.pathname === "/signup"}
+            command={() => {
+              navigate("/signup");
+            }}
+          />
+        </>
       )}
     </Box>
   );
