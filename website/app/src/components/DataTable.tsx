@@ -8,16 +8,21 @@ import {
   IconButton,
   Stack,
   Typography,
+  styled,
 } from "@mui/joy";
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 
-export interface DataTableProps<T> {
+export type DataTableData = { id: string | number };
+export type DataTableColumn<T extends DataTableData> = {
+  name: string;
+  render: (props: { row: T }) => React.ReactElement;
+} & BoxProps &
+  React.TdHTMLAttributes<HTMLTableCellElement>;
+
+export interface DataTableProps<T extends DataTableData> {
   data: T[];
-  columns: ({
-    name: string;
-    render: (props: { row: T }) => React.ReactElement;
-  } & BoxProps)[];
+  columns: DataTableColumn<T>[];
   onPageChange?: (page: number) => void;
   perPage?: number;
   total?: number;
@@ -28,7 +33,16 @@ export interface DataTableProps<T> {
 let keyCounter = 0;
 const keyLookups = new WeakMap<any, number>();
 
-export default function DataTable<T>({
+const Cell = styled(
+  (props: BoxProps & React.TdHTMLAttributes<HTMLTableCellElement>) => (
+    <Box component={(props: any) => <td {...props} />} {...props} />
+  )
+)(({ theme }) => ({
+  whiteSpace: "nowrap",
+  overflow: "hidden",
+}));
+
+export default function DataTable<T extends DataTableData>({
   data,
   columns,
   onPageChange,
@@ -40,10 +54,10 @@ export default function DataTable<T>({
 }: DataTableProps<T> & TableProps) {
   const headers = React.useMemo(
     () =>
-      columns.map(({ name, render, ...props }) => (
-        <Box component={(props: any) => <td {...props} />} {...props}>
+      columns.map(({ name, render, ...props }, i) => (
+        <Cell {...props} key={i}>
           {name}
-        </Box>
+        </Cell>
       )),
     [columns]
   );
@@ -67,20 +81,12 @@ export default function DataTable<T>({
 
   const rows = React.useMemo(
     () =>
-      // This is a hack to get around the fact that we can't use the object as a key
-      // in React. We use a WeakMap to store a unique key for each row, and then
-      // use that key as the key for the row.
       pagedData.map((row) => {
-        let key = keyLookups.get(row);
-        if (!key) {
-          key = keyCounter++ & ((1 << 52) - 1);
-          keyLookups.set(row, key);
-        }
         return (
           <>
-            <Box key={key} component={(props: any) => <tr {...props} />}>
+            <Box key={row.id} component={(props: any) => <tr {...props} />}>
               {columns.map((col, i) => (
-                <td key={i}>{<col.render row={row} />}</td>
+                <Cell key={i}>{<col.render row={row} />}</Cell>
               ))}
             </Box>
           </>
@@ -191,7 +197,7 @@ export default function DataTable<T>({
           <tbody>{...rows}</tbody>
           <tfoot>
             <tr>
-              <td colSpan={columns.length}>{paginationControls}</td>
+              <Cell colSpan={columns.length}>{paginationControls}</Cell>
             </tr>
           </tfoot>
         </Table>

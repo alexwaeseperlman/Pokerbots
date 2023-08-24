@@ -62,7 +62,7 @@ export default function BotTable({
 
   return (
     <>
-      <DataTable
+      <DataTable<BotWithTeam<Team>>
         columns={[
           {
             name: "Active",
@@ -99,7 +99,13 @@ export default function BotTable({
           {
             name: "Name",
             render: ({ row: bot }) => (
-              <Typography level="body-md">{bot.name}</Typography>
+              <Typography
+                level="body-md"
+                textOverflow={"ellipsis"}
+                overflow={"inherit"}
+              >
+                {bot.name}
+              </Typography>
             ),
           },
           {
@@ -107,7 +113,13 @@ export default function BotTable({
             minWidth: "200px",
             maxWidth: "500px",
             render: ({ row: bot }) => (
-              <Typography level="body-md">{bot.uploaded_by}</Typography>
+              <Typography
+                level="body-md"
+                textOverflow={"ellipsis"}
+                overflow={"inherit"}
+              >
+                {bot.uploaded_by}
+              </Typography>
             ),
           },
           {
@@ -115,7 +127,11 @@ export default function BotTable({
             render: ({ row: bot }) => {
               const date = new Date(Number(bot.created) * 1000);
               return (
-                <Typography>
+                <Typography
+                  level="body-md"
+                  textOverflow={"ellipsis"}
+                  overflow={"inherit"}
+                >
                   {date.toLocaleDateString()} {date.toLocaleTimeString()}
                 </Typography>
               );
