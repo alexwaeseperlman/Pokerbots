@@ -1,6 +1,15 @@
 import Container from "@mui/joy/Container";
 import React from "react";
-import { Button, SvgIcon, SvgIconProps, Box, Input } from "@mui/joy";
+import {
+  Button,
+  SvgIcon,
+  SvgIconProps,
+  Box,
+  Input,
+  FormControl,
+  FormLabel,
+  Typography,
+} from "@mui/joy";
 import styled from "@mui/system/styled";
 import { ButtonProps, Sheet } from "@mui/joy";
 function MicrosoftLogo(props: SvgIconProps) {
@@ -53,12 +62,8 @@ function GoogleLogo(props: SvgIconProps) {
 }
 
 const LoginButton = styled((props: ButtonProps) => (
-  <Button variant="outlined" {...props} />
-))(({ theme }) => ({
-  "& svg": {
-    marginRight: theme.spacing(1),
-  },
-}));
+  <Button variant="soft" color="primary" {...props} />
+))(({ theme }) => ({}));
 
 export default function Login() {
   return (
@@ -81,18 +86,20 @@ export default function Login() {
           gap: 2,
         }}
       >
-        <Input placeholder="Username" />
-        <Input placeholder="Password" />
+        <Typography textColor="inherit" level="h1">
+          Welcome back!
+        </Typography>
+        <Input placeholder="Email" type="email" />
+        <Input placeholder="Password" type="password" />
         <Button variant="solid">Log in</Button>
         <LoginButton
-          variant="plain"
           onClick={() => {
             window.location.href = `/api/login-provider?provider=google&state=${encodeURIComponent(
               window.location.href
             )}`;
           }}
+          startDecorator={<GoogleLogo />}
         >
-          <GoogleLogo />
           Sign in with Google
         </LoginButton>
       </Container>

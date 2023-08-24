@@ -68,10 +68,13 @@ export default function BotTable({
             name: "Active",
             width: "75px",
             render: ({ row: bot }) => {
+              console.log(bot.id, team?.active_bot);
               if (bot.id == team?.active_bot)
-                <Check
-                  display={bot.id == team?.active_bot ? "block" : "none"}
-                />;
+                return (
+                  <Check
+                    display={bot.id == team?.active_bot ? "block" : "none"}
+                  />
+                );
               return <></>;
             },
           },
@@ -94,17 +97,17 @@ export default function BotTable({
             },
           },
           {
+            name: "Name",
+            render: ({ row: bot }) => (
+              <Typography level="body-md">{bot.name}</Typography>
+            ),
+          },
+          {
             name: "Uploaded By",
             minWidth: "200px",
             maxWidth: "500px",
             render: ({ row: bot }) => (
               <Typography level="body-md">{bot.uploaded_by}</Typography>
-            ),
-          },
-          {
-            name: "Name",
-            render: ({ row: bot }) => (
-              <Typography level="body-md">{bot.name}</Typography>
             ),
           },
           {

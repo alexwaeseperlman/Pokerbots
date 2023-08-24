@@ -26,7 +26,21 @@ import DataTable from "../DataTable";
 import { MoreVert } from "@mui/icons-material";
 
 export const TableButton = styled((props: ButtonProps) => (
-  <Button {...props} variant="plain" size="sm" />
+  <Button
+    {...props}
+    variant="plain"
+    sx={{
+      color: "#bbb",
+      background: "none",
+      ":hover": {
+        background: "#00000040",
+      },
+      ":active": {
+        background: "#00000080",
+      },
+    }}
+    size="sm"
+  />
 ))(() => ({}));
 export function GameTable({ teamId }: { teamId?: string | null }) {
   type Game = GameWithBots<BotWithTeam<Team>>;
@@ -90,6 +104,56 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
     if (props.row.error_type) {
       color = "warning";
     }
+    const avatar = (
+      <Avatar
+        key="avatar"
+        sx={{
+          width: 24,
+          height: 24,
+          marginRight: 2,
+        }}
+        src={`${apiUrl}/pfp?id=${team?.id}`}
+      />
+    );
+
+    const name = (
+      <Box key="name" ml={2} mr={2} flexDirection={"column"}>
+        <Link
+          to={`/team/${bot.team.id}`}
+          style={{
+            color: "inherit",
+            textDecoration: "none",
+          }}
+        >
+          <Typography>{bot.team.team_name ?? "Deleted team"}</Typography>
+        </Link>
+
+        <Typography fontSize="small" textColor="text.secondary">
+          {bot.name ?? "Deleted bot"}
+        </Typography>
+      </Box>
+    );
+
+    const chip = (
+      <Chip color={color} size="sm" key="chip">
+        {props.row.score_change === null
+          ? "Running"
+          : props.row.error_type ?? (props.row.score_change ?? 0) * scoreMul}
+      </Chip>
+    );
+    const teamGroup = (
+      <Box
+        key="team"
+        sx={{
+          display: "flex",
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "flex-start",
+        }}
+      >
+        {whichBot == "Challenger" ? [avatar, name] : [name, avatar]}
+      </Box>
+    );
     return (
       <Box
         sx={{
@@ -99,45 +163,7 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
           justifyContent: "space-between",
         }}
       >
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "flex-start",
-          }}
-        >
-          <Avatar
-            sx={{
-              width: 24,
-              height: 24,
-              marginRight: 2,
-            }}
-            src={`${apiUrl}/pfp?id=${team?.id}`}
-          />
-
-          <Box ml={2} mr={2} flexDirection={"column"}>
-            <Link
-              to={`/team/${bot.team.id}`}
-              style={{
-                color: "inherit",
-                textDecoration: "none",
-              }}
-            >
-              <Typography>{bot.team.team_name ?? "Deleted team"}</Typography>
-            </Link>
-
-            <Typography fontSize="small" textColor="text.secondary">
-              {bot.name ?? "Deleted bot"}
-            </Typography>
-          </Box>
-        </Box>
-
-        <Chip color={color} size="sm">
-          {props.row.score_change === null
-            ? "Running"
-            : props.row.error_type ?? (props.row.score_change ?? 0) * scoreMul}
-        </Chip>
+        {whichBot == "Challenger" ? [teamGroup, chip] : [chip, teamGroup]}
       </Box>
     );
   };
@@ -152,6 +178,7 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
           },
           {
             name: "Defender",
+            textAlign: "right",
             render: renderTeam("Defender"),
           },
           {

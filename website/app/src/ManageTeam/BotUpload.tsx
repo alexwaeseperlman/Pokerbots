@@ -5,7 +5,11 @@ import { apiUrl } from "../state";
 import { CircularProgress } from "@mui/joy";
 import { useSnackbar } from "notistack";
 
-export function BotUpload() {
+export interface UploadProps {
+  onUpload: (file: File) => void;
+}
+
+export function BotUpload(props: UploadProps) {
   const { enqueueSnackbar } = useSnackbar();
   const [drag, setDrag] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -73,9 +77,7 @@ export function BotUpload() {
         setDrag(false);
       }}
     >
-      {/*
-        <CloudUploadOutlinedIcon />
-    */}
+      {/* <CloudUploadOutlinedIcon /> */}
       <Box
         style={{
           color: "black",

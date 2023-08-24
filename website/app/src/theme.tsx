@@ -8,8 +8,9 @@ const light: ColorSystemOptions = {
     mode: "light",
 
     primary: {
-      plainHoverBg: "#0a6bcb11",
-      solidColor: "white",
+      //plainHoverBg: "#0a6bcb11",
+      //plainActiveBg: "#0a6bcb22",
+      //plainColor: "#96c1eb",
     },
   },
 };

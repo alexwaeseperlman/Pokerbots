@@ -120,7 +120,7 @@ export function TopBar() {
           window.open("https://docs.upac.dev/");
         }}
       />
-      {user && (
+      {user ? (
         <>
           <BarItem
             label="SIGN OUT"
@@ -139,6 +139,15 @@ export function TopBar() {
             <Person />
           </RawBarItem>
         </>
+      ) : (
+        <BarItem
+          label="CREATE AN ACCOUNT"
+          command={() => {
+            fetch(`${apiUrl}/signout`).then(() => {
+              fetchUser();
+            });
+          }}
+        />
       )}
     </Box>
   );

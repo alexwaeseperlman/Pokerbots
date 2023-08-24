@@ -61,7 +61,7 @@ pub struct JoinTeamQuery {
     pub invite_code: String,
 }
 
-#[delete("/team")]
+#[get("/delete-team")]
 pub async fn delete_team(session: Session) -> ApiResult<()> {
     let user = login::get_user_data(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;

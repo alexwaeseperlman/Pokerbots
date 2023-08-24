@@ -165,7 +165,7 @@ export function TeamBar({
   return (
     <Box
       sx={{
-        padding: 2,
+        p: 4,
       }}
     >
       <Container
