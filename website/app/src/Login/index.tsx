@@ -9,6 +9,7 @@ import {
   FormControl,
   FormLabel,
   Typography,
+  Stack,
 } from "@mui/joy";
 import styled from "@mui/system/styled";
 import { ButtonProps, Sheet } from "@mui/joy";
@@ -63,35 +64,30 @@ function GoogleLogo(props: SvgIconProps) {
 
 const LoginButton = styled((props: ButtonProps) => (
   <Button variant="soft" color="primary" {...props} />
-))(({ theme }) => ({}));
+))(({ theme }) => ({
+  flexGrow: 1,
+}));
 
 export default function Login() {
   return (
-    <Box
+    <Container
+      maxWidth="sm"
       sx={{
         display: "flex",
         flexDirection: "column",
-        alignItems: "center",
+        alignItems: "stretch",
         justifyContent: "center",
         flexGrow: 1,
+        gap: 2,
       }}
     >
-      <Container
-        maxWidth="sm"
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "stretch",
-          justifyContent: "center",
-          gap: 2,
-        }}
-      >
-        <Typography textColor="inherit" level="h1">
-          Welcome back!
-        </Typography>
-        <Input placeholder="Email" type="email" />
-        <Input placeholder="Password" type="password" />
-        <Button variant="solid">Log in</Button>
+      <Typography textColor="inherit" level="h1">
+        Welcome back!
+      </Typography>
+      <Input placeholder="Email" type="email" />
+      <Input placeholder="Password" type="password" />
+      <Button variant="solid">Log in</Button>
+      <Stack direction="row" gap={2}>
         <LoginButton
           onClick={() => {
             window.location.href = `/api/login-provider?provider=google&state=${encodeURIComponent(
@@ -102,15 +98,17 @@ export default function Login() {
         >
           Sign in with Google
         </LoginButton>
-      </Container>
-      {/*<LoginButton
+        <LoginButton
           onClick={() => {
-            window.location.href = "/api/login-provider?provider=google";
+            window.location.href = `/api/login-provider?provider=microsoft&state=${encodeURIComponent(
+              window.location.href
+            )}`;
           }}
+          startDecorator={<MicrosoftLogo />}
         >
-          <GoogleLogo />
-          With Google
-        </LoginButton>*/}
-    </Box>
+          Sign in with Microsoft
+        </LoginButton>
+      </Stack>
+    </Container>
   );
 }

@@ -47,7 +47,13 @@ function HeaderFooter(props: React.PropsWithChildren<{}>) {
           </>
         }
       >
-        {props.children}
+        <Container
+          sx={{
+            margin: "auto",
+          }}
+        >
+          {props.children}
+        </Container>
       </Suspense>
 
       <Box

@@ -1,21 +1,15 @@
 import React from "react";
 import Box from "@mui/joy/Box";
-import { Grid, Sheet, Typography } from "@mui/joy";
+import { Card, Grid, Sheet, Typography } from "@mui/joy";
 import { GameTable } from "../components/Tables/GameTable";
 import { TeamsTable } from "../components/Tables/TeamsTable";
 
 export default function Leaderboard() {
   return (
-    <Box
-      sx={{
-        flexGrow: 1,
-        p: 2,
-        maxWidth: "100vw",
-      }}
-    >
-      <Sheet sx={{ p: 2, flexGrow: 1, maxWidth: "100%", mb: 2 }}>
+    <Box>
+      <Card sx={{ p: 2, flexGrow: 1, maxWidth: "100%", mb: 2 }}>
         <Typography level="h3" mb={2}>
-          Top teams
+          Recent games
         </Typography>
         <Box
           sx={{
@@ -25,7 +19,7 @@ export default function Leaderboard() {
         >
           <GameTable />
         </Box>
-      </Sheet>
+      </Card>
     </Box>
   );
 }
