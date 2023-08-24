@@ -99,7 +99,7 @@ export default function Login() {
           }}
           startDecorator={<GoogleLogo />}
         >
-          Sign in with Google
+          Log in with Google
         </LoginButton>
         <LoginButton
           onClick={() => {
@@ -109,7 +109,7 @@ export default function Login() {
           }}
           startDecorator={<MicrosoftLogo />}
         >
-          Sign in with Microsoft
+          Log in with Microsoft
         </LoginButton>
       </Stack>
     </Container>

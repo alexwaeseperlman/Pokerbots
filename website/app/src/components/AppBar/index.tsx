@@ -10,12 +10,26 @@ import Typography from "@mui/joy/Typography";
 import Sheet from "@mui/joy/Sheet";
 import { useTheme } from "@mui/joy";
 import { Person } from "@mui/icons-material";
+import { BoxProps } from "@mui/joy/Box";
 
-function RawBarItem(
-  props: PropsWithChildren<{ selected?: boolean; command?: () => void }>
-) {
+function RawBarItem({
+  selected,
+  command,
+  children,
+  ...props
+}: PropsWithChildren<{ selected?: boolean; command?: () => void } & BoxProps>) {
   return (
-    <Box onClick={props.command}>
+    <Box
+      onClick={command}
+      {...props}
+      onKeyDown={(e) => {
+        console.log(e.key);
+        if (e.key == " " || e.key == "Enter") {
+          e.preventDefault();
+          return (e.key == " " || e.key == "Enter") && command?.();
+        }
+      }}
+    >
       <Box
         className={bar_item}
         sx={(theme) => ({
@@ -23,30 +37,35 @@ function RawBarItem(
             content: "''",
             display: "block",
             height: "2px",
-            width: props.selected ? "100%" : "0",
+            width: selected ? "100%" : "0",
             background: "white",
             transition: "width 0.1s ease-out",
           },
           ":hover::after": {
-            width: props.command ? "100%" : "0",
+            width: command ? "100%" : "0",
           },
         })}
       >
-        {props.children}
+        {children}
       </Box>
     </Box>
   );
 }
 
-function BarItem(props: {
+function BarItem({
+  label,
+  selected,
+  command,
+  ...props
+}: {
   label?: string;
   selected?: boolean;
   command?: () => void;
-}) {
+} & BoxProps) {
   return (
-    <RawBarItem selected={props.selected} command={props.command}>
+    <RawBarItem {...props} selected={selected} command={command}>
       <Typography textColor="inherit" fontWeight={700} level="title-sm">
-        {props.label}
+        {label}
       </Typography>
     </RawBarItem>
   );
@@ -70,6 +89,7 @@ export function TopBar() {
       })}
     >
       <IconButton
+        tabIndex={1}
         color="neutral"
         variant="solid"
         sx={{
@@ -86,14 +106,18 @@ export function TopBar() {
           }}
         />
       </IconButton>
+      {user && (
+        <BarItem
+          tabIndex={2}
+          label="YOUR TEAM"
+          selected={window.location.pathname === "/manage-team"}
+          command={() => {
+            navigate("/manage-team");
+          }}
+        />
+      )}
       <BarItem
-        label="TEAM"
-        selected={window.location.pathname === "/manage-team"}
-        command={() => {
-          navigate("/manage-team");
-        }}
-      />
-      <BarItem
+        tabIndex={3}
         label="LEADERBOARD"
         selected={window.location.pathname === "/leaderboard"}
         command={() => {
@@ -102,6 +126,7 @@ export function TopBar() {
       />
 
       <BarItem
+        tabIndex={4}
         label="GAMES"
         selected={window.location.pathname === "/recent-games"}
         command={() => {
@@ -110,6 +135,7 @@ export function TopBar() {
       />
 
       <Box
+        tabIndex={5}
         className={nav_group}
         sx={(theme) => ({
           [theme.breakpoints.down("sm")]: {
@@ -119,6 +145,7 @@ export function TopBar() {
         })}
       ></Box>
       <BarItem
+        tabIndex={6}
         label="DOCUMENTATION"
         command={() => {
           window.open("https://docs.upac.dev/");
@@ -127,6 +154,7 @@ export function TopBar() {
       {user ? (
         <>
           <BarItem
+            tabIndex={7}
             label="SIGN OUT"
             command={() => {
               fetch(`${apiUrl}/signout`).then(() => {
@@ -135,6 +163,7 @@ export function TopBar() {
             }}
           />
           <RawBarItem
+            tabIndex={8}
             selected={window.location.pathname === "/profile"}
             command={() => {
               navigate("/profile");
@@ -146,7 +175,16 @@ export function TopBar() {
       ) : (
         <>
           <BarItem
-            label="JOIN!"
+            tabIndex={7}
+            label="LOG IN"
+            selected={window.location.pathname === "/login"}
+            command={() => {
+              navigate("/login");
+            }}
+          />
+          <BarItem
+            tabIndex={8}
+            label="SIGN UP"
             selected={window.location.pathname === "/signup"}
             command={() => {
               navigate("/signup");
