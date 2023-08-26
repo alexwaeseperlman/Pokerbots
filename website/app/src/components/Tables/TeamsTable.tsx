@@ -83,9 +83,9 @@ export function TeamsTable() {
           getProps: (team) => ({ score: team.score }),
           render: ({ score }: { score: number | null }) => {
             let color: ChipProps["color"] = "success";
-            if ((score ?? 0) < 0) color = "danger";
-            else if (score == 0) color = "neutral";
-            return <Chip color={color}>{score}</Chip>;
+            if ((score ?? 0) == 0) color = "neutral";
+            else if ((score ?? 0) < 0) color = "danger";
+            return <Chip color={color}>{score ?? 0}</Chip>;
           },
         },
         {
