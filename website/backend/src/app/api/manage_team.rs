@@ -76,12 +76,19 @@ pub async fn delete_team(session: Session) -> ApiResult<()> {
     }
     let conn = &mut (*DB_CONNECTION).get()?;
 
-    diesel::delete(teams::dsl::teams.filter(teams::dsl::id.eq(team.clone().id))).execute(conn)?;
-    // Make everyone on the team leave the team
-    diesel::update(users::dsl::users)
-        .filter(users::dsl::team.eq(team.id))
-        .set(users::dsl::team.eq::<Option<i32>>(None))
-        .execute(conn)?;
+    conn.transaction(|conn| {
+        // Set the team to deleted
+        diesel::update(teams::dsl::teams)
+            .filter(teams::dsl::id.eq(team.id))
+            .set(teams::dsl::deleted_at.eq(Some(chrono::offset::Utc::now().timestamp())))
+            .execute(conn)?;
+        // Make everyone on the team leave the team
+        diesel::update(users::dsl::users)
+            .filter(users::dsl::team.eq(team.id))
+            .set(users::dsl::team.eq::<Option<i32>>(None))
+            .execute(conn)?;
+        diesel::result::QueryResult::Ok(())
+    })?;
 
     Ok(web::Json(()))
 }
@@ -272,6 +279,41 @@ pub async fn kick_member(
         .filter(users::dsl::email.eq(email))
         .filter(users::dsl::team.eq(team.id))
         .set(users::dsl::team.eq::<Option<i32>>(None))
+        .execute(conn)?;
+    // TODO: Maybe some kind of message should show for the user next time they log in?
+    Ok(web::Json(()))
+}
+
+#[derive(Deserialize)]
+pub struct MakeOwnerQuery {
+    pub email: String,
+}
+
+#[get("/update-owner")]
+pub async fn update_owner(
+    session: Session,
+    web::Query::<MakeOwnerQuery>(MakeOwnerQuery { email }): web::Query<MakeOwnerQuery>,
+) -> ApiResult<()> {
+    let user = login::get_user_data(&session)
+        .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+    let team = login::get_team_data(&session)
+        .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
+    if team.clone().owner != user.clone().email {
+        return Err(
+            actix_web::error::ErrorUnauthorized("Only the team owner can kick members.").into(),
+        );
+    }
+
+    // make sure the user is on the team
+    let conn = &mut (*DB_CONNECTION).get()?;
+    let count: i64 = users::table.find(&email).count().get_result::<i64>(conn)?;
+    if count == 0 {
+        return Err(actix_web::error::ErrorNotFound("User not found.").into());
+    }
+
+    let conn = &mut (*DB_CONNECTION).get()?;
+    diesel::update(teams::table)
+        .set(teams::dsl::owner.eq(email))
         .execute(conn)?;
     // TODO: Maybe some kind of message should show for the user next time they log in?
     Ok(web::Json(()))

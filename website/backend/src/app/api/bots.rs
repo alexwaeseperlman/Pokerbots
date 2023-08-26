@@ -60,7 +60,6 @@ pub async fn set_active_bot(
 
     diesel::update(teams::dsl::teams)
         .filter(teams::dsl::id.eq(team.id))
-        .filter(teams::dsl::owner.eq(user.clone().email))
         .set(teams::dsl::active_bot.eq(id))
         .execute(conn)?;
 

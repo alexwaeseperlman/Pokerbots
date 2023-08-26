@@ -22,6 +22,7 @@ pub struct Team {
     pub owner: String,
     pub score: Option<i32>,
     pub active_bot: Option<i32>,
+    pub deleted_at: Option<i64>,
 }
 
 #[derive(Serialize, Deserialize, Debug, TS)]
@@ -34,6 +35,7 @@ pub struct TeamWithMembers {
     pub active_bot: Option<i32>,
     pub members: Vec<User>,
     pub invites: Option<Vec<TeamInvite>>,
+    pub deleted_at: Option<i64>,
 }
 
 #[derive(diesel::Insertable, Debug)]
@@ -110,6 +112,7 @@ pub struct Bot {
     pub created: i64,
     pub uploaded_by: String,
     pub build_status: BuildStatus,
+    pub deleted_at: Option<i64>,
 }
 
 #[derive(Serialize, Deserialize, Debug, diesel::Queryable, TS)]

@@ -63,7 +63,9 @@ pub async fn teams(
 ) -> ApiResult<TeamsResponse> {
     let team = login::get_team_data(&session);
     let conn = &mut (*DB_CONNECTION).get()?;
-    let mut base = schema::teams::dsl::teams.into_boxed();
+    let mut base = schema::teams::dsl::teams
+        .into_boxed()
+        .filter(schema::teams::dsl::deleted_at.is_null());
     // <cringe>
     if !count.unwrap_or(false) {
         match sort {
@@ -138,6 +140,7 @@ pub async fn teams(
                     owner: t.owner,
                     score: t.score,
                     name: t.name,
+                    deleted_at: t.deleted_at,
                 })
                 .collect::<Vec<TeamWithMembers>>(),
         )));
@@ -176,7 +179,9 @@ pub async fn bots(
     }): web::Query<BotQuery>,
 ) -> ApiResult<BotsResponse> {
     let conn = &mut (*DB_CONNECTION).get()?;
-    let mut base = schema::bots::dsl::bots.into_boxed();
+    let mut base = schema::bots::dsl::bots
+        .into_boxed()
+        .filter(schema::bots::dsl::deleted_at.is_null());
     if let Some(ids) = ids {
         let ids: Result<Vec<i32>, _> = ids.split(",").map(|i| i.parse()).collect();
         let ids = ids?;

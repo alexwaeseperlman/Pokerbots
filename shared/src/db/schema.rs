@@ -10,6 +10,7 @@ diesel::table! {
         created -> Int8,
         uploaded_by -> Text,
         build_status -> Int4,
+        deleted_at -> Nullable<Int8>,
     }
 }
 
@@ -40,6 +41,7 @@ diesel::table! {
         owner -> Text,
         score -> Nullable<Int4>,
         active_bot -> Nullable<Int4>,
+        deleted_at -> Nullable<Int8>,
     }
 }
 
@@ -53,5 +55,12 @@ diesel::table! {
 }
 
 diesel::joinable!(team_invites -> teams (team));
+diesel::joinable!(teams -> users (owner));
 
-diesel::allow_tables_to_appear_in_same_query!(bots, games, team_invites, teams, users,);
+diesel::allow_tables_to_appear_in_same_query!(
+    bots,
+    games,
+    team_invites,
+    teams,
+    users,
+);

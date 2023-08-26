@@ -1,0 +1,1 @@
+ALTER TABLE teams ADD CONSTRAINT owner_fk_users_email FOREIGN KEY (owner) REFERENCES users(email) ON DELETE SET NULL;

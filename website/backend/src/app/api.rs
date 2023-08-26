@@ -51,6 +51,7 @@ pub fn api_service() -> actix_web::Scope {
         .service(manage_team::cancel_invite)
         .service(manage_team::kick_member)
         .service(manage_team::rename_team)
+        .service(manage_team::update_owner)
         .service(bots::upload_bot)
         .service(bots::build_log)
         .service(bots::delete_bot)
