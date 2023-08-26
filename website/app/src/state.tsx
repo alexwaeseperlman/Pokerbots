@@ -36,7 +36,6 @@ export const useProfile = (selectedTeam: string | null) => {
   const [team, setTeam] = useAtom(teamAtom(selectedTeam ?? null));
 
   const update = () => {
-    console.log(selectedTeam);
     setTeam(fetchTeam(selectedTeam));
 
     setUser(

@@ -45,7 +45,13 @@ export function TeamsTable() {
     setLoading(true);
     getTeams();
   }, [getTeams, paginationModel]);
-  const renderTeam = ({ row: team }: { row: Team }) => {
+  const renderTeam = ({
+    teamId,
+    teamName,
+  }: {
+    teamId: string;
+    teamName: string;
+  }) => {
     return (
       <>
         <Avatar
@@ -54,16 +60,16 @@ export function TeamsTable() {
             height: 24,
             marginRight: 2,
           }}
-          src={`${apiUrl}/pfp?id=${team.id}`}
+          src={`${apiUrl}/pfp?id=${teamId}`}
         />
         <Link
-          to={`/team/${team.id}`}
+          to={`/team/${teamId}`}
           style={{
             color: "inherit",
             textDecoration: "none",
           }}
         >
-          <Typography>{team.team_name ?? "Deleted team"}</Typography>
+          <Typography>{teamName ?? "Deleted team"}</Typography>
         </Link>
       </>
     );
@@ -74,16 +80,17 @@ export function TeamsTable() {
         {
           name: "Score",
           width: "100px",
-          render: (props) => {
-            const score = props.row.score ?? 0;
+          getProps: (team) => ({ score: team.score }),
+          render: ({ score }: { score: number | null }) => {
             let color: ChipProps["color"] = "success";
-            if (score < 0) color = "danger";
+            if ((score ?? 0) < 0) color = "danger";
             else if (score == 0) color = "neutral";
             return <Chip color={color}>{score}</Chip>;
           },
         },
         {
           name: "Team name",
+          getProps: (team) => ({ teamId: team.id, teamName: team.team_name }),
           render: renderTeam,
         },
       ]}

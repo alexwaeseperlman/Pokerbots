@@ -11,7 +11,14 @@ import theme from "./theme";
 function RootApp() {
   return (
     <CssVarsProvider theme={theme}>
-      <SnackbarProvider maxSnack={3}>
+      <SnackbarProvider
+        maxSnack={3}
+        SnackbarProps={{
+          style: {
+            fontFamily: "Figtree",
+          },
+        }}
+      >
         <BrowserRouter>
           <UPAC />
         </BrowserRouter>

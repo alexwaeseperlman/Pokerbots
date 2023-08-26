@@ -22,7 +22,7 @@ import { Team } from "@bindings/Team";
 import { GamesResponse } from "@bindings/GamesResponse";
 import { enqueueSnackbar } from "notistack";
 import { WhichBot } from "@bindings/WhichBot";
-import DataTable from "../DataTable";
+import DataTable, { DataTableProps } from "../DataTable";
 import { MoreVert } from "@mui/icons-material";
 
 export const TableButton = styled((props: ButtonProps) => (
@@ -42,8 +42,87 @@ export const TableButton = styled((props: ButtonProps) => (
     size="sm"
   />
 ))(() => ({}));
+
+type Game = GameWithBots<BotWithTeam<Team>>;
+const renderTeam = ({
+  scoreChange,
+  botName,
+  errorType,
+  whichBot,
+  teamId,
+  teamName,
+}: {
+  scoreChange: number | null;
+  botName: string;
+  errorType: string;
+  whichBot: WhichBot;
+  teamId: number;
+  teamName: string;
+}) => {
+  let color: ChipProps["color"] = "success";
+  if (scoreChange == null) color = "warning";
+  else if (scoreChange < 0) color = "danger";
+  else if (scoreChange == 0) color = "neutral";
+  if (errorType) {
+    color = "warning";
+  }
+
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: whichBot == "Challenger" ? "row" : "row-reverse",
+        alignItems: "center",
+        justifyContent: "space-between",
+      }}
+    >
+      <Box
+        key="team"
+        sx={{
+          display: "flex",
+          flexDirection: whichBot == "Challenger" ? "row" : "row-reverse",
+          alignItems: "center",
+        }}
+      >
+        <Avatar
+          key="avatar"
+          sx={{
+            width: 24,
+            height: 24,
+            marginRight: 2,
+          }}
+          src={`${apiUrl}/pfp?id=${teamId}`}
+        />
+        <Box
+          key="name"
+          ml={2}
+          mr={2}
+          flexDirection={"column"}
+          textAlign={whichBot == "Challenger" ? "left" : "right"}
+        >
+          <Link
+            to={`/team/${teamId}`}
+            style={{
+              color: "inherit",
+              textDecoration: "none",
+            }}
+          >
+            <Typography>{teamName ?? "Deleted team"}</Typography>
+          </Link>
+
+          <Typography fontSize="small" textColor="text.secondary">
+            {botName ?? "Deleted bot"}
+          </Typography>
+        </Box>
+      </Box>
+      <Chip color={color} size="sm" key="chip">
+        {scoreChange === null ? "Running" : errorType ?? scoreChange ?? 0}
+      </Chip>
+    </Box>
+  );
+};
+
 export function GameTable({ teamId }: { teamId?: string | null }) {
-  type Game = GameWithBots<BotWithTeam<Team>>;
   const [team, fetchTeam] = useTeam(teamId ?? null);
   const [myTeam, fetchMyTeam] = useTeam(null);
   const [games, setGames] = React.useState<Game[]>([]);
@@ -74,7 +153,6 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
       .then(async (data: GamesResponse) => {
         // swap teama and teamb if teama is not the user's team
         setLoading(false);
-        console.log(data);
         if ("GamesWithBots" in data) {
           setGames(data.GamesWithBots);
         } else {
@@ -90,157 +168,109 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
     getGames();
     const int = setInterval(() => {
       getGames();
-    }, 50000);
+    }, 1000);
     return () => clearInterval(int);
   }, [getGames, paginationModel]);
-  const renderTeam = (whichBot: WhichBot) => (props: { row: Game }) => {
-    const scoreMul = whichBot === "Challenger" ? 1 : -1;
-    const bot =
-      whichBot === "Challenger" ? props.row.challenger : props.row.defender;
-    let color: ChipProps["color"] = "success";
-    if (props.row.score_change == null) color = "warning";
-    else if (props.row.score_change * scoreMul < 0) color = "danger";
-    else if (props.row.score_change * scoreMul == 0) color = "neutral";
-    if (props.row.error_type) {
-      color = "warning";
-    }
-    const avatar = (
-      <Avatar
-        key="avatar"
-        sx={{
-          width: 24,
-          height: 24,
-          marginRight: 2,
-        }}
-        src={`${apiUrl}/pfp?id=${team?.id}`}
-      />
-    );
 
-    const name = (
-      <Box key="name" ml={2} mr={2} flexDirection={"column"}>
-        <Link
-          to={`/team/${bot.team.id}`}
-          style={{
-            color: "inherit",
-            textDecoration: "none",
-          }}
-        >
-          <Typography>{bot.team.team_name ?? "Deleted team"}</Typography>
-        </Link>
+  const columns: DataTableProps<Game>["columns"] = React.useMemo(
+    () => [
+      {
+        name: "Challenger",
+        getProps: (game) => ({
+          scoreChange: game.score_change === null ? null : -game.score_change,
+          botName: game.challenger.name,
+          errorType: game.error_type,
+          whichBot: "Challenger",
+          teamId: game.challenger.team.id,
+          teamName: game.challenger.team.team_name,
+        }),
+        render: renderTeam,
+      },
+      {
+        name: "Defender",
+        textAlign: "right",
+        getProps: (game) => ({
+          scoreChange: game.score_change,
+          botName: game.defender.name,
+          errorType: game.error_type,
+          whichBot: "Defender",
+          teamId: game.defender.team.id,
+          teamName: game.defender.team.team_name,
+        }),
+        render: renderTeam,
+      },
+      {
+        name: "",
+        width: 40,
+        getProps: (game) => ({
+          defenderId: game.defender.team.id,
+          challengerId: game.challenger.team.id,
+          gameId: game.id,
+        }),
+        render: ({
+          defenderId,
+          challengerId,
+          gameId,
+        }: {
+          defenderId: number;
+          challengerId: number;
+          gameId: number;
+        }) => {
+          return (
+            <Dropdown>
+              <MenuButton
+                slots={{ root: IconButton }}
+                slotProps={{
+                  root: { variant: "outlined", color: "neutral" },
+                }}
+              >
+                <MoreVert />
+              </MenuButton>
 
-        <Typography fontSize="small" textColor="text.secondary">
-          {bot.name ?? "Deleted bot"}
-        </Typography>
-      </Box>
-    );
+              <Menu>
+                {defenderId == myTeam?.id && (
+                  <MenuItem
+                    component="a"
+                    target="_tab"
+                    href={`${apiUrl}/game-log?id=${gameId}&which_bot=${
+                      "Defender" as WhichBot
+                    }`}
+                  >
+                    Defender game log
+                  </MenuItem>
+                )}
+                {challengerId == myTeam?.id && (
+                  <MenuItem
+                    component="a"
+                    target="_tab"
+                    href={`${apiUrl}/game-log?id=${gameId}&which_bot=${
+                      "Challenger" as WhichBot
+                    }`}
+                  >
+                    Challenger game log
+                  </MenuItem>
+                )}
 
-    const chip = (
-      <Chip color={color} size="sm" key="chip">
-        {props.row.score_change === null
-          ? "Running"
-          : props.row.error_type ?? (props.row.score_change ?? 0) * scoreMul}
-      </Chip>
-    );
-    const teamGroup = (
-      <Box
-        key="team"
-        sx={{
-          display: "flex",
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "flex-start",
-        }}
-      >
-        {whichBot == "Challenger" ? [avatar, name] : [name, avatar]}
-      </Box>
-    );
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        {whichBot == "Challenger" ? [teamGroup, chip] : [chip, teamGroup]}
-      </Box>
-    );
-  };
+                <MenuItem
+                  component="a"
+                  target="_tab"
+                  href={`${apiUrl}/game-log?id=${gameId}`}
+                >
+                  Public game log
+                </MenuItem>
+              </Menu>
+            </Dropdown>
+          );
+        },
+      },
+    ],
+    [myTeam?.id]
+  );
 
   return (
     <>
       <DataTable<Game>
-        columns={[
-          {
-            name: "Challenger",
-            render: renderTeam("Challenger"),
-          },
-          {
-            name: "Defender",
-            textAlign: "right",
-            render: renderTeam("Defender"),
-          },
-          {
-            name: "",
-            width: 40,
-            render: ({ row: game }) => {
-              let bot = undefined;
-              const ref = React.createRef<HTMLButtonElement>();
-              if (game.defender.team.id === team?.id) {
-                bot = game.defender.id;
-              } else if (game.challenger.team.id === team?.id) {
-                bot = game.challenger.id;
-              }
-
-              return (
-                <Dropdown>
-                  <MenuButton
-                    slots={{ root: IconButton }}
-                    slotProps={{
-                      root: { variant: "outlined", color: "neutral" },
-                    }}
-                  >
-                    <MoreVert />
-                  </MenuButton>
-
-                  <Menu>
-                    {team && game.defender.team.id == myTeam?.id && (
-                      <MenuItem
-                        component="a"
-                        target="_tab"
-                        href={`${apiUrl}/game-log?id=${game.id}&which_bot=${
-                          "Defender" as WhichBot
-                        }`}
-                      >
-                        Defender game log
-                      </MenuItem>
-                    )}
-                    {team && game.challenger.team.id == myTeam?.id && (
-                      <MenuItem
-                        component="a"
-                        target="_tab"
-                        href={`${apiUrl}/game-log?id=${game.id}&which_bot=${
-                          "Challenger" as WhichBot
-                        }`}
-                      >
-                        Challenger game log
-                      </MenuItem>
-                    )}
-
-                    <MenuItem
-                      component="a"
-                      target="_tab"
-                      href={`${apiUrl}/game-log?id=${game.id}`}
-                    >
-                      Public game log
-                    </MenuItem>
-                  </Menu>
-                </Dropdown>
-              );
-            },
-          },
-        ]}
+        columns={columns}
         loading={loading}
         data={games}
         total={gameCount ?? 0}

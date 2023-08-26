@@ -91,6 +91,7 @@ pub struct Game {
     pub id: String,
     pub defender: i32,
     pub challenger: i32,
+    // Score change for defender
     pub score_change: Option<i32>,
     pub created: i64,
     pub error_type: Option<String>,

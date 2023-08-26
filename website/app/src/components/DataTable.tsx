@@ -13,10 +13,11 @@ import {
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft";
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 
-export type DataTableData = { id: string | number };
+export type DataTableData = {};
 export type DataTableColumn<T extends DataTableData> = {
   name: string;
-  render: (props: { row: T }) => React.ReactElement;
+  getProps: (row: T) => Record<string, any>;
+  render: (props: any) => React.ReactElement;
 } & BoxProps &
   React.TdHTMLAttributes<HTMLTableCellElement>;
 
@@ -28,6 +29,17 @@ export interface DataTableProps<T extends DataTableData> {
   total?: number;
   serverPagination?: boolean;
   loading: boolean;
+}
+
+function shallowCompare(
+  a: Record<string, string | number>,
+  b: Record<string, string | number>
+) {
+  if (Object.keys(a).length != Object.keys(b).length) return false;
+  for (const key in a) {
+    if (a[key] != b[key]) return false;
+  }
+  return true;
 }
 
 let keyCounter = 0;
@@ -42,6 +54,48 @@ const Cell = styled(
   overflow: "hidden",
 }));
 
+const DataTableCell = React.memo(
+  <T extends DataTableData>({
+    render: Render,
+    props,
+  }: {
+    render: DataTableColumn<T>["render"];
+    props: Record<string, number | string>;
+  }) => <Cell>{<Render {...props} />}</Cell>,
+  (prev, next) => true
+  //prev.render == next.render /*&& shallowCompare(prev.props, next.props)*/
+);
+
+const DataTableRow = React.memo(
+  <T extends DataTableData>({
+    columns,
+    row,
+  }: {
+    columns: DataTableColumn<T>[];
+    row: T;
+  }) => {
+    return (
+      <Box component={(props: any) => <tr {...props} />}>
+        {columns.map((col, i) => (
+          <DataTableCell
+            key={col.name}
+            render={col.render}
+            props={col.getProps(row)}
+          />
+        ))}
+      </Box>
+    );
+  },
+  (prev, next) => {
+    const prevProps = prev.columns.map((col) => col.getProps(prev.row));
+    const nextProps = next.columns.map((col) => col.getProps(next.row));
+    return (
+      prev.columns == next.columns &&
+      prevProps.every((prop, i) => shallowCompare(prop, nextProps[i]))
+    );
+  }
+);
+
 export default function DataTable<T extends DataTableData>({
   data,
   columns,
@@ -54,12 +108,12 @@ export default function DataTable<T extends DataTableData>({
 }: DataTableProps<T> & TableProps) {
   const headers = React.useMemo(
     () =>
-      columns.map(({ name, render, ...props }, i) => (
-        <Cell {...props} key={i}>
+      columns.map(({ name, render, getProps, ...props }, i) => (
+        <Cell {...props} key={name}>
           {name}
         </Cell>
       )),
-    [columns]
+    [...columns]
   );
 
   const [page, setPage] = React.useState(0);
@@ -79,47 +133,6 @@ export default function DataTable<T extends DataTableData>({
     [data, perPage, serverPagination, page]
   );
 
-  const rows = React.useMemo(
-    () =>
-      pagedData.map((row) => {
-        return (
-          <>
-            <Box key={row.id} component={(props: any) => <tr {...props} />}>
-              {columns.map((col, i) => (
-                <Cell key={i}>{<col.render row={row} />}</Cell>
-              ))}
-            </Box>
-          </>
-        );
-      }),
-    [pagedData, columns]
-  );
-
-  const cards = React.useMemo(
-    () =>
-      pagedData.map((row) => {
-        let key = keyLookups.get(row);
-        if (!key) {
-          key = keyCounter++ & ((1 << 52) - 1);
-          keyLookups.set(row, key);
-        }
-
-        return (
-          <Stack key={key} gap={1} alignItems="stretch">
-            {columns.map((col, i) => (
-              <Stack key={i} direction="column" alignItems="stretch">
-                <Box>
-                  <Typography level={"title-sm"}>{columns[i].name}</Typography>
-                </Box>
-                {<col.render row={row} />}
-              </Stack>
-            ))}
-          </Stack>
-        );
-      }),
-    [pagedData, columns]
-  );
-
   const paginationControls = React.useMemo(
     () => (
       <Box
@@ -131,7 +144,7 @@ export default function DataTable<T extends DataTableData>({
         }}
       >
         <Typography textAlign="center" level="body-sm" sx={{ minWidth: 80 }}>
-          {`${rows.length === 0 ? 0 : page * perPage + 1}-${Math.min(
+          {`${data.length === 0 ? 0 : page * perPage + 1}-${Math.min(
             page * perPage + perPage,
             total
           )} of ${total}`}
@@ -162,39 +175,21 @@ export default function DataTable<T extends DataTableData>({
         </Box>
       </Box>
     ),
-    [page, perPage, total, handleChangePage, rows.length]
+    [page, perPage, total, handleChangePage, data.length]
   );
 
   return (
     <Box>
-      <Box
-        sx={{
-          display: {
-            xs: "block",
-            sm: "none",
-          },
-        }}
-      >
-        <Sheet>
-          <Stack gap={4}>
-            {cards}
-            {paginationControls}
-          </Stack>
-        </Sheet>
-      </Box>
-      <Box
-        sx={{
-          display: {
-            xs: "none",
-            sm: "block",
-          },
-        }}
-      >
+      <Box>
         <Table {...props}>
           <thead>
             <tr>{...headers}</tr>
           </thead>
-          <tbody>{...rows}</tbody>
+          <tbody>
+            {pagedData.map((row, i) => (
+              <DataTableRow key={i} columns={columns} row={row} />
+            ))}
+          </tbody>
           <tfoot>
             <tr>
               <Cell colSpan={columns.length}>{paginationControls}</Cell>

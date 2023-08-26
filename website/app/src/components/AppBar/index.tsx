@@ -23,7 +23,6 @@ function RawBarItem({
       onClick={command}
       {...props}
       onKeyDown={(e) => {
-        console.log(e.key);
         if (e.key == " " || e.key == "Enter") {
           e.preventDefault();
           return (e.key == " " || e.key == "Enter") && command?.();
@@ -84,28 +83,28 @@ export function TopBar() {
         // small screen
         [theme.breakpoints.down("sm")]: {
           flexDirection: "column",
-          alignItems: "center",
+          alignItems: "baseline",
         },
       })}
     >
-      <IconButton
+      <RawBarItem
         tabIndex={1}
-        color="neutral"
-        variant="solid"
-        sx={{
-          padding: 0,
-          background: "none",
-        }}
-        onClick={() => {
+        command={() => {
           navigate("/");
+        }}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          pt: 1,
         }}
       >
         <Logo
           sx={{
-            color: "white",
+            color: "inherit",
           }}
         />
-      </IconButton>
+      </RawBarItem>
       {user && (
         <BarItem
           tabIndex={2}
