@@ -16,7 +16,7 @@ import { GameTable } from "../components/Tables/GameTable";
 import { TeamsTable } from "../components/Tables/TeamsTable";
 import { useUser } from "../state";
 import { Mail } from "@mui/icons-material";
-import { BotUpload } from "../ManageTeam/BotUpload";
+import FileUpload from "../components/BotUpload";
 import Accordion from "@mui/joy/Accordion";
 
 const Cell = styled("td")(({ theme }) => ({
@@ -99,7 +99,14 @@ export default function Profile() {
               <Typography>
                 We'd like to connect you with potential employers.
               </Typography>
-              <BotUpload />
+              <FileUpload
+                onUpload={(f: File) => {
+                  console.log("upload resume");
+                  return Promise.resolve();
+                }}
+              >
+                Drag your resume here
+              </FileUpload>
             </td>
           </tr>
         </tbody>

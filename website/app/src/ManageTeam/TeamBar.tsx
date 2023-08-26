@@ -6,7 +6,7 @@ import AddIcon from "@mui/icons-material/Add";
 import Table from "@mui/joy/Table";
 import Avatar from "@mui/joy/Avatar";
 import CircularProgress from "@mui/joy/CircularProgress";
-import { BotUpload } from "./BotUpload";
+import FileUpload from "../components/BotUpload";
 import { TableButton } from "../components/Tables/GameTable";
 import { Button, Input, TextField, Typography, useTheme } from "@mui/joy";
 import EditIcon from "@mui/icons-material/Edit";

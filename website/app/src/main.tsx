@@ -10,20 +10,22 @@ import theme from "./theme";
 
 function RootApp() {
   return (
-    <CssVarsProvider theme={theme}>
-      <SnackbarProvider
-        maxSnack={3}
-        SnackbarProps={{
-          style: {
-            fontFamily: "Figtree",
-          },
-        }}
-      >
-        <BrowserRouter>
-          <UPAC />
-        </BrowserRouter>
-      </SnackbarProvider>
-    </CssVarsProvider>
+    <React.StrictMode>
+      <CssVarsProvider theme={theme}>
+        <SnackbarProvider
+          maxSnack={3}
+          SnackbarProps={{
+            style: {
+              fontFamily: "Figtree",
+            },
+          }}
+        >
+          <BrowserRouter>
+            <UPAC />
+          </BrowserRouter>
+        </SnackbarProvider>
+      </CssVarsProvider>
+    </React.StrictMode>
   );
 }
 
