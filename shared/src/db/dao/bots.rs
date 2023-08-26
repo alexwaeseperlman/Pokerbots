@@ -10,7 +10,9 @@ impl BotsDao for PgConnection {
     fn get_bots_with_teams(&mut self, teams: Vec<i32>) -> Vec<BotWithTeam<Team>> {
         schema::bots::dsl::bots
             .filter(schema::bots::dsl::team.eq_any(teams))
-            .inner_join(schema::teams::dsl::teams)
+            .inner_join(
+                schema::teams::dsl::teams.on(schema::bots::dsl::team.eq(schema::teams::dsl::id)),
+            )
             .load::<(Bot, Team)>(self)
             .unwrap()
             .into_iter()

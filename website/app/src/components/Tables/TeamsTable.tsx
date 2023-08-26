@@ -90,7 +90,7 @@ export function TeamsTable() {
         },
         {
           name: "Team name",
-          getProps: (team) => ({ teamId: team.id, teamName: team.team_name }),
+          getProps: (team) => ({ teamId: team.id, teamName: team.name }),
           render: renderTeam,
         },
       ]}

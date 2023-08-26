@@ -106,12 +106,11 @@ pub async fn teams(
     if fill_members.unwrap_or(false) {
         let users = schema::users::dsl::users
             .filter(
-                schema::users::dsl::team_id
-                    .eq_any(result.iter().map(|t| t.id).collect::<Vec<i32>>()),
+                schema::users::dsl::team.eq_any(result.iter().map(|t| t.id).collect::<Vec<i32>>()),
             )
             .load::<User>(conn)?;
         let invites = schema::team_invites::dsl::team_invites
-            .filter(schema::team_invites::dsl::teamid.eq(team.clone().map(|u| u.id).unwrap_or(-1)))
+            .filter(schema::team_invites::dsl::team.eq(team.clone().map(|u| u.id).unwrap_or(-1)))
             .load::<TeamInvite>(conn)?;
         return Ok(web::Json(TeamsResponse::TeamsWithMembers(
             result
@@ -120,7 +119,7 @@ pub async fn teams(
                     members: users
                         .clone()
                         .into_iter()
-                        .filter(|u| u.team_id == Some(t.id))
+                        .filter(|u| u.team == Some(t.id))
                         .collect(),
                     // only show invites if the user is on the team
                     invites: if Some(t.id) == team.clone().map(|t| t.id) {
@@ -128,7 +127,7 @@ pub async fn teams(
                             invites
                                 .clone()
                                 .into_iter()
-                                .filter(|u| u.teamid == t.id)
+                                .filter(|u| u.team == t.id)
                                 .collect(),
                         )
                     } else {
@@ -138,7 +137,7 @@ pub async fn teams(
                     id: t.id,
                     owner: t.owner,
                     score: t.score,
-                    team_name: t.team_name,
+                    name: t.name,
                 })
                 .collect::<Vec<TeamWithMembers>>(),
         )));
@@ -231,22 +230,22 @@ pub struct InviteCodeQuery {
 #[derive(Serialize, TS)]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
 pub struct InviteCodeResponse {
-    pub invite_code: String,
+    pub code: String,
     pub team: Team,
     pub expires: i64,
 }
 
 #[get("/invite-code")]
-pub async fn invite_code(
+pub async fn code(
     web::Query::<InviteCodeQuery>(InviteCodeQuery { code }): web::Query<InviteCodeQuery>,
 ) -> ApiResult<InviteCodeResponse> {
     let conn = &mut (*DB_CONNECTION).get()?;
     let (invite, team) = schema::team_invites::dsl::team_invites
         .inner_join(schema::teams::dsl::teams)
-        .filter(schema::team_invites::dsl::invite_code.eq(&code))
+        .filter(schema::team_invites::dsl::code.eq(&code))
         .first::<(TeamInvite, Team)>(conn)?;
     Ok(web::Json(InviteCodeResponse {
-        invite_code: code,
+        code: code,
         expires: invite.expires,
         team,
     }))

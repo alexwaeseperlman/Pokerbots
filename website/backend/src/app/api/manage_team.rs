@@ -2,10 +2,10 @@ use super::*;
 
 #[derive(Deserialize)]
 pub struct CreateTeamQuery {
-    pub team_name: String,
+    pub name: String,
 }
 
-pub fn validate_team_name(name: &String) -> bool {
+pub fn validate_name(name: &String) -> bool {
     if name.len() < 3 || name.len() > 20 {
         return false;
     }
@@ -23,7 +23,7 @@ pub fn validate_team_name(name: &String) -> bool {
 #[get("/create-team")]
 pub async fn create_team(
     session: Session,
-    web::Query::<CreateTeamQuery>(CreateTeamQuery { team_name }): web::Query<CreateTeamQuery>,
+    web::Query::<CreateTeamQuery>(CreateTeamQuery { name }): web::Query<CreateTeamQuery>,
 ) -> ApiResult<()> {
     let user = login::get_user_data(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
@@ -32,7 +32,7 @@ pub async fn create_team(
         return Err(actix_web::error::ErrorConflict("You are already on a team.").into());
     }
 
-    if !validate_team_name(&team_name) {
+    if !validate_name(&name) {
         return Err(actix_web::error::ErrorNotAcceptable(
             "Invalid team name. It must be at most 20 characters and cannot contain consecutive spaces.",
         )
@@ -42,7 +42,7 @@ pub async fn create_team(
     let conn = &mut (*DB_CONNECTION).get()?;
     let new_id = diesel::insert_into(teams::dsl::teams)
         .values(NewTeam {
-            team_name,
+            name,
             owner: user.clone().email,
         })
         .returning(teams::dsl::id)
@@ -50,7 +50,7 @@ pub async fn create_team(
 
     diesel::update(users::dsl::users)
         .filter(users::dsl::email.eq(user.email))
-        .set(users::dsl::team_id.eq(new_id))
+        .set(users::dsl::team.eq(new_id))
         .get_result::<User>(conn)?;
 
     Ok(web::Json(()))
@@ -58,7 +58,7 @@ pub async fn create_team(
 
 #[derive(Deserialize)]
 pub struct JoinTeamQuery {
-    pub invite_code: String,
+    pub code: String,
 }
 
 #[get("/delete-team")]
@@ -79,8 +79,8 @@ pub async fn delete_team(session: Session) -> ApiResult<()> {
     diesel::delete(teams::dsl::teams.filter(teams::dsl::id.eq(team.clone().id))).execute(conn)?;
     // Make everyone on the team leave the team
     diesel::update(users::dsl::users)
-        .filter(users::dsl::team_id.eq(team.id))
-        .set(users::dsl::team_id.eq::<Option<i32>>(None))
+        .filter(users::dsl::team.eq(team.id))
+        .set(users::dsl::team.eq::<Option<i32>>(None))
         .execute(conn)?;
 
     Ok(web::Json(()))
@@ -104,7 +104,7 @@ pub async fn leave_team(session: Session) -> ApiResult<()> {
     // Set the current user's team to null
     diesel::update(users::dsl::users)
         .filter(users::dsl::email.eq(user.email))
-        .set(users::dsl::team_id.eq::<Option<i32>>(None))
+        .set(users::dsl::team.eq::<Option<i32>>(None))
         .execute(conn)?;
 
     Ok(web::Json(()))
@@ -134,23 +134,23 @@ pub async fn create_invite(session: Session) -> ApiResult<()> {
     let out = diesel::insert_into(team_invites::dsl::team_invites)
         .values(NewInvite {
             expires: now + day,
-            invite_code: format!("{:02x}", rand::thread_rng().gen::<u128>()),
-            teamid: team.clone().id,
+            code: format!("{:02x}", rand::thread_rng().gen::<u128>()),
+            team: team.clone().id,
         })
-        .returning(team_invites::dsl::invite_code)
+        .returning(team_invites::dsl::code)
         .get_result::<String>(conn)?;
     Ok(web::Json(()))
 }
 
 #[derive(Deserialize)]
 pub struct CancelTeamQuery {
-    pub invite_code: String,
+    pub code: String,
 }
 
 #[get("/cancel-invite")]
 pub async fn cancel_invite(
     session: Session,
-    web::Query(CancelTeamQuery { invite_code }): web::Query<CancelTeamQuery>,
+    web::Query(CancelTeamQuery { code }): web::Query<CancelTeamQuery>,
 ) -> ApiResult<()> {
     let user = login::get_user_data(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
@@ -160,9 +160,9 @@ pub async fn cancel_invite(
     // Insert an invite with expiry date 24 hours from now
     let conn = &mut (*DB_CONNECTION).get()?;
     let out = diesel::delete(team_invites::dsl::team_invites)
-        .filter(team_invites::dsl::invite_code.eq(&invite_code))
-        .filter(team_invites::dsl::teamid.eq(team.id))
-        .returning(team_invites::dsl::invite_code)
+        .filter(team_invites::dsl::code.eq(&code))
+        .filter(team_invites::dsl::team.eq(team.id))
+        .returning(team_invites::dsl::code)
         .get_result::<String>(conn)?;
     Ok(web::Json(()))
 }
@@ -170,7 +170,7 @@ pub async fn cancel_invite(
 #[get("/join-team")]
 pub async fn join_team(
     session: Session,
-    web::Query::<JoinTeamQuery>(JoinTeamQuery { invite_code }): web::Query<JoinTeamQuery>,
+    web::Query::<JoinTeamQuery>(JoinTeamQuery { code }): web::Query<JoinTeamQuery>,
     req: actix_web::HttpRequest,
 ) -> ApiResult<()> {
     let user = login::get_user_data(&session)
@@ -184,20 +184,25 @@ pub async fn join_team(
         let conn = &mut (*DB_CONNECTION).get()?;
         // Check if there is an existing team invite with this code
         let codes: Vec<TeamInvite> = team_invites::dsl::team_invites
-            .find(invite_code.clone())
+            .find(code.clone())
             .load::<TeamInvite>(conn)?;
         if let Some(code) = codes.first() {
             let now: i64 = chrono::offset::Utc::now().timestamp();
-            if code.expires < now {
+            let TeamInvite {
+                code,
+                expires,
+                team,
+            } = code;
+            if expires < &now {
                 return Err(actix_web::error::ErrorNotAcceptable("Invalid code.").into());
             } else {
                 // Set the users team and set the code to used
                 diesel::delete(team_invites::dsl::team_invites)
-                    .filter(team_invites::dsl::invite_code.eq(invite_code))
+                    .filter(team_invites::dsl::code.eq(code))
                     .execute(conn)?;
                 diesel::update(users::dsl::users)
                     .filter(users::dsl::email.eq(user.email))
-                    .set(users::dsl::team_id.eq(code.teamid))
+                    .set(users::dsl::team.eq(team))
                     .execute(conn)?;
             }
         } else {
@@ -265,8 +270,8 @@ pub async fn kick_member(
     let conn = &mut (*DB_CONNECTION).get()?;
     diesel::update(users::dsl::users)
         .filter(users::dsl::email.eq(email))
-        .filter(users::dsl::team_id.eq(team.id))
-        .set(users::dsl::team_id.eq::<Option<i32>>(None))
+        .filter(users::dsl::team.eq(team.id))
+        .set(users::dsl::team.eq::<Option<i32>>(None))
         .execute(conn)?;
     // TODO: Maybe some kind of message should show for the user next time they log in?
     Ok(web::Json(()))
@@ -287,7 +292,7 @@ pub async fn rename_team(
     let team = login::get_team_data(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
 
-    if !validate_team_name(&to) {
+    if !validate_name(&to) {
         return Err(actix_web::error::ErrorNotAcceptable(
             "Invalid team name. It must be at most 20 characters and cannot contain consecutive spaces.",
         ).into());
@@ -298,7 +303,7 @@ pub async fn rename_team(
         .filter(teams::dsl::id.eq(team.clone().id))
         // Team members can change the team name
         //.filter(teams::dsl::owner.eq(user.clone().email))
-        .set(teams::dsl::team_name.eq(to))
+        .set(teams::dsl::name.eq(to))
         .execute(conn)?;
     Ok(web::Json(()))
 }

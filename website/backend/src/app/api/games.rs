@@ -4,6 +4,7 @@ use shared::{
     db::{
         dao::bots::BotsDao,
         models::{BotWithTeam, GameWithBots, Team},
+        schema_aliases::*,
     },
     WhichBot,
 };

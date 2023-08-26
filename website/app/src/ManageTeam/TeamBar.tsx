@@ -157,10 +157,10 @@ export function TeamBar({
   if (!team) throw new Error("Cannot render team bar without a team");
 
   useEffect(() => {
-    if (team.team_name) {
-      headerRef.current!.textContent = team.team_name;
+    if (team.name) {
+      headerRef.current!.textContent = team.name;
     }
-  }, [team.team_name]);
+  }, [team.name]);
   return (
     <Box
       sx={{
@@ -221,7 +221,7 @@ export function TeamBar({
               }
             }}
           >
-            {team?.team_name}
+            {team?.name}
           </Typography>
           {readonly || editing || (
             <TableButton
@@ -323,7 +323,7 @@ export function TeamBar({
                           <tr key={invite}>
                             <td>
                               <CopyableInput
-                                value={`${window.location.origin}/join-team?invite_code=${invite}`}
+                                value={`${window.location.origin}/join-team?code=${invite}`}
                               />
                               {/*<CopyIcon
                                     style={{
@@ -338,7 +338,7 @@ export function TeamBar({
                                 <TableButton
                                   onClick={() => {
                                     fetch(
-                                      `${apiUrl}/cancel-invite?invite_code=${invite}`
+                                      `${apiUrl}/cancel-invite?code=${invite}`
                                     ).then(() => fetchTeam());
                                   }}
                                 >

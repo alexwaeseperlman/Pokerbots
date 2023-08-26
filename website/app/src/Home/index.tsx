@@ -74,7 +74,7 @@ export default function HomePage() {
         >
           <Button
             variant="solid"
-            as="a"
+            component={(props: any) => <a {...props} />}
             startDecorator={<DiscordLogo />}
             href="https://discord.gg/h4GNcUkAag"
           >

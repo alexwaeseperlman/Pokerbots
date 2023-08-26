@@ -10,7 +10,7 @@ import { InviteCodeResponse } from "@bindings/InviteCodeResponse";
 
 export default function JoinTeam() {
   const navigate = useNavigate();
-  const code = useSearchParams()[0].get("invite_code");
+  const code = useSearchParams()[0].get("code");
 
   const [user, fetchUser] = useUser();
   const [team, setTeam] = useState<Team | null>(null);
@@ -56,8 +56,8 @@ export default function JoinTeam() {
         }}
       >
         <Typography level="h3">
-          {team?.team_name ? (
-            `You are invited to join "${team?.team_name}"`
+          {team?.name ? (
+            `You are invited to join "${team?.name}"`
           ) : (
             <Skeleton
               sx={{
@@ -74,7 +74,7 @@ export default function JoinTeam() {
           }}
           disabled={myTeam !== null}
           onClick={() => {
-            fetch(`${apiUrl}/join-team?invite_code=${code}`)
+            fetch(`${apiUrl}/join-team?code=${code}`)
               .then((res) => res.json())
               .then((data) => {
                 if (data) {

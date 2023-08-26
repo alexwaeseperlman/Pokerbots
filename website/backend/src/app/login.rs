@@ -24,7 +24,7 @@ pub struct UserData {
 #[cfg_attr(feature = "ts-bindings", ts(export))]
 pub struct TeamData {
     pub id: i32,
-    pub team_name: String,
+    pub name: String,
     pub members: Vec<UserData>,
     pub owner: String,
     pub score: Option<i32>,
@@ -108,13 +108,13 @@ pub fn get_team_data(session: &Session) -> Option<TeamData> {
     let u = us.get(0)?;
 
     let ts: Vec<Team> = teams::dsl::teams
-        .find(u.team_id?)
+        .find(u.team?)
         .load::<Team>(conn)
         .expect("Unable to load team");
     let t = ts.get(0)?;
 
     let members: Vec<UserData> = users::dsl::users
-        .filter(users::dsl::team_id.eq(t.id))
+        .filter(users::dsl::team.eq(t.id))
         .load::<User>(conn)
         .expect("Unable to load users in team")
         .into_iter()
@@ -125,16 +125,16 @@ pub fn get_team_data(session: &Session) -> Option<TeamData> {
         .collect();
 
     let invites: Vec<String> = team_invites::dsl::team_invites
-        .filter(team_invites::dsl::teamid.eq(t.id))
+        .filter(team_invites::dsl::team.eq(t.id))
         .load::<TeamInvite>(conn)
         .expect("Unable to load team invites")
         .into_iter()
-        .map(|invite: TeamInvite| invite.invite_code)
+        .map(|invite: TeamInvite| invite.code)
         .collect();
 
     Some(TeamData {
         id: t.id,
-        team_name: t.team_name.clone(),
+        name: t.name.clone(),
         members,
         owner: t.owner.clone(),
         score: t.score,

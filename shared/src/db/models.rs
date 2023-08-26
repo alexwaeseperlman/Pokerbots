@@ -18,7 +18,7 @@ use crate::{
 #[diesel(table_name = teams)]
 pub struct Team {
     pub id: i32,
-    pub team_name: String,
+    pub name: String,
     pub owner: String,
     pub score: Option<i32>,
     pub active_bot: Option<i32>,
@@ -28,7 +28,7 @@ pub struct Team {
 #[cfg_attr(feature = "ts-bindings", ts(export))]
 pub struct TeamWithMembers {
     pub id: i32,
-    pub team_name: String,
+    pub name: String,
     pub owner: String,
     pub score: Option<i32>,
     pub active_bot: Option<i32>,
@@ -39,7 +39,7 @@ pub struct TeamWithMembers {
 #[derive(diesel::Insertable, Debug)]
 #[diesel(table_name = teams)]
 pub struct NewTeam {
-    pub team_name: String,
+    pub name: String,
     pub owner: String,
 }
 
@@ -48,7 +48,7 @@ pub struct NewTeam {
 pub struct User {
     pub email: String,
     pub display_name: String,
-    pub team_id: Option<i32>,
+    pub team: Option<i32>,
     pub is_admin: bool,
 }
 
@@ -63,16 +63,16 @@ pub struct NewUser {
 #[diesel(table_name = team_invites)]
 pub struct NewInvite {
     pub expires: i64,
-    pub invite_code: String,
-    pub teamid: i32,
+    pub code: String,
+    pub team: i32,
 }
 
 #[derive(Serialize, Deserialize, diesel::Queryable, Debug, Clone, TS)]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
 pub struct TeamInvite {
-    pub invite_code: String,
+    pub code: String,
     //TODO: rename this to team
-    pub teamid: i32,
+    pub team: i32,
     pub expires: i64,
 }
 

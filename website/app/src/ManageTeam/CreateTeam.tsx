@@ -56,9 +56,7 @@ export default function CreateTeam() {
           <Button
             onClick={() => {
               fetch(
-                `${apiUrl}/create-team?team_name=${encodeURIComponent(
-                  teamName
-                )}`
+                `${apiUrl}/create-team?name=${encodeURIComponent(teamName)}`
               ).then(async (res) => {
                 if (res.status === 200) {
                   fetchTeam();
