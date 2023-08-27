@@ -66,7 +66,11 @@ function fetchTeam(team: string | null) {
             "TeamsWithMembers" in teams &&
             teams.TeamsWithMembers.length > 0
           ) {
-            const out: TeamData = { ...teams.TeamsWithMembers[0], invites: [] };
+            const invites = teams.TeamsWithMembers[0].invites;
+            const out: TeamData = {
+              ...teams.TeamsWithMembers[0],
+              invites: invites ? invites.map((val) => val.code) : [],
+            };
             return out;
           }
           return null;

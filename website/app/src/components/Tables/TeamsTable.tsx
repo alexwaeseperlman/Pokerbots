@@ -37,7 +37,6 @@ export function TeamsTable() {
           setTeams(teams.Teams);
         } else {
           enqueueSnackbar("Error loading teams", { variant: "error" });
-          console.error("Received teams as", data);
         }
       });
   }, [paginationModel.page, paginationModel.pageSize]);

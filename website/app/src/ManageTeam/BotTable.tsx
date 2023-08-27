@@ -47,7 +47,6 @@ export default function BotTable({
         } else {
           setBots([]);
           enqueueSnackbar("Error loading bots", { variant: "error" });
-          console.error("Received bots as", data);
         }
       });
   };

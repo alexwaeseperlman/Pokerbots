@@ -111,6 +111,7 @@ pub async fn teams(
                 schema::users::dsl::team.eq_any(result.iter().map(|t| t.id).collect::<Vec<i32>>()),
             )
             .load::<User>(conn)?;
+        // only show invites if the user is on the team
         let invites = schema::team_invites::dsl::team_invites
             .filter(schema::team_invites::dsl::team.eq(team.clone().map(|u| u.id).unwrap_or(-1)))
             .load::<TeamInvite>(conn)?;

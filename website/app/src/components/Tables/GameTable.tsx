@@ -158,7 +158,6 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
         } else {
           setGames([]);
           enqueueSnackbar("Error loading games", { variant: "error" });
-          console.error("Received games as", data);
         }
       });
   }, [team?.id, paginationModel.page, paginationModel.pageSize]);

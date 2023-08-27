@@ -89,7 +89,6 @@ const DataTableRow = React.memo(
   (prev, next) => {
     const prevProps = prev.columns.map((col) => col.getProps(prev.row));
     const nextProps = next.columns.map((col) => col.getProps(next.row));
-    console.log(prevProps, nextProps);
     return (
       prev.columns == next.columns &&
       prevProps.every((prop, i) => shallowCompare(prop, nextProps[i]))

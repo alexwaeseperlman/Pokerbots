@@ -101,7 +101,6 @@ export default function Profile() {
               </Typography>
               <FileUpload
                 onUpload={(f: File) => {
-                  console.log("upload resume");
                   return Promise.resolve();
                 }}
               >
