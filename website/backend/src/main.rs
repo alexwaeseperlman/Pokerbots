@@ -2,12 +2,14 @@ use std::fs;
 
 use actix_files::NamedFile;
 use actix_service::{fn_service, Service};
-use actix_session::{storage::CookieSessionStore, SessionExt, SessionMiddleware};
+use actix_session::{
+    config::CookieContentSecurity, storage::CookieSessionStore, SessionExt, SessionMiddleware,
+};
 use actix_web::{
     cookie,
     dev::{ServiceRequest, ServiceResponse},
     middleware::Logger,
-    web, App, HttpMessage, HttpServer,
+    web, App, HttpMessage, HttpResponse, HttpServer,
 };
 use futures_util::future::FutureExt;
 use shared::db::conn::DB_CONNECTION;
@@ -41,6 +43,7 @@ async fn main() -> std::io::Result<()> {
         let session_middleware =
             SessionMiddleware::builder(CookieSessionStore::default(), get_secret_key())
                 .cookie_secure(true)
+                .cookie_content_security(CookieContentSecurity::Private)
                 .build();
         App::new()
             .wrap_fn(|req, srv| {
@@ -57,8 +60,10 @@ async fn main() -> std::io::Result<()> {
             .wrap(Logger::new("%a %{User-Agent}i"))
             .wrap(session_middleware)
             .route("/api/login", web::get().to(login::handle_login))
+            .default_service(web::to(|| HttpResponse::NotFound()))
             .service(login::login_provider)
             .service(api::api_service())
+            .service(api::auth_service())
             // All remaining paths go to /app/dist, and fallback to index.html for client side routing
             .service(
                 actix_files::Files::new("/", "app/dist/")

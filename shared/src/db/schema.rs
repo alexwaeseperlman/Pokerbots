@@ -1,6 +1,19 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
+    auth (email) {
+        email -> Text,
+        mangled_password -> Text,
+        email_verification_link -> Nullable<Text>,
+        email_verification_link_expiration -> Nullable<Timestamp>,
+        password_reset_link -> Nullable<Text>,
+        password_reset_link_expiration -> Nullable<Timestamp>,
+        email_confirmed -> Bool,
+        is_admin -> Bool,
+    }
+}
+
+diesel::table! {
     bots (id) {
         id -> Int4,
         team -> Int4,
@@ -48,14 +61,20 @@ diesel::table! {
         email -> Text,
         display_name -> Text,
         team_id -> Nullable<Int4>,
-        is_admin -> Bool,
     }
 }
 
 diesel::joinable!(team_invites -> teams (teamid));
 diesel::joinable!(teams -> bots (active_bot));
 
-diesel::allow_tables_to_appear_in_same_query!(bots, games, team_invites, teams, users,);
+diesel::allow_tables_to_appear_in_same_query!(
+    auth,
+    bots,
+    games,
+    team_invites,
+    teams,
+    users,
+);
 diesel::alias!(
     bots as defender_bots: DefenderBotsAlias,
     bots as challenger_bots: ChallengerBotsAlias,

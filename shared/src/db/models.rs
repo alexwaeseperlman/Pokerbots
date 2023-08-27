@@ -3,13 +3,14 @@ use diesel::{
     pg::{self, PgValue},
     serialize::ToSql,
     sql_types::Integer,
-    Queryable, Selectable,
+    Queryable, Selectable, Insertable, AsChangeset,
 };
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
+use chrono;
 
 use crate::{
-    db::schema::{bots, games, team_invites, teams, users},
+    db::schema::{bots, games, team_invites, teams, users, auth},
     BuildStatus,
 };
 
@@ -49,7 +50,6 @@ pub struct User {
     pub email: String,
     pub display_name: String,
     pub team_id: Option<i32>,
-    pub is_admin: bool,
 }
 
 #[derive(diesel::Insertable, Debug)]
@@ -160,6 +160,19 @@ pub struct NewBot {
     pub score: f32,
     pub uploaded_by: String,
     pub build_status: BuildStatus,
+}
+
+#[derive(Serialize, Deserialize, Debug, Queryable, Selectable, Insertable, AsChangeset)]
+#[diesel(table_name = auth)]
+pub struct Auth {
+    pub email: String,
+    pub mangled_password: String,
+    pub email_verification_link: Option<String>,
+    pub email_verification_link_expiration: Option<chrono::NaiveDateTime>,
+    pub password_reset_link: Option<String>,
+    pub password_reset_link_expiration: Option<chrono::NaiveDateTime>,
+    pub email_confirmed: bool,
+    pub is_admin: bool,
 }
 
 impl ToSql<Integer, pg::Pg> for BuildStatus {
