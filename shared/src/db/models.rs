@@ -10,7 +10,7 @@ use ts_rs::TS;
 
 use crate::{
     db::schema::{bots, games, team_invites, teams, users},
-    BuildStatus,
+    BuildStatus, WhichBot,
 };
 
 #[derive(Serialize, Deserialize, diesel::Queryable, Debug, TS, Selectable)]
@@ -93,11 +93,11 @@ pub struct Game {
     pub id: String,
     pub defender: i32,
     pub challenger: i32,
-    // Score change for defender
-    pub score_change: Option<i32>,
+    pub defender_score: Option<i32>,
+    pub challenger_score: Option<i32>,
     pub created: i64,
     pub error_type: Option<String>,
-    pub error_message: Option<String>,
+    pub error_bot: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Queryable, TS, Selectable)]
@@ -149,10 +149,11 @@ pub struct GameWithBots<T> {
     pub id: String,
     pub defender: T,
     pub challenger: T,
-    pub score_change: Option<i32>,
+    pub defender_score: Option<i32>,
+    pub challenger_score: Option<i32>,
     pub created: i64,
     pub error_type: Option<String>,
-    pub error_message: Option<String>,
+    pub error_bot: Option<WhichBot>,
 }
 
 #[derive(Debug, diesel::Insertable)]
@@ -177,6 +178,26 @@ impl ToSql<Integer, pg::Pg> for BuildStatus {
 }
 
 impl FromSql<Integer, pg::Pg> for BuildStatus {
+    fn from_sql(bytes: PgValue) -> diesel::deserialize::Result<Self> {
+        if let Some(result) = num::FromPrimitive::from_i32(i32::from_sql(bytes)?) {
+            Ok(result)
+        } else {
+            Err("Invalid build status".into())
+        }
+    }
+}
+
+impl ToSql<Integer, pg::Pg> for WhichBot {
+    fn to_sql<'b>(
+        &'b self,
+        out: &mut diesel::serialize::Output<'b, '_, pg::Pg>,
+    ) -> diesel::serialize::Result {
+        let val = *self as i32;
+        ToSql::<Integer, pg::Pg>::to_sql(&val, &mut out.reborrow())
+    }
+}
+
+impl FromSql<Integer, pg::Pg> for WhichBot {
     fn from_sql(bytes: PgValue) -> diesel::deserialize::Result<Self> {
         if let Some(result) = num::FromPrimitive::from_i32(i32::from_sql(bytes)?) {
             Ok(result)

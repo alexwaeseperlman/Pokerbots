@@ -3,7 +3,7 @@ import { apiUrl, useTeam } from "../../state";
 import Box from "@mui/system/Box";
 import { styled } from "@mui/joy/styles";
 import Button, { ButtonProps } from "@mui/joy/Button";
-import { Avatar, Chip, ChipProps, Typography } from "@mui/joy";
+import { Avatar, Chip, ChipProps, Stack, Typography } from "@mui/joy";
 import { Link } from "react-router-dom";
 import { Team } from "@bindings/Team";
 import { TeamsResponse } from "@bindings/TeamsResponse";
@@ -52,7 +52,7 @@ export function TeamsTable() {
     teamName: string;
   }) => {
     return (
-      <>
+      <Stack direction="row" alignItems="center">
         <Avatar
           sx={{
             width: 24,
@@ -70,7 +70,7 @@ export function TeamsTable() {
         >
           <Typography>{teamName ?? "Deleted team"}</Typography>
         </Link>
-      </>
+      </Stack>
     );
   };
   return (

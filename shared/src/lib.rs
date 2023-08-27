@@ -94,7 +94,7 @@ pub enum GameTask {
     },
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, TS, FromPrimitive, ToPrimitive)]
 #[repr(i32)]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
 pub enum WhichBot {
@@ -131,7 +131,7 @@ pub enum GameError {
 
 #[derive(Serialize, Deserialize, Debug, Clone, TS)]
 pub enum GameStatus {
-    ScoreChanged(i32),
+    ScoreChanged(i32, i32),
     TestGameFailed,
     TestGameSucceeded,
 }

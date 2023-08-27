@@ -44,7 +44,7 @@ pub async fn create_game(
             challenger,
             id: id.clone(),
         })
-        .get_result::<Game>(conn)?;
+        .execute(conn)?;
     // push a batch job to the queue
     let presign_config =
         PresigningConfig::expires_in(std::time::Duration::from_secs(60 * 60 * 24 * 7))?;
@@ -155,9 +155,6 @@ pub async fn games(
                 .eq(challenger_teams.field(teams::dsl::id))),
         )
         .into_boxed();
-    if let Some(active) = active {
-        base = base.filter(schema::games::dsl::score_change.is_null().eq(active))
-    }
     if let Some(id) = id {
         base = base.filter(schema::games::dsl::id.eq(id));
     }
@@ -197,10 +194,13 @@ pub async fn games(
                     id: game.id,
                     defender: BotWithTeam::from_bot_and_team(defender, defender_team),
                     challenger: BotWithTeam::from_bot_and_team(challenger, challenger_team),
-                    score_change: game.score_change,
+                    defender_score: game.defender_score,
+                    challenger_score: game.challenger_score,
                     created: game.created,
                     error_type: game.error_type,
-                    error_message: game.error_message,
+                    error_bot: game
+                        .error_bot
+                        .map(|b| num::FromPrimitive::from_i32(b).unwrap()),
                 },
             )
             .collect();

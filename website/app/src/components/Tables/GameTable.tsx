@@ -176,7 +176,7 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
       {
         name: "Challenger",
         getProps: (game) => ({
-          scoreChange: game.score_change === null ? null : -game.score_change,
+          scoreChange: game.challenger_score,
           botName: game.challenger.name,
           errorType: game.error_type,
           whichBot: "Challenger",
@@ -189,7 +189,7 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
         name: "Defender",
         textAlign: "right",
         getProps: (game) => ({
-          scoreChange: game.score_change,
+          scoreChange: game.defender_score,
           botName: game.defender.name,
           errorType: game.error_type,
           whichBot: "Defender",

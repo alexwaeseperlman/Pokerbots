@@ -5,12 +5,16 @@ pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
     use shared::db::schema::{bots, games};
     let db_conn = &mut (*shared::db::conn::DB_CONNECTION.get().map_err(|_| ())?);
     let mut error_type: Option<String> = None;
-    let mut score_change: i32 = 0;
+    let mut defender_score: i32 = 0;
+    let mut challenger_score: i32 = 0;
     let GameStatusMessage { id, result } = status;
     match result {
-        Ok(GameStatus::ScoreChanged(score_change)) => {
+        Ok(GameStatus::ScoreChanged(defender_score, challenger_score)) => {
             diesel::update(games::table.find(&id))
-                .set(games::dsl::score_change.eq(score_change))
+                .set((
+                    games::dsl::defender_score.eq(defender_score),
+                    games::dsl::challenger_score.eq(challenger_score),
+                ))
                 .execute(db_conn)
                 .map_err(|e| ())?;
         }
@@ -36,36 +40,37 @@ pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
                 }
                 GameError::InvalidActionError(which_bot) => {
                     error_type = Some("INVALID_ACTION".into());
-                    score_change = match which_bot {
-                        shared::WhichBot::Defender => -100,
-                        shared::WhichBot::Challenger => 100,
+                    (defender_score, challenger_score) = match which_bot {
+                        shared::WhichBot::Defender => (-100, 0),
+                        shared::WhichBot::Challenger => (0, -100),
                     };
                 }
                 GameError::MemoryError(which_bot) => {
                     error_type = Some("MEMORY".into());
-                    score_change = match which_bot {
-                        shared::WhichBot::Defender => -100,
-                        shared::WhichBot::Challenger => 100,
+                    (defender_score, challenger_score) = match which_bot {
+                        shared::WhichBot::Defender => (-100, 0),
+                        shared::WhichBot::Challenger => (0, -100),
                     };
                 }
                 GameError::RunTimeError(which_bot) => {
                     error_type = Some("RUNTIME".into());
-                    score_change = match which_bot {
-                        shared::WhichBot::Defender => -100,
-                        shared::WhichBot::Challenger => 100,
-                    };
+                    (defender_score, challenger_score) = match which_bot {
+                        shared::WhichBot::Defender => (-100, 0),
+                        shared::WhichBot::Challenger => (0, -100),
+                    }
                 }
                 GameError::TimeoutError(which_bot) => {
                     error_type = Some("TIMEOUT".into());
-                    score_change = match which_bot {
-                        shared::WhichBot::Defender => -100,
-                        shared::WhichBot::Challenger => 100,
-                    };
+                    (defender_score, challenger_score) = match which_bot {
+                        shared::WhichBot::Defender => (-100, 0),
+                        shared::WhichBot::Challenger => (0, -100),
+                    }
                 }
             }
             diesel::update(games::table.find(id))
                 .set((
-                    games::dsl::score_change.eq(score_change),
+                    games::dsl::defender_score.eq(defender_score),
+                    games::dsl::challenger_score.eq(challenger_score),
                     games::dsl::error_type.eq(error_type),
                 ))
                 .execute(db_conn)

@@ -502,6 +502,7 @@ impl Game {
         }
         return Ok(shared::GameStatus::ScoreChanged(
             i32::try_from(self.stacks[0]).unwrap() - i32::try_from(self.initial_stacks[0]).unwrap(),
+            i32::try_from(self.stacks[1]).unwrap() - i32::try_from(self.initial_stacks[1]).unwrap(),
         ));
     }
 }

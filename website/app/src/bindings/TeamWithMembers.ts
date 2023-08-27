@@ -2,12 +2,4 @@
 import type { TeamInvite } from "./TeamInvite";
 import type { User } from "./User";
 
-export interface TeamWithMembers {
-  id: number;
-  name: string;
-  owner: string;
-  score: number | null;
-  active_bot: number | null;
-  members: Array<User>;
-  invites: Array<TeamInvite> | null;
-}
+export interface TeamWithMembers { id: number, name: string, owner: string, score: number | null, active_bot: number | null, members: Array<User>, invites: Array<TeamInvite> | null, deleted_at: bigint | null, }

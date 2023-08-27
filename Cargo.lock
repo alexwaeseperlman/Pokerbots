@@ -4529,6 +4529,8 @@ dependencies = [
  "itertools 0.11.0",
  "lazy_static",
  "log",
+ "num",
+ "num-traits",
  "r2d2",
  "rand 0.8.5",
  "reqwest",

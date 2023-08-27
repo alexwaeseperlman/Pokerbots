@@ -4,6 +4,7 @@ import randomTeamName from "./random-name";
 import {
   Box,
   Button,
+  Card,
   Container,
   FormControl,
   FormLabel,
@@ -22,21 +23,8 @@ export default function CreateTeam() {
   const [teamName, setTeamName] = useState("");
   const [team, fetchTeam] = useTeam(null);
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        flexGrow: 1,
-      }}
-    >
-      <Sheet
-        sx={{
-          width: { xs: "80%", sm: "50%" },
-          p: 2,
-        }}
-      >
+    <Container maxWidth="sm">
+      <Card size="lg">
         <Stack gap={2} direction={"column"}>
           <FormControl sx={{ display: "flex", flexDirection: "column" }}>
             <FormLabel>
@@ -72,7 +60,7 @@ export default function CreateTeam() {
             Create
           </Button>
         </Stack>
-      </Sheet>
-    </Box>
+      </Card>
+    </Container>
   );
 }

@@ -19,10 +19,11 @@ diesel::table! {
         id -> Text,
         defender -> Int4,
         challenger -> Int4,
-        score_change -> Nullable<Int4>,
+        defender_score -> Nullable<Int4>,
+        challenger_score -> Nullable<Int4>,
         created -> Int8,
         error_type -> Nullable<Text>,
-        error_message -> Nullable<Text>,
+        error_bot -> Nullable<Int4>,
     }
 }
 
@@ -57,10 +58,4 @@ diesel::table! {
 diesel::joinable!(team_invites -> teams (team));
 diesel::joinable!(teams -> users (owner));
 
-diesel::allow_tables_to_appear_in_same_query!(
-    bots,
-    games,
-    team_invites,
-    teams,
-    users,
-);
+diesel::allow_tables_to_appear_in_same_query!(bots, games, team_invites, teams, users,);
