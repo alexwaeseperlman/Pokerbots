@@ -14,6 +14,7 @@ import {
 import styled from "@mui/system/styled";
 import { ButtonProps, Sheet } from "@mui/joy";
 import { useParams, useSearchParams } from "react-router-dom";
+import { enqueueSnackbar } from "notistack";
 function MicrosoftLogo(props: SvgIconProps) {
   return (
     <SvgIcon {...props}>
@@ -90,13 +91,31 @@ export default function Signup() {
       <Input placeholder="Email" type="email" />
       <Input placeholder="Password" type="password" />
       <Input placeholder="Confirm your password" type="password" />
-      <Button variant="solid">Sign up</Button>
+      <Button
+        variant="solid"
+        onClick={() => {
+          enqueueSnackbar(
+            "This feature is not yet implemented. Log in with Microsoft",
+            {
+              variant: "error",
+            }
+          );
+        }}
+      >
+        Sign up
+      </Button>
       <Stack direction="row" gap={2}>
         <LoginButton
           onClick={() => {
-            window.location.href = `/api/login-provider?provider=google&state=${encodeURIComponent(
+            enqueueSnackbar(
+              "This feature is not yet implemented. Log in with Microsoft",
+              {
+                variant: "error",
+              }
+            );
+            /* window.location.href = `/api/login-provider?provider=google&state=${encodeURIComponent(
               redirect
-            )}`;
+            )}`;*/
           }}
           startDecorator={<GoogleLogo />}
         >

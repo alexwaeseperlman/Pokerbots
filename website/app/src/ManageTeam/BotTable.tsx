@@ -148,7 +148,7 @@ export default function BotTable({
               <MenuButton
                 slots={{ root: IconButton }}
                 slotProps={{
-                  root: { variant: "outlined", color: "neutral" },
+                  root: { variant: "plain", color: "neutral" },
                 }}
               >
                 <MoreVert />

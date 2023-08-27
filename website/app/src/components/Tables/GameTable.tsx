@@ -45,42 +45,31 @@ export const TableButton = styled((props: ButtonProps) => (
 
 type Game = GameWithBots<BotWithTeam<Team>>;
 const renderTeam = ({
-  scoreChange,
   botName,
-  errorType,
   whichBot,
   teamId,
   teamName,
 }: {
   scoreChange: number | null;
   botName: string;
-  errorType: string;
   whichBot: WhichBot;
   teamId: number;
   teamName: string;
 }) => {
-  let color: ChipProps["color"] = "success";
-  if (scoreChange == null) color = "warning";
-  else if (scoreChange < 0) color = "danger";
-  else if (scoreChange == 0) color = "neutral";
-  if (errorType) {
-    color = "warning";
-  }
-
   return (
     <Box
       sx={{
         display: "flex",
         flexDirection: whichBot == "Challenger" ? "row" : "row-reverse",
         alignItems: "center",
-        justifyContent: "space-between",
+        justifyContent: whichBot == "Challenger" ? "right" : "left",
       }}
     >
       <Box
         key="team"
         sx={{
           display: "flex",
-          flexDirection: whichBot == "Challenger" ? "row" : "row-reverse",
+          flexDirection: whichBot == "Challenger" ? "row-reverse" : "row",
           alignItems: "center",
         }}
       >
@@ -89,7 +78,6 @@ const renderTeam = ({
           sx={{
             width: 24,
             height: 24,
-            marginRight: 2,
           }}
           src={`${apiUrl}/pfp?id=${teamId}`}
         />
@@ -98,7 +86,7 @@ const renderTeam = ({
           ml={2}
           mr={2}
           flexDirection={"column"}
-          textAlign={whichBot == "Challenger" ? "left" : "right"}
+          textAlign={whichBot == "Challenger" ? "right" : "left"}
         >
           <Link
             to={`/team/${teamId}`}
@@ -115,6 +103,35 @@ const renderTeam = ({
           </Typography>
         </Box>
       </Box>
+    </Box>
+  );
+};
+
+const renderScore = ({
+  scoreChange,
+  errorType,
+  whichBot,
+}: {
+  scoreChange: number | null;
+  errorType: string;
+  whichBot: WhichBot;
+}) => {
+  let color: ChipProps["color"] = "success";
+  if (scoreChange == null) color = "warning";
+  else if (scoreChange < 0) color = "danger";
+  else if (scoreChange == 0) color = "neutral";
+  if (errorType) {
+    color = "warning";
+  }
+
+  return (
+    <Box
+      sx={{
+        flexDirection: "row",
+        justifyContent: whichBot == "Challenger" ? "right" : "left",
+        display: "flex",
+      }}
+    >
       <Chip color={color} size="sm" key="chip">
         {scoreChange === null ? "Running" : errorType ?? scoreChange ?? 0}
       </Chip>
@@ -175,23 +192,41 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
     () => [
       {
         name: "Challenger",
+        textAlign: "right",
         getProps: (game) => ({
-          scoreChange: game.challenger_score,
           botName: game.challenger.name,
-          errorType: game.error_type,
           whichBot: "Challenger",
           teamId: game.challenger.team.id,
           teamName: game.challenger.team.name,
         }),
         render: renderTeam,
       },
+
+      {
+        name: "",
+        width: "75px",
+        getProps: (game) => ({
+          whichBot: "Challenger",
+          scoreChange: game.challenger_score,
+          errorType: game.error_type,
+        }),
+        render: renderScore,
+      },
+
+      {
+        name: "",
+        width: "75px",
+        getProps: (game) => ({
+          whichBot: "Defender",
+          scoreChange: game.challenger_score,
+          errorType: game.error_type,
+        }),
+        render: renderScore,
+      },
       {
         name: "Defender",
-        textAlign: "right",
         getProps: (game) => ({
-          scoreChange: game.defender_score,
           botName: game.defender.name,
-          errorType: game.error_type,
           whichBot: "Defender",
           teamId: game.defender.team.id,
           teamName: game.defender.team.name,
@@ -220,7 +255,7 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
               <MenuButton
                 slots={{ root: IconButton }}
                 slotProps={{
-                  root: { variant: "outlined", color: "neutral" },
+                  root: { variant: "plain", color: "neutral" },
                 }}
               >
                 <MoreVert />

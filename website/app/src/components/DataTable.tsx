@@ -110,7 +110,7 @@ export default function DataTable<T extends DataTableData>({
     () =>
       columns.map(({ name, render, getProps, ...props }, i) => (
         <Cell {...props} key={name}>
-          {name}
+          <Typography level="title-md">{name}</Typography>
         </Cell>
       )),
     [...columns]

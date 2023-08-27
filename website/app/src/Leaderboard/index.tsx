@@ -3,6 +3,7 @@ import Box from "@mui/joy/Box";
 import { Card, Grid, Sheet, Typography } from "@mui/joy";
 import { GameTable } from "../components/Tables/GameTable";
 import { TeamsTable } from "../components/Tables/TeamsTable";
+import banner from "./banner.jpg";
 
 export default function Leaderboard() {
   return (

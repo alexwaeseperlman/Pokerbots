@@ -6,6 +6,7 @@ import { DiscordLogo } from "./Discord";
 import Container from "@mui/joy/Container";
 import graphic_small from "./graphic_small.png";
 import graphic from "./graphic.png";
+import BackgroundImage from "../components/BackgroundImage";
 
 export default function HomePage() {
   return (
@@ -15,27 +16,9 @@ export default function HomePage() {
         pb: 16,
       }}
     >
-      <Box
-        sx={{
-          backgroundImage: `url(${graphic}), url(${graphic_small})`,
-          filter: "grayscale(100%)",
-          opacity: 0.4,
-          backgroundPosition: "center",
-          position: "absolute",
-          top: 0,
-          left: 0,
-          backgroundSize: "contain",
-          backgroundRepeat: "no-repeat",
-          mixBlendMode: "screen",
-          width: "100%",
-          maxWidth: "100vw",
-          height: "100%",
-          display: "block",
-          overflow: "hidden",
-          pointerEvents: "none",
-          zIndex: 1,
-        }}
-      ></Box>
+      <BackgroundImage
+        graphics={[`url(${graphic})`, `url(${graphic_small})`]}
+      />
       <Box
         sx={{
           width: "100%",

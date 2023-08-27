@@ -1,6 +1,7 @@
 import { Box, Typography } from "@mui/material";
 import graphic from "./graphic.png";
 import React from "react";
+import BackgroundImage from "../components/BackgroundImage";
 
 export default function NotFound() {
   return (
@@ -16,26 +17,7 @@ export default function NotFound() {
         flexGrow: 1,
       }}
     >
-      <Box
-        sx={{
-          backgroundImage: `url(${graphic})`,
-          filter: "grayscale(100%)",
-          opacity: 0.4,
-          backgroundPosition: "center",
-          position: "absolute",
-          top: 0,
-          left: 0,
-          backgroundSize: "contain",
-          backgroundRepeat: "no-repeat",
-          mixBlendMode: "screen",
-          width: "100%",
-          maxWidth: "100vw",
-          height: "100%",
-          display: "block",
-          overflow: "hidden",
-          pointerEvents: "none",
-        }}
-      ></Box>
+      <BackgroundImage graphics={[`url(${graphic})`]} />
       <Box
         sx={{
           zIndex: 1,
