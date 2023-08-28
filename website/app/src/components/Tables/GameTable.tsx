@@ -218,7 +218,7 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
         width: "75px",
         getProps: (game) => ({
           whichBot: "Defender",
-          scoreChange: game.challenger_score,
+          scoreChange: game.defender_score,
           errorType: game.error_type,
         }),
         render: renderScore,
