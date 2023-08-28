@@ -18,7 +18,6 @@ use tokio::{
 
 use crate::poker::game::GameState;
 
-pub mod sandbox;
 pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>>(
     bot: U,
     bot_path: V,
@@ -135,8 +134,8 @@ extern "C" {
 }
 
 pub async fn run_game(
-    defender: &String,
-    challenger: &String,
+    defender: i32,
+    challenger: i32,
     s3_client: &aws_sdk_s3::Client,
     task_id: &String,
     rounds: usize,
@@ -169,8 +168,13 @@ pub async fn run_game(
     })?;
     log::debug!("Downloading bots from aws");
     let (defender, challenger) = try_join!(
-        download_and_run(defender, defender_path, &bot_bucket, s3_client),
-        download_and_run(challenger, challenger_path, &bot_bucket, s3_client)
+        download_and_run(defender.to_string(), defender_path, &bot_bucket, s3_client),
+        download_and_run(
+            challenger.to_string(),
+            challenger_path,
+            &bot_bucket,
+            s3_client
+        )
     )?;
 
     // run game

@@ -1,10 +1,13 @@
 use diesel::prelude::*;
-use shared::{GameError, GameStatus, GameStatusMessage};
+use shared::{
+    db::models::{Bot, Team},
+    GameError, GameStatus, GameStatusMessage,
+};
 
 pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
     use shared::db::schema::{bots, games};
     let db_conn = &mut (*shared::db::conn::DB_CONNECTION.get().map_err(|_| ())?);
-    let mut error_type: Option<String> = None;
+    let error_type: Option<String>;
     let mut defender_score: i32 = 0;
     let mut challenger_score: i32 = 0;
     let GameStatusMessage { id, result } = status;
@@ -19,6 +22,23 @@ pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
                 .map_err(|e| ())?;
         }
         Ok(GameStatus::TestGameSucceeded) => {
+            // set the active bot for the team if they don't have one
+            let (bot, team): (Bot, Team) =
+                shared::db::schema::bots::dsl::bots
+                    .find(id.parse::<i32>().map_err(|_| ())?)
+                    .inner_join(shared::db::schema::teams::dsl::teams.on(
+                        shared::db::schema::bots::dsl::team.eq(shared::db::schema::teams::dsl::id),
+                    ))
+                    .first::<(Bot, Team)>(db_conn)
+                    .map_err(|_| ())?;
+            log::debug!("Bot: {:?}, team: {:?}", bot, team);
+            if team.active_bot.is_none() {
+                diesel::update(shared::db::schema::teams::dsl::teams)
+                    .filter(shared::db::schema::teams::dsl::id.eq(team.id))
+                    .set(shared::db::schema::teams::dsl::active_bot.eq(bot.id))
+                    .execute(db_conn)
+                    .map_err(|_| ())?;
+            }
             diesel::update(bots::dsl::bots)
                 .filter(bots::dsl::id.eq(id.parse::<i32>().map_err(|_| ())?))
                 .set(bots::dsl::build_status.eq(shared::BuildStatus::TestGameSucceeded as i32))

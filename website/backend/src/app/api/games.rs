@@ -84,8 +84,8 @@ pub async fn create_game(
         .send_message()
         .queue_url(std::env::var("NEW_GAMES_QUEUE_URL")?)
         .message_body(&serde_json::to_string(&GameTask::Game {
-            defender: defender.to_string(),
-            challenger: challenger.to_string(),
+            defender: defender,
+            challenger: challenger,
             id: id.clone(),
             // TODO: Choose a number of rounds
             rounds: 100,

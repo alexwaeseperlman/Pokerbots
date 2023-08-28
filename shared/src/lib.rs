@@ -50,7 +50,7 @@ pub struct PresignedRequest {
 
 #[derive(Serialize, Deserialize, Debug, Clone, TS)]
 pub struct BuildTask {
-    pub bot: String,
+    pub bot: i32,
     pub log_presigned: PresignedRequest,
 }
 
@@ -73,15 +73,15 @@ pub enum BuildStatus {
 #[derive(Serialize, Deserialize, Debug, Clone, TS)]
 pub struct BuildResultMessage {
     pub status: BuildStatus,
-    pub bot: String,
+    pub bot: i32,
     pub error: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, TS)]
 pub enum GameTask {
     Game {
-        defender: String,
-        challenger: String,
+        defender: i32,
+        challenger: i32,
         id: String,
         rounds: usize,
         public_logs_presigned: PresignedRequest,
@@ -89,7 +89,7 @@ pub enum GameTask {
         challenger_logs_presigned: PresignedRequest,
     },
     TestGame {
-        bot: String,
+        bot: i32,
         log_presigned: PresignedRequest,
     },
 }

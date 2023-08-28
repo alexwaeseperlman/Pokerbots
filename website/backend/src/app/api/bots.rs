@@ -56,6 +56,12 @@ pub async fn set_active_bot(
             )
             .into());
         }
+        // ensure that the bot is ready to be used
+        match bot[0].build_status {
+            // do nothing if succeded
+            shared::BuildStatus::TestGameSucceeded => {}
+            _ => return Err(actix_web::error::ErrorBadRequest("Bot is not ready to play.").into()),
+        }
     }
 
     diesel::update(teams::dsl::teams)
@@ -157,7 +163,7 @@ pub async fn upload_bot(
         .send_message()
         .queue_url(std::env::var("BOT_UPLOADS_QUEUE_URL")?)
         .message_body(serde_json::to_string(&shared::BuildTask {
-            bot: id.to_string(),
+            bot: id,
             log_presigned,
         })?)
         .send()

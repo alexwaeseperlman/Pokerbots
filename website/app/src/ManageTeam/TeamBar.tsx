@@ -255,10 +255,14 @@ export function TeamBar({
             <Table size="sm">
               <thead>
                 <tr>
-                  <td></td>
-                  <td style={{ width: "150px" }}></td>
+                  <td
+                    style={{
+                      height: 0,
+                    }}
+                  ></td>
+                  <td style={{ width: "150px", height: 0 }}></td>
                   {team.owner === user?.email && (
-                    <td style={{ width: "150px" }}></td>
+                    <td style={{ width: "150px", height: 0 }}></td>
                   )}
                 </tr>
               </thead>

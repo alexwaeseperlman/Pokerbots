@@ -1,5 +1,8 @@
 use diesel::prelude::*;
-use shared::{BuildResultMessage, BuildStatus, GameTask};
+use shared::{
+    db::models::{Bot, Team},
+    BuildResultMessage, BuildStatus, GameTask,
+};
 
 /// Handle a build result message.
 /// This function should update the database with the build result
@@ -12,12 +15,12 @@ pub async fn handle_build_result(
     sqs: &aws_sdk_sqs::Client,
     log_presigned: shared::PresignedRequest,
 ) -> Result<(), ()> {
-    use shared::db::schema::bots::dsl::*;
+    use shared::db::schema::bots;
     let conn = &mut (*shared::db::conn::DB_CONNECTION.get().map_err(|_| ())?);
     // update bot with build result
-    diesel::update(bots)
-        .filter(id.eq(result.bot.parse::<i32>().map_err(|_| ())?))
-        .set(build_status.eq::<i32>(result.status.clone() as i32))
+    diesel::update(bots::table)
+        .filter(bots::dsl::id.eq(result.bot))
+        .set(bots::dsl::build_status.eq::<i32>(result.status.clone() as i32))
         .execute(conn)
         .map_err(|_| ())?;
     log::info!(
