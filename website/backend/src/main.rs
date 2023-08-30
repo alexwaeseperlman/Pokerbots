@@ -13,7 +13,7 @@ use actix_web::{
 };
 use futures_util::future::FutureExt;
 use shared::db::conn::DB_CONNECTION;
-use upac_web::app::{api, login};
+use upac_web::app::{api, api::auth};
 
 fn get_secret_key() -> cookie::Key {
     let key = std::env::var("SECRET_KEY").unwrap_or_else(|_| {
@@ -47,8 +47,8 @@ async fn main() -> std::io::Result<()> {
                 .build();
         App::new()
             .wrap_fn(|req, srv| {
-                let user_data = login::get_user_data(&req.get_session());
-                let team_data = login::get_team_data(&req.get_session());
+                let user_data = auth::get_user(&req.get_session());
+                let team_data = auth::get_team(&req.get_session());
                 req.extensions_mut().insert(user_data);
                 req.extensions_mut().insert(team_data);
                 log::debug!("{}", req.uri());
@@ -59,9 +59,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(sqs_client.clone())
             .wrap(Logger::new("%a %{User-Agent}i"))
             .wrap(session_middleware)
-            .route("/api/login", web::get().to(login::handle_login))
             .default_service(web::to(|| HttpResponse::NotFound()))
-            .service(login::login_provider)
             .service(api::api_service())
             .service(api::auth_service())
             // All remaining paths go to /app/dist, and fallback to index.html for client side routing

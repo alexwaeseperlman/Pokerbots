@@ -6,7 +6,7 @@ import {
   nav_group,
   bar_item_clickable,
 } from "./styles.module.css";
-import { apiUrl, useUser } from "../../state";
+import { authUrl, useUser } from "../../state";
 import Box from "@mui/system/Box";
 import Logo from "../Logo";
 import IconButton from "@mui/material/IconButton";
@@ -106,7 +106,7 @@ export function TopBar() {
         <BarItem
           label="SIGN OUT"
           command={() => {
-            fetch(`${apiUrl}/signout`).then(() => {
+            fetch(`${authUrl}/signout`).then(() => {
               fetchUser();
             });
           }}

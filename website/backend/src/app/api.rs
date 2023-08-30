@@ -8,7 +8,6 @@ use serde_json::json;
 use ts_rs::TS;
 
 use crate::{
-    app::login,
     config::{GAME_LOGS_S3_BUCKET, PFP_S3_BUCKET, self},
 };
 use actix_session::Session;
@@ -24,7 +23,7 @@ use rand::{self, Rng};
 use shared::{
     db::{
         conn::DB_CONNECTION,
-        models::{Bot, Game, NewGame, NewInvite, NewTeam, TeamInvite, User},
+        models::{Bot, Game, NewGame, NewInvite, NewTeam, TeamInvite, User, Team},
         schema,
         schema::{team_invites, teams, users},
     },
@@ -32,11 +31,11 @@ use shared::{
 };
 
 pub mod auth;
+pub mod oauth;
 pub mod bots;
 pub mod data;
 pub mod games;
 pub mod manage_team;
-pub mod signout;
 
 pub fn api_service() -> actix_web::Scope {
     actix_web::web::scope("/api")
@@ -62,14 +61,15 @@ pub fn api_service() -> actix_web::Scope {
         .service(games::create_game)
         .service(games::games)
         .service(games::game_log)
-        .service(signout::signout)
 }
 
 pub fn auth_service() -> actix_web::Scope {
     actix_web::web::scope("/auth")
+        .service(oauth::google_login)
+        .service(oauth::microsoft_login)
         .service(auth::register)
         .service(auth::login)
-        .service(auth::oauth_login)
+        .service(auth::signout)
         .service(auth::create_link)
         .service(auth::verify_reset_link)
         .service(auth::update_password)
@@ -145,10 +145,6 @@ define_api_error!(std::io::Error, StatusCode::INTERNAL_SERVER_ERROR);
 
 define_api_error!(TryFromIntError, StatusCode::INTERNAL_SERVER_ERROR);
 define_api_error!(aws_sdk_sqs::Error, StatusCode::INTERNAL_SERVER_ERROR);
-define_api_error!(
-    actix_session::SessionGetError,
-    StatusCode::INTERNAL_SERVER_ERROR
-);
 
 define_api_error!(r2d2::Error, StatusCode::INTERNAL_SERVER_ERROR);
 define_api_error!(serde_json::Error, StatusCode::INTERNAL_SERVER_ERROR);
@@ -159,5 +155,7 @@ define_api_error!(ToStrError, StatusCode::INTERNAL_SERVER_ERROR);
 
 define_api_error!(lettre::error::Error, StatusCode::INTERNAL_SERVER_ERROR);
 define_api_error!(actix_session::SessionInsertError, StatusCode::INTERNAL_SERVER_ERROR);
+define_api_error!(actix_session::SessionGetError, StatusCode::INTERNAL_SERVER_ERROR);
 define_api_error!(lettre::transport::smtp::Error, StatusCode::INTERNAL_SERVER_ERROR);
+define_api_error!(reqwest::Error, StatusCode::INTERNAL_SERVER_ERROR);
 define_api_error!(argon2::password_hash::Error, StatusCode::UNAUTHORIZED);

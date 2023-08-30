@@ -1,20 +1,19 @@
 use shared::db::models::{BotWithTeam, Team, TeamWithMembers};
 
 use crate::{
-    app::login::{TeamData, UserData},
     config::APP_PFP_ENDPOINT,
 };
 
 use super::*;
 
 #[get("/my-account")]
-pub async fn my_account(session: Session) -> ApiResult<Option<UserData>> {
-    Ok(web::Json(login::get_user_data(&session)))
+pub async fn my_account(session: Session) -> ApiResult<Option<User>> {
+    Ok(web::Json(auth::get_user(&session)))
 }
 
 #[get("/my-team")]
-pub async fn my_team(session: Session) -> ApiResult<Option<TeamData>> {
-    Ok(web::Json(login::get_team_data(&session)))
+pub async fn my_team(session: Session) -> ApiResult<Option<TeamWithMembers>> {
+    Ok(web::Json(auth::get_team(&session)))
 }
 
 #[derive(Deserialize)]
@@ -61,7 +60,7 @@ pub async fn teams(
         count,
     }): web::Query<TeamQuery>,
 ) -> ApiResult<TeamsResponse> {
-    let team = login::get_team_data(&session);
+    let team = auth::get_team(&session);
     let conn = &mut (*DB_CONNECTION).get()?;
     let mut base = schema::teams::dsl::teams.into_boxed();
     // <cringe>

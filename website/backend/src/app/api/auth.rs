@@ -1,20 +1,17 @@
-// TODO: oauth
-// TODO: sessions
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
     Argon2,
 };
 use chrono::Utc;
-use shared::db::{models::Auth, schema::auth};
-
-use lettre::{
-    message::header::ContentType, transport::smtp::authentication::Credentials, Message,
-    SmtpTransport, Transport,
+use shared::db::{
+    models::{Auth, NewUser, TeamWithMembers},
+    schema::auth,
 };
+
+use lettre::{message::header::ContentType, Message, Transport};
 
 use super::*;
 
-// https://demo.react.email/preview/plaid-verify-identity?view=source&lang=jsx
 const ALPHANUMERIC: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 fn random(charset: &[u8], len: usize) -> String {
@@ -30,19 +27,16 @@ fn random(charset: &[u8], len: usize) -> String {
 fn mangle(password: &str) -> argon2::password_hash::Result<String> {
     let salt = SaltString::generate(&mut OsRng);
     Argon2::default()
-        .hash_password((config::PEPPER.clone() + password).as_bytes(), &salt)
+        .hash_password(password.as_bytes(), &salt)
         .map(|m| m.to_string())
 }
 
 fn verify(password: &str, mangled: &str) -> argon2::password_hash::Result<()> {
-    Argon2::default().verify_password(
-        (config::PEPPER.clone() + password).as_bytes(),
-        &PasswordHash::new(mangled)?,
-    )
+    Argon2::default().verify_password(password.as_bytes(), &PasswordHash::new(mangled)?)
 }
 
 #[derive(Deserialize)]
-pub struct RegisterPayload {
+struct RegisterPayload {
     pub email: String,
     pub password: String,
 }
@@ -81,7 +75,7 @@ async fn register(
 
     let auth = Auth {
         email: email.clone(),
-        mangled_password: mangle(&password)?,
+        mangled_password: Some(mangle(&password)?),
         email_verification_link: Some(email_verification_link.clone()),
         email_verification_link_expiration: Some(
             Utc::now().naive_utc() + chrono::Duration::minutes(15),
@@ -99,16 +93,11 @@ async fn register(
         .set(&auth)
         .execute(conn)?;
 
-    println!(
-        "{:?}",
-        Utc::now().naive_utc() + chrono::Duration::minutes(15)
-    );
-
     Ok(web::Json(()))
 }
 
 #[derive(Deserialize)]
-pub struct LoginPayload {
+struct LoginPayload {
     pub email: String,
     pub password: String,
 }
@@ -117,12 +106,17 @@ async fn login(
     session: Session,
     web::Json(LoginPayload { email, password }): web::Json<LoginPayload>,
 ) -> ApiResult<()> {
-    // add to session
     let conn = &mut (*DB_CONNECTION).get().unwrap();
     let auth: Auth = auth::dsl::auth
-        .filter(auth::dsl::email.eq(email))
+        .filter(auth::dsl::email.eq(&email))
         .first(conn)?;
-    verify(&password, &auth.mangled_password)?;
+    verify(
+        &password,
+        &auth.mangled_password.ok_or(ApiError {
+            status_code: StatusCode::UNAUTHORIZED,
+            message: "No password set".to_string(),
+        })?,
+    )?;
 
     if !auth.email_confirmed {
         return Err(ApiError {
@@ -130,17 +124,23 @@ async fn login(
             message: "Email not confirmed".to_string(),
         });
     }
-    Ok(web::Json(()))
-}
 
-#[post("/oauth/login")]
-async fn oauth_login(session: Session) -> ApiResult<()> {
-    // Dummy OAuth login logic
+    session.insert("email", &email)?;
+
+    diesel::insert_into(users::dsl::users)
+        .values(NewUser {
+            email: email.clone(),
+            display_name: email,
+        })
+        .on_conflict(users::dsl::email)
+        .do_nothing()
+        .execute(&mut (*DB_CONNECTION).get().unwrap())?;
+
     Ok(web::Json(()))
 }
 
 #[derive(Deserialize)]
-pub struct LinkPayload {
+struct LinkPayload {
     pub email: String,
 }
 #[post("/password-reset/link")]
@@ -172,22 +172,12 @@ async fn create_link(web::Json(LinkPayload { email }): web::Json<LinkPayload>) -
         ))
         .unwrap();
 
-    let creds = Credentials::new(
-        config::UNDERLYING_EMAIL.to_string(),
-        config::EMAIL_APP_PASSWORD.to_string(),
-    );
-
-    let mailer = SmtpTransport::relay(&config::SMTP_SERVER)
-        .unwrap()
-        .credentials(creds)
-        .build();
-
-    mailer.send(&email_body)?;
+    config::MAILER.send(&email_body)?;
 
     diesel::update(auth::dsl::auth)
-        .filter(auth::dsl::email.eq(email.clone()))
+        .filter(auth::dsl::email.eq(&email))
         .set((
-            auth::dsl::password_reset_link.eq(Some(password_reset_link.clone())),
+            auth::dsl::password_reset_link.eq(Some(&password_reset_link)),
             auth::dsl::password_reset_link_expiration
                 .eq(Some(Utc::now().naive_utc() + chrono::Duration::minutes(15))),
         ))
@@ -213,17 +203,17 @@ async fn verify_reset_link(password_reset_link: web::Path<String>) -> ApiResult<
 }
 
 #[derive(Deserialize)]
-pub struct UpdatePasswordPayload {
+struct UpdatePasswordPayload {
     pub password: String,
 }
-#[put("/password-reset/{password_reset_link}")]
+#[post("/password-reset/{password_reset_link}")]
 async fn update_password(
     password_reset_link: web::Path<String>,
     web::Json(UpdatePasswordPayload { password }): web::Json<UpdatePasswordPayload>,
 ) -> ApiResult<()> {
     let conn = &mut (*DB_CONNECTION).get().unwrap();
     let auth: Auth = auth::dsl::auth
-        .filter(auth::dsl::password_reset_link.eq(password_reset_link.clone()))
+        .filter(auth::dsl::password_reset_link.eq(&password_reset_link.clone()))
         .first(conn)?;
 
     if auth.password_reset_link_expiration < Some(Utc::now().naive_utc()) {
@@ -281,3 +271,62 @@ async fn verify_verification_link(email_verification_link: web::Path<String>) ->
 
     Ok(web::Json(()))
 }
+
+#[derive(Serialize, TS)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
+pub struct SignoutResponse {
+    pub message: String,
+    pub message_type: String,
+}
+#[get("/signout")]
+pub async fn signout(session: Session) -> ApiResult<SignoutResponse> {
+    session.remove("email");
+
+    Ok(actix_web::web::Json(SignoutResponse {
+        message: "You have been signed out.".to_string(),
+        message_type: "success".to_string(),
+    }))
+}
+
+pub fn get_user(session: &Session) -> Option<User> {
+    let email: String = session.get("email").ok()??;
+    let conn = &mut (*DB_CONNECTION).get().unwrap();
+    users::dsl::users
+        .filter(users::dsl::email.eq(email))
+        .first(conn)
+        .ok()
+}
+
+pub fn get_team(session: &Session) -> Option<TeamWithMembers> {
+    let user = get_user(session)?;
+    let conn = &mut (*DB_CONNECTION).get().unwrap();
+
+    // TODO: make transaction
+    let team: Team = teams::dsl::teams
+        .filter(teams::dsl::id.eq(user.team_id?))
+        .first(conn)
+        .ok()?;
+
+    let members: Vec<User> = users::dsl::users
+        .filter(users::dsl::team_id.eq(team.id))
+        .load(conn)
+        .ok()?;
+
+    let invites: Option<Vec<TeamInvite>> = Some(
+        team_invites::dsl::team_invites
+            .filter(team_invites::dsl::teamid.eq(team.id))
+            .load(conn)
+            .ok()?,
+    );
+
+    Some(TeamWithMembers {
+        id: team.id,
+        team_name: team.team_name,
+        owner: team.owner,
+        score: team.score,
+        active_bot: team.active_bot,
+        members,
+        invites,
+    })
+}
+

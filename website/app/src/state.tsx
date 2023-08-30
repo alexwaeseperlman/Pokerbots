@@ -18,6 +18,7 @@ import { TeamData } from "@bindings/TeamData";
 import { TeamsResponse } from "@bindings/TeamsResponse";
 
 export const apiUrl = window.location.origin + "/api";
+export const authUrl = window.location.origin + "/auth";
 
 const userAtom = atom<Promise<UserData | null>>(
   fetch(`${apiUrl}/my-account`)

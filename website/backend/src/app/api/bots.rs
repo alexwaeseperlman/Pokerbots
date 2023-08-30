@@ -16,7 +16,7 @@ pub async fn delete_bot(
     web::Query::<DeleteBot>(DeleteBot { id }): web::Query<DeleteBot>,
 ) -> ApiResult<()> {
     use shared::db::schema::bots;
-    let team = login::get_team_data(&session)
+    let team = auth::get_team(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
 
     let conn = &mut (*DB_CONNECTION).get()?;
@@ -38,9 +38,9 @@ pub async fn set_active_bot(
     web::Query::<ActiveBot>(ActiveBot { id }): web::Query<ActiveBot>,
 ) -> ApiResult<()> {
     use shared::db::schema::teams;
-    let user = login::get_user_data(&session)
+    let user = auth::get_user(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
-    let team = login::get_team_data(&session)
+    let team = auth::get_team(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
 
     let conn = &mut (*DB_CONNECTION).get()?;
@@ -81,9 +81,9 @@ pub async fn upload_bot(
     mut payload: web::Payload,
 ) -> ApiResult<UploadBotResponse> {
     use shared::db::schema::{bots, teams};
-    let user = login::get_user_data(&session)
+    let user = auth::get_user(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
-    let team = login::get_team_data(&session)
+    let team = auth::get_team(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
 
     let mut body = web::BytesMut::new();
@@ -177,7 +177,7 @@ pub async fn build_log(
     sqs_client: web::Data<aws_sdk_sqs::Client>,
     s3_client: web::Data<aws_sdk_s3::Client>,
 ) -> Result<HttpResponse, ApiError> {
-    let team = login::get_team_data(&session)
+    let team = auth::get_team(&session)
         .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
     let conn = &mut (*DB_CONNECTION).get()?;
     // If the bot is specified, make sure it belongs to the team

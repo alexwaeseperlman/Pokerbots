@@ -92,22 +92,33 @@ export default function Login() {
         providers:
         <LoginButton
           onClick={() => {
-            window.location.href = `/api/login-provider?provider=microsoft&state=${encodeURIComponent(
-              window.location.href
-            )}`;
+            window.location.href = 
+            `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?` +
+            `client_id=${encodeURIComponent(import.meta.env.APP_MICROSOFT_CLIENT_ID)}&` +
+            `redirect_uri=${encodeURIComponent(import.meta.env.APP_MICROSOFT_REDIRECT_URI)}&` +
+            `response_type=code&` +
+            `response_mode=query&` +
+            `scope=User.Read&` +
+            `prompt=select_account`;
           }}
         >
           <MicrosoftLogo />
           With Microsoft
         </LoginButton>
-        {/*<LoginButton
+        <LoginButton
           onClick={() => {
-            window.location.href = "/api/login-provider?provider=google";
+            window.location.href = 
+            `https://accounts.google.com/o/oauth2/auth?`+
+            `scope=${encodeURIComponent(`https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile`)}&` +
+            `client_id=${encodeURIComponent(import.meta.env.APP_GOOGLE_CLIENT_ID)}&` +
+            `redirect_uri=${encodeURIComponent(import.meta.env.APP_GOOGLE_REDIRECT_URI)}&` +
+            `response_type=code&` +
+            `prompt=select_account`;
           }}
         >
           <GoogleLogo />
           With Google
-        </LoginButton>*/}
+        </LoginButton>
       </Container>
     </Box>
   );

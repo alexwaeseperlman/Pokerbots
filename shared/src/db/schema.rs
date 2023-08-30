@@ -3,7 +3,7 @@
 diesel::table! {
     auth (email) {
         email -> Text,
-        mangled_password -> Text,
+        mangled_password -> Nullable<Text>,
         email_verification_link -> Nullable<Text>,
         email_verification_link_expiration -> Nullable<Timestamp>,
         password_reset_link -> Nullable<Text>,
@@ -75,6 +75,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     teams,
     users,
 );
+
 diesel::alias!(
     bots as defender_bots: DefenderBotsAlias,
     bots as challenger_bots: ChallengerBotsAlias,
