@@ -10,12 +10,11 @@ import {
 import { atomFamily, atomWithStorage } from "jotai/utils";
 import { useEffect } from "react";
 import { matchPath } from "react-router-dom";
-import { UserData } from "@bindings/UserData";
 import { Game } from "@bindings/Game";
 import { Bot } from "@bindings/Bot";
 import { TeamWithMembers } from "@bindings/TeamWithMembers";
-import { TeamData } from "@bindings/TeamData";
 import { TeamsResponse } from "@bindings/TeamsResponse";
+import { User } from "@bindings/User";
 
 export const apiUrl = window.location.origin + "/api";
 export const authUrl = window.location.origin + "/auth";
@@ -23,10 +22,10 @@ export const authUrl = window.location.origin + "/auth";
 // choose default value based on route
 const teamAtom = atomFamily<
   string | null,
-  PrimitiveAtom<Promise<TeamData | null>>
+  PrimitiveAtom<Promise<TeamWithMembers | null>>
 >((param) => atom(fetchTeam(param)));
 
-const userAtom = atom<Promise<UserData | null>>(
+const userAtom = atom<Promise<User | null>>(
   fetch(`${apiUrl}/my-account`)
     .then((res) => res.json())
     .catch(() => null)
@@ -68,9 +67,8 @@ function fetchTeam(team: string | null) {
             teams.TeamsWithMembers.length > 0
           ) {
             const invites = teams.TeamsWithMembers[0].invites;
-            const out: TeamData = {
+            const out: TeamWithMembers = {
               ...teams.TeamsWithMembers[0],
-              invites: invites ? invites.map((val) => val.code) : [],
             };
             return out;
           }
@@ -79,6 +77,6 @@ function fetchTeam(team: string | null) {
         .catch(() => null)
     : fetch(`${apiUrl}/my-team`)
         .then((res) => res.json())
-        .then((team) => team as TeamData)
+        .then((team) => team as TeamWithMembers)
         .catch(() => null);
 }

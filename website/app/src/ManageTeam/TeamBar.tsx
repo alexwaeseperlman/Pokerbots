@@ -372,25 +372,18 @@ export function TeamBar({
                 {!team.invites
                   ? []
                   : team.invites.map((invite) => (
-                      <tr key={invite}>
+                      <tr key={invite.code}>
                         <td>
                           <CopyableInput
-                            value={`${window.location.origin}/join-team?code=${invite}`}
+                            value={`${window.location.origin}/join-team?code=${invite.code}`}
                           />
-                          {/*<CopyIcon
-                                    style={{
-                                      cursor: "pointer",
-                                    }}
-                                    color="secondary"
-                                    fontSize="small"
-                                  />*/}
                         </td>
                         {!readonly && (
                           <td>
                             <TableButton
                               onClick={() => {
                                 fetch(
-                                  `${apiUrl}/cancel-invite?code=${invite}`
+                                  `${apiUrl}/cancel-invite?code=${invite.code}`
                                 ).then(() => fetchTeam());
                               }}
                             >
