@@ -15,6 +15,7 @@ import styled from "@mui/system/styled";
 import { ButtonProps, Sheet } from "@mui/joy";
 import { useParams, useSearchParams } from "react-router-dom";
 import { enqueueSnackbar } from "notistack";
+import { googleSigninUrl, microsoftSigninUrl } from "../state";
 function MicrosoftLogo(props: SvgIconProps) {
   return (
     <SvgIcon {...props}>
@@ -106,19 +107,7 @@ export default function Login() {
       <Stack direction="row" gap={2}>
         <LoginButton
           onClick={() => {
-            window.location.href =
-              `https://accounts.google.com/o/oauth2/auth?` +
-              `scope=${encodeURIComponent(
-                `https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile`
-              )}&` +
-              `client_id=${encodeURIComponent(
-                import.meta.env.APP_GOOGLE_CLIENT_ID
-              )}&` +
-              `redirect_uri=${encodeURIComponent(
-                import.meta.env.APP_GOOGLE_REDIRECT_URI
-              )}&` +
-              `response_type=code&` +
-              `prompt=select_account`;
+            window.location.href = googleSigninUrl;
           }}
           startDecorator={<GoogleLogo />}
         >
@@ -126,18 +115,7 @@ export default function Login() {
         </LoginButton>
         <LoginButton
           onClick={() => {
-            window.location.href =
-              `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?` +
-              `client_id=${encodeURIComponent(
-                import.meta.env.APP_MICROSOFT_CLIENT_ID
-              )}&` +
-              `redirect_uri=${encodeURIComponent(
-                import.meta.env.APP_MICROSOFT_REDIRECT_URI
-              )}&` +
-              `response_type=code&` +
-              `response_mode=query&` +
-              `scope=User.Read&` +
-              `prompt=select_account`;
+            window.location.href = microsoftSigninUrl;
           }}
           startDecorator={<MicrosoftLogo />}
         >

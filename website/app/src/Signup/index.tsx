@@ -15,6 +15,7 @@ import styled from "@mui/system/styled";
 import { ButtonProps, Sheet } from "@mui/joy";
 import { useParams, useSearchParams } from "react-router-dom";
 import { enqueueSnackbar } from "notistack";
+import { authUrl, googleSigninUrl, microsoftSigninUrl } from "../state";
 function MicrosoftLogo(props: SvgIconProps) {
   return (
     <SvgIcon {...props}>
@@ -73,6 +74,9 @@ const LoginButton = styled((props: ButtonProps) => (
 export default function Signup() {
   const [params, setParams] = useSearchParams();
   const redirect = params.get("redirect") ?? "/manage-team";
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [confirmPassword, setConfirmPassword] = React.useState("");
   return (
     <Container
       maxWidth="sm"
@@ -88,18 +92,43 @@ export default function Signup() {
       <Typography textColor="inherit" level="h1">
         Join UPAC
       </Typography>
-      <Input placeholder="Email" type="email" />
-      <Input placeholder="Password" type="password" />
-      <Input placeholder="Confirm your password" type="password" />
+      <Input
+        placeholder="Email"
+        type="email"
+        value={email}
+        onChange={(e) => {
+          setEmail(e.target.value);
+        }}
+      />
+      <Input
+        placeholder="Password"
+        type="password"
+        value={password}
+        onChange={(e) => {
+          setPassword(e.target.value);
+        }}
+      />
+      <Input
+        placeholder="Confirm your password"
+        type="password"
+        value={confirmPassword}
+        onChange={(e) => {
+          setConfirmPassword(e.target.value);
+        }}
+      />
       <Button
         variant="solid"
         onClick={() => {
-          enqueueSnackbar(
-            "This feature is not yet implemented. Log in with Microsoft",
-            {
-              variant: "error",
-            }
-          );
+          fetch(`${authUrl}/email/register`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email,
+              password,
+            }),
+          });
         }}
       >
         Sign up
@@ -107,15 +136,7 @@ export default function Signup() {
       <Stack direction="row" gap={2}>
         <LoginButton
           onClick={() => {
-            enqueueSnackbar(
-              "This feature is not yet implemented. Log in with Microsoft",
-              {
-                variant: "error",
-              }
-            );
-            /* window.location.href = `/api/login-provider?provider=google&state=${encodeURIComponent(
-              redirect
-            )}`;*/
+            window.location.href = googleSigninUrl;
           }}
           startDecorator={<GoogleLogo />}
         >
@@ -123,9 +144,7 @@ export default function Signup() {
         </LoginButton>
         <LoginButton
           onClick={() => {
-            window.location.href = `/api/login-provider?provider=microsoft&state=${encodeURIComponent(
-              redirect
-            )}`;
+            window.location.href = microsoftSigninUrl;
           }}
           startDecorator={<MicrosoftLogo />}
         >

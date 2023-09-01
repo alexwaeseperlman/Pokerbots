@@ -19,6 +19,29 @@ import { User } from "@bindings/User";
 export const apiUrl = window.location.origin + "/api";
 export const authUrl = window.location.origin + "/auth";
 
+export const googleSigninUrl =
+  `https://accounts.google.com/o/oauth2/auth?` +
+  `scope=${encodeURIComponent(
+    `https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile`
+  )}&` +
+  `client_id=${encodeURIComponent(import.meta.env.APP_GOOGLE_CLIENT_ID)}&` +
+  `redirect_uri=${encodeURIComponent(
+    import.meta.env.APP_GOOGLE_REDIRECT_URI
+  )}&` +
+  `response_type=code&` +
+  `prompt=select_account`;
+
+export const microsoftSigninUrl =
+  `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?` +
+  `client_id=${encodeURIComponent(import.meta.env.APP_MICROSOFT_CLIENT_ID)}&` +
+  `redirect_uri=${encodeURIComponent(
+    import.meta.env.APP_MICROSOFT_REDIRECT_URI
+  )}&` +
+  `response_type=code&` +
+  `response_mode=query&` +
+  `scope=User.Read&` +
+  `prompt=select_account`;
+
 // choose default value based on route
 const teamAtom = atomFamily<
   string | null,
