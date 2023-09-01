@@ -412,13 +412,8 @@ impl Game {
             };
 
             unsafe {
-                let status = kill(-(opponent_gid as i32), 19);
-                self.write_log(format!(
-                    "Sleeping process group {}, status: {}",
-                    opponent_gid, status
-                ))
-                .await?;
-            };
+                let _ = kill(-(opponent_gid as i32), 19);
+            }
             // write current game state to the bots stream
             log::debug!("Writing current state.");
             let status = format!(
@@ -430,7 +425,6 @@ impl Game {
                 state.player_states[1].stack,
             );
             self.write_bot(whose_turn, status).await.map_err(|_| {
-                unsafe { kill(-(opponent_gid as i32), 18) };
                 log::info!("Failed to write current state to bot {:?}.", whose_turn);
                 GameError::RunTimeError(whose_turn)
             })?;
@@ -453,12 +447,7 @@ impl Game {
                 .map_err(|_| shared::GameError::InvalidActionError(whose_turn.clone()))?;
 
             unsafe {
-                let status = kill(-(opponent_gid as i32), 18);
-                self.write_log(format!(
-                    "Waking up process group {}, status: {}",
-                    opponent_gid, status
-                ))
-                .await?;
+                let _ = kill(-(opponent_gid as i32), 18);
             };
         }
 
