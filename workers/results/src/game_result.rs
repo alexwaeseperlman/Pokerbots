@@ -39,26 +39,27 @@ pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
             },
         },
     };
-    // calculate the bots ratings
-    let score = (50.0 + defender_score as f32) / (100.0f32);
-    log::info!(
-        "Score: {}, defender score {}, challenger score {}",
-        score,
-        defender_score,
-        challenger_score
-    );
-    let game: Game = games::table
-        .find(&id)
-        .first::<Game>(db_conn)
-        .map_err(|_| ())?;
-    let (mut defender_rating_change, mut challenger_rating_change) = get_rating_change(
-        game.defender_rating,
-        score,
-        game.challenger_rating,
-        1.0 - score,
-    );
+    let (mut defender_rating_change, mut challenger_rating_change) = (0f32, 0f32);
     match result {
         Ok(GameStatus::ScoreChanged(_, _)) | Err(_) => {
+            // calculate the bots ratings
+            let score = (50.0 + defender_score as f32) / (100.0f32);
+            log::info!(
+                "Score: {}, defender score {}, challenger score {}",
+                score,
+                defender_score,
+                challenger_score
+            );
+            let game: Game = games::table
+                .find(&id)
+                .first::<Game>(db_conn)
+                .map_err(|_| ())?;
+            (defender_rating_change, challenger_rating_change) = get_rating_change(
+                game.defender_rating,
+                score,
+                game.challenger_rating,
+                1.0 - score,
+            );
             // Update rating
             let defender: Bot = diesel::update(bots::table.find(game.defender))
                 .set(bots::dsl::rating.eq(bots::dsl::rating + defender_rating_change))
@@ -88,8 +89,6 @@ pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
                 .map_err(|_| ())?;
         }
         Ok(GameStatus::TestGameSucceeded) => {
-            defender_rating_change = 0.0;
-            challenger_rating_change = 0.0;
             // set the active bot for the team if they don't have one
             let (bot, team): (Bot, Team) =
                 shared::db::schema::bots::dsl::bots
@@ -114,8 +113,6 @@ pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
                 .map_err(|_| ())?;
         }
         Ok(GameStatus::TestGameFailed) => {
-            defender_rating_change = 0.0;
-            challenger_rating_change = 0.0;
             diesel::update(bots::dsl::bots)
                 .filter(bots::dsl::id.eq(id.parse::<i32>().map_err(|_| ())?))
                 .set(bots::dsl::build_status.eq(shared::BuildStatus::TestGameFailed as i32))
