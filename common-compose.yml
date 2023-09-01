@@ -42,7 +42,6 @@ services:
 
       - RUST_LOG=info
 
-      - APP_PFP_ENDPOINT=https://${DOMAIN_NAME}:9000/${PFP_S3_BUCKET}/
       - S3_ADDRESS=http://s3:9000
       - SQS_ADDRESS=http://sqs:9324
       - PORT=3000

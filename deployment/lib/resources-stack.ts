@@ -317,7 +317,6 @@ export class ScalingAPIConstruct extends Construct {
             BUILD_LOGS_S3_BUCKET: build_logs_s3.bucketName,
             GAME_LOGS_S3_BUCKET: game_logs_s3.bucketName,
             BOT_SIZE: "5000000",
-            APP_PFP_ENDPOINT: this.pfp_s3.urlForObject() + "/",
             BOT_UPLOADS_QUEUE_URL: bot_uploads_sqs.queueUrl,
             NEW_GAMES_QUEUE_URL: new_games_sqs.queueUrl,
             RUST_LOG: "info",

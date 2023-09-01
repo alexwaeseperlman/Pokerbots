@@ -1,10 +1,5 @@
-use shared::db::models::{BotWithTeam, Team, TeamWithMembers};
-
-use crate::{
-    config::APP_PFP_ENDPOINT,
-};
-
 use super::*;
+use shared::db::models::{BotWithTeam, Team, TeamWithMembers};
 
 #[get("/my-account")]
 pub async fn my_account(session: Session) -> ApiResult<Option<User>> {

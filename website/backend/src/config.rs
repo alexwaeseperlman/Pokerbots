@@ -32,8 +32,6 @@ lazy_static! {
         std::env::var("BUILD_LOGS_S3_BUCKET").expect("BUILD_LOGS_S3_BUCKET must be set in .env");
     pub static ref GAME_LOGS_S3_BUCKET: String =
         std::env::var("GAME_LOGS_S3_BUCKET").expect("GAME_LOGS_S3_BUCKET must be set in .env");
-    pub static ref APP_PFP_ENDPOINT: String =
-        std::env::var("APP_PFP_ENDPOINT").expect("APP_PFP_ENDPOINT must be set in .env");
     pub static ref BOT_SIZE: u64 = std::env::var("BOT_SIZE")
         .expect("BOT_SIZE must be set in .env")
         .parse()
