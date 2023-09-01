@@ -22,7 +22,7 @@ import { Team } from "@bindings/Team";
 import { enqueueSnackbar } from "notistack";
 import { WhichBot } from "@bindings/WhichBot";
 import DataTable, { DataTableProps } from "../DataTable";
-import { MoreVert } from "@mui/icons-material";
+import { ArrowRight, MoreVert } from "@mui/icons-material";
 import { GameWithBotsWithResult } from "@bindings/GameWithBotsWithResult";
 
 export const TableButton = styled((props: ButtonProps) => (
@@ -43,6 +43,24 @@ export const TableButton = styled((props: ButtonProps) => (
   />
 ))(() => ({}));
 
+const RatingChange = ({ before, after }: { before: number; after: number }) => {
+  const change = after - before;
+  const color = change > 0 ? "success" : change < 0 ? "danger" : "neutral";
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "row",
+        alignItems: "center",
+      }}
+    >
+      <Chip color={color} size="sm" key="chip">
+        {before.toFixed(0)} <ArrowRight /> {after.toFixed(0)}
+      </Chip>
+    </Box>
+  );
+};
+
 type Game = GameWithBotsWithResult<BotWithTeam<Team>>;
 const renderTeam = ({
   botName,
@@ -50,7 +68,7 @@ const renderTeam = ({
   teamId,
   teamName,
 }: {
-  scoreChange: number | null;
+  score: number | null;
   botName: string;
   whichBot: WhichBot;
   teamId: number;
@@ -189,6 +207,25 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
   const columns: DataTableProps<Game>["columns"] = React.useMemo(
     () => [
       {
+        name: "",
+        key: "challenger rating change",
+        width: "75px",
+        getProps: (game) => ({
+          before: game.challenger_rating,
+          after:
+            game.challenger_rating +
+            (game.result?.challenger_rating_change ?? 0),
+          running: !game.result,
+        }),
+        render: ({ before, after, running }: any) => {
+          return running ? (
+            <></>
+          ) : (
+            <RatingChange before={before} after={after} />
+          );
+        },
+      },
+      {
         name: "Challenger",
         key: "challenger",
         textAlign: "right",
@@ -234,6 +271,24 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
           teamName: game.defender.team.name,
         }),
         render: renderTeam,
+      },
+      {
+        name: "",
+        key: "defender rating change",
+        width: "75px",
+        getProps: (game) => ({
+          before: game.defender_rating,
+          after:
+            game.defender_rating + (game.result?.defender_rating_change ?? 0),
+          running: !game.result,
+        }),
+        render: ({ before, after, running }: any) => {
+          return running ? (
+            <></>
+          ) : (
+            <RatingChange before={before} after={after} />
+          );
+        },
       },
       {
         name: "",

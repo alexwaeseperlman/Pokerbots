@@ -14,13 +14,16 @@ pub fn get_rating_change(
     let challenger_change = K_FACTOR * (challenger_score - challenger_expected);
 
     log::info!(
-        "defender_rating: {}, defender_score: {}, challenger_rating: {}, challenger_score: {}, defender_change: {}, challenger_change: {}",
+        "defender_rating: {}, defender_score: {}, challenger_rating: {}, challenger_score: {}, defender_change: {}, challenger_change: {}, defender expected: {}, challenger expected: {}",
         defender_rating,
         defender_score,
         challenger_rating,
         challenger_score,
         defender_change,
-        challenger_change
+        challenger_change,
+        defender_expected,
+        challenger_expected
     );
+
     (defender_change, challenger_change)
 }

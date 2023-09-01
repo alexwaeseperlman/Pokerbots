@@ -40,7 +40,7 @@ pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
         },
     };
     // calculate the bots ratings
-    let score = (defender_score as f32) / (100.0f32);
+    let score = (50.0 + defender_score as f32) / (100.0f32);
     log::info!(
         "Score: {}, defender score {}, challenger score {}",
         score,
