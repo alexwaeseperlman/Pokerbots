@@ -68,6 +68,7 @@ pub async fn microsoft_login(
     // to use userPrincipalName when email doesn't exist (this is mainly
     // used to verify that a user is from an allowed organization)
 
+    log::info!("{:?}", me);
     if me.userPrincipalName.is_none() {
         return Err(ApiError {
             status_code: StatusCode::UNAUTHORIZED,

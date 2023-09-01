@@ -16,6 +16,10 @@ import RecentGames from "./RecentGames";
 import Profile from "./Profile";
 import Login from "./Login";
 import Signup from "./Signup";
+import VerifyEmail from "./VerifyEmail";
+import ForgotPassword from "./ForgotPassword";
+import UpdatePassword from "./UpdatePassword";
+import OAuth from "./OAuth";
 
 function HeaderFooter(props: React.PropsWithChildren<{}>) {
   return (
@@ -165,6 +169,42 @@ export default function UPAC() {
           element={
             <HeaderFooter>
               <Signup />
+            </HeaderFooter>
+          }
+        />
+
+        <Route
+          path="verify-email/:token"
+          element={
+            <HeaderFooter>
+              <VerifyEmail />
+            </HeaderFooter>
+          }
+        />
+
+        <Route
+          path="forgot-password"
+          element={
+            <HeaderFooter>
+              <ForgotPassword />
+            </HeaderFooter>
+          }
+        />
+
+        <Route
+          path="update-password/:token"
+          element={
+            <HeaderFooter>
+              <UpdatePassword />
+            </HeaderFooter>
+          }
+        />
+
+        <Route
+          path="/:provider/login"
+          element={
+            <HeaderFooter>
+              <OAuth />
             </HeaderFooter>
           }
         />

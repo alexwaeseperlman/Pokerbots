@@ -26,7 +26,7 @@ export const googleSigninUrl =
   )}&` +
   `client_id=${encodeURIComponent(import.meta.env.APP_GOOGLE_CLIENT_ID)}&` +
   `redirect_uri=${encodeURIComponent(
-    import.meta.env.APP_GOOGLE_REDIRECT_URI
+    `${window.location.origin}/google/login`
   )}&` +
   `response_type=code&` +
   `prompt=select_account`;
@@ -35,7 +35,7 @@ export const microsoftSigninUrl =
   `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?` +
   `client_id=${encodeURIComponent(import.meta.env.APP_MICROSOFT_CLIENT_ID)}&` +
   `redirect_uri=${encodeURIComponent(
-    import.meta.env.APP_MICROSOFT_REDIRECT_URI
+    `${window.location.origin}/microsoft/login`
   )}&` +
   `response_type=code&` +
   `response_mode=query&` +

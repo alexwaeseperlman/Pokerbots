@@ -1,5 +1,5 @@
 import Container from "@mui/joy/Container";
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Button,
   SvgIcon,
@@ -13,9 +13,14 @@ import {
 } from "@mui/joy";
 import styled from "@mui/system/styled";
 import { ButtonProps, Sheet } from "@mui/joy";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { enqueueSnackbar } from "notistack";
-import { googleSigninUrl, microsoftSigninUrl } from "../state";
+import {
+  authUrl,
+  googleSigninUrl,
+  microsoftSigninUrl,
+  useUser,
+} from "../state";
 function MicrosoftLogo(props: SvgIconProps) {
   return (
     <SvgIcon {...props}>
@@ -74,6 +79,15 @@ const LoginButton = styled((props: ButtonProps) => (
 export default function Login() {
   const [params, setParams] = useSearchParams();
   const redirect = params.get("redirect") ?? "/manage-team";
+  const navigate = useNavigate();
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [user, fetchUser] = useUser();
+  useEffect(() => {
+    if (user) {
+      navigate(redirect);
+    }
+  }, [user]);
   return (
     <Container
       maxWidth="sm"
@@ -89,21 +103,56 @@ export default function Login() {
       <Typography textColor="inherit" level="h1">
         Log in to your account
       </Typography>
-      <Input placeholder="Email" type="email" />
-      <Input placeholder="Password" type="password" />
+      <Input
+        placeholder="Email"
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      <Input
+        placeholder="Password"
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
       <Button
         variant="solid"
         onClick={() => {
-          enqueueSnackbar(
-            "This feature is not yet implemented. Sign in with Microsoft",
-            {
-              variant: "error",
+          fetch(`${authUrl}/email/login`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email,
+              password,
+            }),
+          }).then(async (res) => {
+            if (res.status == 200) {
+              enqueueSnackbar("Logged in!", {
+                variant: "success",
+              });
+              fetchUser();
+            } else {
+              enqueueSnackbar(`Failed to log in: ${(await res.json()).error}`, {
+                variant: "error",
+              });
             }
-          );
+          });
         }}
       >
         Log in
       </Button>
+      <Stack direction="row" gap={2}>
+        <LoginButton
+          variant="soft"
+          onClick={() => {
+            navigate("/forgot-password");
+          }}
+        >
+          Forgot your password?
+        </LoginButton>
+      </Stack>
       <Stack direction="row" gap={2}>
         <LoginButton
           onClick={() => {

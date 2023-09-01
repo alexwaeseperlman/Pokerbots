@@ -70,8 +70,7 @@ pub fn auth_service() -> actix_web::Scope {
         .service(auth::register)
         .service(auth::login)
         .service(auth::signout)
-        .service(auth::create_link)
-        .service(auth::verify_reset_link)
+        .service(auth::reset_password)
         .service(auth::update_password)
         .service(auth::verify_verification_link)
 }

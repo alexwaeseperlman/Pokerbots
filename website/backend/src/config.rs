@@ -80,123 +80,24 @@ pub fn email_app_password() -> String {
     std::env::var("EMAIL_APP_PASSWORD").expect("EMAIL_APP_PASSWORD must be set in .env")
 }
 
-pub fn email_verification_link_uri() -> String {
-    std::env::var("EMAIL_VERIFICATION_LINK_URI")
-        .expect("EMAIL_VERIFICATION_LINK_URI must be set in .env")
-}
-
-pub fn password_reset_link_uri() -> String {
-    std::env::var("PASSWORD_RESET_LINK_URI").expect("PASSWORD_RESET_LINK_URI must be set in .env")
-}
-
 pub fn smtp_server() -> String {
     std::env::var("SMTP_SERVER").expect("SMTP_SERVER must be set in .env")
 }
 
+pub const EMAIL_VERIFICATION_BODY: &str = std::include_str!("emails/email_verify.html");
+pub const EMAIL_PASSWORD_RESET_BODY: &str = std::include_str!("emails/password_reset.html");
+
 lazy_static! {
-    pub static ref EMAIL_EMAIL_VERIFICATION_BODY: String = r#"
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-
-<head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Please activate your account</title>
-  <!--[if mso]><style type="text/css">body, table, td, a { font-family: Arial, Helvetica, sans-serif !important; }</style><![endif]-->
-</head>
-
-<body style="font-family: Helvetica, Arial, sans-serif; margin: 0px; padding: 0px; background-color: #ffffff;">
-  <table role="presentation"
-    style="width: 100%; border-collapse: collapse; border: 0px; border-spacing: 0px; font-family: Arial, Helvetica, sans-serif; background-color: rgb(239, 239, 239);">
-    <tbody>
-      <tr>
-        <td align="center" style="padding: 1rem 2rem; vertical-align: top; width: 100%;">
-          <table role="presentation" style="max-width: 600px; border-collapse: collapse; border: 0px; border-spacing: 0px; text-align: left;">
-            <tbody>
-              <tr>
-                <td style="padding: 40px 0px 0px;">
-                  <div style="padding: 20px; background-color: rgb(255, 255, 255);">
-                    <div style="color: rgb(0, 0, 0); text-align: left;">
-                      <h1 style="margin: 1rem 0">Email verification</h1>
-                      <p style="padding-bottom: 16px">Follow this link to verify your email address.</p>
-                      <p style="padding-bottom: 16px"><a href="{}" target="_blank"
-                          style="padding: 12px 24px; border-radius: 4px; color: #FFF; background: #2B52F5;display: inline-block;margin: 0.5rem 0;">Verify
-                          now</a></p>
-                      <p style="padding-bottom: 16px">If you didn't expect this email, reach out to contact@upac.dev</p>
-                      <p style="padding-bottom: 16px">Thanks,<br>The UPAC team</p>
-                    </div>
-                  </div>
-                  <div style="padding-top: 20px; color: rgb(153, 153, 153); text-align: center;">
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</body>
-
-</html>
-"#.to_string();
-
-    pub static ref EMAIL_PASSWORD_RESET_BODY: String = r#"
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-
-<head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Please activate your account</title>
-  <!--[if mso]><style type="text/css">body, table, td, a { font-family: Arial, Helvetica, sans-serif !important; }</style><![endif]-->
-</head>
-
-<body style="font-family: Helvetica, Arial, sans-serif; margin: 0px; padding: 0px; background-color: #ffffff;">
-  <table role="presentation"
-    style="width: 100%; border-collapse: collapse; border: 0px; border-spacing: 0px; font-family: Arial, Helvetica, sans-serif; background-color: rgb(239, 239, 239);">
-    <tbody>
-      <tr>
-        <td align="center" style="padding: 1rem 2rem; vertical-align: top; width: 100%;">
-          <table role="presentation" style="max-width: 600px; border-collapse: collapse; border: 0px; border-spacing: 0px; text-align: left;">
-            <tbody>
-              <tr>
-                <td style="padding: 40px 0px 0px;">
-                  <div style="padding: 20px; background-color: rgb(255, 255, 255);">
-                    <div style="color: rgb(0, 0, 0); text-align: left;">
-                      <h1 style="margin: 1rem 0">Email verification</h1>
-                      <p style="padding-bottom: 16px">Follow this link to reset your password.</p>
-                      <p style="padding-bottom: 16px"><a href="{}" target="_blank"
-                          style="padding: 12px 24px; border-radius: 4px; color: #FFF; background: #2B52F5;display: inline-block;margin: 0.5rem 0;">Reset Password</a></p>
-                      <p style="padding-bottom: 16px">If you didn't expect this email, reach out to contact@upac.dev</p>
-                      <p style="padding-bottom: 16px">Thanks,<br>The UPAC team</p>
-                    </div>
-                  </div>
-                  <div style="padding-top: 20px; color: rgb(153, 153, 153); text-align: center;">
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</body>
-
-</html>
-    "#.to_string();
-
-     pub static ref MAILER: SmtpTransport = SmtpTransport::relay(&smtp_server()).unwrap()
+    pub static ref MAILER: SmtpTransport = SmtpTransport::relay(&smtp_server())
+        .unwrap()
         .credentials(Credentials::new(
             underlying_email().to_string(),
             email_app_password().to_string(),
         ))
         .tls(Tls::Wrapper(
-                TlsParameters::new(smtp_server().to_string()).unwrap()
+            TlsParameters::new(smtp_server().to_string()).unwrap()
         ))
         .pool_config(PoolConfig::new())
         .build();
-
     pub static ref CLIENT: Client = reqwest::Client::new();
 }

@@ -77,6 +77,7 @@ export default function Signup() {
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [confirmPassword, setConfirmPassword] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
   return (
     <Container
       maxWidth="sm"
@@ -118,7 +119,9 @@ export default function Signup() {
       />
       <Button
         variant="solid"
+        {...(loading ? { loading: true } : {})}
         onClick={() => {
+          setLoading(true);
           fetch(`${authUrl}/email/register`, {
             method: "POST",
             headers: {
@@ -127,8 +130,26 @@ export default function Signup() {
             body: JSON.stringify({
               email,
               password,
+              redirect_uri: `${window.location.origin}/verify-email`,
             }),
-          });
+          })
+            .then(async (res) => {
+              if (res.status === 200) {
+                enqueueSnackbar(
+                  "Signed up. Check your email for a confirmation.",
+                  {
+                    variant: "success",
+                  }
+                );
+              } else {
+                enqueueSnackbar(`Failed to sign up: ${await res.json()}`, {
+                  variant: "error",
+                });
+              }
+            })
+            .finally(() => {
+              setLoading(false);
+            });
         }}
       >
         Sign up

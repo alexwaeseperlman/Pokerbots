@@ -35,14 +35,29 @@ fn verify(password: &str, mangled: &str) -> argon2::password_hash::Result<()> {
     Argon2::default().verify_password(password.as_bytes(), &PasswordHash::new(mangled)?)
 }
 
+fn validate_password(password: &str) -> Result<(), ApiError> {
+    if password.len() < 6 {
+        return Err(ApiError {
+            status_code: StatusCode::BAD_REQUEST,
+            message: "Password must be at least 6 characters".to_string(),
+        });
+    }
+    Ok(())
+}
+
 #[derive(Deserialize)]
 struct RegisterPayload {
     pub email: String,
     pub password: String,
+    pub callback: String,
 }
 #[post("/email/register")]
 async fn register(
-    web::Json(RegisterPayload { email, password }): web::Json<RegisterPayload>,
+    web::Json(RegisterPayload {
+        email,
+        password,
+        callback,
+    }): web::Json<RegisterPayload>,
 ) -> ApiResult<()> {
     let conn = &mut (*DB_CONNECTION).get().unwrap();
 
@@ -53,10 +68,12 @@ async fn register(
         if auth.email_confirmed {
             return Err(ApiError {
                 status_code: StatusCode::BAD_REQUEST,
-                message: "Email already confirmed".to_string(),
+                message: "There is already an account with this email.".to_string(),
             });
         }
     };
+
+    validate_password(&password)?;
 
     let email_verification_link = random(ALPHANUMERIC, 32);
 
@@ -66,9 +83,9 @@ async fn register(
         .to(email.parse().unwrap())
         .subject("UPAC Email Verification")
         .header(ContentType::TEXT_HTML)
-        .body(config::EMAIL_EMAIL_VERIFICATION_BODY.replace(
+        .body(config::EMAIL_VERIFICATION_BODY.replace(
             "{}",
-            &config::email_verification_link_uri().replace("{}", &email_verification_link),
+            format!("{}/{}", callback, email_verification_link).as_str(),
         ))
         .unwrap();
     config::MAILER.send(&email_body)?;
@@ -142,9 +159,12 @@ async fn login(
 #[derive(Deserialize)]
 struct LinkPayload {
     pub email: String,
+    pub callback: String,
 }
-#[post("/password-reset/link")]
-async fn create_link(web::Json(LinkPayload { email }): web::Json<LinkPayload>) -> ApiResult<()> {
+#[post("/email/reset-password")]
+async fn reset_password(
+    web::Json(LinkPayload { email, callback }): web::Json<LinkPayload>,
+) -> ApiResult<()> {
     let conn = &mut (*DB_CONNECTION).get().unwrap();
     let auth: Auth = auth::dsl::auth
         .filter(auth::dsl::email.eq(email.clone()))
@@ -168,7 +188,7 @@ async fn create_link(web::Json(LinkPayload { email }): web::Json<LinkPayload>) -
         .header(ContentType::TEXT_HTML)
         .body(config::EMAIL_PASSWORD_RESET_BODY.replace(
             "{}",
-            &config::password_reset_link_uri().replace("{}", &password_reset_link),
+            format!("{}/{}", callback, password_reset_link).as_str(),
         ))
         .unwrap();
 
@@ -186,27 +206,11 @@ async fn create_link(web::Json(LinkPayload { email }): web::Json<LinkPayload>) -
     Ok(web::Json(()))
 }
 
-#[get("/password-reset/verify/{password_reset_link}")]
-async fn verify_reset_link(password_reset_link: web::Path<String>) -> ApiResult<()> {
-    let conn = &mut (*DB_CONNECTION).get().unwrap();
-    let auth: Auth = auth::dsl::auth
-        .filter(auth::dsl::password_reset_link.eq(password_reset_link.as_str()))
-        .first(conn)?;
-
-    if auth.password_reset_link_expiration < Some(Utc::now().naive_utc()) {
-        return Err(ApiError {
-            status_code: StatusCode::UNAUTHORIZED,
-            message: "Link expired".to_string(),
-        });
-    }
-    Ok(web::Json(()))
-}
-
 #[derive(Deserialize)]
 struct UpdatePasswordPayload {
     pub password: String,
 }
-#[post("/password-reset/{password_reset_link}")]
+#[post("/email/reset-password/{password_reset_link}")]
 async fn update_password(
     password_reset_link: web::Path<String>,
     web::Json(UpdatePasswordPayload { password }): web::Json<UpdatePasswordPayload>,

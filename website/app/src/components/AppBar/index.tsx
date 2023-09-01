@@ -155,7 +155,7 @@ export function TopBar() {
             tabIndex={7}
             label="SIGN OUT"
             command={() => {
-              fetch(`${apiUrl}/signout`).then(() => {
+              fetch(`${authUrl}/signout`).then(() => {
                 fetchUser();
               });
             }}
