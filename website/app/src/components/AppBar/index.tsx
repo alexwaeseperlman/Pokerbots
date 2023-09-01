@@ -1,10 +1,9 @@
 import React, { PropsWithChildren } from "react";
 import { menu_bar, nav_group, bar_item } from "./styles.module.css";
-import { apiUrl, useUser } from "../../state";
+import { apiUrl, authUrl, useUser } from "../../state";
 import Box from "@mui/joy/Box";
 import Logo from "../Logo";
 import IconButton from "@mui/joy/IconButton";
-
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Typography from "@mui/joy/Typography";
 import Sheet from "@mui/joy/Sheet";

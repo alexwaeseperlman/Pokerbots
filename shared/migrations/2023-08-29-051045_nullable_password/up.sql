@@ -1,0 +1,1 @@
+ALTER TABLE auth ALTER COLUMN mangled_password DROP NOT NULL;

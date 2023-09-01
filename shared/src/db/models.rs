@@ -4,18 +4,19 @@ use diesel::{
     prelude::{Associations, Insertable},
     serialize::ToSql,
     sql_types::Integer,
-    Queryable, Selectable,
+    AsChangeset, Queryable, Selectable,
 };
 
+use chrono;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
-    db::schema::{bots, game_results, games, team_invites, teams, users},
+    db::schema::{auth, bots, game_results, games, team_invites, teams, users},
     BuildStatus, WhichBot,
 };
 
-#[derive(Serialize, Deserialize, diesel::Queryable, Debug, TS, Selectable)]
+#[derive(Serialize, Deserialize, Queryable, Debug, TS, Selectable)]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
 #[diesel(table_name = teams)]
 pub struct Team {
@@ -27,7 +28,7 @@ pub struct Team {
     pub deleted_at: Option<i64>,
 }
 
-#[derive(Serialize, Deserialize, Debug, TS)]
+#[derive(Serialize, Deserialize, Debug, TS, Clone)]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
 pub struct TeamWithMembers {
     pub id: i32,
@@ -40,30 +41,29 @@ pub struct TeamWithMembers {
     pub deleted_at: Option<i64>,
 }
 
-#[derive(diesel::Insertable, Debug)]
+#[derive(Insertable, Debug)]
 #[diesel(table_name = teams)]
 pub struct NewTeam {
     pub name: String,
     pub owner: String,
 }
 
-#[derive(Serialize, Deserialize, diesel::Queryable, Debug, Clone, TS)]
+#[derive(Serialize, Deserialize, Queryable, Debug, Clone, Selectable, TS)]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
 pub struct User {
     pub email: String,
     pub display_name: String,
     pub team: Option<i32>,
-    pub is_admin: bool,
 }
 
-#[derive(diesel::Insertable, Debug)]
+#[derive(Insertable, Debug)]
 #[diesel(table_name = users)]
 pub struct NewUser {
     pub email: String,
     pub display_name: String,
 }
 
-#[derive(diesel::Insertable, Debug)]
+#[derive(Insertable, Debug)]
 #[diesel(table_name = team_invites)]
 pub struct NewInvite {
     pub expires: i64,
@@ -71,7 +71,7 @@ pub struct NewInvite {
     pub team: i32,
 }
 
-#[derive(Serialize, Deserialize, diesel::Queryable, Debug, Clone, TS)]
+#[derive(Serialize, Deserialize, Queryable, Debug, Clone, TS)]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
 pub struct TeamInvite {
     pub code: String,
@@ -80,7 +80,7 @@ pub struct TeamInvite {
     pub expires: i64,
 }
 
-#[derive(diesel::Insertable, Debug)]
+#[derive(Insertable, Debug)]
 #[diesel(table_name = games)]
 pub struct NewGame {
     pub id: String,
@@ -171,7 +171,7 @@ pub struct Bot {
     pub rating: f32,
 }
 
-#[derive(Serialize, Deserialize, Debug, diesel::Queryable, TS)]
+#[derive(Serialize, Deserialize, Debug, Queryable, TS)]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
 pub struct BotWithTeam<T> {
     pub id: i32,
@@ -218,6 +218,20 @@ pub struct NewBot {
     pub uploaded_by: String,
     pub build_status: BuildStatus,
 }
+
+#[derive(Serialize, Deserialize, Debug, Queryable, Selectable, Insertable, AsChangeset)]
+#[diesel(table_name = auth)]
+pub struct Auth {
+    pub email: String,
+    pub mangled_password: Option<String>,
+    pub email_verification_link: Option<String>,
+    pub email_verification_link_expiration: Option<chrono::NaiveDateTime>,
+    pub password_reset_link: Option<String>,
+    pub password_reset_link_expiration: Option<chrono::NaiveDateTime>,
+    pub email_confirmed: bool,
+    pub is_admin: bool,
+}
+
 impl ToSql<Integer, pg::Pg> for BuildStatus {
     fn to_sql<'b>(
         &'b self,

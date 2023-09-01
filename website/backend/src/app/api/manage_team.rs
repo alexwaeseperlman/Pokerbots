@@ -25,10 +25,10 @@ pub async fn create_team(
     session: Session,
     web::Query::<CreateTeamQuery>(CreateTeamQuery { name }): web::Query<CreateTeamQuery>,
 ) -> ApiResult<()> {
-    let user = login::get_user_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+    let user =
+        auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
     // You can't create a team if you're already in one
-    if login::get_team_data(&session).is_some() {
+    if auth::get_team(&session).is_some() {
         return Err(actix_web::error::ErrorConflict("You are already on a team.").into());
     }
 
@@ -63,10 +63,10 @@ pub struct JoinTeamQuery {
 
 #[get("/delete-team")]
 pub async fn delete_team(session: Session) -> ApiResult<()> {
-    let user = login::get_user_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
-    let team = login::get_team_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
+    let user =
+        auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+    let team =
+        auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
     // You can't delete a team if you're not in one
     if team.clone().owner != user.email {
         return Err(actix_web::error::ErrorNotFound(
@@ -95,10 +95,10 @@ pub async fn delete_team(session: Session) -> ApiResult<()> {
 
 #[get("/leave-team")]
 pub async fn leave_team(session: Session) -> ApiResult<()> {
-    let user = login::get_user_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
-    let team = login::get_team_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
+    let user =
+        auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+    let team =
+        auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
     // You can't delete a team if you're not in one or you're the owner
     if user.clone().email == team.owner {
         return Err(actix_web::error::ErrorNotAcceptable(
@@ -118,15 +118,16 @@ pub async fn leave_team(session: Session) -> ApiResult<()> {
 }
 #[get("/create-invite")]
 pub async fn create_invite(session: Session) -> ApiResult<()> {
-    let user = login::get_user_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
-    let team = login::get_team_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
+    let user =
+        auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+    let team =
+        auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
     // You can't join a team if you are already on one or if you aren't logged in
     // Also only the owner can create a team
 
     // if the number of invites plus the number of users is at the limit, then don't create an invite
-    if team.invites.len() + team.members.len() >= crate::config::TEAM_SIZE as usize {
+    if team.invites.clone().unwrap().len() + team.members.len() >= crate::config::TEAM_SIZE as usize
+    {
         return Err(actix_web::error::ErrorNotAcceptable("Team is full.").into());
     }
 
@@ -159,10 +160,10 @@ pub async fn cancel_invite(
     session: Session,
     web::Query(CancelTeamQuery { code }): web::Query<CancelTeamQuery>,
 ) -> ApiResult<()> {
-    let user = login::get_user_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
-    let team = login::get_team_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
+    let user =
+        auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+    let team =
+        auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
 
     // Insert an invite with expiry date 24 hours from now
     let conn = &mut (*DB_CONNECTION).get()?;
@@ -180,9 +181,9 @@ pub async fn join_team(
     web::Query::<JoinTeamQuery>(JoinTeamQuery { code }): web::Query<JoinTeamQuery>,
     req: actix_web::HttpRequest,
 ) -> ApiResult<()> {
-    let user = login::get_user_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
-    let team = login::get_team_data(&session);
+    let user =
+        auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+    let team = auth::get_team(&session);
     // You can't join a team if you are already on one or if you aren't logged in
 
     if team.is_some() {
@@ -225,10 +226,10 @@ pub async fn upload_pfp(
     session: Session,
     mut payload: web::Payload,
 ) -> ApiResult<()> {
-    let user = login::get_user_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
-    let team = login::get_team_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
+    let user =
+        auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+    let team =
+        auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
 
     let mut body = web::BytesMut::new();
     while let Some(chunk) = payload.next().await {
@@ -264,10 +265,10 @@ pub async fn kick_member(
     session: Session,
     web::Query::<KickMemberQuery>(KickMemberQuery { email }): web::Query<KickMemberQuery>,
 ) -> ApiResult<()> {
-    let user = login::get_user_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
-    let team = login::get_team_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
+    let user =
+        auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+    let team =
+        auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
     if team.clone().owner != user.clone().email {
         return Err(
             actix_web::error::ErrorUnauthorized("Only the team owner can kick members.").into(),
@@ -294,10 +295,10 @@ pub async fn update_owner(
     session: Session,
     web::Query::<MakeOwnerQuery>(MakeOwnerQuery { email }): web::Query<MakeOwnerQuery>,
 ) -> ApiResult<()> {
-    let user = login::get_user_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
-    let team = login::get_team_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
+    let user =
+        auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+    let team =
+        auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
     if team.clone().owner != user.clone().email {
         return Err(
             actix_web::error::ErrorUnauthorized("Only the team owner can kick members.").into(),
@@ -329,10 +330,10 @@ pub async fn rename_team(
     session: Session,
     web::Query::<RenameTeamQuery>(RenameTeamQuery { to }): web::Query<RenameTeamQuery>,
 ) -> ApiResult<()> {
-    let user = login::get_user_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
-    let team = login::get_team_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
+    let user =
+        auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+    let team =
+        auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
 
     if !validate_name(&to) {
         return Err(actix_web::error::ErrorNotAcceptable(

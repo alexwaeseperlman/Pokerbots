@@ -106,15 +106,19 @@ export default function Login() {
       <Stack direction="row" gap={2}>
         <LoginButton
           onClick={() => {
-            enqueueSnackbar(
-              "This feature is not yet implemented. Sign in with Microsoft",
-              {
-                variant: "error",
-              }
-            );
-            /*window.location.href = `/api/login-provider?provider=google&state=${encodeURIComponent(
-              redirect
-            )}`;*/
+            window.location.href =
+              `https://accounts.google.com/o/oauth2/auth?` +
+              `scope=${encodeURIComponent(
+                `https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile`
+              )}&` +
+              `client_id=${encodeURIComponent(
+                import.meta.env.APP_GOOGLE_CLIENT_ID
+              )}&` +
+              `redirect_uri=${encodeURIComponent(
+                import.meta.env.APP_GOOGLE_REDIRECT_URI
+              )}&` +
+              `response_type=code&` +
+              `prompt=select_account`;
           }}
           startDecorator={<GoogleLogo />}
         >
@@ -122,9 +126,18 @@ export default function Login() {
         </LoginButton>
         <LoginButton
           onClick={() => {
-            window.location.href = `/api/login-provider?provider=microsoft&state=${encodeURIComponent(
-              redirect
-            )}`;
+            window.location.href =
+              `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?` +
+              `client_id=${encodeURIComponent(
+                import.meta.env.APP_MICROSOFT_CLIENT_ID
+              )}&` +
+              `redirect_uri=${encodeURIComponent(
+                import.meta.env.APP_MICROSOFT_REDIRECT_URI
+              )}&` +
+              `response_type=code&` +
+              `response_mode=query&` +
+              `scope=User.Read&` +
+              `prompt=select_account`;
           }}
           startDecorator={<MicrosoftLogo />}
         >
