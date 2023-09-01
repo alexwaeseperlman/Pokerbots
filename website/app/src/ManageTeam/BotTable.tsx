@@ -63,6 +63,7 @@ export default function BotTable({
     () => [
       {
         name: "Active",
+        key: "active",
         width: "75px",
         getProps: (bot) => ({ id: bot.id }),
         render: ({ id }) => {
@@ -75,6 +76,7 @@ export default function BotTable({
       },
       {
         name: "Result",
+        key: "result",
         getProps: (bot) => ({ buildStatus: bot.build_status }),
         render: ({ buildStatus }) => {
           let [color, message] = (
@@ -94,6 +96,7 @@ export default function BotTable({
       },
       {
         name: "Name",
+        key: "name",
         getProps: (bot) => ({ name: bot.name }),
         render: ({ name }) => (
           <Typography
@@ -107,6 +110,7 @@ export default function BotTable({
       },
       {
         name: "Uploaded By",
+        key: "uploaded by",
         minWidth: "200px",
         maxWidth: "500px",
         getProps: (bot) => ({ uploadedBy: bot.uploaded_by }),
@@ -122,6 +126,7 @@ export default function BotTable({
       },
       {
         name: "Uploaded",
+        key: "uploaded",
         getProps: (bot) => ({ created: bot.created.toString() }),
         render: ({ created }) => {
           const date = new Date(Number(created) * 1000);
@@ -138,6 +143,7 @@ export default function BotTable({
       },
       {
         name: "",
+        key: "actions",
         width: 40,
         getProps: (bot) => ({ id: bot.id }),
         render: ({ id }: { id: number }) => {

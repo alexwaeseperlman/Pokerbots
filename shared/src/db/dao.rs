@@ -1,6 +1,6 @@
-use crate::db::models::{BotWithTeam, Team};
-use crate::db::schema;
-use diesel::prelude::*;
+use crate::db::{models::*, schema, schema_aliases};
 use diesel::PgConnection;
+use diesel::{dsl::*, prelude::*};
 
 pub mod bots;
+pub mod games;

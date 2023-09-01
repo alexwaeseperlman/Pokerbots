@@ -19,11 +19,11 @@ import { GridMoreVertIcon } from "@mui/x-data-grid";
 import { GameWithBots } from "@bindings/GameWithBots";
 import { BotWithTeam } from "@bindings/BotWithTeam";
 import { Team } from "@bindings/Team";
-import { GamesResponse } from "@bindings/GamesResponse";
 import { enqueueSnackbar } from "notistack";
 import { WhichBot } from "@bindings/WhichBot";
 import DataTable, { DataTableProps } from "../DataTable";
 import { MoreVert } from "@mui/icons-material";
+import { GameWithBotsWithResult } from "@bindings/GameWithBotsWithResult";
 
 export const TableButton = styled((props: ButtonProps) => (
   <Button
@@ -43,7 +43,7 @@ export const TableButton = styled((props: ButtonProps) => (
   />
 ))(() => ({}));
 
-type Game = GameWithBots<BotWithTeam<Team>>;
+type Game = GameWithBotsWithResult<BotWithTeam<Team>>;
 const renderTeam = ({
   botName,
   whichBot,
@@ -152,26 +152,24 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
 
   const getGames = useCallback(() => {
     fetch(
-      `${apiUrl}/games?${
-        teamId === undefined ? "" : `team=${team?.id}`
-      }&count=true`
+      `${apiUrl}/count-games?${teamId === undefined ? "" : `team=${team?.id}`}`
     )
       .then((res) => res.json())
-      .then((data: GamesResponse) =>
-        setGameCount("Count" in data ? Number(data.Count) : 0)
-      );
+      .then((data: number | object) => {
+        if (typeof data == "number") setGameCount(data);
+      });
 
     fetch(
-      `${apiUrl}/games?join_bots=true&page=${paginationModel.page}&page_size=${
+      `${apiUrl}/games?page=${paginationModel.page}&page_size=${
         paginationModel.pageSize
       }&${teamId === undefined ? "" : `team=${team?.id}`}`
     )
       .then((res) => res.json())
-      .then(async (data: GamesResponse) => {
+      .then(async (data: GameWithBotsWithResult<BotWithTeam<Team>>[]) => {
         // swap teama and teamb if teama is not the user's team
         setLoading(false);
-        if ("GamesWithBots" in data) {
-          setGames(data.GamesWithBots);
+        if (!("error" in data)) {
+          setGames(data);
         } else {
           setGames([]);
           enqueueSnackbar("Error loading games", { variant: "error" });
@@ -192,6 +190,7 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
     () => [
       {
         name: "Challenger",
+        key: "challenger",
         textAlign: "right",
         getProps: (game) => ({
           botName: game.challenger.name,
@@ -204,27 +203,30 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
 
       {
         name: "",
+        key: "challenger score",
         width: "75px",
         getProps: (game) => ({
           whichBot: "Challenger",
-          scoreChange: game.challenger_score,
-          errorType: game.error_type,
+          scoreChange: game.result?.challenger_score,
+          errorType: game.result?.error_type,
         }),
         render: renderScore,
       },
 
       {
         name: "",
+        key: "defender score",
         width: "75px",
         getProps: (game) => ({
           whichBot: "Defender",
-          scoreChange: game.defender_score,
-          errorType: game.error_type,
+          scoreChange: game.result?.defender_score,
+          errorType: game.result?.error_type,
         }),
         render: renderScore,
       },
       {
         name: "Defender",
+        key: "defender",
         getProps: (game) => ({
           botName: game.defender.name,
           whichBot: "Defender",
@@ -235,6 +237,7 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
       },
       {
         name: "",
+        key: "options",
         width: 40,
         getProps: (game) => ({
           defenderId: game.defender.team.id,

@@ -219,7 +219,7 @@ pub async fn bots(
                 description: b.description,
                 name: b.name,
                 uploaded_by: b.uploaded_by,
-                score: b.score,
+                rating: b.rating,
             })
             .collect();
         return Ok(web::Json(BotsResponse::BotsWithTeam(result)));

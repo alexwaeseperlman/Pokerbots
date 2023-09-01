@@ -79,6 +79,7 @@ export function TeamsTable() {
         {
           name: "Score",
           width: "100px",
+          key: "score",
           getProps: (team) => ({ score: team.score }),
           render: ({ score }: { score: number | null }) => {
             let color: ChipProps["color"] = "success";
@@ -89,6 +90,7 @@ export function TeamsTable() {
         },
         {
           name: "Team name",
+          key: "team name",
           getProps: (team) => ({ teamId: team.id, teamName: team.name }),
           render: renderTeam,
         },

@@ -6,11 +6,24 @@ diesel::table! {
         team -> Int4,
         name -> Text,
         description -> Nullable<Text>,
-        score -> Float4,
         created -> Int8,
         uploaded_by -> Text,
         build_status -> Int4,
         deleted_at -> Nullable<Int8>,
+        rating -> Float4,
+    }
+}
+
+diesel::table! {
+    game_results (id) {
+        id -> Text,
+        challenger_rating_change -> Float4,
+        defender_rating_change -> Float4,
+        defender_score -> Int4,
+        challenger_score -> Int4,
+        error_type -> Nullable<Text>,
+        error_bot -> Nullable<Int4>,
+        updated_at -> Int8,
     }
 }
 
@@ -19,11 +32,9 @@ diesel::table! {
         id -> Text,
         defender -> Int4,
         challenger -> Int4,
-        defender_score -> Nullable<Int4>,
-        challenger_score -> Nullable<Int4>,
         created -> Int8,
-        error_type -> Nullable<Text>,
-        error_bot -> Nullable<Int4>,
+        defender_rating -> Float4,
+        challenger_rating -> Float4,
     }
 }
 
@@ -55,7 +66,15 @@ diesel::table! {
     }
 }
 
+diesel::joinable!(game_results -> games (id));
 diesel::joinable!(team_invites -> teams (team));
 diesel::joinable!(teams -> users (owner));
 
-diesel::allow_tables_to_appear_in_same_query!(bots, games, team_invites, teams, users,);
+diesel::allow_tables_to_appear_in_same_query!(
+    bots,
+    game_results,
+    games,
+    team_invites,
+    teams,
+    users,
+);

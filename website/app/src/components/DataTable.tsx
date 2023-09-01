@@ -78,7 +78,7 @@ const DataTableRow = React.memo(
       <Box component={(props: any) => <tr {...props} />}>
         {columns.map((col, i) => (
           <DataTableCell
-            key={col.name}
+            key={col.key}
             render={col.render}
             props={col.getProps(row)}
           />
@@ -109,7 +109,7 @@ export default function DataTable<T extends DataTableData>({
   const headers = React.useMemo(
     () =>
       columns.map(({ name, render, getProps, ...props }, i) => (
-        <Cell {...props} key={name}>
+        <Cell {...props}>
           <Typography level="title-md">{name}</Typography>
         </Cell>
       )),

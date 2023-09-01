@@ -1,5 +1,3 @@
-use crate::db::models::Bot;
-
 use super::*;
 
 pub trait BotsDao {
@@ -21,7 +19,7 @@ impl BotsDao for PgConnection {
                 id: bot.id,
                 name: bot.name,
                 description: bot.description,
-                score: bot.score,
+                rating: bot.rating,
                 created: bot.created,
                 uploaded_by: bot.uploaded_by,
                 build_status: bot.build_status,

@@ -1,15 +1,17 @@
 use diesel::{
     deserialize::FromSql,
     pg::{self, PgValue},
+    prelude::{Associations, Insertable},
     serialize::ToSql,
     sql_types::Integer,
     Queryable, Selectable,
 };
+
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
-    db::schema::{bots, games, team_invites, teams, users},
+    db::schema::{bots, game_results, games, team_invites, teams, users},
     BuildStatus, WhichBot,
 };
 
@@ -84,20 +86,74 @@ pub struct NewGame {
     pub id: String,
     pub defender: i32,
     pub challenger: i32,
+    pub defender_rating: f32,
+    pub challenger_rating: f32,
 }
 
-#[derive(Serialize, Deserialize, Queryable, Debug, TS, Selectable)]
+#[derive(Queryable, Serialize, Deserialize, Debug, TS, Selectable)]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
 #[diesel(table_name = games)]
 pub struct Game {
     pub id: String,
     pub defender: i32,
     pub challenger: i32,
-    pub defender_score: Option<i32>,
-    pub challenger_score: Option<i32>,
     pub created: i64,
+    pub defender_rating: f32,
+    pub challenger_rating: f32,
+}
+
+#[derive(
+    Queryable, Serialize, diesel::Identifiable, Deserialize, Debug, TS, Selectable, Insertable,
+)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
+#[diesel(belongs_to(Game))]
+#[diesel(table_name = game_results)]
+pub struct GameResult {
+    pub id: String,
+    pub challenger_rating_change: f32,
+    pub defender_rating_change: f32,
+    pub defender_score: i32,
+    pub challenger_score: i32,
     pub error_type: Option<String>,
     pub error_bot: Option<i32>,
+    pub updated_at: i64,
+}
+
+#[derive(Deserialize, Debug, TS, Selectable, Insertable)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
+#[diesel(table_name = game_results)]
+pub struct NewGameResult {
+    pub id: String,
+    pub challenger_rating_change: f32,
+    pub defender_rating_change: f32,
+    pub defender_score: i32,
+    pub challenger_score: i32,
+    pub error_type: Option<String>,
+    pub error_bot: Option<i32>,
+}
+
+#[derive(Serialize, TS)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
+pub struct GameWithResult {
+    pub id: String,
+    pub defender: i32,
+    pub challenger: i32,
+    pub created: i64,
+    pub defender_rating: f32,
+    pub challenger_rating: f32,
+    pub result: Option<GameResult>,
+}
+
+#[derive(Serialize, TS)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
+pub struct GameWithBotsWithResult<T> {
+    pub id: String,
+    pub defender: T,
+    pub challenger: T,
+    pub created: i64,
+    pub defender_rating: f32,
+    pub challenger_rating: f32,
+    pub result: Option<GameResult>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Queryable, TS, Selectable)]
@@ -108,11 +164,11 @@ pub struct Bot {
     pub team: i32,
     pub name: String,
     pub description: Option<String>,
-    pub score: f32,
     pub created: i64,
     pub uploaded_by: String,
     pub build_status: BuildStatus,
     pub deleted_at: Option<i64>,
+    pub rating: f32,
 }
 
 #[derive(Serialize, Deserialize, Debug, diesel::Queryable, TS)]
@@ -122,7 +178,7 @@ pub struct BotWithTeam<T> {
     pub team: T,
     pub name: String,
     pub description: Option<String>,
-    pub score: f32,
+    pub rating: f32,
     pub created: i64,
     pub uploaded_by: String,
     pub build_status: BuildStatus,
@@ -135,7 +191,7 @@ impl<T> BotWithTeam<T> {
             team,
             name: bot.name,
             description: bot.description,
-            score: bot.score,
+            rating: bot.rating,
             created: bot.created,
             uploaded_by: bot.uploaded_by,
             build_status: bot.build_status,
@@ -149,11 +205,7 @@ pub struct GameWithBots<T> {
     pub id: String,
     pub defender: T,
     pub challenger: T,
-    pub defender_score: Option<i32>,
-    pub challenger_score: Option<i32>,
     pub created: i64,
-    pub error_type: Option<String>,
-    pub error_bot: Option<WhichBot>,
 }
 
 #[derive(Debug, diesel::Insertable)]
@@ -162,11 +214,10 @@ pub struct NewBot {
     pub team: i32,
     pub name: String,
     pub description: Option<String>,
-    pub score: f32,
+    pub rating: f32,
     pub uploaded_by: String,
     pub build_status: BuildStatus,
 }
-
 impl ToSql<Integer, pg::Pg> for BuildStatus {
     fn to_sql<'b>(
         &'b self,
