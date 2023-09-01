@@ -9,47 +9,91 @@ use std::fs;
 use lettre::transport::smtp::client::{Tls, TlsParameters};
 
 pub const TEAM_SIZE: usize = 5;
-lazy_static! {
-    pub static ref MICROSOFT_CLIENT_ID: String =
-        std::env::var("APP_MICROSOFT_CLIENT_ID").expect("MICROSOFT_CLIENT_ID must be set in .env");
-    pub static ref AZURE_SECRET: String = std::env::var("AZURE_SECRET")
-        .unwrap_or_else(|_| fs::read_to_string("/run/secrets/azure-secret")
-            .expect("AZURE_SECRET must be set in .env or /run/secrets/azure-secret"));
-    pub static ref MICROSOFT_REDIRECT_URI: String =
-        std::env::var("APP_MICROSOFT_REDIRECT_URI").expect("APP_MICROSOFT_REDIRECT_URI must be set in .env");
-    pub static ref GOOGLE_CLIENT_ID: String =
-        std::env::var("APP_GOOGLE_CLIENT_ID").expect("GOOGLE_CLIENT_ID must be set in .env");
-    pub static ref GOOGLE_SECRET: String = std::env::var("GOOGLE_SECRET")
-        .unwrap_or_else(|_| fs::read_to_string("/run/secrets/google-secret")
-            .expect("GOOGLE_SECRET must be set in .env or /run/secrets/google-secret"));
-    pub static ref GOOGLE_REDIRECT_URI: String =
-        std::env::var("APP_GOOGLE_REDIRECT_URI").expect("APP_GOOGLE_REDIRECT_URI must be set in .env");
-    pub static ref PFP_S3_BUCKET: String =
-        std::env::var("PFP_S3_BUCKET").expect("PFP_S3_BUCKET must be set in .env");
-    pub static ref BOT_S3_BUCKET: String =
-        std::env::var("BOT_S3_BUCKET").expect("BOT_S3_BUCKET must be set in .env");
-    pub static ref BUILD_LOGS_S3_BUCKET: String =
-        std::env::var("BUILD_LOGS_S3_BUCKET").expect("BUILD_LOGS_S3_BUCKET must be set in .env");
-    pub static ref GAME_LOGS_S3_BUCKET: String =
-        std::env::var("GAME_LOGS_S3_BUCKET").expect("GAME_LOGS_S3_BUCKET must be set in .env");
-    pub static ref BOT_SIZE: u64 = std::env::var("BOT_SIZE")
+
+pub fn microsoft_client_id() -> String {
+    std::env::var("APP_MICROSOFT_CLIENT_ID").expect("MICROSOFT_CLIENT_ID must be set in .env")
+}
+
+pub fn azure_secret() -> String {
+    std::env::var("AZURE_SECRET").unwrap_or_else(|_| {
+        fs::read_to_string("/run/secrets/azure-secret")
+            .expect("AZURE_SECRET must be set in .env or /run/secrets/azure-secret")
+    })
+}
+
+pub fn microsoft_redirect_uri() -> String {
+    std::env::var("APP_MICROSOFT_REDIRECT_URI")
+        .expect("APP_MICROSOFT_REDIRECT_URI must be set in .env")
+}
+
+pub fn google_client_id() -> String {
+    std::env::var("APP_GOOGLE_CLIENT_ID").expect("GOOGLE_CLIENT_ID must be set in .env")
+}
+
+pub fn google_secret() -> String {
+    std::env::var("GOOGLE_SECRET").unwrap_or_else(|_| {
+        fs::read_to_string("/run/secrets/google-secret")
+            .expect("GOOGLE_SECRET must be set in .env or /run/secrets/google-secret")
+    })
+}
+
+pub fn google_redirect_uri() -> String {
+    std::env::var("APP_GOOGLE_REDIRECT_URI").expect("APP_GOOGLE_REDIRECT_URI must be set in .env")
+}
+
+pub fn pfp_s3_bucket() -> String {
+    std::env::var("PFP_S3_BUCKET").expect("PFP_S3_BUCKET must be set in .env")
+}
+
+pub fn bot_s3_bucket() -> String {
+    std::env::var("BOT_S3_BUCKET").expect("BOT_S3_BUCKET must be set in .env")
+}
+
+pub fn build_logs_s3_bucket() -> String {
+    std::env::var("BUILD_LOGS_S3_BUCKET").expect("BUILD_LOGS_S3_BUCKET must be set in .env")
+}
+
+pub fn game_logs_s3_bucket() -> String {
+    std::env::var("GAME_LOGS_S3_BUCKET").expect("GAME_LOGS_S3_BUCKET must be set in .env")
+}
+
+pub fn bot_size() -> u64 {
+    std::env::var("BOT_SIZE")
         .expect("BOT_SIZE must be set in .env")
         .parse()
-        .expect("BOT_SIZE must be a number");
-    pub static ref PEPPER: String = std::env::var("PEPPER").expect("PEPPER must be set in .env");
-    pub static ref ALIAS_EMAIL: String =
-        std::env::var("ALIAS_EMAIL").expect("ALIAS_EMAIL must be set in .env");
-    pub static ref UNDERLYING_EMAIL: String =
-        std::env::var("UNDERLYING_EMAIL").expect("UNDERLYING_EMAIL must be set in .env");
-    pub static ref EMAIL_APP_PASSWORD: String =
-        std::env::var("EMAIL_APP_PASSWORD").expect("EMAIL_APP_PASSWORD must be set in .env");
-    pub static ref EMAIL_VERIFICATION_LINK_URI: String =
-        std::env::var("EMAIL_VERIFICATION_LINK_URI").expect("EMAIL_VERIFICATION_LINK_URI must be set in .env");
-    pub static ref PASSWORD_RESET_LINK_URI: String =
-        std::env::var("PASSWORD_RESET_LINK_URI").expect("PASSWORD_RESET_LINK_URI must be set in .env");
-    pub static ref SMTP_SERVER: String =
-        std::env::var("SMTP_SERVER").expect("SMTP_SERVER must be set in .env");
+        .expect("BOT_SIZE must be a number")
+}
 
+pub fn pepper() -> String {
+    std::env::var("PEPPER").expect("PEPPER must be set in .env")
+}
+
+pub fn alias_email() -> String {
+    std::env::var("ALIAS_EMAIL").expect("ALIAS_EMAIL must be set in .env")
+}
+
+pub fn underlying_email() -> String {
+    std::env::var("UNDERLYING_EMAIL").expect("UNDERLYING_EMAIL must be set in .env")
+}
+
+pub fn email_app_password() -> String {
+    std::env::var("EMAIL_APP_PASSWORD").expect("EMAIL_APP_PASSWORD must be set in .env")
+}
+
+pub fn email_verification_link_uri() -> String {
+    std::env::var("EMAIL_VERIFICATION_LINK_URI")
+        .expect("EMAIL_VERIFICATION_LINK_URI must be set in .env")
+}
+
+pub fn password_reset_link_uri() -> String {
+    std::env::var("PASSWORD_RESET_LINK_URI").expect("PASSWORD_RESET_LINK_URI must be set in .env")
+}
+
+pub fn smtp_server() -> String {
+    std::env::var("SMTP_SERVER").expect("SMTP_SERVER must be set in .env")
+}
+
+lazy_static! {
     pub static ref EMAIL_EMAIL_VERIFICATION_BODY: String = r#"
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -143,13 +187,13 @@ lazy_static! {
 </html>
     "#.to_string();
 
-     pub static ref MAILER: SmtpTransport = SmtpTransport::relay(&SMTP_SERVER).unwrap()
+     pub static ref MAILER: SmtpTransport = SmtpTransport::relay(&smtp_server()).unwrap()
         .credentials(Credentials::new(
-            UNDERLYING_EMAIL.to_string(),
-            EMAIL_APP_PASSWORD.to_string(),
+            underlying_email().to_string(),
+            email_app_password().to_string(),
         ))
         .tls(Tls::Wrapper(
-                TlsParameters::new(SMTP_SERVER.to_string()).unwrap()
+                TlsParameters::new(smtp_server().to_string()).unwrap()
         ))
         .pool_config(PoolConfig::new())
         .build();

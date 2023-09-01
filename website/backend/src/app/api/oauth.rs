@@ -27,10 +27,10 @@ pub async fn microsoft_login(
                 status_code: StatusCode::BAD_REQUEST,
                 message: "No code provided".to_string(),
             })?,
-            config::MICROSOFT_CLIENT_ID.to_string(),
-            url::form_urlencoded::byte_serialize(config::MICROSOFT_REDIRECT_URI.as_bytes())
+            config::microsoft_client_id().to_string(),
+            url::form_urlencoded::byte_serialize(config::microsoft_redirect_uri().as_bytes())
                 .collect::<String>(),
-            &*crate::config::AZURE_SECRET
+            config::azure_secret()
         ))
         .send()
         .await?
@@ -94,7 +94,9 @@ pub async fn microsoft_login(
     diesel::insert_into(users::dsl::users)
         .values(NewUser {
             email: me.userPrincipalName.clone().unwrap(),
-            display_name: me.displayName.unwrap_or(me.userPrincipalName.clone().unwrap()),
+            display_name: me
+                .displayName
+                .unwrap_or(me.userPrincipalName.clone().unwrap()),
         })
         .on_conflict(users::dsl::email)
         .do_nothing()
@@ -129,10 +131,10 @@ async fn google_login(
                     message: "No code provided".to_string(),
                 })?,
             ),
-            ("client_id", config::GOOGLE_CLIENT_ID.to_string()),
-            ("redirect_uri", config::GOOGLE_REDIRECT_URI.to_string()),
+            ("client_id", config::google_client_id().to_string()),
+            ("redirect_uri", config::google_redirect_uri().to_string()),
             ("grant_type", "authorization_code".to_string()),
-            ("client_secret", config::GOOGLE_SECRET.to_string()),
+            ("client_secret", config::google_secret().to_string()),
         ])
         .send()
         .await?

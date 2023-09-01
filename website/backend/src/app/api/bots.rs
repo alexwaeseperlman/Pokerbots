@@ -1,7 +1,7 @@
 use shared::db::models::NewBot;
 use std::io::Read;
 
-use crate::config::{BOT_S3_BUCKET, BOT_SIZE, BUILD_LOGS_S3_BUCKET};
+use crate::config::{bot_s3_bucket, bot_size, build_logs_s3_bucket};
 
 use super::*;
 
@@ -16,8 +16,8 @@ pub async fn delete_bot(
     web::Query::<DeleteBot>(DeleteBot { id }): web::Query<DeleteBot>,
 ) -> ApiResult<()> {
     use shared::db::schema::bots;
-    let team = auth::get_team(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
+    let team =
+        auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
 
     let conn = &mut (*DB_CONNECTION).get()?;
     diesel::delete(bots::dsl::bots)
@@ -38,10 +38,10 @@ pub async fn set_active_bot(
     web::Query::<ActiveBot>(ActiveBot { id }): web::Query<ActiveBot>,
 ) -> ApiResult<()> {
     use shared::db::schema::teams;
-    let user = auth::get_user(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
-    let team = auth::get_team(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
+    let user =
+        auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+    let team =
+        auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
 
     let conn = &mut (*DB_CONNECTION).get()?;
     // ensure the bot belongs to the team
@@ -86,16 +86,16 @@ pub async fn upload_bot(
     mut payload: web::Payload,
 ) -> ApiResult<UploadBotResponse> {
     use shared::db::schema::{bots, teams};
-    let user = auth::get_user(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
-    let team = auth::get_team(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
+    let user =
+        auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+    let team =
+        auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
 
     let mut body = web::BytesMut::new();
     while let Some(chunk) = payload.next().await {
         let chunk = chunk?;
         // limit max size of in-memory payload
-        if (body.len() + chunk.len()) > (*BOT_SIZE).try_into()? {
+        if (body.len() + chunk.len()) > (bot_size()).try_into()? {
             return Err(actix_web::error::ErrorBadRequest("Bot too large").into());
         }
         body.extend_from_slice(&chunk);
@@ -132,7 +132,7 @@ pub async fn upload_bot(
     // upload the file to s3
     if let Err(e) = s3_client
         .put_object()
-        .bucket(&*BOT_S3_BUCKET)
+        .bucket(bot_s3_bucket())
         .key(format!("{}", id))
         .body(body.to_vec().into())
         .send()
@@ -149,7 +149,7 @@ pub async fn upload_bot(
         PresigningConfig::expires_in(std::time::Duration::from_secs(60 * 60 * 24 * 7))?;
     let log_presigned = s3_client
         .put_object()
-        .bucket(&*BUILD_LOGS_S3_BUCKET)
+        .bucket(build_logs_s3_bucket())
         .key(format!("{}/build", id))
         .presigned(presign_config.clone())
         .await?;
@@ -182,8 +182,8 @@ pub async fn build_log(
     sqs_client: web::Data<aws_sdk_sqs::Client>,
     s3_client: web::Data<aws_sdk_s3::Client>,
 ) -> Result<HttpResponse, ApiError> {
-    let team = auth::get_team(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
+    let team =
+        auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
     let conn = &mut (*DB_CONNECTION).get()?;
     // If the bot is specified, make sure it belongs to the team
     let bots: Vec<Bot> = schema::bots::dsl::bots
@@ -200,7 +200,7 @@ pub async fn build_log(
         PresigningConfig::expires_in(std::time::Duration::from_secs(60 * 60 * 24 * 7))?;
     let response = s3_client
         .get_object()
-        .bucket(&*BUILD_LOGS_S3_BUCKET)
+        .bucket(build_logs_s3_bucket())
         .key(key)
         .send()
         .await?;

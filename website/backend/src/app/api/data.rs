@@ -263,7 +263,7 @@ pub async fn pfp(
 ) -> Result<HttpResponse, ApiError> {
     let response = s3_client
         .get_object()
-        .bucket(&*PFP_S3_BUCKET)
+        .bucket(pfp_s3_bucket())
         .key(id.to_string())
         .send()
         .await?;

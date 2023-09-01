@@ -1,15 +1,13 @@
 use std::{fmt, num::TryFromIntError};
 
-use actix_web::{http::StatusCode, error::PayloadError, HttpResponse, ResponseError};
+use actix_web::{error::PayloadError, http::StatusCode, HttpResponse, ResponseError};
 use aws_sdk_s3::presigning::PresigningConfigError;
 use reqwest::header::ToStrError;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use ts_rs::TS;
 
-use crate::{
-    config::{GAME_LOGS_S3_BUCKET, PFP_S3_BUCKET, self},
-};
+use crate::config::{self, game_logs_s3_bucket, pfp_s3_bucket};
 use actix_session::Session;
 use actix_web::{delete, get, web};
 use aws_sdk_s3 as s3;
@@ -23,7 +21,7 @@ use rand::{self, Rng};
 use shared::{
     db::{
         conn::DB_CONNECTION,
-        models::{Bot, Game, NewGame, NewInvite, NewTeam, TeamInvite, User, Team},
+        models::{Bot, Game, NewGame, NewInvite, NewTeam, Team, TeamInvite, User},
         schema,
         schema::{team_invites, teams, users},
     },
@@ -31,11 +29,11 @@ use shared::{
 };
 
 pub mod auth;
-pub mod oauth;
 pub mod bots;
 pub mod data;
 pub mod games;
 pub mod manage_team;
+pub mod oauth;
 
 pub fn api_service() -> actix_web::Scope {
     actix_web::web::scope("/api")
@@ -156,8 +154,17 @@ define_api_error!(PresigningConfigError, StatusCode::INTERNAL_SERVER_ERROR);
 define_api_error!(ToStrError, StatusCode::INTERNAL_SERVER_ERROR);
 
 define_api_error!(lettre::error::Error, StatusCode::INTERNAL_SERVER_ERROR);
-define_api_error!(actix_session::SessionInsertError, StatusCode::INTERNAL_SERVER_ERROR);
-define_api_error!(actix_session::SessionGetError, StatusCode::INTERNAL_SERVER_ERROR);
-define_api_error!(lettre::transport::smtp::Error, StatusCode::INTERNAL_SERVER_ERROR);
+define_api_error!(
+    actix_session::SessionInsertError,
+    StatusCode::INTERNAL_SERVER_ERROR
+);
+define_api_error!(
+    actix_session::SessionGetError,
+    StatusCode::INTERNAL_SERVER_ERROR
+);
+define_api_error!(
+    lettre::transport::smtp::Error,
+    StatusCode::INTERNAL_SERVER_ERROR
+);
 define_api_error!(reqwest::Error, StatusCode::INTERNAL_SERVER_ERROR);
 define_api_error!(argon2::password_hash::Error, StatusCode::UNAUTHORIZED);

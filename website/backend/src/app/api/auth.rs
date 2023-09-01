@@ -62,13 +62,13 @@ async fn register(
 
     // TODO: add plain text fallback and improve html text
     let email_body = Message::builder()
-        .from(config::ALIAS_EMAIL.parse().unwrap())
+        .from(config::alias_email().parse().unwrap())
         .to(email.parse().unwrap())
         .subject("UPAC Email Verification")
         .header(ContentType::TEXT_HTML)
         .body(config::EMAIL_EMAIL_VERIFICATION_BODY.replace(
             "{}",
-            &config::EMAIL_VERIFICATION_LINK_URI.replace("{}", &email_verification_link),
+            &config::email_verification_link_uri().replace("{}", &email_verification_link),
         ))
         .unwrap();
     config::MAILER.send(&email_body)?;
@@ -162,13 +162,13 @@ async fn create_link(web::Json(LinkPayload { email }): web::Json<LinkPayload>) -
     // send password reset link
     // TODO: add plain text fallback and improve html text
     let email_body = Message::builder()
-        .from(config::ALIAS_EMAIL.parse().unwrap())
+        .from(config::alias_email().parse().unwrap())
         .to(email.parse().unwrap())
         .subject("UPAC Password Reset")
         .header(ContentType::TEXT_HTML)
         .body(config::EMAIL_PASSWORD_RESET_BODY.replace(
             "{}",
-            &config::PASSWORD_RESET_LINK_URI.replace("{}", &password_reset_link),
+            &config::password_reset_link_uri().replace("{}", &password_reset_link),
         ))
         .unwrap();
 
