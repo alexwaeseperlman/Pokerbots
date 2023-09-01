@@ -130,7 +130,7 @@ export default function Signup() {
             body: JSON.stringify({
               email,
               password,
-              redirect_uri: `${window.location.origin}/verify-email`,
+              callback: `${window.location.origin}/verify-email`,
             }),
           })
             .then(async (res) => {
@@ -142,9 +142,12 @@ export default function Signup() {
                   }
                 );
               } else {
-                enqueueSnackbar(`Failed to sign up: ${await res.json()}`, {
-                  variant: "error",
-                });
+                enqueueSnackbar(
+                  `Failed to sign up: ${(await res.json()).error}`,
+                  {
+                    variant: "error",
+                  }
+                );
               }
             })
             .finally(() => {
