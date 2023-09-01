@@ -16,6 +16,7 @@ import RecentGames from "./RecentGames";
 import Profile from "./Profile";
 import Login from "./Login";
 import Signup from "./Signup";
+import GameVisualizer from "./GameVisualizer";
 
 function HeaderFooter(props: React.PropsWithChildren<{}>) {
   return (
@@ -84,6 +85,15 @@ function TeamDashboard() {
       teamId={teamId}
     />
   );
+}
+
+function GameDashboard(){
+  const gameId = useParams().gameId ?? null;
+  return (
+  <GameVisualizer
+      gameId={gameId}
+    />
+  )
 }
 
 export default function UPAC() {
@@ -159,6 +169,17 @@ export default function UPAC() {
             </HeaderFooter>
           }
         />
+
+        <Route path="view-game">
+          <Route
+            path=":gameId"
+            element={
+              <HeaderFooter>
+                <GameDashboard />
+              </HeaderFooter>
+            }
+          />
+        </Route>
 
         <Route
           path="signup"

@@ -227,6 +227,13 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
               </MenuButton>
 
               <Menu>
+                <MenuItem
+                  component="a"
+                  target="_tab"
+                  href={`/view-game/${gameId}`}
+                >
+                  View game
+                </MenuItem>
                 {defenderId == myTeam?.id && (
                   <MenuItem
                     component="a"
