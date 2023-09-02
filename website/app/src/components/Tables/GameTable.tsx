@@ -43,7 +43,15 @@ export const TableButton = styled((props: ButtonProps) => (
   />
 ))(() => ({}));
 
-const RatingChange = ({ before, after }: { before: number; after: number }) => {
+const RatingChange = ({
+  before,
+  after,
+  running,
+}: {
+  before: number;
+  after: number;
+  running: boolean;
+}) => {
   const change = after - before;
   const color = change > 0 ? "success" : change < 0 ? "danger" : "neutral";
   return (
@@ -55,7 +63,17 @@ const RatingChange = ({ before, after }: { before: number; after: number }) => {
       }}
     >
       <Chip color={color} size="sm" key="chip">
-        {before.toFixed(0)} <ArrowRight /> {after.toFixed(0)}
+        <Typography
+          textColor="inherit"
+          sx={{
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 0.5,
+          }}
+        >
+          {before.toFixed(0)} <ArrowRight /> {after.toFixed(0)}
+        </Typography>
       </Chip>
     </Box>
   );
@@ -204,6 +222,8 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
     return () => clearInterval(int);
   }, [getGames, paginationModel]);
 
+  console.log(games);
+
   const columns: DataTableProps<Game>["columns"] = React.useMemo(
     () => [
       {
@@ -211,10 +231,10 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
         key: "challenger rating change",
         width: "75px",
         getProps: (game) => ({
-          before: game.challenger_rating,
-          after:
-            game.challenger_rating +
+          before:
+            game.result?.challenger_rating -
             (game.result?.challenger_rating_change ?? 0),
+          after: game.result?.challenger_rating,
           running: !game.result,
         }),
         render: ({ before, after, running }: any) => {
@@ -277,9 +297,10 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
         key: "defender rating change",
         width: "75px",
         getProps: (game) => ({
-          before: game.defender_rating,
-          after:
-            game.defender_rating + (game.result?.defender_rating_change ?? 0),
+          before:
+            game.result?.defender_rating -
+            (game.result?.defender_rating_change ?? 0),
+          after: game.result?.defender_rating,
           running: !game.result,
         }),
         render: ({ before, after, running }: any) => {
