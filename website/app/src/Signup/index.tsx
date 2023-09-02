@@ -130,7 +130,6 @@ export default function Signup() {
             body: JSON.stringify({
               email,
               password,
-              callback: `${window.location.origin}/verify-email`,
             }),
           })
             .then(async (res) => {

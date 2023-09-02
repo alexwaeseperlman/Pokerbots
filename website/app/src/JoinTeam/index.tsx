@@ -35,9 +35,13 @@ export default function JoinTeam() {
       });
   }, [code]);
 
-  if (!user) {
-    return <Login />;
-  }
+  React.useEffect(() => {
+    if (!user) {
+      navigate(
+        `/login?redirect=${encodeURIComponent("/join-team?code=" + code)}`
+      );
+    }
+  }, [user]);
 
   return (
     <Box

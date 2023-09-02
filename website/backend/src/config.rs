@@ -21,9 +21,12 @@ pub fn azure_secret() -> String {
     })
 }
 
+pub fn website_origin() -> String {
+    std::env::var("WEBSITE_ORIGIN").expect("WEBSITE_ORIGIN must be set in .env")
+}
+
 pub fn microsoft_redirect_uri() -> String {
-    std::env::var("APP_MICROSOFT_REDIRECT_URI")
-        .expect("APP_MICROSOFT_REDIRECT_URI must be set in .env")
+    format!("{}/{}", website_origin(), "login/microsoft")
 }
 
 pub fn google_client_id() -> String {
@@ -38,7 +41,7 @@ pub fn google_secret() -> String {
 }
 
 pub fn google_redirect_uri() -> String {
-    std::env::var("APP_GOOGLE_REDIRECT_URI").expect("APP_GOOGLE_REDIRECT_URI must be set in .env")
+    format!("{}/{}", website_origin(), "login/google")
 }
 
 pub fn pfp_s3_bucket() -> String {
@@ -64,16 +67,8 @@ pub fn bot_size() -> u64 {
         .expect("BOT_SIZE must be a number")
 }
 
-pub fn pepper() -> String {
-    std::env::var("PEPPER").expect("PEPPER must be set in .env")
-}
-
-pub fn alias_email() -> String {
-    std::env::var("ALIAS_EMAIL").expect("ALIAS_EMAIL must be set in .env")
-}
-
-pub fn underlying_email() -> String {
-    std::env::var("UNDERLYING_EMAIL").expect("UNDERLYING_EMAIL must be set in .env")
+pub fn email_address() -> String {
+    std::env::var("EMAIL_ADDRESS").expect("EMAIL_ADDRESS must be set in .env")
 }
 
 pub fn email_app_password() -> String {
@@ -91,7 +86,7 @@ lazy_static! {
     pub static ref MAILER: SmtpTransport = SmtpTransport::relay(&smtp_server())
         .unwrap()
         .credentials(Credentials::new(
-            underlying_email().to_string(),
+            email_address().to_string(),
             email_app_password().to_string(),
         ))
         .tls(Tls::Wrapper(

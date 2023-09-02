@@ -201,7 +201,7 @@ export default function UPAC() {
         />
 
         <Route
-          path="/:provider/login"
+          path="/login/:provider"
           element={
             <HeaderFooter>
               <OAuth />

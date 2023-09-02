@@ -321,7 +321,6 @@ export class ScalingAPIConstruct extends Construct {
             NEW_GAMES_QUEUE_URL: new_games_sqs.queueUrl,
             RUST_LOG: "info",
             PORT: "80",
-            REDIRECT_URI: `https://${domainName}/api/login`,
           },
           secrets: {
             SECRET_KEY: secretKey,

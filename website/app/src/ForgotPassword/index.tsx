@@ -41,7 +41,6 @@ export default function ForgotPassword() {
             },
             body: JSON.stringify({
               email,
-              callback: `${window.location.origin}/update-password`,
             }),
           })
             .then(async (res) => {

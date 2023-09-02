@@ -24,8 +24,8 @@ required_vars = [
     'APP_GOOGLE_CLIENT_ID', 
     'AZURE_SECRET', 
     'GOOGLE_SECRET', 
-    'ALIAS_EMAIL', 
-    'UNDERLYING_EMAIL'
+    'EMAIL_ADDRESS', 
+    'WEBSITE_ORIGIN'
 ]
 
 fixed_vars = {

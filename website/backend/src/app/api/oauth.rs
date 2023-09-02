@@ -16,31 +16,33 @@ pub async fn microsoft_login(
 ) -> ApiResult<()> {
     // retrieve access token
     #[derive(Deserialize)]
-    struct AzureAuthTokenResopnse {
+    struct AzureAuthTokenResponse {
         access_token: Option<String>,
     }
-    let response: AzureAuthTokenResopnse = config::CLIENT
+    let body = format!(
+        "code={}&client_id={}&redirect_uri={}&grant_type=authorization_code&client_secret={}",
+        code.ok_or(ApiError {
+            status_code: StatusCode::BAD_REQUEST,
+            message: "No code provided".to_string(),
+        })?,
+        config::microsoft_client_id(),
+        url::form_urlencoded::byte_serialize(config::microsoft_redirect_uri().as_bytes())
+            .collect::<String>(),
+        config::azure_secret()
+    );
+    let response = config::CLIENT
         .post("https://login.microsoftonline.com/common/oauth2/v2.0/token")
-        .body(format!(
-            "code={}&client_id={}&redirect_uri={}&grant_type=authorization_code&client_secret={}",
-            code.ok_or(ApiError {
-                status_code: StatusCode::BAD_REQUEST,
-                message: "No code provided".to_string(),
-            })?,
-            config::microsoft_client_id().to_string(),
-            url::form_urlencoded::byte_serialize(config::microsoft_redirect_uri().as_bytes())
-                .collect::<String>(),
-            config::azure_secret()
-        ))
+        .header("Content-Type", "application/x-www-form-urlencoded")
+        .body(body)
         .send()
-        .await?
-        .json()
         .await?;
+
+    let response: AzureAuthTokenResponse = response.json().await?;
 
     if response.access_token.is_none() {
         return Err(ApiError {
             status_code: StatusCode::UNAUTHORIZED,
-            message: "Invalid response from Microsoft OAuth".to_string(),
+            message: "No access token received".to_string(),
         });
     }
 
@@ -72,7 +74,7 @@ pub async fn microsoft_login(
     if me.userPrincipalName.is_none() {
         return Err(ApiError {
             status_code: StatusCode::UNAUTHORIZED,
-            message: "Invalid response from Google OAuth".to_string(),
+            message: "No UPN on selected account".to_string(),
         });
     }
 
@@ -124,6 +126,7 @@ async fn google_login(
     }
     let response: GoogleAuthTokenResponse = config::CLIENT
         .post("https://oauth2.googleapis.com/token")
+        .header("Content-Type", "application/x-www-form-urlencoded")
         .form(&[
             (
                 "code",

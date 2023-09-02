@@ -37,9 +37,7 @@ impl GamesDao for PgConnection {
         GameQueryOptions { id, team, running }: GameQueryOptions,
     ) -> Result<i64, diesel::result::Error> {
         use schema::*;
-        let mut base = games::table
-            .into_boxed()
-            .order_by(games::dsl::created.desc());
+        let mut base = games::table.into_boxed();
 
         if let Some(id) = id {
             base = base.filter(schema::games::dsl::id.eq(id));

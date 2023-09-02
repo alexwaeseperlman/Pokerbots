@@ -147,7 +147,7 @@ export default function Login() {
         <LoginButton
           variant="soft"
           onClick={() => {
-            navigate("/forgot-password");
+            navigate(`/forgot-password?redirect=${redirect}`);
           }}
         >
           Forgot your password?
@@ -156,7 +156,8 @@ export default function Login() {
       <Stack direction="row" gap={2}>
         <LoginButton
           onClick={() => {
-            window.location.href = googleSigninUrl;
+            window.location.href =
+              googleSigninUrl + "&state=" + encodeURIComponent(redirect);
           }}
           startDecorator={<GoogleLogo />}
         >
@@ -164,7 +165,8 @@ export default function Login() {
         </LoginButton>
         <LoginButton
           onClick={() => {
-            window.location.href = microsoftSigninUrl;
+            window.location.href =
+              microsoftSigninUrl + "&state=" + encodeURIComponent(redirect);
           }}
           startDecorator={<MicrosoftLogo />}
         >

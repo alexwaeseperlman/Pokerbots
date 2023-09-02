@@ -10,6 +10,8 @@ use shared::db::{
 
 use lettre::{message::header::ContentType, Message, Transport};
 
+use crate::config::website_origin;
+
 use super::*;
 
 const ALPHANUMERIC: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -49,15 +51,10 @@ fn validate_password(password: &str) -> Result<(), ApiError> {
 struct RegisterPayload {
     pub email: String,
     pub password: String,
-    pub callback: String,
 }
 #[post("/email/register")]
 async fn register(
-    web::Json(RegisterPayload {
-        email,
-        password,
-        callback,
-    }): web::Json<RegisterPayload>,
+    web::Json(RegisterPayload { email, password }): web::Json<RegisterPayload>,
 ) -> ApiResult<()> {
     let conn = &mut (*DB_CONNECTION).get().unwrap();
 
@@ -79,14 +76,21 @@ async fn register(
 
     // TODO: add plain text fallback and improve html text
     let email_body = Message::builder()
-        .from(config::alias_email().parse().unwrap())
+        .from(config::email_address().parse().unwrap())
         .to(email.parse().unwrap())
         .subject("UPAC Email Verification")
         .header(ContentType::TEXT_HTML)
-        .body(config::EMAIL_VERIFICATION_BODY.replace(
-            "{}",
-            format!("{}/{}", callback, email_verification_link).as_str(),
-        ))
+        .body(
+            config::EMAIL_VERIFICATION_BODY.replace(
+                "{}",
+                format!(
+                    "{}/verify-email/{}",
+                    website_origin(),
+                    email_verification_link
+                )
+                .as_str(),
+            ),
+        )
         .unwrap();
     config::MAILER.send(&email_body)?;
 
@@ -159,12 +163,9 @@ async fn login(
 #[derive(Deserialize)]
 struct LinkPayload {
     pub email: String,
-    pub callback: String,
 }
 #[post("/email/reset-password")]
-async fn reset_password(
-    web::Json(LinkPayload { email, callback }): web::Json<LinkPayload>,
-) -> ApiResult<()> {
+async fn reset_password(web::Json(LinkPayload { email }): web::Json<LinkPayload>) -> ApiResult<()> {
     let conn = &mut (*DB_CONNECTION).get().unwrap();
     let auth: Auth = auth::dsl::auth
         .filter(auth::dsl::email.eq(email.clone()))
@@ -182,14 +183,21 @@ async fn reset_password(
     // send password reset link
     // TODO: add plain text fallback and improve html text
     let email_body = Message::builder()
-        .from(config::alias_email().parse().unwrap())
+        .from(config::email_address().parse().unwrap())
         .to(email.parse().unwrap())
         .subject("UPAC Password Reset")
         .header(ContentType::TEXT_HTML)
-        .body(config::EMAIL_PASSWORD_RESET_BODY.replace(
-            "{}",
-            format!("{}/{}", callback, password_reset_link).as_str(),
-        ))
+        .body(
+            config::EMAIL_PASSWORD_RESET_BODY.replace(
+                "{}",
+                format!(
+                    "{}/update-password/{}",
+                    website_origin(),
+                    password_reset_link
+                )
+                .as_str(),
+            ),
+        )
         .unwrap();
 
     config::MAILER.send(&email_body)?;
