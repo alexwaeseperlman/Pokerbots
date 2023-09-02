@@ -37,6 +37,8 @@ diesel::table! {
         error_type -> Nullable<Text>,
         error_bot -> Nullable<Int4>,
         updated_at -> Int8,
+        defender_rating -> Float4,
+        challenger_rating -> Float4,
     }
 }
 

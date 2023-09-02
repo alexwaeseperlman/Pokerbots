@@ -221,7 +221,7 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
           return running ? (
             <></>
           ) : (
-            <RatingChange before={before} after={after} />
+            <RatingChange before={before} after={after} running={running} />
           );
         },
       },
@@ -286,7 +286,7 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
           return running ? (
             <></>
           ) : (
-            <RatingChange before={before} after={after} />
+            <RatingChange before={before} after={after} running={running} />
           );
         },
       },

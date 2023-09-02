@@ -117,6 +117,8 @@ pub struct GameResult {
     pub error_type: Option<String>,
     pub error_bot: Option<i32>,
     pub updated_at: i64,
+    pub challenger_rating: f32,
+    pub defender_rating: f32,
 }
 
 #[derive(Deserialize, Debug, TS, Selectable, Insertable)]
@@ -130,6 +132,8 @@ pub struct NewGameResult {
     pub challenger_score: i32,
     pub error_type: Option<String>,
     pub error_bot: Option<i32>,
+    pub challenger_rating: f32,
+    pub defender_rating: f32,
 }
 
 #[derive(Serialize, TS)]
