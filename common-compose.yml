@@ -24,9 +24,7 @@ services:
       - DB_URL=db:5432/postgres
       - DB_USER=postgres
       - DB_PASSWORD=${DB_PASSWORD}
-      - MICROSOFT_CLIENT_ID=${MICROSOFT_CLIENT_ID}
-      - MICROSOFT_TENANT_ID=${MICROSOFT_TENANT_ID}
-      - REDIRECT_URI=${REDIRECT_URI}
+      - APP_MICROSOFT_CLIENT_ID=${APP_MICROSOFT_CLIENT_ID}
 
       - PFP_S3_BUCKET=${PFP_S3_BUCKET}
       - BOT_S3_BUCKET=${BOT_S3_BUCKET}
@@ -42,7 +40,6 @@ services:
 
       - RUST_LOG=info
 
-      - APP_PFP_ENDPOINT=https://${DOMAIN_NAME}:9000/${PFP_S3_BUCKET}/
       - S3_ADDRESS=http://s3:9000
       - SQS_ADDRESS=http://sqs:9324
       - PORT=3000
@@ -50,9 +47,14 @@ services:
       - S3_ACCESS_KEY=${S3_ACCESS_KEY}
       - S3_SECRET_KEY=${S3_SECRET_KEY}
 
+      - EMAIL_ADDRESS=${EMAIL_ADDRESS}
+      - EMAIL_APP_PASSWORD=${EMAIL_APP_PASSWORD}
+      - WEBSITE_ORIGIN=${WEBSITE_ORIGIN}
+
   gameplay:
     volumes:
       - ~/.aws/:/root/.aws:ro
+    privileged: true
     environment:
       - RUST_LOG=info
       - S3_ACCESS_KEY=${S3_ACCESS_KEY}

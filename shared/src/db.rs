@@ -7,6 +7,7 @@ pub mod conn;
 pub mod dao;
 pub mod models;
 pub mod schema;
+pub mod schema_aliases;
 
 pub fn run_pending_migrations<T: MigrationHarness<U>, U: Backend>(conn: &mut T) {
     conn.run_pending_migrations(MIGRATIONS).unwrap();

@@ -1,7 +1,26 @@
-import Container from "@mui/system/Container";
-import React from "react";
-import { Button, SvgIcon, SvgIconProps, Box } from "@mui/material";
+import Container from "@mui/joy/Container";
+import React, { useEffect } from "react";
+import {
+  Button,
+  SvgIcon,
+  SvgIconProps,
+  Box,
+  Input,
+  FormControl,
+  FormLabel,
+  Typography,
+  Stack,
+} from "@mui/joy";
 import styled from "@mui/system/styled";
+import { ButtonProps, Sheet } from "@mui/joy";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { enqueueSnackbar } from "notistack";
+import {
+  authUrl,
+  googleSigninUrl,
+  microsoftSigninUrl,
+  useUser,
+} from "../state";
 function MicrosoftLogo(props: SvgIconProps) {
   return (
     <SvgIcon {...props}>
@@ -51,64 +70,117 @@ function GoogleLogo(props: SvgIconProps) {
   );
 }
 
-const LoginButton = styled(Button)(({ theme }) => ({
-  width: "100%",
-  maxWidth: "300px",
-  margin: theme.spacing(1),
-  padding: theme.spacing(1),
-  color: "white",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  "& svg": {
-    marginRight: theme.spacing(1),
-  },
+const LoginButton = styled((props: ButtonProps) => (
+  <Button variant="soft" color="primary" {...props} />
+))(({ theme }) => ({
+  flexGrow: 1,
 }));
 
 export default function Login() {
+  const [params, setParams] = useSearchParams();
+  const redirect = params.get("redirect") ?? "/manage-team";
+  const navigate = useNavigate();
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [user, fetchUser] = useUser();
+  useEffect(() => {
+    if (user) {
+      navigate(redirect);
+    }
+  }, [user]);
   return (
-    <Box
+    <Container
+      maxWidth="sm"
       sx={{
         display: "flex",
         flexDirection: "column",
-        alignItems: "center",
+        alignItems: "stretch",
         justifyContent: "center",
-        height: "100%",
         flexGrow: 1,
+        gap: 2,
       }}
     >
-      <Container
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          maxWidth: "500px",
-          color: "white",
-          textAlign: "center",
+      <Typography textColor="inherit" level="h1">
+        Log in to your account
+      </Typography>
+      <Input
+        placeholder="Email"
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      <Input
+        placeholder="Password"
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            handleSubmit();
+          }
+        }}
+      />
+      <Button
+        variant="solid"
+        onClick={() => {
+          handleSubmit();
         }}
       >
-        Log in to your university email account with one of the following
-        providers:
+        Log in
+      </Button>
+      <Stack direction="row" gap={2}>
+        <LoginButton
+          variant="soft"
+          onClick={() => {
+            navigate(`/forgot-password?redirect=${redirect}`);
+          }}
+        >
+          Forgot your password?
+        </LoginButton>
+      </Stack>
+      <Stack direction="row" gap={2}>
         <LoginButton
           onClick={() => {
-            window.location.href = `/api/login-provider?provider=microsoft&state=${encodeURIComponent(
-              window.location.href
-            )}`;
+            window.location.href =
+              googleSigninUrl + "&state=" + encodeURIComponent(redirect);
           }}
+          startDecorator={<GoogleLogo />}
         >
-          <MicrosoftLogo />
-          With Microsoft
+          Log in with Google
         </LoginButton>
-        {/*<LoginButton
+        <LoginButton
           onClick={() => {
-            window.location.href = "/api/login-provider?provider=google";
+            window.location.href =
+              microsoftSigninUrl + "&state=" + encodeURIComponent(redirect);
           }}
+          startDecorator={<MicrosoftLogo />}
         >
-          <GoogleLogo />
-          With Google
-        </LoginButton>*/}
-      </Container>
-    </Box>
+          Log in with Microsoft
+        </LoginButton>
+      </Stack>
+    </Container>
   );
+  function handleSubmit() {
+    fetch(`${authUrl}/email/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        password,
+      }),
+    }).then(async (res) => {
+      if (res.status == 200) {
+        enqueueSnackbar("Logged in!", {
+          variant: "success",
+        });
+        fetchUser();
+      } else {
+        enqueueSnackbar(`Failed to log in: ${(await res.json()).error}`, {
+          variant: "error",
+        });
+      }
+    });
+  }
 }

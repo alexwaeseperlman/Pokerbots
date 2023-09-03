@@ -1,31 +1,40 @@
 import React, { Suspense } from "react";
 import { Route, Routes, useNavigate, useParams } from "react-router-dom";
-import HomePage from "./HomePage";
+import Home from "./Home";
 import ManageTeam, { DisplayTeam } from "./ManageTeam";
 import { useTeam, useUser } from "./state";
 
 import logoImage from "../static/assets/logo.webp";
 import { TopBar, BottomBar } from "./components/AppBar";
-import { Box, Container } from "@mui/system";
+import { Box, Container, Sheet } from "@mui/joy";
 import Leaderboard from "./Leaderboard";
-import { primary_background } from "./styles.module.css";
-import { CircularProgress, LinearProgress } from "@mui/material";
+import { CircularProgress, LinearProgress } from "@mui/joy";
 import { useAtom } from "jotai";
 import JoinTeam from "./JoinTeam";
 import NotFound from "./NotFound";
+import RecentGames from "./RecentGames";
+import Profile from "./Profile";
+import Login from "./Login";
+import Signup from "./Signup";
+import VerifyEmail from "./VerifyEmail";
+import ForgotPassword from "./ForgotPassword";
+import UpdatePassword from "./UpdatePassword";
+import OAuth from "./OAuth";
 
 function HeaderFooter(props: React.PropsWithChildren<{}>) {
-  const user = useUser()[0];
-  const navigate = useNavigate();
-
   return (
-    <Box
-      flexDirection={"column"}
-      minHeight="100vh"
-      position="relative"
-      display={"flex"}
-      className={primary_background}
-      pb={4}
+    <Sheet
+      sx={{
+        flexDirection: "column",
+        minHeight: "100vh",
+        position: "relative",
+        display: "flex",
+        background: "linear-gradient(269.89deg,#392889 0%,#191335 100%)",
+        pb: 4,
+        boxSizing: "border-box",
+      }}
+      color="primary"
+      variant="solid"
     >
       <TopBar />
       <Suspense
@@ -44,7 +53,13 @@ function HeaderFooter(props: React.PropsWithChildren<{}>) {
           </>
         }
       >
-        {props.children}
+        <Container
+          sx={{
+            margin: "auto",
+          }}
+        >
+          {props.children}
+        </Container>
       </Suspense>
 
       <Box
@@ -56,7 +71,7 @@ function HeaderFooter(props: React.PropsWithChildren<{}>) {
       >
         <BottomBar />
       </Box>
-    </Box>
+    </Sheet>
   );
 }
 
@@ -64,8 +79,6 @@ function TeamDashboard() {
   const myTeam = useTeam(null)[0];
 
   const teamId = useParams().teamId ?? null;
-
-  const user = useUser()[0];
 
   //TODO: Use suspense here
 
@@ -85,7 +98,7 @@ export default function UPAC() {
           index
           element={
             <HeaderFooter>
-              <HomePage />
+              <Home />
             </HeaderFooter>
           }
         />
@@ -105,6 +118,23 @@ export default function UPAC() {
             </HeaderFooter>
           }
         />
+        <Route
+          path="recent-games"
+          element={
+            <HeaderFooter>
+              <RecentGames />
+            </HeaderFooter>
+          }
+        />
+
+        <Route
+          path="profile"
+          element={
+            <HeaderFooter>
+              <Profile />
+            </HeaderFooter>
+          }
+        />
         <Route path="team">
           <Route
             path=":teamId"
@@ -121,6 +151,60 @@ export default function UPAC() {
           element={
             <HeaderFooter>
               <JoinTeam />
+            </HeaderFooter>
+          }
+        />
+
+        <Route
+          path="login"
+          element={
+            <HeaderFooter>
+              <Login />
+            </HeaderFooter>
+          }
+        />
+
+        <Route
+          path="signup"
+          element={
+            <HeaderFooter>
+              <Signup />
+            </HeaderFooter>
+          }
+        />
+
+        <Route
+          path="verify-email/:token"
+          element={
+            <HeaderFooter>
+              <VerifyEmail />
+            </HeaderFooter>
+          }
+        />
+
+        <Route
+          path="forgot-password"
+          element={
+            <HeaderFooter>
+              <ForgotPassword />
+            </HeaderFooter>
+          }
+        />
+
+        <Route
+          path="update-password/:token"
+          element={
+            <HeaderFooter>
+              <UpdatePassword />
+            </HeaderFooter>
+          }
+        />
+
+        <Route
+          path="/login/:provider"
+          element={
+            <HeaderFooter>
+              <OAuth />
             </HeaderFooter>
           }
         />

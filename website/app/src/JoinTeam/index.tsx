@@ -1,4 +1,4 @@
-import { Button, Card, Skeleton, TextField, Typography } from "@mui/material";
+import { Button, Card, Skeleton, Input, Typography } from "@mui/joy";
 import { Box, Container } from "@mui/system";
 import React, { useState } from "react";
 import { apiUrl, useTeam, useUser } from "../state";
@@ -10,7 +10,7 @@ import { InviteCodeResponse } from "@bindings/InviteCodeResponse";
 
 export default function JoinTeam() {
   const navigate = useNavigate();
-  const code = useSearchParams()[0].get("invite_code");
+  const code = useSearchParams()[0].get("code");
 
   const [user, fetchUser] = useUser();
   const [team, setTeam] = useState<Team | null>(null);
@@ -26,17 +26,22 @@ export default function JoinTeam() {
     fetch(`${apiUrl}/invite-code?code=${code}`)
       .then((res) => res.json())
       .then((data: InviteCodeResponse | { error: string }) => {
-        if ("error" in data) {
+        if ("error" in data || !("team" in data)) {
           navigate("/");
           enqueueSnackbar(data.error, { variant: "error" });
+        } else if ("team" in data) {
+          setTeam(data.team);
         }
-        setTeam(data.team);
       });
   }, [code]);
 
-  if (!user) {
-    return <Login />;
-  }
+  React.useEffect(() => {
+    if (!user) {
+      navigate(
+        `/login?redirect=${encodeURIComponent("/join-team?code=" + code)}`
+      );
+    }
+  }, [user]);
 
   return (
     <Box
@@ -54,9 +59,9 @@ export default function JoinTeam() {
           p: 4,
         }}
       >
-        <Typography variant="h3">
-          {team?.team_name ? (
-            `You are invited to join "${team?.team_name}"`
+        <Typography level="h3">
+          {team?.name ? (
+            `You are invited to join "${team?.name}"`
           ) : (
             <Skeleton
               sx={{
@@ -66,14 +71,14 @@ export default function JoinTeam() {
           )}
         </Typography>
         <Button
-          variant="contained"
+          variant="plain"
           color="primary"
           sx={{
             mt: 2,
           }}
           disabled={myTeam !== null}
           onClick={() => {
-            fetch(`${apiUrl}/join-team?invite_code=${code}`)
+            fetch(`${apiUrl}/join-team?code=${code}`)
               .then((res) => res.json())
               .then((data) => {
                 if (data) {

@@ -1,93 +1,215 @@
-import React from "react";
-import {
-  menu_bar,
-  inner_bar,
-  bar_item,
-  nav_group,
-  bar_item_clickable,
-} from "./styles.module.css";
-import { apiUrl, useUser } from "../../state";
-import Box from "@mui/system/Box";
+import React, { PropsWithChildren } from "react";
+import { menu_bar, nav_group, bar_item } from "./styles.module.css";
+import { apiUrl, authUrl, useUser } from "../../state";
+import Box from "@mui/joy/Box";
 import Logo from "../Logo";
-import IconButton from "@mui/material/IconButton";
+import IconButton from "@mui/joy/IconButton";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import Typography from "@mui/joy/Typography";
+import Sheet from "@mui/joy/Sheet";
+import {
+  Accordion,
+  AccordionDetails,
+  AccordionGroup,
+  AccordionSummary,
+  Dropdown,
+  Menu,
+  MenuButton,
+  useTheme,
+} from "@mui/joy";
+import { Person } from "@mui/icons-material";
+import { BoxProps } from "@mui/joy/Box";
 
-import { primary_background } from "../../styles.module.css";
-import { useNavigate } from "react-router-dom";
-
-function BarItem(props: {
-  label: string;
-  selected?: boolean;
-  command?: () => void;
-}) {
+function RawBarItem({
+  selected,
+  command,
+  underlineColor = "white",
+  children,
+  ...props
+}: PropsWithChildren<
+  {
+    selected?: boolean;
+    underlineColor?: "white" | "black";
+    command?: () => void;
+  } & BoxProps
+>) {
   return (
     <Box
-      className={`${bar_item} ${props.command && bar_item_clickable}`}
-      onClick={props.command}
+      onClick={command}
+      {...props}
+      onKeyDown={(e) => {
+        if (e.key == " " || e.key == "Enter") {
+          e.preventDefault();
+          return (e.key == " " || e.key == "Enter") && command?.();
+        }
+      }}
     >
       <Box
-        sx={{
-          display: "inline-block",
+        className={bar_item}
+        sx={(theme) => ({
           "::after": {
             content: "''",
             display: "block",
             height: "2px",
-            width: props.selected ? "100%" : "0",
-            background: "white",
+            width: selected ? "100%" : "0",
+            background: underlineColor,
             transition: "width 0.1s ease-out",
           },
           ":hover::after": {
-            width: props.command ? "100%" : "0",
+            width: command ? "100%" : "0",
           },
-        }}
+        })}
       >
-        {props.label}
+        {children}
       </Box>
     </Box>
   );
 }
 
+function BarItem({
+  label,
+  selected,
+  command,
+  underlineColor = "white",
+  ...props
+}: {
+  label?: string;
+  selected?: boolean;
+  underlineColor?: "white" | "black";
+  command?: () => void;
+} & BoxProps) {
+  return (
+    <RawBarItem
+      {...props}
+      underlineColor={underlineColor}
+      selected={selected}
+      command={command}
+    >
+      <Typography textColor="inherit" fontWeight={700} level="title-sm">
+        {label}
+      </Typography>
+    </RawBarItem>
+  );
+}
+
 export function TopBar() {
+  return (
+    <>
+      <Dropdown
+        sx={(theme) => ({
+          [theme.breakpoints.up("sm")]: {
+            display: "none",
+          },
+        })}
+      >
+        <MenuButton
+          sx={(theme) => ({
+            [theme.breakpoints.up("sm")]: {
+              display: "none",
+            },
+            background: "none",
+            border: "none",
+            ":hover": {
+              background: "#00000011",
+            },
+          })}
+        >
+          <Typography textColor="white">Options</Typography>
+        </MenuButton>
+        <Menu
+          sx={(theme) => ({
+            [theme.breakpoints.up("sm")]: {
+              display: "none",
+            },
+          })}
+        >
+          <TopBarContent vertical black={true} />
+        </Menu>
+      </Dropdown>
+      <Box
+        sx={(theme) => ({
+          [theme.breakpoints.down("sm")]: {
+            display: "none",
+          },
+        })}
+      >
+        <TopBarContent />
+      </Box>
+    </>
+  );
+}
+
+export function TopBarContent(props: { vertical?: boolean; black?: boolean }) {
   const [user, fetchUser] = useUser();
   const [team, fetchTeam] = useUser();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   return (
     <Box
-      className={`${menu_bar} ${primary_background}`}
+      className={`${menu_bar}`}
       sx={(theme) => ({
         // small screen
-        [theme.breakpoints.down("sm")]: {
-          flexDirection: "column",
-          alignItems: "center",
-        },
+        ...(props.vertical
+          ? {
+              flexDirection: "column",
+              alignItems: "baseline",
+            }
+          : {}),
       })}
     >
-      <IconButton
-        sx={{
-          padding: 0,
-        }}
-        onClick={() => {
+      <RawBarItem
+        tabIndex={1}
+        command={() => {
           navigate("/");
         }}
-      >
-        <Logo />
-      </IconButton>
-      <BarItem
-        label="MANAGE TEAM"
-        selected={window.location.pathname === "/manage-team"}
-        command={() => {
-          navigate("/manage-team");
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          pt: 1,
         }}
-      />
+        underlineColor={props.black ? "black" : "white"}
+      >
+        <Logo
+          sx={{
+            color: "inherit",
+          }}
+        />
+      </RawBarItem>
+      {user && (
+        <BarItem
+          tabIndex={2}
+          label="YOUR TEAM"
+          selected={window.location.pathname === "/manage-team"}
+          underlineColor={props.black ? "black" : "white"}
+          command={() => {
+            navigate("/manage-team");
+          }}
+        />
+      )}
       <BarItem
+        tabIndex={3}
         label="LEADERBOARD"
         selected={window.location.pathname === "/leaderboard"}
+        underlineColor={props.black ? "black" : "white"}
         command={() => {
           navigate("/leaderboard");
         }}
       />
 
+      <BarItem
+        tabIndex={4}
+        label="GAMES"
+        selected={window.location.pathname === "/recent-games"}
+        underlineColor={props.black ? "black" : "white"}
+        command={() => {
+          navigate("/recent-games");
+        }}
+      />
+
       <Box
+        tabIndex={5}
         className={nav_group}
         sx={(theme) => ({
           [theme.breakpoints.down("sm")]: {
@@ -97,20 +219,57 @@ export function TopBar() {
         })}
       ></Box>
       <BarItem
+        tabIndex={6}
         label="DOCUMENTATION"
+        underlineColor={props.black ? "black" : "white"}
         command={() => {
           window.open("https://docs.upac.dev/");
         }}
       />
-      {user && (
-        <BarItem
-          label="SIGN OUT"
-          command={() => {
-            fetch(`${apiUrl}/signout`).then(() => {
-              fetchUser();
-            });
-          }}
-        />
+      {user ? (
+        <>
+          <BarItem
+            tabIndex={7}
+            label="SIGN OUT"
+            underlineColor={props.black ? "black" : "white"}
+            command={() => {
+              fetch(`${authUrl}/signout`).then(() => {
+                fetchUser();
+              });
+            }}
+          />
+          <RawBarItem
+            tabIndex={8}
+            selected={window.location.pathname === "/profile"}
+            underlineColor={props.black ? "black" : "white"}
+            command={() => {
+              navigate("/profile");
+            }}
+          >
+            <Person />
+          </RawBarItem>
+        </>
+      ) : (
+        <>
+          <BarItem
+            tabIndex={7}
+            label="LOG IN"
+            selected={window.location.pathname === "/login"}
+            underlineColor={props.black ? "black" : "white"}
+            command={() => {
+              navigate("/login");
+            }}
+          />
+          <BarItem
+            tabIndex={8}
+            label="SIGN UP"
+            selected={window.location.pathname === "/signup"}
+            underlineColor={props.black ? "black" : "white"}
+            command={() => {
+              navigate("/signup");
+            }}
+          />
+        </>
       )}
     </Box>
   );
@@ -118,7 +277,7 @@ export function TopBar() {
 
 export function BottomBar() {
   return (
-    <Box className={`${menu_bar} ${primary_background}`}>
+    <Box className={menu_bar}>
       <Box
         className={nav_group}
         style={{

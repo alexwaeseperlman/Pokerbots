@@ -3,16 +3,12 @@ import { apiUrl, useTeam, useUser } from "../state";
 import Box from "@mui/system/Box";
 import { Container } from "@mui/system";
 import AddIcon from "@mui/icons-material/Add";
-import TableBody from "@mui/material/TableBody";
-import TableContainer from "@mui/material/TableContainer";
-import TableRow from "@mui/material/TableRow";
-import Table from "@mui/material/Table";
-import Avatar from "@mui/material/Avatar";
-import CircularProgress from "@mui/material/CircularProgress";
-import { primary_background } from "../styles.module.css";
-import { BotUpload } from "./BotUpload";
-import { TableCell, TableButton } from "../components/Tables/GameTable";
-import { Button, Icon, TextField, useTheme } from "@mui/material";
+import Table from "@mui/joy/Table";
+import Avatar from "@mui/joy/Avatar";
+import CircularProgress from "@mui/joy/CircularProgress";
+import FileUpload from "../components/BotUpload";
+import { TableButton } from "../components/Tables/GameTable";
+import { Button, Input, TextField, Typography, useTheme } from "@mui/joy";
 import EditIcon from "@mui/icons-material/Edit";
 import CopyIcon from "@mui/icons-material/ContentCopy";
 import { enqueueSnackbar } from "notistack";
@@ -53,12 +49,10 @@ function PfpUpload({ team, readonly }: { team: Team; readonly: boolean }) {
     <Box
       sx={(theme) => ({
         height: "100%",
-        minWidth: "10px",
 
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        position: "relative",
       })}
     >
       <Avatar
@@ -119,6 +113,35 @@ function PfpUpload({ team, readonly }: { team: Team; readonly: boolean }) {
   );
 }
 
+function CopyableInput({ value }: { value: string }) {
+  const ref = React.useRef<HTMLInputElement>(null);
+  return (
+    <Input
+      value={value}
+      readOnly
+      slotProps={{
+        input: {
+          ref,
+        },
+      }}
+      size="sm"
+      endDecorator={<CopyIcon cursor="pointer" />}
+      sx={{
+        pointerEvents: "auto",
+      }}
+      onClick={(e) => {
+        const input = ref.current!;
+        input.select();
+        // modern version of the following command
+        navigator.clipboard.writeText(input.value);
+        enqueueSnackbar("Copied to clipboard", {
+          variant: "success",
+        });
+      }}
+    />
+  );
+}
+
 export function TeamBar({
   readonly,
   teamId,
@@ -132,280 +155,276 @@ export function TeamBar({
   const [user, fetchUser] = useUser();
   const headerRef = React.useRef<HTMLHeadingElement>(null);
   if (!team) throw new Error("Cannot render team bar without a team");
+  console.log(team);
 
   useEffect(() => {
-    if (team.team_name) {
-      headerRef.current!.textContent = team.team_name;
+    if (team.name) {
+      headerRef.current!.textContent = team.name;
     }
-  }, [team.team_name]);
+  }, [team.name]);
   return (
     <Box
-      className={primary_background}
       sx={{
-        color: "white",
-        padding: 2,
+        mt: 4,
+        mb: 4,
+        flexDirection: "row",
+        display: "flex",
+        alignItems: "center",
+        gap: 4,
+        [theme.breakpoints.down("sm")]: {
+          flexDirection: "column",
+        },
       }}
     >
-      <Container
-        sx={(theme) => ({
-          flexDirection: "row",
-          display: "flex",
-          alignItems: "center",
-          gap: "16px",
-          height: "100%",
-          [theme.breakpoints.down("sm")]: {
-            flexDirection: "column",
-          },
-        })}
+      <PfpUpload team={team} readonly={readonly} />
+      <Box
+        sx={{
+          flexDirection: "column",
+        }}
       >
-        <PfpUpload team={team} readonly={readonly} />
         <Box
-          sx={{
-            flexDirection: "column",
-          }}
+          sx={(theme) => ({
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "baseline",
+          })}
         >
-          <Box
-            sx={(theme) => ({
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "baseline",
-              [theme.breakpoints.down("sm")]: {
-                flexDirection: "column",
-              },
-            })}
-          >
-            <h1
-              ref={headerRef}
-              contentEditable={editing}
-              suppressContentEditableWarning={true}
-              id={`team-name-${team?.id}-${editing}`}
-              style={{
-                margin: "10px",
-              }}
-              onFocus={(e) => {
-                window.getSelection()?.selectAllChildren(e.target);
-              }}
-              onBlur={(e) => {
-                setEditing(false);
-                fetch(`${apiUrl}/rename-team?to=${e.target.textContent}`).then(
-                  async (res) => {
-                    const json = await res.json();
-                    if (json.error) {
-                      enqueueSnackbar(json.error, {
-                        variant: "error",
-                      });
-                      return;
-                    }
-                    fetchTeam();
+          <Typography
+            level="h1"
+            ref={headerRef}
+            contentEditable={editing}
+            suppressContentEditableWarning={true}
+            id={`team-name-${team?.id}-${editing}`}
+            onFocus={(e) => {
+              window.getSelection()?.selectAllChildren(e.target);
+            }}
+            textColor="inherit"
+            onBlur={(e) => {
+              setEditing(false);
+              fetch(`${apiUrl}/rename-team?to=${e.target.textContent}`).then(
+                async (res) => {
+                  const json = await res.json();
+                  if (json.error) {
+                    enqueueSnackbar(json.error, {
+                      variant: "error",
+                    });
+                    return;
                   }
-                );
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  const el = e.target as HTMLElement;
-                  el.blur();
+                  fetchTeam();
                 }
-              }}
-            >
-              {team?.team_name}
-            </h1>
-            {readonly || editing || (
-              <Box>
-                <TableButton
-                  onClick={() => {
-                    if (!readonly) setEditing(true);
-                    // set a timeout so that the focus happens after the contenteditable is enabled
-                    setTimeout(() => {
-                      if (headerRef.current) {
-                        headerRef.current.focus();
-                      }
-                    }, 5);
-                  }}
-                >
-                  <EditIcon sx={{ mr: "4px" }} fontSize="small" />
-                  Rename
-                </TableButton>
-              </Box>
-            )}
-          </Box>
-          <Box
-            sx={{
-              flexDirection: "row",
-              display: "flex",
-              gap: "10px",
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                const el = e.target as HTMLElement;
+                el.blur();
+              }
             }}
           >
-            <Box display="flex">
-              <TableContainer>
-                <Table size="small">
-                  <TableBody>
-                    {team.members
-                      .map((member) => (
-                        <TableRow key={member.email}>
-                          <TableCell
-                            sx={{
-                              color: "white",
-                            }}
-                          >
-                            {member.display_name}
-                          </TableCell>
-                          {(team.owner === user?.email ||
-                            member.email === user?.email) && (
-                            <TableCell
-                              sx={{
-                                color: "white",
-                              }}
-                            >
-                              {readonly || (
-                                <TableButton
-                                  onClick={() => {
-                                    const confirmed = confirm(
-                                      `Are you sure you want to ${
-                                        member.email == user.email
-                                          ? team.owner == user.email
-                                            ? "delete the team"
-                                            : "leave the team"
-                                          : "kick this member"
-                                      }?`
-                                    );
-                                    if (!confirmed) return;
+            {team?.name}
+          </Typography>
+          {readonly || editing || (
+            <TableButton
+              sx={{
+                margin: "10px",
+              }}
+              onClick={() => {
+                if (!readonly) setEditing(true);
+                // set a timeout so that the focus happens after the contenteditable is enabled
+                setTimeout(() => {
+                  if (headerRef.current) {
+                    headerRef.current.focus();
+                  }
+                }, 5);
+              }}
+            >
+              <EditIcon sx={{ mr: "4px" }} fontSize="small" />
+              Rename
+            </TableButton>
+          )}
+        </Box>
+        <Box
+          sx={{
+            flexDirection: "row",
+            display: "flex",
+            gap: "10px",
+          }}
+        >
+          <Box display="flex">
+            <Table size="sm">
+              <thead>
+                <tr>
+                  <td
+                    style={{
+                      height: 0,
+                    }}
+                  ></td>
+                  <td style={{ width: "150px", height: 0 }}></td>
+                  {team.owner === user?.email && (
+                    <td style={{ width: "150px", height: 0 }}></td>
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {team.members.map((member) => (
+                  <tr key={member.email}>
+                    <td>
+                      <Typography textColor="white" level="title-sm">
+                        {member.display_name}
+                      </Typography>
+                    </td>
+                    <Box
+                      sx={{
+                        width: "150px",
+                      }}
+                      component={(props: any) => <td {...props}></td>}
+                    >
+                      {(team.owner === user?.email ||
+                        member.email === user?.email) &&
+                        (readonly || (
+                          <TableButton
+                            onClick={() => {
+                              const confirmed = confirm(
+                                `Are you sure you want to ${
+                                  member.email == user.email
+                                    ? team.owner == user.email
+                                      ? "delete the team"
+                                      : "leave the team"
+                                    : "kick this member"
+                                }?`
+                              );
+                              if (!confirmed) return;
 
-                                    if (member.email == user.email) {
-                                      if (team.owner == user.email) {
-                                        fetch(`${apiUrl}/delete-team`).then(
-                                          (response) => {
-                                            fetchTeam();
-                                          }
-                                        );
-                                      } else {
-                                        fetch(`${apiUrl}/leave-team`).then(
-                                          (response) => {
-                                            fetchTeam();
-                                          }
-                                        );
-                                      }
-                                    } else {
-                                      fetch(
-                                        `${apiUrl}/kick-member?email=${member.email}`
-                                      ).then((response) => {
-                                        fetchTeam();
-                                      });
-                                    }
-                                  }}
-                                >
-                                  {member.email === user.email
-                                    ? team.owner === user.email
-                                      ? "Delete team"
-                                      : "Leave"
-                                    : "Kick"}
-                                </TableButton>
-                              )}
-                            </TableCell>
-                          )}
-                        </TableRow>
-                      ))
-                      .concat(
-                        !team.invites
-                          ? []
-                          : team.invites.map((invite) => (
-                              <TableRow key={invite}>
-                                <TableCell
-                                  sx={{
-                                    color: "white",
-                                    justifyContent: "center",
-                                    display: "flex",
-                                  }}
-                                >
-                                  <input
-                                    value={`${window.location.origin}/join-team?invite_code=${invite}`}
-                                    readOnly
-                                    style={{
-                                      background: "none",
-                                      marginRight: "8px",
-                                      color: "white",
-                                      border: "1px solid white ",
-                                      borderRadius: "5px",
-                                    }}
-                                    onClick={(e) => {
-                                      const input =
-                                        e.target as HTMLInputElement;
-                                      input.select();
-                                      // modern version of the following command
-                                      navigator.clipboard.writeText(
-                                        input.value
-                                      );
-                                      enqueueSnackbar("Copied to clipboard", {
-                                        variant: "success",
-                                      });
-                                    }}
-                                  />
-                                  {/*<CopyIcon
-                                    style={{
-                                      cursor: "pointer",
-                                    }}
-                                    color="secondary"
-                                    fontSize="small"
-                                  />*/}
-                                </TableCell>
-                                {!readonly && (
-                                  <TableCell
-                                    sx={{
-                                      color: "white",
-                                    }}
-                                  >
-                                    <TableButton
-                                      onClick={() => {
-                                        fetch(
-                                          `${apiUrl}/cancel-invite?invite_code=${invite}`
-                                        ).then(() => fetchTeam());
-                                      }}
-                                    >
-                                      Cancel invitation
-                                    </TableButton>
-                                  </TableCell>
-                                )}
-                              </TableRow>
-                            ))
-                      )
-                      .concat(
-                        readonly ||
-                          (team.invites?.length ?? 0) + team.members.length >=
-                            5 ? (
-                          []
-                        ) : (
-                          <TableRow key="create-invite">
-                            <TableCell
-                              sx={{
-                                alignItems: "center",
-                                justifyContent: "left",
-                                display: "flex",
-                              }}
-                            >
-                              <TableButton
-                                startIcon={<AddIcon />}
-                                onClick={() =>
-                                  fetch(`${apiUrl}/create-invite`).then(
-                                    async (a) => {
+                              if (member.email == user.email) {
+                                if (team.owner == user.email) {
+                                  fetch(`${apiUrl}/delete-team`).then(
+                                    (response) => {
                                       fetchTeam();
                                     }
-                                  )
+                                  );
+                                } else {
+                                  fetch(`${apiUrl}/leave-team`).then(
+                                    (response) => {
+                                      fetchTeam();
+                                    }
+                                  );
                                 }
-                              >
-                                Add a member
-                              </TableButton>
-                            </TableCell>
-                          </TableRow>
-                        )
-                      )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Box>
+                              } else {
+                                fetch(
+                                  `${apiUrl}/kick-member?email=${member.email}`
+                                ).then((response) => {
+                                  fetchTeam();
+                                });
+                              }
+                            }}
+                          >
+                            {member.email === user.email
+                              ? team.owner === user.email
+                                ? "Delete team"
+                                : "Leave"
+                              : "Kick"}
+                          </TableButton>
+                        ))}
+                    </Box>
+                    {team.owner === user?.email &&
+                      member.email !== user?.email &&
+                      (readonly || (
+                        <Box
+                          sx={{
+                            backgroundColor: "white",
+                            width: "150px",
+                          }}
+                          component={(props: any) => <td {...props}></td>}
+                        >
+                          <TableButton
+                            onClick={() => {
+                              if (
+                                confirm(
+                                  `Are you sure you would like to change the owner of this team to ${member.display_name}?`
+                                )
+                              ) {
+                                fetch(
+                                  `${apiUrl}/update-owner?email=${member.email}`
+                                )
+                                  .then(async (result) => {
+                                    enqueueSnackbar("Made owner", {
+                                      variant: "success",
+                                    });
+                                  })
+                                  .catch(() => {
+                                    enqueueSnackbar("Failed to make owner", {
+                                      variant: "error",
+                                    });
+                                  })
+                                  .finally(() => {
+                                    fetchTeam();
+                                  });
+                              }
+                            }}
+                          >
+                            Make owner
+                          </TableButton>
+                        </Box>
+                      ))}
+                  </tr>
+                ))}
+                {!team.invites
+                  ? []
+                  : team.invites.map((invite) => (
+                      <tr key={invite.code}>
+                        <td>
+                          <CopyableInput
+                            value={`${window.location.origin}/join-team?code=${invite.code}`}
+                          />
+                        </td>
+                        {!readonly && (
+                          <td>
+                            <TableButton
+                              onClick={() => {
+                                fetch(
+                                  `${apiUrl}/cancel-invite?code=${invite.code}`
+                                ).then(() => fetchTeam());
+                              }}
+                            >
+                              Cancel invitation
+                            </TableButton>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                {readonly ||
+                (team.invites?.length ?? 0) + team.members.length >= 5 ? (
+                  []
+                ) : (
+                  <tr key="create-invite">
+                    <Box
+                      component={(props: any) => <td {...props}></td>}
+                      sx={{
+                        alignItems: "center",
+                        justifyContent: "left",
+                        display: "flex",
+                      }}
+                    >
+                      <TableButton
+                        startDecorator={<AddIcon />}
+                        onClick={() =>
+                          fetch(`${apiUrl}/create-invite`).then(async (a) => {
+                            fetchTeam();
+                          })
+                        }
+                      >
+                        Add a member
+                      </TableButton>
+                    </Box>
+                  </tr>
+                )}
+              </tbody>
+            </Table>
           </Box>
-          <Box></Box>
         </Box>
-      </Container>
+        <Box></Box>
+      </Box>
     </Box>
   );
 }

@@ -1,44 +1,39 @@
 use std::{fmt, num::TryFromIntError};
 
-use actix_web::body::BoxBody;
-use actix_web::http::StatusCode;
-use actix_web::{error::PayloadError, HttpResponse, ResponseError};
+use actix_web::{error::PayloadError, http::StatusCode, HttpResponse, ResponseError};
 use aws_sdk_s3::presigning::PresigningConfigError;
 use reqwest::header::ToStrError;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use ts_rs::TS;
 
-use crate::{app::login, config::PFP_S3_BUCKET};
+use crate::config::{self, game_logs_s3_bucket, pfp_s3_bucket};
 use actix_session::Session;
 use actix_web::{delete, get, web};
 use aws_sdk_s3 as s3;
 use chrono;
 use diesel::prelude::*;
-use futures_util::StreamExt;
-use shared::db::conn::DB_CONNECTION;
-use shared::db::{
-    models::{NewInvite, NewTeam, TeamInvite, User},
-    schema::{team_invites, teams, users},
-};
+use futures_util::{future::try_join3, StreamExt};
 
-use crate::config::GAME_LOGS_S3_BUCKET;
 use actix_web::{post, put};
 use aws_sdk_s3::presigning::PresigningConfig;
-use futures_util::future::try_join3;
 use rand::{self, Rng};
-use shared::db::{
-    models::{Bot, Game, NewGame},
-    schema,
+use shared::{
+    db::{
+        conn::DB_CONNECTION,
+        models::{Bot, Game, NewGame, NewInvite, NewTeam, Team, TeamInvite, User},
+        schema,
+        schema::{team_invites, teams, users},
+    },
+    GameTask, PresignedRequest,
 };
-use shared::GameTask;
-use shared::PresignedRequest;
 
+pub mod auth;
 pub mod bots;
 pub mod data;
 pub mod games;
 pub mod manage_team;
-pub mod signout;
+pub mod oauth;
 
 pub fn api_service() -> actix_web::Scope {
     actix_web::web::scope("/api")
@@ -51,6 +46,7 @@ pub fn api_service() -> actix_web::Scope {
         .service(manage_team::cancel_invite)
         .service(manage_team::kick_member)
         .service(manage_team::rename_team)
+        .service(manage_team::update_owner)
         .service(bots::upload_bot)
         .service(bots::build_log)
         .service(bots::delete_bot)
@@ -59,12 +55,24 @@ pub fn api_service() -> actix_web::Scope {
         .service(data::my_team)
         .service(data::teams)
         .service(data::bots)
-        .service(data::invite_code)
+        .service(data::code)
         .service(data::pfp)
         .service(games::create_game)
         .service(games::games)
+        .service(games::count_games)
         .service(games::game_log)
-        .service(signout::signout)
+}
+
+pub fn auth_service() -> actix_web::Scope {
+    actix_web::web::scope("/auth")
+        .service(oauth::google_login)
+        .service(oauth::microsoft_login)
+        .service(auth::register)
+        .service(auth::login)
+        .service(auth::signout)
+        .service(auth::reset_password)
+        .service(auth::update_password)
+        .service(auth::verify_verification_link)
 }
 
 type ApiResult<T> = Result<actix_web::web::Json<T>, ApiError>;
@@ -136,10 +144,6 @@ define_api_error!(std::io::Error, StatusCode::INTERNAL_SERVER_ERROR);
 
 define_api_error!(TryFromIntError, StatusCode::INTERNAL_SERVER_ERROR);
 define_api_error!(aws_sdk_sqs::Error, StatusCode::INTERNAL_SERVER_ERROR);
-define_api_error!(
-    actix_session::SessionGetError,
-    StatusCode::INTERNAL_SERVER_ERROR
-);
 
 define_api_error!(r2d2::Error, StatusCode::INTERNAL_SERVER_ERROR);
 define_api_error!(serde_json::Error, StatusCode::INTERNAL_SERVER_ERROR);
@@ -147,3 +151,19 @@ define_api_error!(diesel::result::Error, StatusCode::INTERNAL_SERVER_ERROR);
 define_api_error!(std::env::VarError, StatusCode::INTERNAL_SERVER_ERROR);
 define_api_error!(PresigningConfigError, StatusCode::INTERNAL_SERVER_ERROR);
 define_api_error!(ToStrError, StatusCode::INTERNAL_SERVER_ERROR);
+
+define_api_error!(lettre::error::Error, StatusCode::INTERNAL_SERVER_ERROR);
+define_api_error!(
+    actix_session::SessionInsertError,
+    StatusCode::INTERNAL_SERVER_ERROR
+);
+define_api_error!(
+    actix_session::SessionGetError,
+    StatusCode::INTERNAL_SERVER_ERROR
+);
+define_api_error!(
+    lettre::transport::smtp::Error,
+    StatusCode::INTERNAL_SERVER_ERROR
+);
+define_api_error!(reqwest::Error, StatusCode::INTERNAL_SERVER_ERROR);
+define_api_error!(argon2::password_hash::Error, StatusCode::UNAUTHORIZED);

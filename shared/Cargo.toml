@@ -10,7 +10,7 @@ serde = { version = "1.0.152", features = ["derive"] }
 serde_json = "1.0.96"
 aws-sdk-sqs = "0.28.0"
 tokio = {version = "1.28.1", features=["rt", "macros", "rt-multi-thread", "time", "process"]}
-diesel = { version = "2.0.3", features = ["postgres", "r2d2", "with-deprecated"], optional=true}
+diesel = { version = "2.0.3", features = ["postgres", "r2d2", "with-deprecated", "chrono"], optional=true}
 diesel_migrations = {version= "2.0.0", features=["postgres"], optional=true}
 ts-rs = "6.2"
 lazy_static = {version="1.4.0", optional=true}
@@ -19,6 +19,7 @@ reqwest = "0.11.18"
 num = "0.4.1"
 num-derive = "0.4.0"
 num-traits = "0.2.16"
+chrono = {version = "0.4.26", features = ["serde", "rustc-serialize"]}
 
 [features]
 db=["dep:diesel", "dep:diesel_migrations", "dep:lazy_static"]

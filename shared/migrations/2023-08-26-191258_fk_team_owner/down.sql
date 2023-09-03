@@ -1,0 +1,1 @@
+ALTER TABLE teams DROP CONSTRAINT owner_fk_users_email;

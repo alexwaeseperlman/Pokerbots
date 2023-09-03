@@ -1,15 +1,14 @@
 import React, { useCallback, useEffect } from "react";
 import { apiUrl, useTeam } from "../../state";
 import Box from "@mui/system/Box";
-import MuiTableCell from "@mui/material/TableCell";
-import { styled } from "@mui/material/styles";
-import Button, { ButtonProps } from "@mui/material/Button";
-import { Avatar, Chip, ChipProps, Typography } from "@mui/material";
-import { DataGrid } from "./GameTable";
+import { styled } from "@mui/joy/styles";
+import Button, { ButtonProps } from "@mui/joy/Button";
+import { Avatar, Chip, ChipProps, Stack, Typography } from "@mui/joy";
 import { Link } from "react-router-dom";
 import { Team } from "@bindings/Team";
 import { TeamsResponse } from "@bindings/TeamsResponse";
 import { enqueueSnackbar } from "notistack";
+import DataTable from "../DataTable";
 
 export function TeamsTable() {
   const [teams, setTeams] = React.useState<Team[]>([]);
@@ -38,7 +37,6 @@ export function TeamsTable() {
           setTeams(teams.Teams);
         } else {
           enqueueSnackbar("Error loading teams", { variant: "error" });
-          console.error("Received teams as", data);
         }
       });
   }, [paginationModel.page, paginationModel.pageSize]);
@@ -46,71 +44,63 @@ export function TeamsTable() {
     setLoading(true);
     getTeams();
   }, [getTeams, paginationModel]);
-  const renderTeam = (params: { row: Team }) => {
-    console.log(params);
+  const renderTeam = ({
+    teamId,
+    teamName,
+  }: {
+    teamId: string;
+    teamName: string;
+  }) => {
     return (
-      <>
+      <Stack direction="row" alignItems="center">
         <Avatar
           sx={{
             width: 24,
             height: 24,
             marginRight: 2,
           }}
-          src={`${apiUrl}/pfp?id=${params.row?.id}`}
+          src={`${apiUrl}/pfp?id=${teamId}`}
         />
         <Link
-          to={`/team/${params.row?.id}`}
+          to={`/team/${teamId}`}
           style={{
             color: "inherit",
             textDecoration: "none",
           }}
         >
-          <Typography>{params.row?.team_name ?? "Deleted team"}</Typography>
+          <Typography>{teamName ?? "Deleted team"}</Typography>
         </Link>
-      </>
+      </Stack>
     );
   };
   return (
-    <DataGrid
+    <DataTable<Team>
       columns={[
         {
-          field: "score",
-          headerName: "Score",
-          renderCell: (params) => {
-            const score = params.value ?? 0;
+          name: "Score",
+          width: "100px",
+          key: "score",
+          getProps: (team) => ({ score: team.score }),
+          render: ({ score }: { score: number | null }) => {
             let color: ChipProps["color"] = "success";
-            if (score < 0) color = "error";
-            else if (score == 0) color = "default";
-            return <Chip label={score} color={color} />;
+            if ((score ?? 0) == 0) color = "neutral";
+            else if ((score ?? 0) < 0) color = "danger";
+            return <Chip color={color}>{score ?? 0}</Chip>;
           },
-          flex: 1,
-          sortable: false,
         },
         {
-          field: "team_name",
-          headerName: "Team name",
-          renderCell: renderTeam,
-          flex: 1,
-          sortable: false,
+          name: "Team name",
+          key: "team name",
+          getProps: (team) => ({ teamId: team.id, teamName: team.name }),
+          render: renderTeam,
         },
       ]}
       loading={loading}
-      rows={teams}
-      pagination
-      pageSizeOptions={[10, 25, 50, 100]}
-      paginationMode="server"
-      paginationModel={paginationModel}
-      rowCount={teamCount ?? 0}
-      onPaginationModelChange={setPaginationModel}
-      disableColumnFilter
-      disableColumnMenu
-      disableColumnSelector
-      disableDensitySelector
-      disableRowSelectionOnClick
-      sx={{
-        width: "100%",
-        height: "100%",
-      }}
+      data={teams}
+      perPage={paginationModel.pageSize}
+      serverPagination
+      total={teamCount ?? 0}
+      onPageChange={(page) => setPaginationModel({ ...paginationModel, page })}
     />
   );
 }

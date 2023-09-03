@@ -4,13 +4,16 @@ import randomTeamName from "./random-name";
 import {
   Box,
   Button,
+  Card,
   Container,
+  FormControl,
+  FormLabel,
   IconButton,
   Input,
-  InputLabel,
-  TextField,
+  Sheet,
+  Stack,
   Typography,
-} from "@mui/material";
+} from "@mui/joy";
 import CasinoIcon from "@mui/icons-material/Casino";
 import { Form } from "react-router-dom";
 import { enqueueSnackbar } from "notistack";
@@ -20,61 +23,28 @@ export default function CreateTeam() {
   const [teamName, setTeamName] = useState("");
   const [team, fetchTeam] = useTeam(null);
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        flexGrow: 1,
-        p: 2,
-      }}
-    >
-      <Container
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "left",
-          justifyContent: "center",
-          maxWidth: "600px !important",
-          background: "white",
-          p: 2,
-          borderRadius: 2,
-        }}
-      >
-        <Box sx={{ display: "flex", flexDirection: "column" }}>
-          <Typography variant="body1">
-            Hi {user?.display_name.split(" ")[0]}. You don't have a team yet.
-          </Typography>
-          <TextField
-            sx={{
-              mt: 4,
-            }}
-            label="Team Name"
-            id="team-name"
-            variant="standard"
-            color="secondary"
-            name="team_name"
-            value={teamName}
-            onChange={(e) => setTeamName(e.target.value)}
-            placeholder={randomTeamName()}
-            InputProps={{
-              endAdornment: (
+    <Container maxWidth="sm">
+      <Card size="lg">
+        <Stack gap={2} direction={"column"}>
+          <FormControl sx={{ display: "flex", flexDirection: "column" }}>
+            <FormLabel>
+              Hi {user?.display_name.split(" ")[0]}. You don't have a team yet.
+            </FormLabel>
+            <Input
+              value={teamName}
+              onChange={(e) => setTeamName(e.target.value)}
+              placeholder={randomTeamName()}
+              endDecorator={
                 <IconButton onClick={() => setTeamName(randomTeamName())}>
                   <CasinoIcon />
                 </IconButton>
-              ),
-            }}
-          />
+              }
+            />
+          </FormControl>
           <Button
-            color="secondary"
-            variant="text"
-            sx={{ mt: 4 }}
             onClick={() => {
               fetch(
-                `${apiUrl}/create-team?team_name=${encodeURIComponent(
-                  teamName
-                )}`
+                `${apiUrl}/create-team?name=${encodeURIComponent(teamName)}`
               ).then(async (res) => {
                 if (res.status === 200) {
                   fetchTeam();
@@ -89,8 +59,8 @@ export default function CreateTeam() {
           >
             Create
           </Button>
-        </Box>
-      </Container>
-    </Box>
+        </Stack>
+      </Card>
+    </Container>
   );
 }

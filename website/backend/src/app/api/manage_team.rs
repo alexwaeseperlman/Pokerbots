@@ -2,10 +2,10 @@ use super::*;
 
 #[derive(Deserialize)]
 pub struct CreateTeamQuery {
-    pub team_name: String,
+    pub name: String,
 }
 
-pub fn validate_team_name(name: &String) -> bool {
+pub fn validate_name(name: &String) -> bool {
     if name.len() < 3 || name.len() > 20 {
         return false;
     }
@@ -23,16 +23,16 @@ pub fn validate_team_name(name: &String) -> bool {
 #[get("/create-team")]
 pub async fn create_team(
     session: Session,
-    web::Query::<CreateTeamQuery>(CreateTeamQuery { team_name }): web::Query<CreateTeamQuery>,
+    web::Query::<CreateTeamQuery>(CreateTeamQuery { name }): web::Query<CreateTeamQuery>,
 ) -> ApiResult<()> {
-    let user = login::get_user_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+    let user =
+        auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
     // You can't create a team if you're already in one
-    if login::get_team_data(&session).is_some() {
+    if auth::get_team(&session).is_some() {
         return Err(actix_web::error::ErrorConflict("You are already on a team.").into());
     }
 
-    if !validate_team_name(&team_name) {
+    if !validate_name(&name) {
         return Err(actix_web::error::ErrorNotAcceptable(
             "Invalid team name. It must be at most 20 characters and cannot contain consecutive spaces.",
         )
@@ -42,7 +42,7 @@ pub async fn create_team(
     let conn = &mut (*DB_CONNECTION).get()?;
     let new_id = diesel::insert_into(teams::dsl::teams)
         .values(NewTeam {
-            team_name,
+            name,
             owner: user.clone().email,
         })
         .returning(teams::dsl::id)
@@ -50,7 +50,7 @@ pub async fn create_team(
 
     diesel::update(users::dsl::users)
         .filter(users::dsl::email.eq(user.email))
-        .set(users::dsl::team_id.eq(new_id))
+        .set(users::dsl::team.eq(new_id))
         .get_result::<User>(conn)?;
 
     Ok(web::Json(()))
@@ -58,15 +58,15 @@ pub async fn create_team(
 
 #[derive(Deserialize)]
 pub struct JoinTeamQuery {
-    pub invite_code: String,
+    pub code: String,
 }
 
-#[delete("/team")]
+#[get("/delete-team")]
 pub async fn delete_team(session: Session) -> ApiResult<()> {
-    let user = login::get_user_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
-    let team = login::get_team_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
+    let user =
+        auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+    let team =
+        auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
     // You can't delete a team if you're not in one
     if team.clone().owner != user.email {
         return Err(actix_web::error::ErrorNotFound(
@@ -76,22 +76,29 @@ pub async fn delete_team(session: Session) -> ApiResult<()> {
     }
     let conn = &mut (*DB_CONNECTION).get()?;
 
-    diesel::delete(teams::dsl::teams.filter(teams::dsl::id.eq(team.clone().id))).execute(conn)?;
-    // Make everyone on the team leave the team
-    diesel::update(users::dsl::users)
-        .filter(users::dsl::team_id.eq(team.id))
-        .set(users::dsl::team_id.eq::<Option<i32>>(None))
-        .execute(conn)?;
+    conn.transaction(|conn| {
+        // Set the team to deleted
+        diesel::update(teams::dsl::teams)
+            .filter(teams::dsl::id.eq(team.id))
+            .set(teams::dsl::deleted_at.eq(Some(chrono::offset::Utc::now().timestamp())))
+            .execute(conn)?;
+        // Make everyone on the team leave the team
+        diesel::update(users::dsl::users)
+            .filter(users::dsl::team.eq(team.id))
+            .set(users::dsl::team.eq::<Option<i32>>(None))
+            .execute(conn)?;
+        diesel::result::QueryResult::Ok(())
+    })?;
 
     Ok(web::Json(()))
 }
 
 #[get("/leave-team")]
 pub async fn leave_team(session: Session) -> ApiResult<()> {
-    let user = login::get_user_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
-    let team = login::get_team_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
+    let user =
+        auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+    let team =
+        auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
     // You can't delete a team if you're not in one or you're the owner
     if user.clone().email == team.owner {
         return Err(actix_web::error::ErrorNotAcceptable(
@@ -104,22 +111,23 @@ pub async fn leave_team(session: Session) -> ApiResult<()> {
     // Set the current user's team to null
     diesel::update(users::dsl::users)
         .filter(users::dsl::email.eq(user.email))
-        .set(users::dsl::team_id.eq::<Option<i32>>(None))
+        .set(users::dsl::team.eq::<Option<i32>>(None))
         .execute(conn)?;
 
     Ok(web::Json(()))
 }
 #[get("/create-invite")]
 pub async fn create_invite(session: Session) -> ApiResult<()> {
-    let user = login::get_user_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
-    let team = login::get_team_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
+    let user =
+        auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+    let team =
+        auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
     // You can't join a team if you are already on one or if you aren't logged in
     // Also only the owner can create a team
 
     // if the number of invites plus the number of users is at the limit, then don't create an invite
-    if team.invites.len() + team.members.len() >= crate::config::TEAM_SIZE as usize {
+    if team.invites.clone().unwrap().len() + team.members.len() >= crate::config::TEAM_SIZE as usize
+    {
         return Err(actix_web::error::ErrorNotAcceptable("Team is full.").into());
     }
 
@@ -134,35 +142,35 @@ pub async fn create_invite(session: Session) -> ApiResult<()> {
     let out = diesel::insert_into(team_invites::dsl::team_invites)
         .values(NewInvite {
             expires: now + day,
-            invite_code: format!("{:02x}", rand::thread_rng().gen::<u128>()),
-            teamid: team.clone().id,
+            code: format!("{:02x}", rand::thread_rng().gen::<u128>()),
+            team: team.clone().id,
         })
-        .returning(team_invites::dsl::invite_code)
+        .returning(team_invites::dsl::code)
         .get_result::<String>(conn)?;
     Ok(web::Json(()))
 }
 
 #[derive(Deserialize)]
 pub struct CancelTeamQuery {
-    pub invite_code: String,
+    pub code: String,
 }
 
 #[get("/cancel-invite")]
 pub async fn cancel_invite(
     session: Session,
-    web::Query(CancelTeamQuery { invite_code }): web::Query<CancelTeamQuery>,
+    web::Query(CancelTeamQuery { code }): web::Query<CancelTeamQuery>,
 ) -> ApiResult<()> {
-    let user = login::get_user_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
-    let team = login::get_team_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
+    let user =
+        auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+    let team =
+        auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
 
     // Insert an invite with expiry date 24 hours from now
     let conn = &mut (*DB_CONNECTION).get()?;
     let out = diesel::delete(team_invites::dsl::team_invites)
-        .filter(team_invites::dsl::invite_code.eq(&invite_code))
-        .filter(team_invites::dsl::teamid.eq(team.id))
-        .returning(team_invites::dsl::invite_code)
+        .filter(team_invites::dsl::code.eq(&code))
+        .filter(team_invites::dsl::team.eq(team.id))
+        .returning(team_invites::dsl::code)
         .get_result::<String>(conn)?;
     Ok(web::Json(()))
 }
@@ -170,12 +178,12 @@ pub async fn cancel_invite(
 #[get("/join-team")]
 pub async fn join_team(
     session: Session,
-    web::Query::<JoinTeamQuery>(JoinTeamQuery { invite_code }): web::Query<JoinTeamQuery>,
+    web::Query::<JoinTeamQuery>(JoinTeamQuery { code }): web::Query<JoinTeamQuery>,
     req: actix_web::HttpRequest,
 ) -> ApiResult<()> {
-    let user = login::get_user_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
-    let team = login::get_team_data(&session);
+    let user =
+        auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+    let team = auth::get_team(&session);
     // You can't join a team if you are already on one or if you aren't logged in
 
     if team.is_some() {
@@ -184,20 +192,25 @@ pub async fn join_team(
         let conn = &mut (*DB_CONNECTION).get()?;
         // Check if there is an existing team invite with this code
         let codes: Vec<TeamInvite> = team_invites::dsl::team_invites
-            .find(invite_code.clone())
+            .find(code.clone())
             .load::<TeamInvite>(conn)?;
         if let Some(code) = codes.first() {
             let now: i64 = chrono::offset::Utc::now().timestamp();
-            if code.expires < now {
+            let TeamInvite {
+                code,
+                expires,
+                team,
+            } = code;
+            if expires < &now {
                 return Err(actix_web::error::ErrorNotAcceptable("Invalid code.").into());
             } else {
                 // Set the users team and set the code to used
                 diesel::delete(team_invites::dsl::team_invites)
-                    .filter(team_invites::dsl::invite_code.eq(invite_code))
+                    .filter(team_invites::dsl::code.eq(code))
                     .execute(conn)?;
                 diesel::update(users::dsl::users)
                     .filter(users::dsl::email.eq(user.email))
-                    .set(users::dsl::team_id.eq(code.teamid))
+                    .set(users::dsl::team.eq(team))
                     .execute(conn)?;
             }
         } else {
@@ -213,10 +226,10 @@ pub async fn upload_pfp(
     session: Session,
     mut payload: web::Payload,
 ) -> ApiResult<()> {
-    let user = login::get_user_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
-    let team = login::get_team_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
+    let user =
+        auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+    let team =
+        auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
 
     let mut body = web::BytesMut::new();
     while let Some(chunk) = payload.next().await {
@@ -229,7 +242,7 @@ pub async fn upload_pfp(
     }
     s3_client
         .put_object()
-        .bucket(&*PFP_S3_BUCKET)
+        .bucket(pfp_s3_bucket())
         .key(format!("{}", team.id))
         .body(body.to_vec().into())
         .acl(s3::types::ObjectCannedAcl::PublicRead)
@@ -252,10 +265,10 @@ pub async fn kick_member(
     session: Session,
     web::Query::<KickMemberQuery>(KickMemberQuery { email }): web::Query<KickMemberQuery>,
 ) -> ApiResult<()> {
-    let user = login::get_user_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
-    let team = login::get_team_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
+    let user =
+        auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+    let team =
+        auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
     if team.clone().owner != user.clone().email {
         return Err(
             actix_web::error::ErrorUnauthorized("Only the team owner can kick members.").into(),
@@ -265,8 +278,43 @@ pub async fn kick_member(
     let conn = &mut (*DB_CONNECTION).get()?;
     diesel::update(users::dsl::users)
         .filter(users::dsl::email.eq(email))
-        .filter(users::dsl::team_id.eq(team.id))
-        .set(users::dsl::team_id.eq::<Option<i32>>(None))
+        .filter(users::dsl::team.eq(team.id))
+        .set(users::dsl::team.eq::<Option<i32>>(None))
+        .execute(conn)?;
+    // TODO: Maybe some kind of message should show for the user next time they log in?
+    Ok(web::Json(()))
+}
+
+#[derive(Deserialize)]
+pub struct MakeOwnerQuery {
+    pub email: String,
+}
+
+#[get("/update-owner")]
+pub async fn update_owner(
+    session: Session,
+    web::Query::<MakeOwnerQuery>(MakeOwnerQuery { email }): web::Query<MakeOwnerQuery>,
+) -> ApiResult<()> {
+    let user =
+        auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+    let team =
+        auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
+    if team.clone().owner != user.clone().email {
+        return Err(
+            actix_web::error::ErrorUnauthorized("Only the team owner can kick members.").into(),
+        );
+    }
+
+    // make sure the user is on the team
+    let conn = &mut (*DB_CONNECTION).get()?;
+    let count: i64 = users::table.find(&email).count().get_result::<i64>(conn)?;
+    if count == 0 {
+        return Err(actix_web::error::ErrorNotFound("User not found.").into());
+    }
+
+    let conn = &mut (*DB_CONNECTION).get()?;
+    diesel::update(teams::table)
+        .set(teams::dsl::owner.eq(email))
         .execute(conn)?;
     // TODO: Maybe some kind of message should show for the user next time they log in?
     Ok(web::Json(()))
@@ -282,12 +330,12 @@ pub async fn rename_team(
     session: Session,
     web::Query::<RenameTeamQuery>(RenameTeamQuery { to }): web::Query<RenameTeamQuery>,
 ) -> ApiResult<()> {
-    let user = login::get_user_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
-    let team = login::get_team_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
+    let user =
+        auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+    let team =
+        auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
 
-    if !validate_team_name(&to) {
+    if !validate_name(&to) {
         return Err(actix_web::error::ErrorNotAcceptable(
             "Invalid team name. It must be at most 20 characters and cannot contain consecutive spaces.",
         ).into());
@@ -298,7 +346,7 @@ pub async fn rename_team(
         .filter(teams::dsl::id.eq(team.clone().id))
         // Team members can change the team name
         //.filter(teams::dsl::owner.eq(user.clone().email))
-        .set(teams::dsl::team_name.eq(to))
+        .set(teams::dsl::name.eq(to))
         .execute(conn)?;
     Ok(web::Json(()))
 }

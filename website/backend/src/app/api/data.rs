@@ -1,20 +1,14 @@
+use super::*;
 use shared::db::models::{BotWithTeam, Team, TeamWithMembers};
 
-use crate::{
-    app::login::{TeamData, UserData},
-    config::APP_PFP_ENDPOINT,
-};
-
-use super::*;
-
 #[get("/my-account")]
-pub async fn my_account(session: Session) -> ApiResult<Option<UserData>> {
-    Ok(web::Json(login::get_user_data(&session)))
+pub async fn my_account(session: Session) -> ApiResult<Option<User>> {
+    Ok(web::Json(auth::get_user(&session)))
 }
 
 #[get("/my-team")]
-pub async fn my_team(session: Session) -> ApiResult<Option<TeamData>> {
-    Ok(web::Json(login::get_team_data(&session)))
+pub async fn my_team(session: Session) -> ApiResult<Option<TeamWithMembers>> {
+    Ok(web::Json(auth::get_team(&session)))
 }
 
 #[derive(Deserialize)]
@@ -61,9 +55,11 @@ pub async fn teams(
         count,
     }): web::Query<TeamQuery>,
 ) -> ApiResult<TeamsResponse> {
-    let team = login::get_team_data(&session);
+    let team = auth::get_team(&session);
     let conn = &mut (*DB_CONNECTION).get()?;
-    let mut base = schema::teams::dsl::teams.into_boxed();
+    let mut base = schema::teams::dsl::teams
+        .into_boxed()
+        .filter(schema::teams::dsl::deleted_at.is_null());
     // <cringe>
     if !count.unwrap_or(false) {
         match sort {
@@ -106,12 +102,12 @@ pub async fn teams(
     if fill_members.unwrap_or(false) {
         let users = schema::users::dsl::users
             .filter(
-                schema::users::dsl::team_id
-                    .eq_any(result.iter().map(|t| t.id).collect::<Vec<i32>>()),
+                schema::users::dsl::team.eq_any(result.iter().map(|t| t.id).collect::<Vec<i32>>()),
             )
             .load::<User>(conn)?;
+        // only show invites if the user is on the team
         let invites = schema::team_invites::dsl::team_invites
-            .filter(schema::team_invites::dsl::teamid.eq(team.clone().map(|u| u.id).unwrap_or(-1)))
+            .filter(schema::team_invites::dsl::team.eq(team.clone().map(|u| u.id).unwrap_or(-1)))
             .load::<TeamInvite>(conn)?;
         return Ok(web::Json(TeamsResponse::TeamsWithMembers(
             result
@@ -120,7 +116,7 @@ pub async fn teams(
                     members: users
                         .clone()
                         .into_iter()
-                        .filter(|u| u.team_id == Some(t.id))
+                        .filter(|u| u.team == Some(t.id))
                         .collect(),
                     // only show invites if the user is on the team
                     invites: if Some(t.id) == team.clone().map(|t| t.id) {
@@ -128,7 +124,7 @@ pub async fn teams(
                             invites
                                 .clone()
                                 .into_iter()
-                                .filter(|u| u.teamid == t.id)
+                                .filter(|u| u.team == t.id)
                                 .collect(),
                         )
                     } else {
@@ -138,7 +134,8 @@ pub async fn teams(
                     id: t.id,
                     owner: t.owner,
                     score: t.score,
-                    team_name: t.team_name,
+                    name: t.name,
+                    deleted_at: t.deleted_at,
                 })
                 .collect::<Vec<TeamWithMembers>>(),
         )));
@@ -177,7 +174,9 @@ pub async fn bots(
     }): web::Query<BotQuery>,
 ) -> ApiResult<BotsResponse> {
     let conn = &mut (*DB_CONNECTION).get()?;
-    let mut base = schema::bots::dsl::bots.into_boxed();
+    let mut base = schema::bots::dsl::bots
+        .into_boxed()
+        .filter(schema::bots::dsl::deleted_at.is_null());
     if let Some(ids) = ids {
         let ids: Result<Vec<i32>, _> = ids.split(",").map(|i| i.parse()).collect();
         let ids = ids?;
@@ -214,7 +213,7 @@ pub async fn bots(
                 description: b.description,
                 name: b.name,
                 uploaded_by: b.uploaded_by,
-                score: b.score,
+                rating: b.rating,
             })
             .collect();
         return Ok(web::Json(BotsResponse::BotsWithTeam(result)));
@@ -231,22 +230,22 @@ pub struct InviteCodeQuery {
 #[derive(Serialize, TS)]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
 pub struct InviteCodeResponse {
-    pub invite_code: String,
+    pub code: String,
     pub team: Team,
     pub expires: i64,
 }
 
 #[get("/invite-code")]
-pub async fn invite_code(
+pub async fn code(
     web::Query::<InviteCodeQuery>(InviteCodeQuery { code }): web::Query<InviteCodeQuery>,
 ) -> ApiResult<InviteCodeResponse> {
     let conn = &mut (*DB_CONNECTION).get()?;
     let (invite, team) = schema::team_invites::dsl::team_invites
         .inner_join(schema::teams::dsl::teams)
-        .filter(schema::team_invites::dsl::invite_code.eq(&code))
+        .filter(schema::team_invites::dsl::code.eq(&code))
         .first::<(TeamInvite, Team)>(conn)?;
     Ok(web::Json(InviteCodeResponse {
-        invite_code: code,
+        code: code,
         expires: invite.expires,
         team,
     }))
@@ -264,7 +263,7 @@ pub async fn pfp(
 ) -> Result<HttpResponse, ApiError> {
     let response = s3_client
         .get_object()
-        .bucket(&*PFP_S3_BUCKET)
+        .bucket(pfp_s3_bucket())
         .key(id.to_string())
         .send()
         .await?;

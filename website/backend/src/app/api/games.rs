@@ -2,8 +2,12 @@ use diesel::alias;
 use itertools::Itertools;
 use shared::{
     db::{
-        dao::bots::BotsDao,
-        models::{BotWithTeam, GameWithBots, Team},
+        dao::{
+            bots::BotsDao,
+            games::{GameQueryOptions, GamesDao, PageOptions},
+        },
+        models::{BotWithTeam, GameWithBots, GameWithBotsWithResult, Team},
+        schema_aliases::*,
     },
     WhichBot,
 };
@@ -37,30 +41,38 @@ pub async fn create_game(
     // also push a batch job to the queue
     let id = format!("{:02x}", rand::thread_rng().gen::<u128>());
     let conn = &mut (*DB_CONNECTION).get()?;
+    let defender_bot: Bot = schema::bots::dsl::bots
+        .filter(schema::bots::dsl::id.eq(defender))
+        .first::<Bot>(conn)?;
+    let challenger_bot: Bot = schema::bots::dsl::bots
+        .filter(schema::bots::dsl::id.eq(challenger))
+        .first::<Bot>(conn)?;
     diesel::insert_into(schema::games::dsl::games)
         .values(NewGame {
             defender,
             challenger,
             id: id.clone(),
+            challenger_rating: challenger_bot.rating,
+            defender_rating: defender_bot.rating,
         })
-        .get_result::<Game>(conn)?;
+        .execute(conn)?;
     // push a batch job to the queue
     let presign_config =
         PresigningConfig::expires_in(std::time::Duration::from_secs(60 * 60 * 24 * 7))?;
     let (public_logs, defender_logs, challenger_logs) = try_join3(
         s3_client
             .put_object()
-            .bucket(&*GAME_LOGS_S3_BUCKET)
+            .bucket(game_logs_s3_bucket())
             .key(format!("public/{}", id))
             .presigned(presign_config.clone()),
         s3_client
             .put_object()
-            .bucket(&*GAME_LOGS_S3_BUCKET)
+            .bucket(game_logs_s3_bucket())
             .key(format!("{}/{}", WhichBot::Defender.to_string(), id))
             .presigned(presign_config.clone()),
         s3_client
             .put_object()
-            .bucket(&*GAME_LOGS_S3_BUCKET)
+            .bucket(game_logs_s3_bucket())
             .key(format!("{}/{}", WhichBot::Challenger.to_string(), id))
             .presigned(presign_config.clone()),
     )
@@ -83,8 +95,8 @@ pub async fn create_game(
         .send_message()
         .queue_url(std::env::var("NEW_GAMES_QUEUE_URL")?)
         .message_body(&serde_json::to_string(&GameTask::Game {
-            defender: defender.to_string(),
-            challenger: challenger.to_string(),
+            defender: defender,
+            challenger: challenger,
             id: id.clone(),
             // TODO: Choose a number of rounds
             rounds: 100,
@@ -103,111 +115,25 @@ pub async fn create_game(
     Ok(web::Json(CreateGameResponse { id }))
 }
 
-#[derive(Deserialize)]
-pub struct GameQuery {
-    pub id: Option<String>,
-    pub team: Option<i32>,
-    pub active: Option<bool>,
-    pub page_size: Option<i32>,
-    pub page: Option<i32>,
-    pub count: Option<bool>,
-    pub join_bots: Option<bool>,
-}
-
-#[derive(Serialize, TS)]
-#[cfg_attr(feature = "ts-bindings", ts(export))]
-pub enum GamesResponse {
-    Count(i64),
-    Games(Vec<Game>),
-    GamesWithBots(Vec<GameWithBots<BotWithTeam<Team>>>),
-}
-
 #[get("/games")]
 pub async fn games(
     session: Session,
-    web::Query::<GameQuery>(GameQuery {
-        id,
-        team,
-        active,
-        page_size,
-        page,
-        count,
-        join_bots,
-    }): web::Query<GameQuery>,
-) -> ApiResult<GamesResponse> {
-    use schema::*;
+    web::Query::<GameQueryOptions>(game_query_options): web::Query<GameQueryOptions>,
+    web::Query::<PageOptions>(page_options): web::Query<PageOptions>,
+) -> ApiResult<Vec<GameWithBotsWithResult<BotWithTeam<Team>>>> {
     let conn = &mut (*DB_CONNECTION).get()?;
-    // Is joining unconditionally bad?
-    let mut base = games::table
-        .inner_join(defender_bots.on(games::dsl::defender.eq(defender_bots.field(bots::dsl::id))))
-        .inner_join(
-            challenger_bots.on(games::dsl::challenger.eq(challenger_bots.field(bots::dsl::id))),
-        )
-        .inner_join(
-            defender_teams.on(defender_bots
-                .field(bots::dsl::team)
-                .eq(defender_teams.field(teams::dsl::id))),
-        )
-        .inner_join(
-            challenger_teams.on(challenger_bots
-                .field(bots::dsl::team)
-                .eq(challenger_teams.field(teams::dsl::id))),
-        )
-        .into_boxed();
-    if let Some(active) = active {
-        base = base.filter(schema::games::dsl::score_change.is_null().eq(active))
-    }
-    if let Some(id) = id {
-        base = base.filter(schema::games::dsl::id.eq(id));
-    }
-    if let Some(team) = team {
-        // get bots belonging to the team
-        let bots: Vec<i32> = schema::bots::dsl::bots
-            .filter(schema::bots::dsl::team.eq(team))
-            .select(schema::bots::dsl::id)
-            .load::<i32>(conn)?
-            .into_iter()
-            .collect();
-        base = base.filter(
-            schema::games::dsl::defender
-                .eq_any(bots.clone())
-                .or(schema::games::dsl::challenger.eq_any(bots.clone())),
-        );
-    }
-    let count = count.unwrap_or(false);
-    let page_size = page_size.unwrap_or(10).min(100);
-    let page = page.unwrap_or(0);
-    if count {
-        let count = base.count().get_result::<i64>(conn)?;
-        return Ok(web::Json(GamesResponse::Count(count)));
-    }
-    base = base
-        .order_by(schema::games::dsl::created.desc())
-        .limit((page_size).into())
-        .offset((page * page_size).into());
 
-    let result: Vec<(Game, Bot, Bot, Team, Team)> =
-        base.load::<(Game, Bot, Bot, Team, Team)>(conn)?;
-    if join_bots.unwrap_or(false) {
-        let result: Vec<GameWithBots<BotWithTeam<Team>>> = result
-            .into_iter()
-            .map(
-                |(game, defender, challenger, defender_team, challenger_team)| GameWithBots {
-                    id: game.id,
-                    defender: BotWithTeam::from_bot_and_team(defender, defender_team),
-                    challenger: BotWithTeam::from_bot_and_team(challenger, challenger_team),
-                    score_change: game.score_change,
-                    created: game.created,
-                    error_type: game.error_type,
-                    error_message: game.error_message,
-                },
-            )
-            .collect();
-        return Ok(web::Json(GamesResponse::GamesWithBots(result)));
-    }
-    Ok(web::Json(GamesResponse::Games(
-        result.into_iter().map(|(g, _, _, _, _)| g).collect(),
-    )))
+    Ok(web::Json(conn.get_games(game_query_options, page_options)?))
+}
+
+#[get("/count-games")]
+pub async fn count_games(
+    session: Session,
+    web::Query::<GameQueryOptions>(game_query_options): web::Query<GameQueryOptions>,
+) -> ApiResult<i64> {
+    let conn = &mut (*DB_CONNECTION).get()?;
+
+    Ok(web::Json(conn.count_games(game_query_options)?))
 }
 
 #[derive(Deserialize)]
@@ -222,8 +148,8 @@ pub async fn game_log(
     web::Query::<GameLogQuery>(GameLogQuery { id, which_bot }): web::Query<GameLogQuery>,
     s3_client: web::Data<aws_sdk_s3::Client>,
 ) -> Result<HttpResponse, ApiError> {
-    let team = login::get_team_data(&session)
-        .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
+    let team =
+        auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
     let conn = &mut (*DB_CONNECTION).get()?;
     // If the bot is specified, make sure it belongs to the team
     if let Some(which_bot) = which_bot {
@@ -252,7 +178,7 @@ pub async fn game_log(
     );
     let response = s3_client
         .get_object()
-        .bucket(&*GAME_LOGS_S3_BUCKET)
+        .bucket(game_logs_s3_bucket())
         .key(key)
         .send()
         .await?;

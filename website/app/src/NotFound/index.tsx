@@ -1,15 +1,13 @@
 import { Box, Typography } from "@mui/material";
 import graphic from "./graphic.png";
 import React from "react";
-import { primary_background } from "../styles.module.css";
+import BackgroundImage from "../components/BackgroundImage";
 
 export default function NotFound() {
   return (
     <Box
-      className={`${primary_background}`}
       sx={{
         width: "100%",
-        color: "white",
         p: 4,
         pb: 16,
         display: "flex",
@@ -19,32 +17,15 @@ export default function NotFound() {
         flexGrow: 1,
       }}
     >
-      <Box
-        sx={{
-          backgroundImage: `url(${graphic})`,
-          filter: "grayscale(100%)",
-          opacity: 0.4,
-          backgroundPosition: "center",
-          position: "absolute",
-          top: 0,
-          left: 0,
-          backgroundSize: "contain",
-          backgroundRepeat: "no-repeat",
-          mixBlendMode: "screen",
-          width: "100%",
-          maxWidth: "100vw",
-          height: "100%",
-          display: "block",
-          overflow: "hidden",
-          pointerEvents: "none",
-        }}
-      ></Box>
+      <BackgroundImage graphics={[`url(${graphic})`]} />
       <Box
         sx={{
           zIndex: 1,
         }}
       >
-        <Typography variant="h2">There is no page at this address.</Typography>
+        <Typography variant="h2" color="inherit">
+          There is no page at this address.
+        </Typography>
       </Box>
     </Box>
   );

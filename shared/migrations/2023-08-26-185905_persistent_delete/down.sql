@@ -1,0 +1,2 @@
+ALTER TABLE teams DROP COLUMN deleted_at BIGINT;
+ALTER TABLE bots DROP COLUMN deleted_at BIGINT;

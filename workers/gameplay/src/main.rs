@@ -31,8 +31,7 @@ async fn main() {
                     challenger_logs_presigned,
                 } => {
                     let mut path = PathBuf::default();
-                    let result =
-                        run_game(&defender, &challenger, &s3, &id, rounds, &mut path).await;
+                    let result = run_game(defender, challenger, &s3, &id, rounds, &mut path).await;
 
                     if let Err(e) = result.clone() {
                         log::error!("Game failed: {:?}", e);
@@ -76,7 +75,7 @@ async fn main() {
                 }
                 GameTask::TestGame { bot, log_presigned } => {
                     let mut path = PathBuf::default();
-                    if let Err(_) = run_game(&bot, &bot, &s3, &bot, 5, &mut path).await {
+                    if let Err(_) = run_game(bot, bot, &s3, &bot.to_string(), 5, &mut path).await {
                         Ok(GameStatus::TestGameFailed)
                     } else {
                         Ok(GameStatus::TestGameSucceeded)
@@ -89,7 +88,7 @@ async fn main() {
                     serde_json::to_string::<GameStatusMessage>(&GameStatusMessage {
                         id: match message {
                             GameTask::Game { id, .. } => id,
-                            GameTask::TestGame { bot, .. } => bot,
+                            GameTask::TestGame { bot, .. } => bot.to_string(),
                         },
                         result,
                     })

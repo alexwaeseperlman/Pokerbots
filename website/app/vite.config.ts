@@ -23,6 +23,12 @@ export default defineConfig({
         secure: false,
         ws: true,
       },
+      "/auth": {
+        target: process.env.BACKEND_ADDRESS ?? "http://localhost:3000",
+        changeOrigin: true,
+        secure: false,
+        ws: false,
+      },
     },
   },
 });

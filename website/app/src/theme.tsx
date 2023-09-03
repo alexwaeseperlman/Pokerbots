@@ -1,36 +1,29 @@
-import {
-  createTheme,
-  PaletteColorOptions,
-  ThemeOptions,
-  TypeBackground,
-} from "@mui/material";
+import { CssVarsThemeOptions, extendTheme } from "@mui/joy";
 import React from "react";
+import "./styles.module.css";
+import { ColorSystemOptions } from "@mui/joy/styles/extendTheme";
 
-declare module "@mui/material/styles" {
-  interface TypeBackground {
-    active: string;
-    gradient: string;
-  }
-}
-
-export default createTheme({
+const light: ColorSystemOptions = {
   palette: {
     mode: "light",
+
     primary: {
-      main: "#CD3939",
-    },
-    secondary: {
-      main: "#281f5f",
-      contrastText: "#000",
-    },
-    background: {
-      default: "#e0e0e0",
-      paper: "#ffffff",
-      active: "#f5f5f5",
+      //plainHoverBg: "#0a6bcb11",
+      //plainActiveBg: "#0a6bcb22",
+      //plainColor: "#96c1eb",
     },
   },
+};
+const theme = extendTheme({
+  colorSchemes: {
+    light,
+  },
+  fontFamily: {
+    body: "Figtree",
+    code: "Fira Code",
+    display: "Figtree",
+  },
   typography: {
-    fontFamily: "Figtree",
     h1: {
       fontWeight: 700,
     },
@@ -39,7 +32,6 @@ export default createTheme({
       fontWeight: 700,
     },
   },
-  shape: {
-    borderRadius: 2,
-  },
 });
+
+export default theme;

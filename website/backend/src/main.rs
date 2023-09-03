@@ -2,16 +2,18 @@ use std::fs;
 
 use actix_files::NamedFile;
 use actix_service::{fn_service, Service};
-use actix_session::{storage::CookieSessionStore, SessionExt, SessionMiddleware};
+use actix_session::{
+    config::CookieContentSecurity, storage::CookieSessionStore, SessionExt, SessionMiddleware,
+};
 use actix_web::{
     cookie,
     dev::{ServiceRequest, ServiceResponse},
     middleware::Logger,
-    web, App, HttpMessage, HttpServer,
+    web, App, HttpMessage, HttpResponse, HttpServer,
 };
 use futures_util::future::FutureExt;
 use shared::db::conn::DB_CONNECTION;
-use upac_web::app::{api, login};
+use upac_web::app::{api, api::auth};
 
 fn get_secret_key() -> cookie::Key {
     let key = std::env::var("SECRET_KEY").unwrap_or_else(|_| {
@@ -41,11 +43,12 @@ async fn main() -> std::io::Result<()> {
         let session_middleware =
             SessionMiddleware::builder(CookieSessionStore::default(), get_secret_key())
                 .cookie_secure(true)
+                .cookie_content_security(CookieContentSecurity::Private)
                 .build();
         App::new()
             .wrap_fn(|req, srv| {
-                let user_data = login::get_user_data(&req.get_session());
-                let team_data = login::get_team_data(&req.get_session());
+                let user_data = auth::get_user(&req.get_session());
+                let team_data = auth::get_team(&req.get_session());
                 req.extensions_mut().insert(user_data);
                 req.extensions_mut().insert(team_data);
                 log::debug!("{}", req.uri());
@@ -56,9 +59,9 @@ async fn main() -> std::io::Result<()> {
             .app_data(sqs_client.clone())
             .wrap(Logger::new("%a %{User-Agent}i"))
             .wrap(session_middleware)
-            .route("/api/login", web::get().to(login::handle_login))
-            .service(login::login_provider)
+            .default_service(web::to(|| HttpResponse::NotFound()))
             .service(api::api_service())
+            .service(api::auth_service())
             // All remaining paths go to /app/dist, and fallback to index.html for client side routing
             .service(
                 actix_files::Files::new("/", "app/dist/")
