@@ -10,12 +10,14 @@ import {
   FormLabel,
   Typography,
   Stack,
+  FormHelperText,
 } from "@mui/joy";
 import styled from "@mui/system/styled";
 import { ButtonProps, Sheet } from "@mui/joy";
 import { useParams, useSearchParams } from "react-router-dom";
 import { enqueueSnackbar } from "notistack";
 import { authUrl, googleSigninUrl, microsoftSigninUrl } from "../state";
+import { InfoOutlined } from "@mui/icons-material";
 function MicrosoftLogo(props: SvgIconProps) {
   return (
     <SvgIcon {...props}>
@@ -78,6 +80,7 @@ export default function Signup() {
   const [password, setPassword] = React.useState("");
   const [confirmPassword, setConfirmPassword] = React.useState("");
   const [loading, setLoading] = React.useState(false);
+  const validPassword = password === confirmPassword && password.length >= 6;
   return (
     <Container
       maxWidth="sm"
@@ -109,49 +112,38 @@ export default function Signup() {
           setPassword(e.target.value);
         }}
       />
-      <Input
-        placeholder="Confirm your password"
-        type="password"
-        value={confirmPassword}
-        onChange={(e) => {
-          setConfirmPassword(e.target.value);
-        }}
-      />
+      <FormControl>
+        <Input
+          placeholder="Confirm your password"
+          type="password"
+          value={confirmPassword}
+          error={!validPassword}
+          onChange={(e) => {
+            setConfirmPassword(e.target.value);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleSubmit();
+            }
+          }}
+        />
+        <FormHelperText
+          sx={{
+            display: validPassword ? "none" : "block",
+          }}
+        >
+          <Typography color="danger">
+            Your password must be at least 6 characters long, and match the
+            confirmation.
+          </Typography>
+        </FormHelperText>
+      </FormControl>
       <Button
         variant="solid"
+        disabled={password !== confirmPassword || password.length < 6}
         {...(loading ? { loading: true } : {})}
         onClick={() => {
-          setLoading(true);
-          fetch(`${authUrl}/email/register`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              email,
-              password,
-            }),
-          })
-            .then(async (res) => {
-              if (res.status === 200) {
-                enqueueSnackbar(
-                  "Signed up. Check your email for a confirmation.",
-                  {
-                    variant: "success",
-                  }
-                );
-              } else {
-                enqueueSnackbar(
-                  `Failed to sign up: ${(await res.json()).error}`,
-                  {
-                    variant: "error",
-                  }
-                );
-              }
-            })
-            .finally(() => {
-              setLoading(false);
-            });
+          handleSubmit();
         }}
       >
         Sign up
@@ -176,4 +168,31 @@ export default function Signup() {
       </Stack>
     </Container>
   );
+  function handleSubmit() {
+    setLoading(true);
+    fetch(`${authUrl}/email/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        password,
+      }),
+    })
+      .then(async (res) => {
+        if (res.status === 200) {
+          enqueueSnackbar("Signed up. Check your email for a confirmation.", {
+            variant: "success",
+          });
+        } else {
+          enqueueSnackbar(`Failed to sign up: ${(await res.json()).error}`, {
+            variant: "error",
+          });
+        }
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }
 }

@@ -114,31 +114,16 @@ export default function Login() {
         type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            handleSubmit();
+          }
+        }}
       />
       <Button
         variant="solid"
         onClick={() => {
-          fetch(`${authUrl}/email/login`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              email,
-              password,
-            }),
-          }).then(async (res) => {
-            if (res.status == 200) {
-              enqueueSnackbar("Logged in!", {
-                variant: "success",
-              });
-              fetchUser();
-            } else {
-              enqueueSnackbar(`Failed to log in: ${(await res.json()).error}`, {
-                variant: "error",
-              });
-            }
-          });
+          handleSubmit();
         }}
       >
         Log in
@@ -175,4 +160,27 @@ export default function Login() {
       </Stack>
     </Container>
   );
+  function handleSubmit() {
+    fetch(`${authUrl}/email/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        password,
+      }),
+    }).then(async (res) => {
+      if (res.status == 200) {
+        enqueueSnackbar("Logged in!", {
+          variant: "success",
+        });
+        fetchUser();
+      } else {
+        enqueueSnackbar(`Failed to log in: ${(await res.json()).error}`, {
+          variant: "error",
+        });
+      }
+    });
+  }
 }
