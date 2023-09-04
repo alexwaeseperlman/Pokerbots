@@ -175,6 +175,7 @@ export default function Login() {
         enqueueSnackbar("Logged in!", {
           variant: "success",
         });
+
         fetchUser();
       } else {
         enqueueSnackbar(`Failed to log in: ${(await res.json()).error}`, {

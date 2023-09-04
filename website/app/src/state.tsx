@@ -75,7 +75,7 @@ export const useAuth = (selectedTeam: string | null) => {
         .catch(() => null)
     );
 
-    setUser(
+    setProfile(
       fetch(`${apiUrl}/profile`)
         .then((res) => res.json())
         .catch(() => null)
@@ -94,8 +94,8 @@ export const useTeam = (selectedTeam: string | null) => {
   return [team, update] as const;
 };
 
-export const useProfile = (selectedTeam: string | null) => {
-  const [user, team, profile, update] = useAuth(selectedTeam);
+export const useProfile = () => {
+  const [user, team, profile, update] = useAuth(null);
   return [profile, update] as const;
 };
 
