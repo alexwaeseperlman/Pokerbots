@@ -53,6 +53,7 @@ pub fn api_service() -> actix_web::Scope {
         .service(bots::set_active_bot)
         .service(data::my_account)
         .service(data::my_team)
+        .service(data::my_profile)
         .service(data::teams)
         .service(data::bots)
         .service(data::code)

@@ -73,6 +73,19 @@ diesel::table! {
 }
 
 diesel::table! {
+    user_profiles (email) {
+        email -> Text,
+        first_name -> Varchar,
+        last_name -> Varchar,
+        country -> Nullable<Varchar>,
+        school -> Varchar,
+        linkedin -> Nullable<Varchar>,
+        github -> Nullable<Varchar>,
+        resume_s3_key -> Nullable<Varchar>,
+    }
+}
+
+diesel::table! {
     users (email) {
         email -> Text,
         display_name -> Text,
@@ -83,6 +96,7 @@ diesel::table! {
 diesel::joinable!(game_results -> games (id));
 diesel::joinable!(team_invites -> teams (team));
 diesel::joinable!(teams -> users (owner));
+diesel::joinable!(user_profiles -> users (email));
 
 diesel::allow_tables_to_appear_in_same_query!(
     auth,
@@ -91,5 +105,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     games,
     team_invites,
     teams,
+    user_profiles,
     users,
 );

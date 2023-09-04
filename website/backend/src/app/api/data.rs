@@ -1,5 +1,5 @@
 use super::*;
-use shared::db::models::{BotWithTeam, Team, TeamWithMembers};
+use shared::db::models::{BotWithTeam, Team, TeamWithMembers, User, UserProfile};
 
 #[get("/my-account")]
 pub async fn my_account(session: Session) -> ApiResult<Option<User>> {
@@ -9,6 +9,20 @@ pub async fn my_account(session: Session) -> ApiResult<Option<User>> {
 #[get("/my-team")]
 pub async fn my_team(session: Session) -> ApiResult<Option<TeamWithMembers>> {
     Ok(web::Json(auth::get_team(&session)))
+}
+
+#[get("/my-profile")]
+pub async fn my_profile(session: Session) -> ApiResult<Option<UserProfile>> {
+    let user = auth::get_user(&session);
+    if let Some(user) = user {
+        let conn = &mut (*DB_CONNECTION).get()?;
+        let profile = UserProfile::belonging_to(&user)
+            .first::<UserProfile>(conn)
+            .optional()?;
+        Ok(web::Json(profile))
+    } else {
+        Ok(web::Json(None))
+    }
 }
 
 #[derive(Deserialize)]

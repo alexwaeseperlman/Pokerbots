@@ -1,7 +1,7 @@
 use diesel::{
     deserialize::FromSql,
     pg::{self, PgValue},
-    prelude::{Associations, Insertable},
+    prelude::{Associations, Identifiable, Insertable},
     serialize::ToSql,
     sql_types::Integer,
     AsChangeset, Queryable, Selectable,
@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
-    db::schema::{auth, bots, game_results, games, team_invites, teams, users},
+    db::schema::{auth, bots, game_results, games, team_invites, teams, user_profiles, users},
     BuildStatus, WhichBot,
 };
 
@@ -48,8 +48,10 @@ pub struct NewTeam {
     pub owner: String,
 }
 
-#[derive(Serialize, Deserialize, Queryable, Debug, Clone, Selectable, TS)]
+#[derive(Serialize, Deserialize, Queryable, Debug, Clone, Selectable, TS, Identifiable)]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
+#[diesel(table_name = users)]
+#[diesel(primary_key(email))]
 pub struct User {
     pub email: String,
     pub display_name: String,
@@ -234,6 +236,24 @@ pub struct Auth {
     pub password_reset_link_expiration: Option<chrono::NaiveDateTime>,
     pub email_confirmed: bool,
     pub is_admin: bool,
+}
+
+#[derive(
+    Serialize, Deserialize, Debug, Queryable, Selectable, Insertable, Associations, TS, Identifiable,
+)]
+#[diesel(table_name = user_profiles)]
+#[diesel(belongs_to(User, foreign_key = email))]
+#[diesel(primary_key(email))]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
+pub struct UserProfile {
+    pub email: String,
+    pub first_name: String,
+    pub last_name: String,
+    pub country: Option<String>,
+    pub school: String,
+    pub linkedin: Option<String>,
+    pub github: Option<String>,
+    pub resume_s3_key: Option<String>,
 }
 
 impl ToSql<Integer, pg::Pg> for BuildStatus {
