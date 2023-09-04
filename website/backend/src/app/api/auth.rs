@@ -4,8 +4,8 @@ use argon2::{
 };
 use chrono::Utc;
 use shared::db::{
-    models::{Auth, NewUser, TeamWithMembers},
-    schema::auth,
+    models::{Auth, NewUser, TeamWithMembers, UserProfile},
+    schema::{auth, user_profiles},
 };
 
 use lettre::{message::header::ContentType, Message, Transport};
@@ -305,6 +305,15 @@ pub fn get_user(session: &Session) -> Option<User> {
     let conn = &mut (*DB_CONNECTION).get().unwrap();
     users::dsl::users
         .filter(users::dsl::email.eq(email))
+        .first(conn)
+        .ok()
+}
+
+pub fn get_profile(session: &Session) -> Option<UserProfile> {
+    let email: String = session.get("email").ok()??;
+    let conn = &mut (*DB_CONNECTION).get().unwrap();
+    user_profiles::dsl::user_profiles
+        .filter(user_profiles::dsl::email.eq(email))
         .first(conn)
         .ok()
 }

@@ -1,3 +1,5 @@
+use shared::db::models::UserProfile;
+
 use super::*;
 
 #[derive(Deserialize)]
@@ -27,6 +29,9 @@ pub async fn create_team(
 ) -> ApiResult<()> {
     let user =
         auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+    auth::get_profile(&session).ok_or(actix_web::error::ErrorUnauthorized(
+        "Your profile must be completed to create a team.",
+    ))?;
     // You can't create a team if you're already in one
     if auth::get_team(&session).is_some() {
         return Err(actix_web::error::ErrorConflict("You are already on a team.").into());
@@ -184,8 +189,11 @@ pub async fn join_team(
     let user =
         auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
     let team = auth::get_team(&session);
-    // You can't join a team if you are already on one or if you aren't logged in
+    auth::get_profile(&session).ok_or(actix_web::error::ErrorUnauthorized(
+        "Your profile must be completed to create a team.",
+    ))?;
 
+    // You can't join a team if you are already on one or if you aren't logged in
     if team.is_some() {
         return Err(actix_web::error::ErrorNotAcceptable("You are already on a team.").into());
     } else {

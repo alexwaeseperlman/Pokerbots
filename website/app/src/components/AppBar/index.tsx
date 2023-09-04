@@ -1,6 +1,6 @@
 import React, { PropsWithChildren } from "react";
 import { menu_bar, nav_group, bar_item } from "./styles.module.css";
-import { apiUrl, authUrl, useUser } from "../../state";
+import { apiUrl, authUrl, useAuth, useUser } from "../../state";
 import Box from "@mui/joy/Box";
 import Logo from "../Logo";
 import IconButton from "@mui/joy/IconButton";
@@ -12,6 +12,7 @@ import {
   AccordionDetails,
   AccordionGroup,
   AccordionSummary,
+  Badge,
   Dropdown,
   Menu,
   MenuButton,
@@ -140,8 +141,7 @@ export function TopBar() {
 }
 
 export function TopBarContent(props: { vertical?: boolean; black?: boolean }) {
-  const [user, fetchUser] = useUser();
-  const [team, fetchTeam] = useUser();
+  const [user, team, profile, fetchUser] = useAuth(null);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -246,7 +246,9 @@ export function TopBarContent(props: { vertical?: boolean; black?: boolean }) {
               navigate("/profile");
             }}
           >
-            <Person />
+            <Badge color="danger" invisible={profile !== null}>
+              <Person />
+            </Badge>
           </RawBarItem>
         </>
       ) : (
