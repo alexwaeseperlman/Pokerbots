@@ -4,7 +4,7 @@ use argon2::{
 };
 use chrono::Utc;
 use shared::db::{
-    models::{Auth, NewUser, TeamWithMembers, UserProfile},
+    models::{AnonymousUser, Auth, NewUser, TeamWithMembers, UserProfile},
     schema::{auth, user_profiles},
 };
 
@@ -26,7 +26,7 @@ fn random(charset: &[u8], len: usize) -> String {
         .collect()
 }
 
-fn mangle(password: &str) -> argon2::password_hash::Result<String> {
+pub fn mangle(password: &str) -> argon2::password_hash::Result<String> {
     let salt = SaltString::generate(&mut OsRng);
     Argon2::default()
         .hash_password(password.as_bytes(), &salt)
@@ -151,7 +151,8 @@ async fn login(
     diesel::insert_into(users::dsl::users)
         .values(NewUser {
             email: email.clone(),
-            display_name: email,
+            display_name: email.clone(),
+            email_hash: mangle(&email)?,
         })
         .on_conflict(users::dsl::email)
         .do_nothing()
@@ -318,7 +319,7 @@ pub fn get_profile(session: &Session) -> Option<UserProfile> {
         .ok()
 }
 
-pub fn get_team(session: &Session) -> Option<TeamWithMembers> {
+pub fn get_team(session: &Session) -> Option<TeamWithMembers<AnonymousUser>> {
     let user = get_user(session)?;
     let conn = &mut (*DB_CONNECTION).get().unwrap();
 
@@ -346,7 +347,14 @@ pub fn get_team(session: &Session) -> Option<TeamWithMembers> {
         owner: team.owner,
         score: team.score,
         active_bot: team.active_bot,
-        members,
+        members: members
+            .into_iter()
+            .map(|user| AnonymousUser {
+                email_hash: user.email_hash,
+                team: user.team,
+                display_name: user.display_name,
+            })
+            .collect(),
         invites,
         deleted_at: None,
     })

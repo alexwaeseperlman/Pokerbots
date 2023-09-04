@@ -1,4 +1,4 @@
-use shared::db::models::{TeamWithMembers, UserProfile};
+use shared::db::models::{AnonymousUser, TeamWithMembers, UserProfile};
 
 use super::*;
 #[get("/my-account")]
@@ -7,7 +7,7 @@ pub async fn my_account(session: Session) -> ApiResult<Option<User>> {
 }
 
 #[get("/my-team")]
-pub async fn my_team(session: Session) -> ApiResult<Option<TeamWithMembers>> {
+pub async fn my_team(session: Session) -> ApiResult<Option<TeamWithMembers<AnonymousUser>>> {
     Ok(web::Json(auth::get_team(&session)))
 }
 

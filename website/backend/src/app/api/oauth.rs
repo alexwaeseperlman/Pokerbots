@@ -3,6 +3,8 @@ use shared::db::{
     schema::auth,
 };
 
+use crate::app::api;
+
 use super::*;
 
 #[derive(Deserialize)]
@@ -100,6 +102,7 @@ pub async fn microsoft_login(
             display_name: me
                 .displayName
                 .unwrap_or(me.userPrincipalName.clone().unwrap()),
+            email_hash: api::auth::mangle(&me.userPrincipalName.clone().unwrap())?,
         })
         .on_conflict(users::dsl::email)
         .do_nothing()
@@ -199,6 +202,7 @@ async fn google_login(
         .values(NewUser {
             email: user_info.email.clone().unwrap(),
             display_name: user_info.name.unwrap_or(user_info.email.clone().unwrap()),
+            email_hash: api::auth::mangle(&user_info.email.clone().unwrap())?,
         })
         .on_conflict(users::dsl::email)
         .do_nothing()

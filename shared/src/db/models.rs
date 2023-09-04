@@ -30,13 +30,13 @@ pub struct Team {
 
 #[derive(Serialize, Deserialize, Debug, TS, Clone)]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
-pub struct TeamWithMembers {
+pub struct TeamWithMembers<T> {
     pub id: i32,
     pub name: String,
     pub owner: String,
     pub score: Option<i32>,
     pub active_bot: Option<i32>,
-    pub members: Vec<User>,
+    pub members: Vec<T>,
     pub invites: Option<Vec<TeamInvite>>,
     pub deleted_at: Option<i64>,
 }
@@ -56,6 +56,15 @@ pub struct User {
     pub email: String,
     pub display_name: String,
     pub team: Option<i32>,
+    pub email_hash: String,
+}
+
+#[derive(TS, Clone, Serialize)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
+pub struct AnonymousUser {
+    pub display_name: String,
+    pub team: Option<i32>,
+    pub email_hash: String,
 }
 
 #[derive(Insertable, Debug)]
@@ -63,6 +72,7 @@ pub struct User {
 pub struct NewUser {
     pub email: String,
     pub display_name: String,
+    pub email_hash: String,
 }
 
 #[derive(Insertable, Debug)]

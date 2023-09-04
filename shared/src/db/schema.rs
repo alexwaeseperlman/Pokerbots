@@ -90,6 +90,7 @@ diesel::table! {
         email -> Text,
         display_name -> Text,
         team -> Nullable<Int4>,
+        email_hash -> Varchar,
     }
 }
 
