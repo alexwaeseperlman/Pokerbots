@@ -13,6 +13,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import CopyIcon from "@mui/icons-material/ContentCopy";
 import { enqueueSnackbar } from "notistack";
 import { Team } from "@bindings/Team";
+import { User } from "@bindings/User";
 
 function PfpUpload({ team, readonly }: { team: Team; readonly: boolean }) {
   const [drag, setDrag] = useState(false);
@@ -261,14 +262,14 @@ export function TeamBar({
                     }}
                   ></td>
                   <td style={{ width: "150px", height: 0 }}></td>
-                  {team.owner === user?.email && (
+                  {team.owner === user?.id && (
                     <td style={{ width: "150px", height: 0 }}></td>
                   )}
                 </tr>
               </thead>
               <tbody>
-                {team.members.map((member) => (
-                  <tr key={member.email}>
+                {team.members.map((member: User) => (
+                  <tr key={member.id}>
                     <td>
                       <Typography textColor="white" level="title-sm">
                         {member.display_name}
@@ -280,15 +281,14 @@ export function TeamBar({
                       }}
                       component={(props: any) => <td {...props}></td>}
                     >
-                      {(team.owner === user?.email ||
-                        member.email === user?.email) &&
+                      {(team.owner === user?.id || member.id === user?.id) &&
                         (readonly || (
                           <TableButton
                             onClick={() => {
                               const confirmed = confirm(
                                 `Are you sure you want to ${
-                                  member.email == user.email
-                                    ? team.owner == user.email
+                                  member.id == user?.id
+                                    ? team.owner == user?.id
                                       ? "delete the team"
                                       : "leave the team"
                                     : "kick this member"
@@ -296,8 +296,8 @@ export function TeamBar({
                               );
                               if (!confirmed) return;
 
-                              if (member.email == user.email) {
-                                if (team.owner == user.email) {
+                              if (member.id == user?.id) {
+                                if (team.owner == user?.id) {
                                   fetch(`${apiUrl}/delete-team`).then(
                                     (response) => {
                                       fetchTeam();
@@ -312,23 +312,23 @@ export function TeamBar({
                                 }
                               } else {
                                 fetch(
-                                  `${apiUrl}/kick-member?email=${member.email}`
+                                  `${apiUrl}/kick-member?user_id=${member.id}`
                                 ).then((response) => {
                                   fetchTeam();
                                 });
                               }
                             }}
                           >
-                            {member.email === user.email
-                              ? team.owner === user.email
+                            {member.id === user?.id
+                              ? team.owner === user?.id
                                 ? "Delete team"
                                 : "Leave"
                               : "Kick"}
                           </TableButton>
                         ))}
                     </Box>
-                    {team.owner === user?.email &&
-                      member.email !== user?.email &&
+                    {team.owner === user?.id &&
+                      member.id !== user?.id &&
                       (readonly || (
                         <Box
                           sx={{
@@ -345,7 +345,7 @@ export function TeamBar({
                                 )
                               ) {
                                 fetch(
-                                  `${apiUrl}/update-owner?email=${member.email}`
+                                  `${apiUrl}/update-owner?user_id=${member.id}`
                                 )
                                   .then(async (result) => {
                                     enqueueSnackbar("Made owner", {

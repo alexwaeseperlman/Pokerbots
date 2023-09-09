@@ -26,8 +26,8 @@ pub async fn get_profile(session: Session) -> ApiResult<Option<UserProfile>> {
     }
 }
 
-#[derive(Deserialize)]
-#[cfg_attr(feature = "ts-bindings", derive(TS), ts(export))]
+#[derive(Deserialize, TS)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 pub struct UpdateProfileRequest {
     pub first_name: String,
     pub last_name: String,

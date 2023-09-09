@@ -17,8 +17,8 @@ use crate::{
     BuildStatus, WhichBot,
 };
 
-#[derive(Serialize, Deserialize, Queryable, Debug, Selectable)]
-#[cfg_attr(feature = "ts-bindings", derive(TS), ts(export))]
+#[derive(Serialize, Deserialize, Queryable, Debug, Selectable, TS)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 #[diesel(table_name = teams)]
 pub struct Team {
     pub id: i32,
@@ -29,8 +29,8 @@ pub struct Team {
     pub deleted_at: Option<i64>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[cfg_attr(feature = "ts-bindings", derive(TS), ts(export))]
+#[derive(Serialize, Deserialize, Debug, Clone, TS)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 pub struct TeamWithMembers<T> {
     pub id: i32,
     pub name: String,
@@ -49,8 +49,8 @@ pub struct NewTeam {
     pub owner: Uuid,
 }
 
-#[derive(Serialize, Deserialize, Queryable, Debug, Clone, Selectable, Identifiable)]
-#[cfg_attr(feature = "ts-bindings", derive(TS), ts(export))]
+#[derive(Serialize, Deserialize, Queryable, Debug, Clone, Selectable, Identifiable, TS)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 #[diesel(table_name = users)]
 #[diesel(primary_key(id))]
 pub struct User {
@@ -74,8 +74,8 @@ pub struct NewInvite {
     pub team: i32,
 }
 
-#[derive(Serialize, Deserialize, Queryable, Debug, Clone)]
-#[cfg_attr(feature = "ts-bindings", derive(TS), ts(export))]
+#[derive(Serialize, Deserialize, Queryable, Debug, Clone, TS)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 pub struct TeamInvite {
     pub code: String,
     //TODO: rename this to team
@@ -93,8 +93,8 @@ pub struct NewGame {
     pub challenger_rating: f32,
 }
 
-#[derive(Queryable, Serialize, Deserialize, Debug, Selectable)]
-#[cfg_attr(feature = "ts-bindings", derive(TS), ts(export))]
+#[derive(Queryable, Serialize, Deserialize, Debug, Selectable, TS)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 #[diesel(table_name = games)]
 pub struct Game {
     pub id: String,
@@ -106,9 +106,9 @@ pub struct Game {
 }
 
 #[derive(
-    Queryable, Serialize, diesel::Identifiable, Deserialize, Debug, Selectable, Insertable,
+    Queryable, Serialize, diesel::Identifiable, Deserialize, Debug, Selectable, Insertable, TS,
 )]
-#[cfg_attr(feature = "ts-bindings", derive(TS), ts(export))]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 #[diesel(belongs_to(Game))]
 #[diesel(table_name = game_results)]
 pub struct GameResult {
@@ -124,8 +124,8 @@ pub struct GameResult {
     pub challenger_rating: f32,
 }
 
-#[derive(Deserialize, Debug, Selectable, Insertable)]
-#[cfg_attr(feature = "ts-bindings", derive(TS), ts(export))]
+#[derive(Deserialize, Debug, Selectable, Insertable, TS)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 #[diesel(table_name = game_results)]
 pub struct NewGameResult {
     pub id: String,
@@ -139,8 +139,8 @@ pub struct NewGameResult {
     pub challenger_rating: f32,
 }
 
-#[derive(Serialize)]
-#[cfg_attr(feature = "ts-bindings", derive(TS), ts(export))]
+#[derive(Serialize, TS)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 pub struct GameWithResult {
     pub id: String,
     pub defender: i32,
@@ -151,8 +151,8 @@ pub struct GameWithResult {
     pub result: Option<GameResult>,
 }
 
-#[derive(Serialize)]
-#[cfg_attr(feature = "ts-bindings", derive(TS), ts(export))]
+#[derive(Serialize, TS)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 pub struct GameWithBotsWithResult<T> {
     pub id: String,
     pub defender: T,
@@ -163,8 +163,8 @@ pub struct GameWithBotsWithResult<T> {
     pub result: Option<GameResult>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Queryable, Selectable)]
-#[cfg_attr(feature = "ts-bindings", derive(TS), ts(export))]
+#[derive(Serialize, Deserialize, Debug, Queryable, Selectable, TS)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 #[diesel(table_name = bots)]
 pub struct Bot {
     pub id: i32,
@@ -178,8 +178,8 @@ pub struct Bot {
     pub rating: f32,
 }
 
-#[derive(Serialize, Deserialize, Debug, Queryable)]
-#[cfg_attr(feature = "ts-bindings", derive(TS), ts(export))]
+#[derive(Serialize, Deserialize, Debug, Queryable, TS)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 pub struct BotWithTeam<T> {
     pub id: i32,
     pub team: T,
@@ -206,8 +206,8 @@ impl<T> BotWithTeam<T> {
     }
 }
 
-#[derive(Serialize)]
-#[cfg_attr(feature = "ts-bindings", derive(TS), ts(export))]
+#[derive(Serialize, TS)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 pub struct GameWithBots<T> {
     pub id: String,
     pub defender: T,
@@ -251,9 +251,9 @@ pub struct NewAuth {
 }
 
 #[derive(
-    Serialize, Deserialize, Debug, Queryable, Selectable, Insertable, Associations, Identifiable,
+    Serialize, Deserialize, Debug, Queryable, Selectable, Insertable, Associations, Identifiable, TS,
 )]
-#[cfg_attr(feature = "ts-bindings", derive(TS), ts(export))]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 #[diesel(table_name = user_profiles)]
 #[diesel(belongs_to(User, foreign_key = id))]
 #[diesel(primary_key(id))]

@@ -20,8 +20,8 @@ pub struct MakeGameQuery {
     pub challenger: i32,
 }
 
-#[derive(Serialize)]
-#[cfg_attr(feature = "ts-bindings", derive(TS), ts(export))]
+#[derive(Serialize, TS)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 pub struct CreateGameResponse {
     pub id: String,
 }

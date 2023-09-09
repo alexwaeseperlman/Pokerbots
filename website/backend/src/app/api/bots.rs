@@ -72,8 +72,8 @@ pub async fn set_active_bot(
     Ok(web::Json(()))
 }
 
-#[derive(Serialize)]
-#[cfg_attr(feature = "ts-bindings", derive(TS), ts(export))]
+#[derive(Serialize, TS)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 pub struct UploadBotResponse {
     id: i32,
 }

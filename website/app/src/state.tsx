@@ -46,7 +46,7 @@ export const microsoftSigninUrl =
 // choose default value based on route
 const teamAtom = atomFamily<
   string | null,
-  PrimitiveAtom<Promise<TeamWithMembers | null>>
+  PrimitiveAtom<Promise<TeamWithMembers<User> | null>>
 >((param) => atom(fetchTeam(param)));
 
 const userAtom = atom<Promise<User | null>>(
@@ -109,7 +109,7 @@ function fetchTeam(team: string | null) {
             teams.TeamsWithMembers.length > 0
           ) {
             const invites = teams.TeamsWithMembers[0].invites;
-            const out: TeamWithMembers = {
+            const out: TeamWithMembers<User> = {
               ...teams.TeamsWithMembers[0],
             };
             return out;
@@ -119,6 +119,6 @@ function fetchTeam(team: string | null) {
         .catch(() => null)
     : fetch(`${apiUrl}/my-team`)
         .then((res) => res.json())
-        .then((team) => team as TeamWithMembers)
+        .then((team) => team as TeamWithMembers<User>)
         .catch(() => null);
 }

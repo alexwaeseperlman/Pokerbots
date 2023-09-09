@@ -105,7 +105,7 @@ pub async fn microsoft_login(
             .do_nothing()
             .execute(conn)?;
 
-        session.insert("id", auth.id)?;
+        session.insert("user", auth.id)?;
         Ok::<(), ApiError>(())
     })?;
 
@@ -204,7 +204,7 @@ async fn google_login(
             .do_nothing()
             .execute(conn)?;
 
-        session.insert("id", auth.id)?;
+        session.insert("user", auth.id)?;
         Ok::<(), ApiError>(())
     })?;
 

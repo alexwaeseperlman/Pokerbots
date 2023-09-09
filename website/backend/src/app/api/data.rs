@@ -24,8 +24,8 @@ pub struct TeamQuery {
     pub count: Option<bool>,
 }
 
-#[derive(Serialize)]
-#[cfg_attr(feature = "ts-bindings", derive(TS), ts(export))]
+#[derive(Serialize, TS)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 pub enum TeamsResponse {
     Count(i64),
     Teams(Vec<Team>),
@@ -143,8 +143,8 @@ pub struct BotQuery {
     pub join_team: Option<bool>,
 }
 
-#[derive(Serialize)]
-#[cfg_attr(feature = "ts-bindings", derive(TS), ts(export))]
+#[derive(Serialize, TS)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 pub enum BotsResponse {
     Count(i64),
     Bots(Vec<Bot>),
@@ -217,8 +217,8 @@ pub struct InviteCodeQuery {
     pub code: String,
 }
 
-#[derive(Serialize)]
-#[cfg_attr(feature = "ts-bindings", derive(TS), ts(export))]
+#[derive(Serialize, TS)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 pub struct InviteCodeResponse {
     pub code: String,
     pub team: Team,

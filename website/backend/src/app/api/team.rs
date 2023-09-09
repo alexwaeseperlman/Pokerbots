@@ -266,13 +266,13 @@ pub async fn upload_pfp(
 
 #[derive(Deserialize)]
 pub struct KickMemberQuery {
-    pub email: String,
+    pub user_id: Uuid,
 }
 
 #[get("/kick-member")]
 pub async fn kick_member(
     session: Session,
-    web::Query::<KickMemberQuery>(KickMemberQuery { email }): web::Query<KickMemberQuery>,
+    web::Query::<KickMemberQuery>(KickMemberQuery { user_id }): web::Query<KickMemberQuery>,
 ) -> ApiResult<()> {
     let user =
         auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
@@ -286,7 +286,7 @@ pub async fn kick_member(
 
     let conn = &mut (*DB_CONNECTION).get()?;
     diesel::update(users::dsl::users)
-        .filter(users::dsl::id.eq(user.id))
+        .filter(users::dsl::id.eq(user_id))
         .filter(users::dsl::team.eq(team.id))
         .set(users::dsl::team.eq::<Option<i32>>(None))
         .execute(conn)?;

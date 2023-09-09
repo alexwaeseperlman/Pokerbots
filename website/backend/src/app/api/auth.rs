@@ -151,7 +151,7 @@ async fn login(
         });
     }
 
-    session.insert("email", &email)?;
+    session.insert("user", &auth.id)?;
 
     Ok(web::Json(()))
 }
@@ -280,15 +280,15 @@ async fn verify_verification_link(email_verification_link: web::Path<String>) ->
     Ok(web::Json(()))
 }
 
-#[derive(Serialize)]
-#[cfg_attr(feature = "ts-bindings", derive(TS), ts(export))]
+#[derive(Serialize, TS)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
 pub struct SignoutResponse {
     pub message: String,
     pub message_type: String,
 }
 #[get("/signout")]
 pub async fn signout(session: Session) -> ApiResult<SignoutResponse> {
-    session.remove("email");
+    session.remove("user");
 
     Ok(actix_web::web::Json(SignoutResponse {
         message: "You have been signed out.".to_string(),
