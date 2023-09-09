@@ -19,8 +19,8 @@ num = "0.4.1"
 num-derive = "0.4.0"
 num-traits = "0.2.16"
 chrono = {version = "0.4.26", features = ["serde", "rustc-serialize"]}
-uuid = {version="1.4.1", features=["serde"]}
-ts-rs = {version = "6.0", features = ["uuid-impl"]}
+ts-rs = {version = "7.0", features = ["uuid-impl"]}
+uuid = {version="1.4.1", features=["serde", "v4"]}
 
 [features]
 db=["dep:diesel", "dep:diesel_migrations", "dep:lazy_static"]

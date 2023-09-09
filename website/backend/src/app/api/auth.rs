@@ -4,11 +4,12 @@ use argon2::{
 };
 use chrono::Utc;
 use shared::db::{
-    models::{AnonymousUser, Auth, NewUser, TeamWithMembers, UserProfile},
+    models::{Auth, NewAuth, NewUser, TeamWithMembers, UserProfile},
     schema::{auth, user_profiles},
 };
 
 use lettre::{message::header::ContentType, Message, Transport};
+use uuid::Uuid;
 
 use crate::config::website_origin;
 
@@ -94,24 +95,28 @@ async fn register(
         .unwrap();
     config::MAILER.send(&email_body)?;
 
-    let auth = Auth {
+    let auth = NewAuth {
         email: email.clone(),
         mangled_password: Some(mangle(&password)?),
         email_verification_link: Some(email_verification_link.clone()),
         email_verification_link_expiration: Some(
             Utc::now().naive_utc() + chrono::Duration::minutes(15),
         ),
-        password_reset_link: None,
-        password_reset_link_expiration: None,
         email_confirmed: false,
-        is_admin: false,
     };
 
-    diesel::insert_into(auth::dsl::auth)
+    let auth: Auth = diesel::insert_into(auth::dsl::auth)
         .values(&auth)
         .on_conflict(auth::dsl::email)
         .do_update()
         .set(&auth)
+        .get_result::<Auth>(conn)?;
+
+    diesel::insert_into(users::dsl::users)
+        .values(NewUser {
+            display_name: auth.id.to_string(),
+            id: auth.id,
+        })
         .execute(conn)?;
 
     Ok(web::Json(()))
@@ -147,16 +152,6 @@ async fn login(
     }
 
     session.insert("email", &email)?;
-
-    diesel::insert_into(users::dsl::users)
-        .values(NewUser {
-            email: email.clone(),
-            display_name: email.clone(),
-            email_hash: mangle(&email)?,
-        })
-        .on_conflict(users::dsl::email)
-        .do_nothing()
-        .execute(&mut (*DB_CONNECTION).get().unwrap())?;
 
     Ok(web::Json(()))
 }
@@ -285,8 +280,8 @@ async fn verify_verification_link(email_verification_link: web::Path<String>) ->
     Ok(web::Json(()))
 }
 
-#[derive(Serialize, TS)]
-#[cfg_attr(feature = "ts-bindings", ts(export))]
+#[derive(Serialize)]
+#[cfg_attr(feature = "ts-bindings", derive(TS), ts(export))]
 pub struct SignoutResponse {
     pub message: String,
     pub message_type: String,
@@ -302,24 +297,24 @@ pub async fn signout(session: Session) -> ApiResult<SignoutResponse> {
 }
 
 pub fn get_user(session: &Session) -> Option<User> {
-    let email: String = session.get("email").ok()??;
+    let id: Uuid = session.get("user").ok()??;
     let conn = &mut (*DB_CONNECTION).get().unwrap();
     users::dsl::users
-        .filter(users::dsl::email.eq(email))
+        .filter(users::dsl::id.eq(id))
         .first(conn)
         .ok()
 }
 
 pub fn get_profile(session: &Session) -> Option<UserProfile> {
-    let email: String = session.get("email").ok()??;
+    let id: Uuid = session.get("user").ok()??;
     let conn = &mut (*DB_CONNECTION).get().unwrap();
     user_profiles::dsl::user_profiles
-        .filter(user_profiles::dsl::email.eq(email))
+        .filter(user_profiles::dsl::id.eq(id))
         .first(conn)
         .ok()
 }
 
-pub fn get_team(session: &Session) -> Option<TeamWithMembers<AnonymousUser>> {
+pub fn get_team(session: &Session) -> Option<TeamWithMembers<User>> {
     let user = get_user(session)?;
     let conn = &mut (*DB_CONNECTION).get().unwrap();
 
@@ -347,14 +342,7 @@ pub fn get_team(session: &Session) -> Option<TeamWithMembers<AnonymousUser>> {
         owner: team.owner,
         score: team.score,
         active_bot: team.active_bot,
-        members: members
-            .into_iter()
-            .map(|user| AnonymousUser {
-                email_hash: user.email_hash,
-                team: user.team,
-                display_name: user.display_name,
-            })
-            .collect(),
+        members,
         invites,
         deleted_at: None,
     })

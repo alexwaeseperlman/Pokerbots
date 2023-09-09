@@ -1,4 +1,5 @@
 use shared::db::models::UserProfile;
+use uuid::Uuid;
 
 use super::*;
 
@@ -48,13 +49,13 @@ pub async fn create_team(
     let new_id = diesel::insert_into(teams::dsl::teams)
         .values(NewTeam {
             name,
-            owner: user.clone().email,
+            owner: user.clone().id,
         })
         .returning(teams::dsl::id)
         .get_result::<i32>(conn)?;
 
     diesel::update(users::dsl::users)
-        .filter(users::dsl::email.eq(user.email))
+        .filter(users::dsl::id.eq(user.id))
         .set(users::dsl::team.eq(new_id))
         .get_result::<User>(conn)?;
 
@@ -73,7 +74,7 @@ pub async fn delete_team(session: Session) -> ApiResult<()> {
     let team =
         auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
     // You can't delete a team if you're not in one
-    if team.clone().owner != user.email {
+    if team.clone().owner != user.id {
         return Err(actix_web::error::ErrorNotFound(
             "You can't delete a team if you are not the owner.",
         )
@@ -105,7 +106,7 @@ pub async fn leave_team(session: Session) -> ApiResult<()> {
     let team =
         auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
     // You can't delete a team if you're not in one or you're the owner
-    if user.clone().email == team.owner {
+    if user.clone().id == team.owner {
         return Err(actix_web::error::ErrorNotAcceptable(
             "You can't leave the team if you are the owner.",
         )
@@ -115,7 +116,7 @@ pub async fn leave_team(session: Session) -> ApiResult<()> {
 
     // Set the current user's team to null
     diesel::update(users::dsl::users)
-        .filter(users::dsl::email.eq(user.email))
+        .filter(users::dsl::id.eq(user.id))
         .set(users::dsl::team.eq::<Option<i32>>(None))
         .execute(conn)?;
 
@@ -217,7 +218,7 @@ pub async fn join_team(
                     .filter(team_invites::dsl::code.eq(code))
                     .execute(conn)?;
                 diesel::update(users::dsl::users)
-                    .filter(users::dsl::email.eq(user.email))
+                    .filter(users::dsl::id.eq(user.id))
                     .set(users::dsl::team.eq(team))
                     .execute(conn)?;
             }
@@ -277,7 +278,7 @@ pub async fn kick_member(
         auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
     let team =
         auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
-    if team.clone().owner != user.clone().email {
+    if team.clone().owner != user.clone().id {
         return Err(
             actix_web::error::ErrorUnauthorized("Only the team owner can kick members.").into(),
         );
@@ -285,7 +286,7 @@ pub async fn kick_member(
 
     let conn = &mut (*DB_CONNECTION).get()?;
     diesel::update(users::dsl::users)
-        .filter(users::dsl::email.eq(email))
+        .filter(users::dsl::id.eq(user.id))
         .filter(users::dsl::team.eq(team.id))
         .set(users::dsl::team.eq::<Option<i32>>(None))
         .execute(conn)?;
@@ -295,19 +296,19 @@ pub async fn kick_member(
 
 #[derive(Deserialize)]
 pub struct MakeOwnerQuery {
-    pub email: String,
+    pub user_id: Uuid,
 }
 
 #[get("/update-owner")]
 pub async fn update_owner(
     session: Session,
-    web::Query::<MakeOwnerQuery>(MakeOwnerQuery { email }): web::Query<MakeOwnerQuery>,
+    web::Query::<MakeOwnerQuery>(MakeOwnerQuery { user_id }): web::Query<MakeOwnerQuery>,
 ) -> ApiResult<()> {
     let user =
         auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
     let team =
         auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
-    if team.clone().owner != user.clone().email {
+    if team.clone().owner != user.clone().id {
         return Err(
             actix_web::error::ErrorUnauthorized("Only the team owner can kick members.").into(),
         );
@@ -315,14 +316,17 @@ pub async fn update_owner(
 
     // make sure the user is on the team
     let conn = &mut (*DB_CONNECTION).get()?;
-    let count: i64 = users::table.find(&email).count().get_result::<i64>(conn)?;
+    let count: i64 = users::table
+        .find(&user_id)
+        .count()
+        .get_result::<i64>(conn)?;
     if count == 0 {
         return Err(actix_web::error::ErrorNotFound("User not found.").into());
     }
 
     let conn = &mut (*DB_CONNECTION).get()?;
     diesel::update(teams::table)
-        .set(teams::dsl::owner.eq(email))
+        .set(teams::dsl::owner.eq(user_id))
         .execute(conn)?;
     // TODO: Maybe some kind of message should show for the user next time they log in?
     Ok(web::Json(()))

@@ -7,16 +7,16 @@ use ts_rs::TS;
 
 use super::*;
 
-#[derive(Serialize, Deserialize, Debug, Clone, TS)]
-#[cfg_attr(feature = "ts-bindings", ts(export))]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[cfg_attr(feature = "ts-bindings", derive(TS), ts(export))]
 pub struct GameQueryOptions {
     pub id: Option<String>,
     pub team: Option<i32>,
     pub running: Option<bool>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, TS)]
-#[cfg_attr(feature = "ts-bindings", ts(export))]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[cfg_attr(feature = "ts-bindings", derive(TS), ts(export))]
 pub struct PageOptions {
     pub page_size: i32,
     pub page: i32,

@@ -1,5 +1,5 @@
 use super::*;
-use shared::db::models::{AnonymousUser, BotWithTeam, Team, TeamWithMembers, User, UserProfile};
+use shared::db::models::{BotWithTeam, Team, TeamWithMembers, User, UserProfile};
 
 #[derive(Deserialize)]
 pub enum TeamsQuerySort {
@@ -24,12 +24,12 @@ pub struct TeamQuery {
     pub count: Option<bool>,
 }
 
-#[derive(Serialize, TS)]
-#[cfg_attr(feature = "ts-bindings", ts(export))]
+#[derive(Serialize)]
+#[cfg_attr(feature = "ts-bindings", derive(TS), ts(export))]
 pub enum TeamsResponse {
     Count(i64),
     Teams(Vec<Team>),
-    TeamsWithMembers(Vec<TeamWithMembers<AnonymousUser>>),
+    TeamsWithMembers(Vec<TeamWithMembers<User>>),
 }
 
 #[get("/teams")]
@@ -106,11 +106,6 @@ pub async fn teams(
                     members: users
                         .clone()
                         .into_iter()
-                        .map(|u| AnonymousUser {
-                            display_name: u.display_name,
-                            team: u.team,
-                            email_hash: u.email_hash,
-                        })
                         .filter(|u| u.team == Some(t.id))
                         .collect(),
                     // only show invites if the user is on the team
@@ -132,7 +127,7 @@ pub async fn teams(
                     name: t.name,
                     deleted_at: t.deleted_at,
                 })
-                .collect::<Vec<TeamWithMembers<AnonymousUser>>>(),
+                .collect::<Vec<TeamWithMembers<User>>>(),
         )));
     }
     Ok(web::Json(TeamsResponse::Teams(result)))
@@ -148,8 +143,8 @@ pub struct BotQuery {
     pub join_team: Option<bool>,
 }
 
-#[derive(Serialize, TS)]
-#[cfg_attr(feature = "ts-bindings", ts(export))]
+#[derive(Serialize)]
+#[cfg_attr(feature = "ts-bindings", derive(TS), ts(export))]
 pub enum BotsResponse {
     Count(i64),
     Bots(Vec<Bot>),
@@ -222,8 +217,8 @@ pub struct InviteCodeQuery {
     pub code: String,
 }
 
-#[derive(Serialize, TS)]
-#[cfg_attr(feature = "ts-bindings", ts(export))]
+#[derive(Serialize)]
+#[cfg_attr(feature = "ts-bindings", derive(TS), ts(export))]
 pub struct InviteCodeResponse {
     pub code: String,
     pub team: Team,

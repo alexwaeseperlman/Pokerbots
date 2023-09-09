@@ -37,6 +37,7 @@ num = "0.4.1"
 num-traits = "0.2.16"
 argon2 = "0.5.1"
 lettre = { version = "0.10.4", features = ["native-tls"]}
+uuid = {version="1.4.1", features=["serde"]}
 
 [dev-dependencies]
 cargo-watch = "8.4.0"

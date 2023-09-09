@@ -728,7 +728,7 @@ dependencies = [
  "http",
  "percent-encoding",
  "tracing",
- "uuid 1.4.1",
+ "uuid",
 ]
 
 [[package]]
@@ -1896,7 +1896,7 @@ dependencies = [
  "itoa",
  "pq-sys",
  "r2d2",
- "uuid 1.4.1",
+ "uuid",
 ]
 
 [[package]]
@@ -4170,8 +4170,8 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
- "ts-rs",
- "uuid 1.4.1",
+ "ts-rs 7.0.0",
+ "uuid",
 ]
 
 [[package]]
@@ -4658,8 +4658,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4added4070a4fdf9df03457206cd2e4b12417c8560a2954d91ffcbe60177a56a"
 dependencies = [
  "thiserror",
- "ts-rs-macros",
- "uuid 0.8.2",
+ "ts-rs-macros 6.2.0",
+]
+
+[[package]]
+name = "ts-rs"
+version = "7.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e1ff1f8c90369bc172200013ac17ae86e7b5def580687df4e6127883454ff2b0"
+dependencies = [
+ "thiserror",
+ "ts-rs-macros 7.0.0",
+ "uuid",
 ]
 
 [[package]]
@@ -4672,6 +4682,19 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
+ "termcolor",
+]
+
+[[package]]
+name = "ts-rs-macros"
+version = "7.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a6f41cc0aeb7a4a55730188e147d3795a7349b501f8334697fd37629b896cdc2"
+dependencies = [
+ "Inflector",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.29",
  "termcolor",
 ]
 
@@ -4784,8 +4807,9 @@ dependencies = [
  "serde_yaml",
  "shared",
  "tokio",
- "ts-rs",
+ "ts-rs 6.2.1",
  "url",
+ "uuid",
  "zip",
 ]
 
@@ -4808,16 +4832,11 @@ checksum = "daf8dba3b7eb870caf1ddeed7bc9d2a049f3cfdfae7cb521b087cc33ae4c49da"
 
 [[package]]
 name = "uuid"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
-
-[[package]]
-name = "uuid"
 version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "79daa5ed5740825c40b389c5e50312b9c86df53fccd33f281df655642b43869d"
 dependencies = [
+ "getrandom 0.2.10",
  "serde",
 ]
 
