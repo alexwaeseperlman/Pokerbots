@@ -12,6 +12,24 @@ pub async fn my_team(session: Session) -> ApiResult<Option<TeamWithMembers<User>
     Ok(web::Json(auth::get_team(&session)))
 }
 
+#[get("/my-email")]
+pub async fn my_email(session: Session) -> ApiResult<String> {
+    let user = auth::get_user(&session);
+    if let Some(user) = user {
+        let conn = &mut (*DB_CONNECTION).get()?;
+        let email = schema::auth::dsl::auth
+            .filter(schema::auth::dsl::id.eq(user.id))
+            .select(schema::auth::dsl::email)
+            .first::<String>(conn)?;
+        Ok(web::Json(email))
+    } else {
+        Err(ApiError {
+            status_code: StatusCode::UNAUTHORIZED,
+            message: "Not logged into an account".to_string(),
+        })
+    }
+}
+
 #[get("/profile")]
 pub async fn get_profile(session: Session) -> ApiResult<Option<UserProfile>> {
     let user = auth::get_user(&session);

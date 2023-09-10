@@ -82,17 +82,24 @@ pub async fn microsoft_login(
 
     let conn = &mut (*DB_CONNECTION).get().unwrap();
     conn.transaction(|conn| {
-        let auth = diesel::insert_into(auth::dsl::auth)
+        let uuid = uuid::Uuid::new_v4();
+        diesel::insert_into(auth::dsl::auth)
             .values(&shared::db::models::NewAuth {
                 email: me.userPrincipalName.clone().unwrap(),
                 mangled_password: None,
                 email_verification_link: None,
                 email_verification_link_expiration: None,
                 email_confirmed: false,
+                id: uuid,
             })
             .on_conflict(auth::dsl::email)
             .do_nothing()
+            .execute(conn)?;
+        let auth: Auth = auth::table
+            .filter(auth::dsl::email.eq(me.userPrincipalName.clone().unwrap()))
             .get_result::<Auth>(conn)?;
+
+        log::debug!("auth msft oauth {:?}", auth);
 
         diesel::insert_into(users::dsl::users)
             .values(NewUser {
@@ -183,18 +190,22 @@ async fn google_login(
 
     let conn = &mut (*DB_CONNECTION).get().unwrap();
     conn.transaction(|conn| {
-        let auth: Auth = diesel::insert_into(auth::dsl::auth)
+        let uuid = uuid::Uuid::new_v4();
+        diesel::insert_into(auth::dsl::auth)
             .values(&shared::db::models::NewAuth {
                 email: user_info.email.clone().unwrap(),
                 mangled_password: None,
                 email_verification_link: None,
                 email_verification_link_expiration: None,
                 email_confirmed: false,
+                id: uuid,
             })
             .on_conflict(auth::dsl::email)
             .do_nothing()
-            .get_result(conn)?;
-
+            .execute(conn)?;
+        let auth: Auth = auth::table
+            .filter(auth::dsl::email.eq(user_info.email.clone().unwrap()))
+            .get_result::<Auth>(conn)?;
         diesel::insert_into(users::dsl::users)
             .values(NewUser {
                 display_name: user_info.name.unwrap_or(user_info.email.clone().unwrap()),

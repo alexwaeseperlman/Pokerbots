@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { useUser, useTeam, apiUrl } from "../state";
+import { useUser, useTeam, apiUrl, useProfile } from "../state";
 import CreateTeam from "./CreateTeam";
 import Login from "../Login";
 import Box from "@mui/system/Box";
@@ -15,6 +15,7 @@ import Stack from "@mui/joy/Stack";
 import { Card, CardContent, CardCover, Typography } from "@mui/joy";
 import { useNavigate } from "react-router-dom";
 import { enqueueSnackbar } from "notistack";
+import NoProfile from "./NoProfile";
 
 function NoTeam() {
   return (
@@ -93,6 +94,7 @@ export default function ManageTeam({
 }) {
   const [team, fetchTeam] = useTeam(teamId);
   const [user, fetchUser] = useUser();
+  const [profile, fetchProfile] = useProfile();
   const navigate = useNavigate();
   useEffect(() => {
     if (!user && !readonly) {
@@ -101,6 +103,8 @@ export default function ManageTeam({
   });
   if (readonly || (team && user)) {
     return <DisplayTeam readonly={readonly} teamId={teamId} />;
+  } else if (user && !profile) {
+    return <NoProfile />;
   } else if (user) {
     return <CreateTeam />;
   } else {

@@ -248,6 +248,7 @@ pub struct NewAuth {
     pub email_verification_link: Option<String>,
     pub email_verification_link_expiration: Option<chrono::NaiveDateTime>,
     pub email_confirmed: bool,
+    pub id: Uuid,
 }
 
 #[derive(

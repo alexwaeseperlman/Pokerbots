@@ -3,21 +3,28 @@ import Box, { BoxProps } from "@mui/joy/Box";
 import {
   AccordionDetails,
   AccordionSummary,
+  Autocomplete,
   Button,
   Card,
+  Divider,
+  FormControl,
+  FormHelperText,
+  FormLabel,
   Grid,
   Input,
   Sheet,
+  Skeleton,
   Table,
   Typography,
   styled,
 } from "@mui/joy";
 import { GameTable } from "../components/Tables/GameTable";
 import { TeamsTable } from "../components/Tables/TeamsTable";
-import { useUser } from "../state";
-import { Mail } from "@mui/icons-material";
+import { apiUrl, useUser } from "../state";
+import { InfoOutlined, Mail } from "@mui/icons-material";
 import FileUpload from "../components/BotUpload";
 import Accordion from "@mui/joy/Accordion";
+import { useNavigate } from "react-router-dom";
 
 const Cell = styled("td")(({ theme }) => ({
   padding: theme.spacing(1),
@@ -25,107 +32,102 @@ const Cell = styled("td")(({ theme }) => ({
 
 export default function Profile() {
   const user = useUser()[0];
+  const navigate = useNavigate();
+  const [email, setEmail] = React.useState<string | null>(null);
+  console.log(email);
+  React.useEffect(() => {
+    if (!user) {
+      navigate("/login?redirect=/profile");
+    }
+  }, [user]);
+
+  React.useEffect(() => {
+    fetch(`${apiUrl}/my-email`).then(async (res) => {
+      const json = await res.json();
+      if (res.status === 200) {
+        setEmail(json);
+      } else {
+        console.log(json);
+      }
+    });
+  }, [user]);
+
   return (
     <Card>
-      <Typography level="h3" mb={2}>
-        My profile
+      <Typography level="h2" mb={2}>
+        Your profile
       </Typography>
-      <Table>
-        <thead></thead>
-        <tbody>
-          <tr>
-            <td>
-              <Typography>Email</Typography>
-            </td>
-            <td>
-              <Typography startDecorator={<Mail />}>{user?.email}</Typography>
-            </td>
-          </tr>
-          <tr>
-            <td colSpan={2}>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  gap: 1,
-                }}
-              >
-                <Button>Change password</Button>
-              </Box>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <Typography>Name</Typography>
-            </td>
-            <td>
-              <Input size="sm" value={user?.display_name} />
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <Typography>Country</Typography>
-            </td>
-            <td>
-              <Input size="sm" />
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <Typography>School</Typography>
-            </td>
-            <td>
-              <Input size="sm" />
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <Typography>Linkedin</Typography>
-            </td>
-            <td>
-              <Input size="sm" />
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <Typography>Github</Typography>
-            </td>
-            <td>
-              <Input size="sm" />
-            </td>
-          </tr>
-          <tr>
-            <td colSpan={2}>
-              <Typography>
-                We'd like to connect you with potential employers.
-              </Typography>
-              <FileUpload
-                onUpload={(f: File) => {
-                  return Promise.resolve();
-                }}
-              >
-                Drag your resume here
-              </FileUpload>
-            </td>
-          </tr>
-        </tbody>
-        <tfoot>
-          <tr>
-            <td colSpan={2}>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  gap: 1,
-                }}
-              >
-                <Button variant="plain">Cancel</Button>
-                <Button>Save</Button>
-              </Box>
-            </td>
-          </tr>
-        </tfoot>
-      </Table>
+      <FormControl sx={{ display: { sm: "contents" } }}>
+        <FormLabel>Email</FormLabel>
+        {email ? (
+          <Input startDecorator={<Mail />} value={email} readOnly />
+        ) : (
+          <Skeleton component={"span"} width={"100%"} height={"32px"} />
+        )}
+      </FormControl>
+
+      <FormControl>
+        <FormLabel>Name</FormLabel>
+        <Input />
+        <FormHelperText>
+          In order to receive prizes and be eligible for the leaderboard, please
+          enter your real name.
+        </FormHelperText>
+      </FormControl>
+
+      <FormControl>
+        <FormLabel>Country</FormLabel>
+        <Input />
+      </FormControl>
+
+      <FormControl>
+        <FormLabel>School</FormLabel>
+        <Autocomplete options={["hi"]} />
+        <FormHelperText>
+          Leave this blank if you are not a student. Note that only students are
+          eligible for prizes.
+        </FormHelperText>
+      </FormControl>
+
+      <Divider role="presentation" />
+
+      <Typography level="h3">Recruiting information</Typography>
+      <Typography level="body-sm">
+        We'd like to connect you with our sponsors
+      </Typography>
+
+      <FormControl>
+        <FormLabel>Linkedin</FormLabel>
+        <Input />
+      </FormControl>
+
+      <FormControl>
+        <FormLabel>Github</FormLabel>
+        <Input />
+      </FormControl>
+
+      <FormControl>
+        <FileUpload
+          onUpload={(f: File) => {
+            return Promise.resolve();
+          }}
+        >
+          Drag your resume here
+        </FileUpload>
+      </FormControl>
+
+      <Divider role="presentation" />
+
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "flex-end",
+          gap: 1,
+        }}
+      >
+        <Button variant="plain">Cancel</Button>
+        <Button>Save</Button>
+      </Box>
     </Card>
   );
 }

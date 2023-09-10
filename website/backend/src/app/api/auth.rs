@@ -95,6 +95,8 @@ async fn register(
         .unwrap();
     config::MAILER.send(&email_body)?;
 
+    let id = Uuid::new_v4();
+
     let auth = NewAuth {
         email: email.clone(),
         mangled_password: Some(mangle(&password)?),
@@ -103,21 +105,24 @@ async fn register(
             Utc::now().naive_utc() + chrono::Duration::minutes(15),
         ),
         email_confirmed: false,
+        id,
     };
+    diesel::insert_into(users::dsl::users)
+        .values(NewUser {
+            display_name: id.to_string(),
+            id,
+        })
+        .execute(conn)?;
 
-    let auth: Auth = diesel::insert_into(auth::dsl::auth)
+    diesel::insert_into(auth::dsl::auth)
         .values(&auth)
         .on_conflict(auth::dsl::email)
         .do_update()
         .set(&auth)
-        .get_result::<Auth>(conn)?;
-
-    diesel::insert_into(users::dsl::users)
-        .values(NewUser {
-            display_name: auth.id.to_string(),
-            id: auth.id,
-        })
         .execute(conn)?;
+    let auth: Auth = auth::dsl::auth
+        .filter(auth::dsl::email.eq(email.clone()))
+        .first::<Auth>(conn)?;
 
     Ok(web::Json(()))
 }
