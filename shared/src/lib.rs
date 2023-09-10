@@ -101,6 +101,12 @@ pub enum WhichBot {
     Defender = 0,
     Challenger = 1,
 }
+pub fn opponent(which: WhichBot) -> WhichBot {
+    match which {
+        WhichBot::Defender => WhichBot::Challenger,
+        WhichBot::Challenger => WhichBot::Defender,
+    }
+}
 
 impl Display for WhichBot {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -152,7 +158,7 @@ pub struct BotJson {
 }
 
 impl From<io::Error> for GameError {
-    fn from(e: io::Error) -> Self {
+    fn from(_e: io::Error) -> Self {
         Self::InternalError
     }
 }

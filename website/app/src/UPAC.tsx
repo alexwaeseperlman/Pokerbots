@@ -90,7 +90,7 @@ function TeamDashboard() {
 function GameDashboard(){
   const gameId = useParams().gameId ?? null;
   return (
-  <GameVisualizer
+    <GameVisualizer
       gameId={gameId}
     />
   )

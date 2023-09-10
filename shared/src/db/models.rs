@@ -1,15 +1,16 @@
 use diesel::{
     deserialize::FromSql,
     pg::{self, PgValue},
+    prelude::Insertable,
     serialize::ToSql,
     sql_types::Integer,
-    Queryable, Selectable,
+    Identifiable, Queryable, Selectable,
 };
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::{
-    db::schema::{bots, games, team_invites, teams, users},
+    db::schema::{bots, game_states, games, team_invites, teams, users},
     BuildStatus, WhichBot,
 };
 
@@ -94,9 +95,9 @@ pub struct Game {
     pub defender: i32,
     pub challenger: i32,
     pub defender_score: Option<i32>,
-    pub challenger_score: Option<i32>,
     pub created: i64,
     pub error_type: Option<String>,
+    pub challenger_score: Option<i32>,
     pub error_bot: Option<i32>,
 }
 
@@ -165,6 +166,28 @@ pub struct NewBot {
     pub score: f32,
     pub uploaded_by: String,
     pub build_status: BuildStatus,
+}
+#[derive(Queryable, Debug, Identifiable, Serialize, Insertable, Deserialize, TS)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
+#[diesel(primary_key(game, step))]
+#[diesel(table_name = game_states)]
+
+pub struct GameState {
+    pub game: String,
+    pub step: i32,
+    pub challenger_stack: i32,
+    pub defender_stack: i32,
+    pub challenger_pushed: i32,
+    pub defender_pushed: i32,
+    pub challenger_hand: String,
+    pub defender_hand: String,
+    pub flop: Option<String>,
+    pub turn: Option<String>,
+    pub river: Option<String>,
+    pub button: String,
+    pub round: String,
+    pub action_time: i32,
+    pub last_action: String,
 }
 
 impl ToSql<Integer, pg::Pg> for BuildStatus {

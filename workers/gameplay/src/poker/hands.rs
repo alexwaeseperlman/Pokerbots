@@ -9,6 +9,17 @@ pub enum Suite {
     Diamonds,
 }
 
+impl Card {
+    pub fn to_utf16(&self) -> i32 {
+        match self.suite {
+            Suite::Spades => 0x1F0A0 + self.value as i32,
+            Suite::Hearts => 0x1F0B0 + self.value as i32,
+            Suite::Diamonds => 0x1F0C0 + self.value as i32,
+            Suite::Clubs => 0x1F0D0 + self.value as i32,
+        }
+    }
+}
+
 impl Display for Suite {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(

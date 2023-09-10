@@ -54,9 +54,14 @@ services:
     volumes:
       - ~/.aws/:/root/.aws:ro
     environment:
+      - DB_URL=db:5432/postgres
+      - DB_USER=postgres
+      - DB_PASSWORD=${DB_PASSWORD}
+
       - RUST_LOG=info
       - S3_ACCESS_KEY=${S3_ACCESS_KEY}
       - S3_SECRET_KEY=${S3_SECRET_KEY}
+      - RUSTFLAGS=${RUSTFLAGS}
 
       - NEW_GAMES_QUEUE_URL=http://sqs:9324/queue/new_games
       - GAME_RESULTS_QUEUE_URL=http://sqs:9324/queue/game_results

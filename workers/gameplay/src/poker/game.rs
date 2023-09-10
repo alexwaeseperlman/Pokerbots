@@ -1,12 +1,15 @@
 use core::panic;
-use std::cmp::{min, Ordering};
+use std::{
+    cmp::{min, Ordering},
+    fmt::Display,
+};
 
 use rand::{seq::SliceRandom, Rng};
 use shared::GameActionError;
 
 use super::hands::{self, Card, Suite};
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Action {
     // Call and check are the same
     Call,

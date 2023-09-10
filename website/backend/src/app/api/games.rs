@@ -1,9 +1,11 @@
+use std::thread::AccessError;
+
 use diesel::alias;
 use itertools::Itertools;
 use shared::{
     db::{
         dao::bots::BotsDao,
-        models::{BotWithTeam, GameWithBots, Team},
+        models::{self, BotWithTeam, GameState, GameWithBots, Team},
         schema_aliases::*,
     },
     WhichBot,
@@ -259,4 +261,92 @@ pub async fn game_log(
         .await?;
 
     Ok(HttpResponse::Ok().streaming(response.body))
+}
+
+// GAME STATES
+
+#[derive(Deserialize)]
+pub struct GameStateQuery {
+    id: String,
+    state: i32,
+}
+
+//TODO:: check the bot belongs to the team;
+fn is_my_bot(bot: i32, team_id: i32) -> bool {
+    return true;
+}
+
+#[get("/game-state")]
+pub async fn game_state(
+    session: Session,
+    web::Query::<GameStateQuery>(GameStateQuery { id, state }): web::Query<GameStateQuery>,
+) -> ApiResult<GameState> {
+    let team = login::get_team_data(&session)
+        .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
+    let conn = &mut (*DB_CONNECTION).get()?;
+    // Make sure the game has been played by the team
+    let game: Game = schema::games::dsl::games
+        .filter(schema::games::dsl::id.eq(&id))
+        .first::<Game>(conn)?;
+
+    match vec![game.defender, game.challenger]
+        .into_iter()
+        .any(|x| is_my_bot(x, team.id))
+    {
+        true => {
+            let game_state: models::GameState = schema::game_states::dsl::game_states
+                .find((id, state))
+                .first::<models::GameState>(conn)?;
+
+            return Ok(web::Json(game_state));
+        }
+        false => {
+            return Err(actix_web::error::ErrorUnauthorized(
+                "Only the owner can view a bot's logs.",
+            )
+            .into());
+        }
+    }
+}
+
+#[derive(Deserialize)]
+pub struct GameLenghtQuery {
+    game: String,
+}
+
+#[get("/game-length")]
+pub async fn game_length(
+    session: Session,
+    web::Query::<GameLenghtQuery>(GameLenghtQuery { game }): web::Query<GameLenghtQuery>,
+) -> Result<HttpResponse, ApiError> {
+    let team = login::get_team_data(&session)
+        .ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
+    let conn = &mut (*DB_CONNECTION).get()?;
+    // Make sure the game has been played by the team
+    let founded_game: Game = schema::games::dsl::games
+        .filter(schema::games::dsl::id.eq(game.clone()))
+        .first::<Game>(conn)?;
+
+    match vec![founded_game.defender, founded_game.challenger]
+        .into_iter()
+        .any(|x| is_my_bot(x, team.id))
+    {
+        true => {
+            let max = schema::game_states::dsl::game_states
+                .filter(schema::game_states::dsl::game.eq(game.clone()))
+                .order(schema::game_states::step.desc())
+                .first::<GameState>(conn)
+                .map(|obj| obj.step.to_string());
+            match max {
+                Ok(max) => return Ok(HttpResponse::Ok().body(max)),
+                Err(err) => return Err(actix_web::error::ErrorNotFound(err).into()),
+            }
+        }
+        false => {
+            return Err(actix_web::error::ErrorUnauthorized(
+                "Only the owner can view a bot's logs.",
+            )
+            .into());
+        }
+    }
 }

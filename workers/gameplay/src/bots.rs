@@ -1,7 +1,9 @@
+use diesel::RunQueryDsl;
 use itertools::Itertools;
 use rand::{thread_rng, Rng};
-use shared::{BotJson, GameError, GameResult, WhichBot};
+use shared::{db, opponent, BotJson, GameError, GameResult, WhichBot};
 use std::borrow::BorrowMut;
+use std::io::Write;
 use std::{
     env,
     path::{Path, PathBuf},
@@ -73,7 +75,17 @@ pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>
             format!("Failed to create log file: {}", e),
         )
     })?);
-    std::fs::write(bot_path.join("bot/run.sh"), bot_json.run).expect("write to build.sh failed");
+    std::fs::write(bot_path.join("bot/run.sh"), "ulimit -v 100000000 && ")
+        .expect("write to build.sh failed");
+    let mut file = std::fs::OpenOptions::new()
+        .write(true)
+        .append(true)
+        .open(bot_path.join("bot/run.sh"))
+        .unwrap();
+
+    if let Err(e) = std::writeln!(file, "{}", bot_json.run) {
+        eprintln!("Couldn't write to file: {}", e);
+    }
     Command::new("chown")
         .arg("-R")
         .arg("runner:runner")
@@ -178,6 +190,7 @@ pub async fn run_game(
         defender,
         challenger,
         game_id,
+        task_id.clone(),
         Duration::from_secs(1),
         tokio::fs::File::create(tmp_dir.join("logs")).await?,
     );
@@ -192,6 +205,7 @@ pub struct Game {
     initial_stacks: [u32; 2],
     button: usize,
     id: String,
+    task_id: String,
     timeout: Duration,
     logs: tokio::fs::File,
     start_time: Instant,
@@ -201,6 +215,7 @@ impl Game {
         defender: tokio::process::Child,
         challenger: tokio::process::Child,
         id: String,
+        task_id: String,
         timeout: Duration,
         logs: tokio::fs::File,
     ) -> Self {
@@ -212,6 +227,7 @@ impl Game {
             button: 0,
             timeout,
             id,
+            task_id,
             logs,
             start_time: Instant::now(),
         }
@@ -263,15 +279,15 @@ impl Game {
             Err(GameError::RunTimeError(which_bot))
         }
     }
+    fn get_position(&mut self, which_bot: WhichBot) -> usize {
+        match which_bot {
+            WhichBot::Defender => self.button,
+            WhichBot::Challenger => (self.button + 1) % 2,
+        }
+    }
 
     async fn print_position(&mut self, which_bot: WhichBot) -> Result<(), GameError> {
-        let position = format!(
-            "P {}",
-            match which_bot {
-                WhichBot::Defender => self.button,
-                WhichBot::Challenger => (self.button + 1) % 2,
-            }
-        );
+        let position = format!("P {}", self.get_position(which_bot));
         self.write_bot(which_bot, position).await?;
         Ok(())
     }
@@ -304,18 +320,25 @@ impl Game {
         Ok(())
     }
 
-    async fn write_log<S: Into<String>>(&mut self, msg: S) -> Result<(), shared::GameError> {
+    async fn write_log_with_time<S: Into<String>>(
+        &mut self,
+        msg: S,
+        time: tokio::time::Instant,
+    ) -> Result<(), shared::GameError> {
         self.logs
             .write_all(
                 format!(
                     "{}ms {}\n",
-                    tokio::time::Instant::now()
-                        .duration_since(self.start_time)
-                        .as_millis(),
+                    time.duration_since(self.start_time).as_millis(),
                     msg.into()
                 )
                 .as_bytes(),
             )
+            .await?;
+        Ok(())
+    }
+    async fn write_log<S: Into<String>>(&mut self, msg: S) -> Result<(), shared::GameError> {
+        self.write_log_with_time(msg, tokio::time::Instant::now())
             .await?;
         Ok(())
     }
@@ -324,7 +347,13 @@ impl Game {
         &mut self,
         defender_reader: &mut BufReader<ChildStdout>,
         challenger_reader: &mut BufReader<ChildStdout>,
+        step: &mut i32,
+        game_id: String,
     ) -> Result<(), shared::GameError> {
+        let conn = &mut (*shared::db::conn::DB_CONNECTION)
+            .get()
+            .map_err(|_| shared::GameError::InternalError)?;
+
         let mut rng = thread_rng();
         let mut state = crate::poker::game::GameState::new(
             if self.button == 1 {
@@ -392,7 +421,9 @@ impl Game {
                         GameError::RunTimeError(WhichBot::Challenger)
                     })?;
             }
+
             // Assume state.whose_turn() is not None
+
             let whose_turn: WhichBot =
                 if state.whose_turn().ok_or(GameError::InternalError)? == self.button {
                     WhichBot::Defender
@@ -436,16 +467,56 @@ impl Game {
                 .map_err(|_| shared::GameError::TimeoutError(whose_turn))?
                 .map_err(|_| shared::GameError::RunTimeError(whose_turn))?;
 
-            self.write_log(format!("{} > {}", whose_turn, line.trim()))
+            let answer_time = tokio::time::Instant::now();
+            self.write_log_with_time(format!("{} > {}", whose_turn, line.trim()), answer_time)
                 .await?;
             log::debug!("Reading action from {:?}.", line);
+            let action = parse_action(line.trim())
+                .map_err(|_| shared::GameError::InvalidActionError(whose_turn.clone()))?;
             state = state
-                .post_action(
-                    parse_action(line.trim())
-                        .map_err(|_| shared::GameError::InvalidActionError(whose_turn.clone()))?,
-                )
+                .post_action(action.clone())
                 .map_err(|_| shared::GameError::InvalidActionError(whose_turn.clone()))?;
 
+            diesel::insert_into(db::schema::game_states::dsl::game_states)
+                .values(db::models::GameState {
+                    game: self.task_id.clone(),
+                    step: *step,
+                    challenger_hand: state.player_states[self.get_position(WhichBot::Challenger)]
+                        .hole_cards
+                        .iter()
+                        .map(|card| card.to_string())
+                        .join(" "),
+                    defender_hand: state.player_states[self.get_position(WhichBot::Defender)]
+                        .hole_cards
+                        .iter()
+                        .map(|card| card.to_string())
+                        .join(" "),
+                    button: match self.button {
+                        0 => "Defender",
+                        _ => "Challenger",
+                    }
+                    .to_string(),
+                    challenger_stack: state.player_states[self.get_position(WhichBot::Challenger)]
+                        .stack as i32,
+                    defender_stack: state.player_states[self.get_position(WhichBot::Defender)].stack
+                        as i32,
+                    challenger_pushed: state.player_states[self.get_position(WhichBot::Challenger)]
+                        .pushed as i32,
+                    defender_pushed: state.player_states[self.get_position(WhichBot::Defender)]
+                        .pushed as i32,
+                    flop: state
+                        .community_cards
+                        .get(0..3)
+                        .map(|cards| cards.iter().map(|card| (card.to_string())).join(" ")),
+                    turn: state.community_cards.get(3).map(|card| card.to_string()),
+                    river: state.community_cards.get(4).map(|card| card.to_string()),
+                    round: format!("{:?}", state.round),
+                    action_time: answer_time.duration_since(self.start_time).as_millis() as i32,
+                    last_action: format!("{}: {:?}", whose_turn, action),
+                })
+                .execute(conn)
+                .map_err(|err| log::debug!("{}", err));
+            *step += 1;
             unsafe {
                 let _ = kill(-(opponent_gid as i32), 18);
             };
@@ -471,6 +542,7 @@ impl Game {
         );
 
         log::info!("Clients connected for {}", self.id);
+        let mut step = 0;
         for i in 0..rounds {
             if self.stacks[0] == 0 || self.stacks[1] == 0 {
                 self.write_log(format!("System > Ending because a bot has an empty stack"))
@@ -481,7 +553,12 @@ impl Game {
                 .await?;
             log::debug!("Playing round. Current stacks: {:?}.", self.stacks);
             if let Err(e) = self
-                .play_round(&mut defender_reader, &mut challenger_reader)
+                .play_round(
+                    &mut defender_reader,
+                    &mut challenger_reader,
+                    &mut step,
+                    self.task_id.clone(),
+                )
                 .await
             {
                 self.write_log(format!("System > {:?}", e)).await?;
@@ -509,6 +586,18 @@ impl Drop for Game {
         }
         self.defender.start_kill();
         self.challenger.start_kill();
+
+        Command::new("umount")
+            .arg(format!("/tmp/{}/challenger", self.id))
+            .stderr(Stdio::null())
+            .stdout(Stdio::null())
+            .status();
+
+        Command::new("umount")
+            .arg(format!("/tmp/{}/defender", self.id))
+            .stderr(Stdio::null())
+            .stdout(Stdio::null())
+            .status();
     }
 }
 

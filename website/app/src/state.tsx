@@ -60,24 +60,24 @@ export const useTeam = (selectedTeam: string | null) => {
 function fetchTeam(team: string | null) {
   return team
     ? fetch(`${apiUrl}/teams?ids=${team ?? ""}&fill_members=true`)
-        .then((res) => res.json())
-        .then((teams: TeamsResponse) => {
-          if (
-            "TeamsWithMembers" in teams &&
-            teams.TeamsWithMembers.length > 0
-          ) {
-            const invites = teams.TeamsWithMembers[0].invites;
-            const out: TeamData = {
-              ...teams.TeamsWithMembers[0],
-              invites: invites ? invites.map((val) => val.code) : [],
-            };
-            return out;
-          }
-          return null;
-        })
-        .catch(() => null)
+      .then((res) => res.json())
+      .then((teams: TeamsResponse) => {
+        if (
+          "TeamsWithMembers" in teams &&
+          teams.TeamsWithMembers.length > 0
+        ) {
+          const invites = teams.TeamsWithMembers[0].invites;
+          const out: TeamData = {
+            ...teams.TeamsWithMembers[0],
+            invites: invites ? invites.map((val) => val.code) : [],
+          };
+          return out;
+        }
+        return null;
+      })
+      .catch(() => null)
     : fetch(`${apiUrl}/my-team`)
-        .then((res) => res.json())
-        .then((team) => team as TeamData)
-        .catch(() => null);
+      .then((res) => res.json())
+      .then((team) => team as TeamData)
+      .catch(() => null);
 }

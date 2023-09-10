@@ -10,7 +10,7 @@ itertools = "0.10.5"
 tokio = {version = "1.28.1", features=["rt", "macros", "rt-multi-thread", "time", "process"]}
 serde = "1.0.163"
 serde_json = "1.0.96"
-shared = { path = "../../shared" }
+shared = { path = "../../shared", features = ["db"] }
 futures-lite = "1.13.0"
 env_logger = "0.10.0"
 aws-config = "0.55.2"
@@ -22,3 +22,4 @@ anyhow = "1.0.71"
 reqwest = "0.11.18"
 syscalls = "0.6.13"
 libc = "0.2.147"
+diesel = "2.1.1"
