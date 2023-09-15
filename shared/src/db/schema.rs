@@ -81,7 +81,6 @@ diesel::table! {
         school -> Varchar,
         linkedin -> Nullable<Varchar>,
         github -> Nullable<Varchar>,
-        resume_s3_key -> Nullable<Varchar>,
         id -> Uuid,
     }
 }

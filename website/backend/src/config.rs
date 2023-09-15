@@ -21,8 +21,20 @@ pub fn azure_secret() -> String {
     })
 }
 
+pub fn domain_name() -> String {
+    std::env::var("DOMAIN_NAME").expect("DOMAIN_NAME must be set in .env")
+}
+
 pub fn website_origin() -> String {
-    std::env::var("WEBSITE_ORIGIN").expect("WEBSITE_ORIGIN must be set in .env")
+    format!(
+        "http{}://{}",
+        if domain_name() == "localhost" {
+            "s"
+        } else {
+            ""
+        },
+        domain_name()
+    )
 }
 
 pub fn microsoft_redirect_uri() -> String {
@@ -46,6 +58,10 @@ pub fn google_redirect_uri() -> String {
 
 pub fn pfp_s3_bucket() -> String {
     std::env::var("PFP_S3_BUCKET").expect("PFP_S3_BUCKET must be set in .env")
+}
+
+pub fn resume_s3_bucket() -> String {
+    std::env::var("RESUME_S3_BUCKET").expect("RESUME_S3_BUCKET must be set in .env")
 }
 
 pub fn bot_s3_bucket() -> String {
@@ -95,4 +111,8 @@ lazy_static! {
         .pool_config(PoolConfig::new())
         .build();
     pub static ref CLIENT: Client = reqwest::Client::new();
+}
+
+pub fn schools() -> Vec<String> {
+    vec!["McGill University".into()]
 }

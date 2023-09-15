@@ -11,17 +11,21 @@ impl BotsDao for PgConnection {
             .inner_join(
                 schema::teams::dsl::teams.on(schema::bots::dsl::team.eq(schema::teams::dsl::id)),
             )
-            .load::<(Bot, Team)>(self)
+            .inner_join(
+                schema::users::dsl::users
+                    .on(schema::bots::dsl::uploaded_by.eq(schema::users::dsl::id)),
+            )
+            .load::<(Bot, Team, User)>(self)
             .unwrap()
             .into_iter()
-            .map(|(bot, team)| BotWithTeam {
+            .map(|(bot, team, user)| BotWithTeam {
                 team,
                 id: bot.id,
                 name: bot.name,
                 description: bot.description,
                 rating: bot.rating,
                 created: bot.created,
-                uploaded_by: bot.uploaded_by,
+                uploaded_by: user,
                 build_status: bot.build_status,
             })
             .collect()

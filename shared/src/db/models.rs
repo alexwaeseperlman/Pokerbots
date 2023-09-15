@@ -187,12 +187,12 @@ pub struct BotWithTeam<T> {
     pub description: Option<String>,
     pub rating: f32,
     pub created: i64,
-    pub uploaded_by: Uuid,
+    pub uploaded_by: User,
     pub build_status: BuildStatus,
 }
 
 impl<T> BotWithTeam<T> {
-    pub fn from_bot_and_team(bot: Bot, team: T) -> Self {
+    pub fn from_bot_team_user(bot: Bot, team: T, user: User) -> Self {
         BotWithTeam {
             id: bot.id,
             team,
@@ -200,7 +200,7 @@ impl<T> BotWithTeam<T> {
             description: bot.description,
             rating: bot.rating,
             created: bot.created,
-            uploaded_by: bot.uploaded_by,
+            uploaded_by: user,
             build_status: bot.build_status,
         }
     }
@@ -252,7 +252,16 @@ pub struct NewAuth {
 }
 
 #[derive(
-    Serialize, Deserialize, Debug, Queryable, Selectable, Insertable, Associations, Identifiable, TS,
+    Serialize,
+    Deserialize,
+    Debug,
+    Queryable,
+    Selectable,
+    Insertable,
+    Associations,
+    Identifiable,
+    TS,
+    AsChangeset,
 )]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
 #[diesel(table_name = user_profiles)]
@@ -265,7 +274,6 @@ pub struct UserProfile {
     pub school: String,
     pub linkedin: Option<String>,
     pub github: Option<String>,
-    pub resume_s3_key: Option<String>,
     pub id: Uuid,
 }
 

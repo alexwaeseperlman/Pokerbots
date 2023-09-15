@@ -41,9 +41,9 @@ export default function BotTable({
     )
       .then((res) => res.json())
       .then(async (data: BotsResponse) => {
-        if ("BotsWithTeam" in data) {
+        if ("Bots" in data) {
           setLoading(false);
-          setBots(data.BotsWithTeam);
+          setBots(data.Bots);
         } else {
           setBots([]);
           enqueueSnackbar("Error loading bots", { variant: "error" });

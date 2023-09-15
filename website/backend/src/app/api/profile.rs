@@ -1,7 +1,7 @@
 use diesel::prelude::*;
 use shared::db::models::{TeamWithMembers, UserProfile};
 
-use super::*;
+use super::{team::validate_name, *};
 #[get("/my-account")]
 pub async fn my_account(session: Session) -> ApiResult<Option<User>> {
     Ok(web::Json(auth::get_user(&session)))
@@ -30,6 +30,11 @@ pub async fn my_email(session: Session) -> ApiResult<String> {
     }
 }
 
+#[get("/schools")]
+pub async fn schools() -> ApiResult<Vec<String>> {
+    Ok(web::Json(config::schools()))
+}
+
 #[get("/profile")]
 pub async fn get_profile(session: Session) -> ApiResult<Option<UserProfile>> {
     let user = auth::get_user(&session);
@@ -47,6 +52,7 @@ pub async fn get_profile(session: Session) -> ApiResult<Option<UserProfile>> {
 #[derive(Deserialize, TS)]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
 pub struct UpdateProfileRequest {
+    pub display_name: String,
     pub first_name: String,
     pub last_name: String,
     pub country: Option<String>,
@@ -57,23 +63,29 @@ pub struct UpdateProfileRequest {
 
 #[put("/profile")]
 pub async fn put_profile(session: Session, body: web::Json<UpdateProfileRequest>) -> ApiResult<()> {
+    validate_update_profile_request(&body)?;
     let user = auth::get_user(&session);
     if let Some(user) = user {
         let conn = &mut (*DB_CONNECTION).get()?;
-        let profile = UserProfile::belonging_to(&user)
-            .first::<UserProfile>(conn)
-            .optional()?;
+        let profile = UserProfile {
+            first_name: body.first_name.clone(),
+            last_name: body.last_name.clone(),
+            country: body.country.clone(),
+            school: body.school.clone(),
+            linkedin: body.linkedin.clone(),
+            github: body.github.clone(),
+            id: user.id,
+        };
         diesel::insert_into(schema::user_profiles::table)
-            .values(UserProfile {
-                first_name: body.first_name.clone(),
-                last_name: body.last_name.clone(),
-                country: body.country.clone(),
-                school: body.school.clone(),
-                linkedin: body.linkedin.clone(),
-                github: body.github.clone(),
-                resume_s3_key: profile.map(|p| p.resume_s3_key).flatten(),
-                id: user.id,
-            })
+            .values(&profile)
+            .on_conflict(schema::user_profiles::dsl::id)
+            .do_update()
+            .set(&profile)
+            .execute(conn)?;
+
+        diesel::update(schema::users::table)
+            .filter(schema::users::dsl::id.eq(user.id))
+            .set(schema::users::dsl::display_name.eq(body.display_name.clone()))
             .execute(conn)?;
 
         Ok(web::Json(()))
@@ -83,4 +95,41 @@ pub async fn put_profile(session: Session, body: web::Json<UpdateProfileRequest>
             message: "Not logged into an account".to_string(),
         });
     }
+}
+
+#[post("/upload-resume")]
+pub async fn upload_bot(
+    s3_client: actix_web::web::Data<aws_sdk_s3::Client>,
+    session: Session,
+    mut payload: web::Payload,
+) -> ApiResult<()> {
+    let user =
+        auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+
+    let mut body = web::BytesMut::new();
+    while let Some(chunk) = payload.next().await {
+        let chunk = chunk?;
+        // limit max size of in-memory payload
+        if (body.len() + chunk.len()) > (config::bot_size()).try_into()? {
+            return Err(actix_web::error::ErrorBadRequest("File too large").into());
+        }
+        body.extend_from_slice(&chunk);
+    }
+    s3_client
+        .put_object()
+        .bucket(config::resume_s3_bucket())
+        .key(user.id.to_string())
+        .body(body.to_vec().into())
+        .send()
+        .await?;
+
+    Ok(web::Json(()))
+}
+
+pub fn validate_update_profile_request(body: &UpdateProfileRequest) -> Result<(), ApiError> {
+    validate_name(&body.first_name)?;
+    validate_name(&body.last_name)?;
+    validate_name(&body.school)?;
+    validate_name(&body.display_name)?;
+    Ok(())
 }

@@ -1,0 +1,1 @@
+ALTER TABLE user_profiles DROP COLUMN resume_s3_key;

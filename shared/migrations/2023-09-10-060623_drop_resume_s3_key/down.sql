@@ -1,0 +1,1 @@
+ALTER TABLE user_profiles ADD COLUMN resume_s3_key VARCHAR(255);
