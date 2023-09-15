@@ -113,7 +113,7 @@ export default function BotTable({
         key: "uploaded by",
         minWidth: "200px",
         maxWidth: "500px",
-        getProps: (bot) => ({ uploadedBy: bot.uploaded_by }),
+        getProps: (bot) => ({ uploadedBy: bot.uploaded_by.display_name }),
         render: ({ uploadedBy }) => (
           <Typography
             level="body-md"

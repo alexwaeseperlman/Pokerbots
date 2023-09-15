@@ -8,17 +8,17 @@ pub struct CreateTeamQuery {
     pub name: String,
 }
 
-pub fn validate_name(name: &String) -> Result<(), ApiError> {
+pub fn validate_name(name: &str, message: &str) -> Result<(), ApiError> {
     if name.len() < 3 || name.len() > 20 {
-        return Err(actix_web::error::ErrorNotAcceptable("Invalid team name. It must be at most 20 characters and cannot contain consecutive spaces.").into());
+        return Err(actix_web::error::ErrorNotAcceptable(message.to_string()).into());
     }
     for c in name.chars() {
         if !c.is_alphanumeric() && c != ' ' && c != '-' {
-            return Err(actix_web::error::ErrorNotAcceptable("Invalid team name. It must be at most 20 characters and cannot contain consecutive spaces.").into());
+            return Err(actix_web::error::ErrorNotAcceptable(message.to_string()).into());
         }
     }
     if name.contains("  ") {
-        return Err(actix_web::error::ErrorNotAcceptable("Invalid team name. It must be at most 20 characters and cannot contain consecutive spaces.").into());
+        return Err(actix_web::error::ErrorNotAcceptable(message.to_string()).into());
     }
     Ok(())
 }
@@ -38,7 +38,7 @@ pub async fn create_team(
         return Err(actix_web::error::ErrorConflict("You are already on a team.").into());
     }
 
-    validate_name(&name)?;
+    validate_name(&name, "Invalid team name. It must be at most 20 characters and cannot contain consecutive spaces.")?;
 
     let conn = &mut (*DB_CONNECTION).get()?;
     let new_id = diesel::insert_into(teams::dsl::teams)
@@ -342,7 +342,7 @@ pub async fn rename_team(
     let team =
         auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
 
-    validate_name(&to)?;
+    validate_name(&to, "Invalid team name. It must be at most 20 characters and cannot contain consecutive spaces.")?;
 
     let conn = &mut (*DB_CONNECTION).get()?;
     diesel::update(teams::dsl::teams)

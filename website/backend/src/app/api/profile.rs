@@ -127,9 +127,9 @@ pub async fn upload_bot(
 }
 
 pub fn validate_update_profile_request(body: &UpdateProfileRequest) -> Result<(), ApiError> {
-    validate_name(&body.first_name)?;
-    validate_name(&body.last_name)?;
-    validate_name(&body.school)?;
-    validate_name(&body.display_name)?;
+    validate_name(&body.first_name,  "Invalid first name. It must be at most 20 characters and cannot contain consecutive spaces.")?;
+    validate_name(&body.last_name,  "Invalid last name. It must be at most 20 characters and cannot contain consecutive spaces.")?;
+    validate_name(&body.school,  "Invalid school name. It must be at most 20 characters and cannot contain consecutive spaces.")?;
+    validate_name(&body.display_name,  "Invalid display name. It must be at most 20 characters and cannot contain consecutive spaces.")?;
     Ok(())
 }
