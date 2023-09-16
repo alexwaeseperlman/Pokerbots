@@ -22,12 +22,12 @@ import { GameTable } from "../components/Tables/GameTable";
 import { TeamsTable } from "../components/Tables/TeamsTable";
 import { apiUrl, useProfile, useUser } from "../state";
 import { InfoOutlined, Mail } from "@mui/icons-material";
-import FileUpload from "../components/BotUpload";
 import Accordion from "@mui/joy/Accordion";
 import { useNavigate } from "react-router-dom";
 import { enqueueSnackbar } from "notistack";
 import { UserProfile } from "@bindings/UserProfile";
 import { UpdateProfileRequest } from "@bindings/UpdateProfileRequest";
+import Resume from "./Resume";
 
 const Cell = styled("td")(({ theme }) => ({
   padding: theme.spacing(1),
@@ -35,7 +35,7 @@ const Cell = styled("td")(({ theme }) => ({
 
 export default function Profile() {
   const user = useUser()[0];
-  const profile = useProfile()[0];
+  const [profile, fetchProfile] = useProfile();
   const navigate = useNavigate();
   const [email, setEmail] = React.useState<string | null>(null);
   const [schools, setSchools] = React.useState<string[]>([]);
@@ -166,7 +166,7 @@ export default function Profile() {
 
       <Divider role="presentation" />
 
-      <Typography level="h3">Recruiting information</Typography>
+      <Typography level="h3">Recruiting information (optional)</Typography>
       <Typography level="body-sm">
         We'd like to connect you with our sponsors
       </Typography>
@@ -192,17 +192,8 @@ export default function Profile() {
       </FormControl>
 
       <FormControl>
-        <FileUpload
-          onUpload={(f: File) => {
-            enqueueSnackbar("Not implemented yet", {
-              variant: "error",
-            });
-
-            return Promise.resolve();
-          }}
-        >
-          Drag your resume here
-        </FileUpload>
+        <FormLabel>Resume</FormLabel>
+        <Resume />
       </FormControl>
 
       <Divider role="presentation" />
@@ -241,6 +232,7 @@ export default function Profile() {
                       variant: "success",
                     });
                     navigate("/manage-team");
+                    fetchProfile();
                   } else {
                     const message = await res
                       .json()

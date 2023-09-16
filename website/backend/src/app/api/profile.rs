@@ -1,3 +1,4 @@
+use actix_web::HttpRequest;
 use diesel::prelude::*;
 use shared::db::models::{TeamWithMembers, UserProfile};
 
@@ -97,14 +98,80 @@ pub async fn put_profile(session: Session, body: web::Json<UpdateProfileRequest>
     }
 }
 
-#[post("/upload-resume")]
-pub async fn upload_bot(
+#[delete("/resume")]
+pub async fn delete_resume(
     s3_client: actix_web::web::Data<aws_sdk_s3::Client>,
     session: Session,
+) -> ApiResult<()> {
+    let user =
+        auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+
+    s3_client
+        .delete_object()
+        .bucket(config::resume_s3_bucket())
+        .key(user.id.to_string())
+        .send()
+        .await?;
+
+    Ok(web::Json(()))
+}
+
+#[get("/resume-status")]
+pub async fn get_resume_status(
+    s3_client: actix_web::web::Data<aws_sdk_s3::Client>,
+    session: Session,
+) -> ApiResult<()> {
+    let user =
+        auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+
+    let object = s3_client
+        .get_object()
+        .bucket(config::resume_s3_bucket())
+        .key(user.id.to_string())
+        .send()
+        .await?;
+
+    Ok(web::Json(()))
+}
+
+#[get("/resume")]
+pub async fn get_resume(
+    s3_client: actix_web::web::Data<aws_sdk_s3::Client>,
+    session: Session,
+) -> Result<HttpResponse, ApiError> {
+    let user =
+        auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+
+    let object = s3_client
+        .get_object()
+        .bucket(config::resume_s3_bucket())
+        .key(user.id.to_string())
+        .send()
+        .await?;
+
+    Ok(HttpResponse::Ok()
+        .content_type("application/pdf")
+        .append_header(("Content-Disposition", "attachment; filename=\"resume.pdf\""))
+        .streaming(object.body))
+}
+
+#[put("/resume")]
+pub async fn put_resume(
+    s3_client: actix_web::web::Data<aws_sdk_s3::Client>,
+    session: Session,
+    request: actix_web::HttpRequest,
     mut payload: web::Payload,
 ) -> ApiResult<()> {
     let user =
         auth::get_user(&session).ok_or(actix_web::error::ErrorUnauthorized("Not logged in"))?;
+
+    if request.headers().get("content-type")
+        != Some(&reqwest::header::HeaderValue::from_static(
+            "application/pdf",
+        ))
+    {
+        return Err(actix_web::error::ErrorBadRequest("Invalid content type").into());
+    }
 
     let mut body = web::BytesMut::new();
     while let Some(chunk) = payload.next().await {

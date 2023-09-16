@@ -133,6 +133,7 @@ services:
       /usr/bin/mc mb myminio/$COMPILED_BOT_S3_BUCKET;
       /usr/bin/mc mb myminio/$BUILD_LOGS_S3_BUCKET;
       /usr/bin/mc mb myminio/$GAME_LOGS_S3_BUCKET;
+      /usr/bin/mc mb myminio/$RESUME_S3_BUCKET;
       exit 0;
       "
 
