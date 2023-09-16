@@ -26,15 +26,11 @@ pub fn domain_name() -> String {
 }
 
 pub fn website_origin() -> String {
-    format!(
-        "http{}://{}",
-        if domain_name() == "localhost" {
-            "s"
-        } else {
-            ""
-        },
-        domain_name()
-    )
+    if domain_name() == "localhost" {
+        "http://localhost:5173".into()
+    } else {
+        format!("https://{}", domain_name())
+    }
 }
 
 pub fn microsoft_redirect_uri() -> String {
