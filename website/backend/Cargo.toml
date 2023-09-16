@@ -31,12 +31,13 @@ shared = { path = "../../shared", features=["db"] }
 tokio = "1.28.1"
 zip = "0.6.6"
 lazy_static="1.4.0"
-ts-rs = "6.2"
+ts-rs = "7.0"
 itertools = "0.11.0"
 num = "0.4.1"
 num-traits = "0.2.16"
 argon2 = "0.5.1"
 lettre = { version = "0.10.4", features = ["native-tls"]}
+uuid = {version="1.4.1", features=["serde"]}
 
 [dev-dependencies]
 cargo-watch = "8.4.0"

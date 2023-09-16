@@ -124,7 +124,7 @@ pub async fn upload_bot(
             name: bot.name,
             description: bot.description,
             rating: 0.0,
-            uploaded_by: user.email,
+            uploaded_by: user.id,
             build_status: shared::BuildStatus::Queued,
         })
         .returning(bots::dsl::id)

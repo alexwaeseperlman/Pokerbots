@@ -15,6 +15,7 @@ import { Bot } from "@bindings/Bot";
 import { TeamWithMembers } from "@bindings/TeamWithMembers";
 import { TeamsResponse } from "@bindings/TeamsResponse";
 import { User } from "@bindings/User";
+import { UserProfile } from "@bindings/UserProfile";
 
 export const apiUrl = window.location.origin + "/api";
 export const authUrl = window.location.origin + "/auth";
@@ -45,7 +46,7 @@ export const microsoftSigninUrl =
 // choose default value based on route
 const teamAtom = atomFamily<
   string | null,
-  PrimitiveAtom<Promise<TeamWithMembers | null>>
+  PrimitiveAtom<Promise<TeamWithMembers<User> | null>>
 >((param) => atom(fetchTeam(param)));
 
 const userAtom = atom<Promise<User | null>>(
@@ -54,9 +55,16 @@ const userAtom = atom<Promise<User | null>>(
     .catch(() => null)
 );
 
-export const useProfile = (selectedTeam: string | null) => {
+const profileAtom = atom<Promise<UserProfile | null>>(
+  fetch(`${apiUrl}/profile`)
+    .then((res) => res.json())
+    .catch(() => null)
+);
+
+export const useAuth = (selectedTeam: string | null) => {
   const [user, setUser] = useAtom(userAtom);
   const [team, setTeam] = useAtom(teamAtom(selectedTeam ?? null));
+  const [profile, setProfile] = useAtom(profileAtom);
 
   const update = () => {
     setTeam(fetchTeam(selectedTeam));
@@ -66,18 +74,29 @@ export const useProfile = (selectedTeam: string | null) => {
         .then((res) => res.json())
         .catch(() => null)
     );
+
+    setProfile(
+      fetch(`${apiUrl}/profile`)
+        .then((res) => res.json())
+        .catch(() => null)
+    );
   };
-  return [user, team, update] as const;
+  return [user, team, profile, update] as const;
 };
 
 export const useUser = () => {
-  const [user, team, update] = useProfile(null);
+  const [user, _team, _profile, update] = useAuth(null);
   return [user, update] as const;
 };
 
 export const useTeam = (selectedTeam: string | null) => {
-  const [user, team, update] = useProfile(selectedTeam);
+  const [_user, team, _profile, update] = useAuth(selectedTeam);
   return [team, update] as const;
+};
+
+export const useProfile = () => {
+  const [user, team, profile, update] = useAuth(null);
+  return [profile, update] as const;
 };
 
 function fetchTeam(team: string | null) {
@@ -90,7 +109,7 @@ function fetchTeam(team: string | null) {
             teams.TeamsWithMembers.length > 0
           ) {
             const invites = teams.TeamsWithMembers[0].invites;
-            const out: TeamWithMembers = {
+            const out: TeamWithMembers<User> = {
               ...teams.TeamsWithMembers[0],
             };
             return out;
@@ -100,6 +119,6 @@ function fetchTeam(team: string | null) {
         .catch(() => null)
     : fetch(`${apiUrl}/my-team`)
         .then((res) => res.json())
-        .then((team) => team as TeamWithMembers)
+        .then((team) => team as TeamWithMembers<User>)
         .catch(() => null);
 }

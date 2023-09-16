@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { apiUrl, useTeam, useUser } from "../state";
+import { apiUrl, useAuth, useTeam, useUser } from "../state";
 import randomTeamName from "./random-name";
 import {
   Box,
@@ -19,9 +19,8 @@ import { Form } from "react-router-dom";
 import { enqueueSnackbar } from "notistack";
 
 export default function CreateTeam() {
-  const user = useUser()[0];
   const [teamName, setTeamName] = useState("");
-  const [team, fetchTeam] = useTeam(null);
+  const [user, team, profile, fetchAuth] = useAuth(null);
   return (
     <Container maxWidth="sm">
       <Card size="lg">
@@ -42,12 +41,13 @@ export default function CreateTeam() {
             />
           </FormControl>
           <Button
+            disabled={profile === null}
             onClick={() => {
               fetch(
                 `${apiUrl}/create-team?name=${encodeURIComponent(teamName)}`
               ).then(async (res) => {
                 if (res.status === 200) {
-                  fetchTeam();
+                  fetchAuth();
                 } else {
                   const json = await res.json();
                   enqueueSnackbar(json.error, {
@@ -57,7 +57,9 @@ export default function CreateTeam() {
               });
             }}
           >
-            Create
+            {profile === null
+              ? "Complete your profile to create a team"
+              : "Create"}
           </Button>
         </Stack>
       </Card>

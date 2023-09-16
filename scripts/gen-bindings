@@ -11,7 +11,7 @@ fi
 rm -rf website/app/src/bindings
 mkdir bindings
 
-(cd website/backend && cargo test --features ts-bindings && mv bindings/* ../../bindings && rmdir bindings && echo "done backend")
 (cd shared && cargo test --features ts-bindings,db && mv bindings/* ../bindings && rmdir bindings && echo "done shared")
+(cd website/backend && cargo test --features ts-bindings && mv bindings/* ../../bindings && rmdir bindings && echo "done backend")
 
 mv bindings website/app/src

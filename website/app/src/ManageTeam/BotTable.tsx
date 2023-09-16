@@ -41,9 +41,9 @@ export default function BotTable({
     )
       .then((res) => res.json())
       .then(async (data: BotsResponse) => {
-        if ("BotsWithTeam" in data) {
+        if ("Bots" in data) {
           setLoading(false);
-          setBots(data.BotsWithTeam);
+          setBots(data.Bots);
         } else {
           setBots([]);
           enqueueSnackbar("Error loading bots", { variant: "error" });
@@ -113,7 +113,7 @@ export default function BotTable({
         key: "uploaded by",
         minWidth: "200px",
         maxWidth: "500px",
-        getProps: (bot) => ({ uploadedBy: bot.uploaded_by }),
+        getProps: (bot) => ({ uploadedBy: bot.uploaded_by.display_name }),
         render: ({ uploadedBy }) => (
           <Typography
             level="body-md"

@@ -232,7 +232,7 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
         width: "75px",
         getProps: (game) => ({
           before:
-            game.result?.challenger_rating -
+            (game.result?.challenger_rating ?? 0) -
             (game.result?.challenger_rating_change ?? 0),
           after: game.result?.challenger_rating,
           running: !game.result,
@@ -298,7 +298,7 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
         width: "75px",
         getProps: (game) => ({
           before:
-            game.result?.defender_rating -
+            (game.result?.defender_rating ?? 0) -
             (game.result?.defender_rating_change ?? 0),
           after: game.result?.defender_rating,
           running: !game.result,

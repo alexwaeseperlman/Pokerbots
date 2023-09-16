@@ -32,27 +32,37 @@ pub mod auth;
 pub mod bots;
 pub mod data;
 pub mod games;
-pub mod manage_team;
 pub mod oauth;
+pub mod profile;
+pub mod team;
 
 pub fn api_service() -> actix_web::Scope {
     actix_web::web::scope("/api")
-        .service(manage_team::create_team)
-        .service(manage_team::delete_team)
-        .service(manage_team::leave_team)
-        .service(manage_team::create_invite)
-        .service(manage_team::upload_pfp)
-        .service(manage_team::join_team)
-        .service(manage_team::cancel_invite)
-        .service(manage_team::kick_member)
-        .service(manage_team::rename_team)
-        .service(manage_team::update_owner)
+        .service(team::create_team)
+        .service(team::delete_team)
+        .service(team::leave_team)
+        .service(team::create_invite)
+        .service(team::upload_pfp)
+        .service(team::join_team)
+        .service(team::cancel_invite)
+        .service(team::kick_member)
+        .service(team::rename_team)
+        .service(team::update_owner)
         .service(bots::upload_bot)
         .service(bots::build_log)
         .service(bots::delete_bot)
         .service(bots::set_active_bot)
-        .service(data::my_account)
-        .service(data::my_team)
+        .service(profile::my_account)
+        .service(profile::my_team)
+        .service(profile::my_email)
+        .service(profile::get_profile)
+        .service(profile::put_profile)
+        .service(profile::get_resume)
+        .service(profile::put_resume)
+        .service(profile::delete_resume)
+        .service(profile::get_resume_status)
+        .service(profile::put_profile)
+        .service(profile::schools)
         .service(data::teams)
         .service(data::bots)
         .service(data::code)

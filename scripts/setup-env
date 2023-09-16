@@ -18,6 +18,7 @@ generated_vars = {
     'SECRET_KEY': secrets.token_urlsafe(86),
     # must be all lowercase
     'COMPILED_BOT_S3_BUCKET': secrets.token_hex(8),
+    'RESUME_S3_BUCKET': secrets.token_hex(8),
 }
 required_vars = [
     'APP_MICROSOFT_CLIENT_ID', 
@@ -25,7 +26,8 @@ required_vars = [
     'AZURE_SECRET', 
     'GOOGLE_SECRET', 
     'EMAIL_ADDRESS', 
-    'WEBSITE_ORIGIN'
+    'EMAIL_APP_PASSWORD', 
+    'DOMAIN_NAME'
 ]
 
 fixed_vars = {

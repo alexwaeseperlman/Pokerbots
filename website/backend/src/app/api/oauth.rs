@@ -3,6 +3,8 @@ use shared::db::{
     schema::auth,
 };
 
+use crate::app::api::{self, auth::get_display_name_from_email};
+
 use super::*;
 
 #[derive(Deserialize)]
@@ -78,34 +80,39 @@ pub async fn microsoft_login(
         });
     }
 
-    // TODO: make transaction
-    diesel::insert_into(auth::dsl::auth)
-        .values(&Auth {
-            email: me.userPrincipalName.clone().unwrap(),
-            mangled_password: None,
-            email_verification_link: None,
-            email_verification_link_expiration: None,
-            password_reset_link: None,
-            password_reset_link_expiration: None,
-            email_confirmed: false,
-            is_admin: false,
-        })
-        .on_conflict(auth::dsl::email)
-        .do_nothing()
-        .execute(&mut (*DB_CONNECTION).get().unwrap())?;
+    let conn = &mut (*DB_CONNECTION).get().unwrap();
+    conn.transaction(|conn| {
+        let uuid = uuid::Uuid::new_v4();
+        diesel::insert_into(auth::dsl::auth)
+            .values(&shared::db::models::NewAuth {
+                email: me.userPrincipalName.clone().unwrap(),
+                mangled_password: None,
+                email_verification_link: None,
+                email_verification_link_expiration: None,
+                email_confirmed: false,
+                id: uuid,
+            })
+            .on_conflict(auth::dsl::email)
+            .do_nothing()
+            .execute(conn)?;
+        let auth: Auth = auth::table
+            .filter(auth::dsl::email.eq(me.userPrincipalName.clone().unwrap()))
+            .get_result::<Auth>(conn)?;
 
-    diesel::insert_into(users::dsl::users)
-        .values(NewUser {
-            email: me.userPrincipalName.clone().unwrap(),
-            display_name: me
-                .displayName
-                .unwrap_or(me.userPrincipalName.clone().unwrap()),
-        })
-        .on_conflict(users::dsl::email)
-        .do_nothing()
-        .execute(&mut (*DB_CONNECTION).get().unwrap())?;
+        log::debug!("auth msft oauth {:?}", auth);
 
-    session.insert("email", me.userPrincipalName.unwrap())?;
+        diesel::insert_into(users::dsl::users)
+            .values(NewUser {
+                display_name: get_display_name_from_email(&auth.email),
+                id: auth.id,
+            })
+            .on_conflict(users::dsl::id)
+            .do_nothing()
+            .execute(conn)?;
+
+        session.insert("user", auth.id)?;
+        Ok::<(), ApiError>(())
+    })?;
 
     Ok(web::Json(()))
 }
@@ -179,32 +186,36 @@ async fn google_login(
         });
     }
 
-    // TODO: make transaction
-    diesel::insert_into(auth::dsl::auth)
-        .values(&Auth {
-            email: user_info.email.clone().unwrap(),
-            mangled_password: None,
-            email_verification_link: None,
-            email_verification_link_expiration: None,
-            password_reset_link: None,
-            password_reset_link_expiration: None,
-            email_confirmed: false,
-            is_admin: false,
-        })
-        .on_conflict(auth::dsl::email)
-        .do_nothing()
-        .execute(&mut (*DB_CONNECTION).get().unwrap())?;
+    let conn = &mut (*DB_CONNECTION).get().unwrap();
+    conn.transaction(|conn| {
+        let uuid = uuid::Uuid::new_v4();
+        diesel::insert_into(auth::dsl::auth)
+            .values(&shared::db::models::NewAuth {
+                email: user_info.email.clone().unwrap(),
+                mangled_password: None,
+                email_verification_link: None,
+                email_verification_link_expiration: None,
+                email_confirmed: false,
+                id: uuid,
+            })
+            .on_conflict(auth::dsl::email)
+            .do_nothing()
+            .execute(conn)?;
+        let auth: Auth = auth::table
+            .filter(auth::dsl::email.eq(user_info.email.clone().unwrap()))
+            .get_result::<Auth>(conn)?;
+        diesel::insert_into(users::dsl::users)
+            .values(NewUser {
+                display_name: get_display_name_from_email(&auth.email),
+                id: auth.id,
+            })
+            .on_conflict(users::dsl::id)
+            .do_nothing()
+            .execute(conn)?;
 
-    diesel::insert_into(users::dsl::users)
-        .values(NewUser {
-            email: user_info.email.clone().unwrap(),
-            display_name: user_info.name.unwrap_or(user_info.email.clone().unwrap()),
-        })
-        .on_conflict(users::dsl::email)
-        .do_nothing()
-        .execute(&mut (*DB_CONNECTION).get().unwrap())?;
-
-    session.insert("email", user_info.email.unwrap())?;
+        session.insert("user", auth.id)?;
+        Ok::<(), ApiError>(())
+    })?;
 
     Ok(web::Json(()))
 }

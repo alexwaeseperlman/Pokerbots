@@ -4,11 +4,12 @@ use argon2::{
 };
 use chrono::Utc;
 use shared::db::{
-    models::{Auth, NewUser, TeamWithMembers},
-    schema::auth,
+    models::{Auth, NewAuth, NewUser, TeamWithMembers, UserProfile},
+    schema::{auth, user_profiles},
 };
 
 use lettre::{message::header::ContentType, Message, Transport};
+use uuid::Uuid;
 
 use crate::config::website_origin;
 
@@ -26,11 +27,15 @@ fn random(charset: &[u8], len: usize) -> String {
         .collect()
 }
 
-fn mangle(password: &str) -> argon2::password_hash::Result<String> {
+pub fn mangle(password: &str) -> argon2::password_hash::Result<String> {
     let salt = SaltString::generate(&mut OsRng);
     Argon2::default()
         .hash_password(password.as_bytes(), &salt)
         .map(|m| m.to_string())
+}
+
+pub fn get_display_name_from_email(email: &str) -> String {
+    email.split('@').next().unwrap().to_string()
 }
 
 fn verify(password: &str, mangled: &str) -> argon2::password_hash::Result<()> {
@@ -94,18 +99,24 @@ async fn register(
         .unwrap();
     config::MAILER.send(&email_body)?;
 
-    let auth = Auth {
+    let id = Uuid::new_v4();
+
+    let auth = NewAuth {
         email: email.clone(),
         mangled_password: Some(mangle(&password)?),
         email_verification_link: Some(email_verification_link.clone()),
         email_verification_link_expiration: Some(
             Utc::now().naive_utc() + chrono::Duration::minutes(15),
         ),
-        password_reset_link: None,
-        password_reset_link_expiration: None,
         email_confirmed: false,
-        is_admin: false,
+        id,
     };
+    diesel::insert_into(users::dsl::users)
+        .values(NewUser {
+            display_name: get_display_name_from_email(&email),
+            id,
+        })
+        .execute(conn)?;
 
     diesel::insert_into(auth::dsl::auth)
         .values(&auth)
@@ -113,6 +124,9 @@ async fn register(
         .do_update()
         .set(&auth)
         .execute(conn)?;
+    let auth: Auth = auth::dsl::auth
+        .filter(auth::dsl::email.eq(email.clone()))
+        .first::<Auth>(conn)?;
 
     Ok(web::Json(()))
 }
@@ -146,16 +160,7 @@ async fn login(
         });
     }
 
-    session.insert("email", &email)?;
-
-    diesel::insert_into(users::dsl::users)
-        .values(NewUser {
-            email: email.clone(),
-            display_name: email,
-        })
-        .on_conflict(users::dsl::email)
-        .do_nothing()
-        .execute(&mut (*DB_CONNECTION).get().unwrap())?;
+    session.insert("user", &auth.id)?;
 
     Ok(web::Json(()))
 }
@@ -292,7 +297,7 @@ pub struct SignoutResponse {
 }
 #[get("/signout")]
 pub async fn signout(session: Session) -> ApiResult<SignoutResponse> {
-    session.remove("email");
+    session.remove("user");
 
     Ok(actix_web::web::Json(SignoutResponse {
         message: "You have been signed out.".to_string(),
@@ -301,15 +306,24 @@ pub async fn signout(session: Session) -> ApiResult<SignoutResponse> {
 }
 
 pub fn get_user(session: &Session) -> Option<User> {
-    let email: String = session.get("email").ok()??;
+    let id: Uuid = session.get("user").ok()??;
     let conn = &mut (*DB_CONNECTION).get().unwrap();
     users::dsl::users
-        .filter(users::dsl::email.eq(email))
+        .filter(users::dsl::id.eq(id))
         .first(conn)
         .ok()
 }
 
-pub fn get_team(session: &Session) -> Option<TeamWithMembers> {
+pub fn get_profile(session: &Session) -> Option<UserProfile> {
+    let id: Uuid = session.get("user").ok()??;
+    let conn = &mut (*DB_CONNECTION).get().unwrap();
+    user_profiles::dsl::user_profiles
+        .filter(user_profiles::dsl::id.eq(id))
+        .first(conn)
+        .ok()
+}
+
+pub fn get_team(session: &Session) -> Option<TeamWithMembers<User>> {
     let user = get_user(session)?;
     let conn = &mut (*DB_CONNECTION).get().unwrap();
 

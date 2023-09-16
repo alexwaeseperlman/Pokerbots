@@ -83,6 +83,16 @@ impl GamesDao for PgConnection {
                     .field(bots::dsl::team)
                     .eq(challenger_teams.field(teams::dsl::id))),
             )
+            .inner_join(
+                defender_users.on(defender_bots
+                    .field(bots::dsl::uploaded_by)
+                    .eq(defender_users.field(users::dsl::id))),
+            )
+            .inner_join(
+                challenger_users.on(challenger_bots
+                    .field(bots::dsl::uploaded_by)
+                    .eq(challenger_users.field(users::dsl::id))),
+            )
             .left_join(game_results::dsl::game_results.on(games::dsl::id.eq(game_results::dsl::id)))
             .into_boxed();
 
@@ -104,15 +114,33 @@ impl GamesDao for PgConnection {
             .limit(page_options.page_size.into())
             .offset((page_options.page * page_options.page_size).into());
 
-        let result: Vec<(Game, Bot, Bot, Team, Team, Option<GameResult>)> = base.load(self)?;
+        let result: Vec<(Game, Bot, Bot, Team, Team, User, User, Option<GameResult>)> =
+            base.load(self)?;
         Ok(result
             .into_iter()
             .map(
-                |(game, defender, challenger, defender_team, challenger_team, game_result)| {
+                |(
+                    game,
+                    defender,
+                    challenger,
+                    defender_team,
+                    challenger_team,
+                    defender_user,
+                    challenger_user,
+                    game_result,
+                )| {
                     GameWithBotsWithResult {
                         id: game.id,
-                        defender: BotWithTeam::from_bot_and_team(defender, defender_team),
-                        challenger: BotWithTeam::from_bot_and_team(challenger, challenger_team),
+                        defender: BotWithTeam::from_bot_team_user(
+                            defender,
+                            defender_team,
+                            defender_user,
+                        ),
+                        challenger: BotWithTeam::from_bot_team_user(
+                            challenger,
+                            challenger_team,
+                            challenger_user,
+                        ),
                         created: game.created,
                         defender_rating: game.defender_rating,
                         challenger_rating: game.challenger_rating,

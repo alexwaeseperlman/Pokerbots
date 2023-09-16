@@ -1,7 +1,7 @@
 import { Button, Card, Skeleton, Input, Typography } from "@mui/joy";
 import { Box, Container } from "@mui/system";
 import React, { useState } from "react";
-import { apiUrl, useTeam, useUser } from "../state";
+import { apiUrl, useAuth, useTeam, useUser } from "../state";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { enqueueSnackbar } from "notistack";
 import Login from "../Login";
@@ -12,7 +12,7 @@ export default function JoinTeam() {
   const navigate = useNavigate();
   const code = useSearchParams()[0].get("code");
 
-  const [user, fetchUser] = useUser();
+  const [user, _, profile, fetchAuth] = useAuth(null);
   const [team, setTeam] = useState<Team | null>(null);
 
   // TODO: Is it actually valid to use an atom family like this?
@@ -71,12 +71,12 @@ export default function JoinTeam() {
           )}
         </Typography>
         <Button
-          variant="plain"
+          variant="solid"
           color="primary"
           sx={{
             mt: 2,
           }}
-          disabled={myTeam !== null}
+          disabled={myTeam !== null || profile === null}
           onClick={() => {
             fetch(`${apiUrl}/join-team?code=${code}`)
               .then((res) => res.json())
@@ -91,10 +91,12 @@ export default function JoinTeam() {
               });
           }}
         >
-          {myTeam === null
-            ? "Join Team"
+          {profile === null
+            ? "Complete your profile before joining a team."
+            : myTeam === null
+            ? "Join team"
             : myTeam.id == team?.id
-            ? "Already Joined"
+            ? "Already toined"
             : "Already on a team. Leave your team to join this one."}
         </Button>
       </Card>

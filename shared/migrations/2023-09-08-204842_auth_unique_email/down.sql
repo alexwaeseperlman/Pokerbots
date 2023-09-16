@@ -1,0 +1,1 @@
+ALTER TABLE auth DROP CONSTRAINT auth_unique_email;

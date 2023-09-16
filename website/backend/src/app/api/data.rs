@@ -1,15 +1,5 @@
 use super::*;
-use shared::db::models::{BotWithTeam, Team, TeamWithMembers};
-
-#[get("/my-account")]
-pub async fn my_account(session: Session) -> ApiResult<Option<User>> {
-    Ok(web::Json(auth::get_user(&session)))
-}
-
-#[get("/my-team")]
-pub async fn my_team(session: Session) -> ApiResult<Option<TeamWithMembers>> {
-    Ok(web::Json(auth::get_team(&session)))
-}
+use shared::db::models::{BotWithTeam, Team, TeamWithMembers, User, UserProfile};
 
 #[derive(Deserialize)]
 pub enum TeamsQuerySort {
@@ -39,7 +29,7 @@ pub struct TeamQuery {
 pub enum TeamsResponse {
     Count(i64),
     Teams(Vec<Team>),
-    TeamsWithMembers(Vec<TeamWithMembers>),
+    TeamsWithMembers(Vec<TeamWithMembers<User>>),
 }
 
 #[get("/teams")]
@@ -137,7 +127,7 @@ pub async fn teams(
                     name: t.name,
                     deleted_at: t.deleted_at,
                 })
-                .collect::<Vec<TeamWithMembers>>(),
+                .collect::<Vec<TeamWithMembers<User>>>(),
         )));
     }
     Ok(web::Json(TeamsResponse::Teams(result)))
@@ -150,15 +140,13 @@ pub struct BotQuery {
     pub page_size: Option<i32>,
     pub page: Option<i32>,
     pub count: Option<bool>,
-    pub join_team: Option<bool>,
 }
 
 #[derive(Serialize, TS)]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
 pub enum BotsResponse {
     Count(i64),
-    Bots(Vec<Bot>),
-    BotsWithTeam(Vec<BotWithTeam<Team>>),
+    Bots(Vec<BotWithTeam<Team>>),
 }
 
 #[get("/bots")]
@@ -170,7 +158,6 @@ pub async fn bots(
         page_size,
         page,
         count,
-        join_team,
     }): web::Query<BotQuery>,
 ) -> ApiResult<BotsResponse> {
     let conn = &mut (*DB_CONNECTION).get()?;
@@ -197,28 +184,27 @@ pub async fn bots(
         .order_by(schema::bots::dsl::created.desc())
         .limit((page_size).into())
         .offset((page * page_size).into());
-    if join_team.unwrap_or(false) {
-        let result: Vec<BotWithTeam<Team>> = base
-            .inner_join(
-                schema::teams::dsl::teams.on(schema::bots::dsl::team.eq(schema::teams::dsl::id)),
-            )
-            .select((Bot::as_select(), Team::as_select()))
-            .load::<(Bot, Team)>(conn)?
-            .into_iter()
-            .map(|(b, t)| BotWithTeam {
-                build_status: b.build_status,
-                created: b.created,
-                id: b.id,
-                team: t,
-                description: b.description,
-                name: b.name,
-                uploaded_by: b.uploaded_by,
-                rating: b.rating,
-            })
-            .collect();
-        return Ok(web::Json(BotsResponse::BotsWithTeam(result)));
-    }
-    let result: Vec<Bot> = base.load::<Bot>(conn)?.into_iter().collect();
+    let result: Vec<BotWithTeam<Team>> = base
+        .inner_join(
+            schema::teams::dsl::teams.on(schema::bots::dsl::team.eq(schema::teams::dsl::id)),
+        )
+        .inner_join(
+            schema::users::dsl::users.on(schema::bots::dsl::uploaded_by.eq(schema::users::dsl::id)),
+        )
+        .select((Bot::as_select(), Team::as_select(), User::as_select()))
+        .load::<(Bot, Team, User)>(conn)?
+        .into_iter()
+        .map(|(b, t, u)| BotWithTeam {
+            build_status: b.build_status,
+            created: b.created,
+            id: b.id,
+            team: t,
+            description: b.description,
+            name: b.name,
+            uploaded_by: u,
+            rating: b.rating,
+        })
+        .collect();
     Ok(web::Json(BotsResponse::Bots(result)))
 }
 

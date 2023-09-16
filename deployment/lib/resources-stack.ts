@@ -260,7 +260,8 @@ export class ScalingAPIConstruct extends Construct {
     new_games_sqs: sqs.Queue,
     cluster: ecs.Cluster,
     build_logs_s3: s3.Bucket,
-    game_logs_s3: s3.Bucket
+    game_logs_s3: s3.Bucket,
+    resume_s3: s3.Bucket
   ) {
     super(scope, id);
 
@@ -316,6 +317,7 @@ export class ScalingAPIConstruct extends Construct {
             BOT_S3_BUCKET: bot_s3.bucketName,
             BUILD_LOGS_S3_BUCKET: build_logs_s3.bucketName,
             GAME_LOGS_S3_BUCKET: game_logs_s3.bucketName,
+            RESUME_S3_BUCKET: resume_s3.bucketName,
             BOT_SIZE: "5000000",
             BOT_UPLOADS_QUEUE_URL: bot_uploads_sqs.queueUrl,
             NEW_GAMES_QUEUE_URL: new_games_sqs.queueUrl,
@@ -411,6 +413,7 @@ export class ResourcesStack extends cdk.Stack {
     const compiled_bot_s3 = new s3.Bucket(this, "compiled-bot");
     const build_logs_s3 = new s3.Bucket(this, "build-logs");
     const game_logs_s3 = new s3.Bucket(this, "game-logs");
+    const resume_s3 = new s3.Bucket(this, "resuems");
 
     const bot_uploads_sqs = new sqs.Queue(this, "bot-uploads");
     const new_games_sqs = new sqs.Queue(this, "new-games");
@@ -469,7 +472,8 @@ export class ResourcesStack extends cdk.Stack {
       new_games_sqs,
       cluster,
       build_logs_s3,
-      game_logs_s3
+      game_logs_s3,
+      resume_s3
     );
 
     const builderWorker = new BuilderWorkerConstruct(

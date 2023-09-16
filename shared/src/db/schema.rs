@@ -1,7 +1,7 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
-    auth (email) {
+    auth (id) {
         email -> Text,
         mangled_password -> Nullable<Text>,
         email_verification_link -> Nullable<Text>,
@@ -10,6 +10,7 @@ diesel::table! {
         password_reset_link_expiration -> Nullable<Timestamp>,
         email_confirmed -> Bool,
         is_admin -> Bool,
+        id -> Uuid,
     }
 }
 
@@ -20,7 +21,7 @@ diesel::table! {
         name -> Text,
         description -> Nullable<Text>,
         created -> Int8,
-        uploaded_by -> Text,
+        uploaded_by -> Uuid,
         build_status -> Int4,
         deleted_at -> Nullable<Int8>,
         rating -> Float4,
@@ -65,7 +66,7 @@ diesel::table! {
     teams (id) {
         id -> Int4,
         name -> Text,
-        owner -> Text,
+        owner -> Uuid,
         score -> Nullable<Int4>,
         active_bot -> Nullable<Int4>,
         deleted_at -> Nullable<Int8>,
@@ -73,16 +74,31 @@ diesel::table! {
 }
 
 diesel::table! {
-    users (email) {
-        email -> Text,
-        display_name -> Text,
-        team -> Nullable<Int4>,
+    user_profiles (id) {
+        first_name -> Varchar,
+        last_name -> Varchar,
+        country -> Nullable<Varchar>,
+        school -> Varchar,
+        linkedin -> Nullable<Varchar>,
+        github -> Nullable<Varchar>,
+        id -> Uuid,
     }
 }
 
+diesel::table! {
+    users (id) {
+        display_name -> Text,
+        team -> Nullable<Int4>,
+        id -> Uuid,
+    }
+}
+
+diesel::joinable!(auth -> users (id));
+diesel::joinable!(bots -> auth (uploaded_by));
 diesel::joinable!(game_results -> games (id));
 diesel::joinable!(team_invites -> teams (team));
 diesel::joinable!(teams -> users (owner));
+diesel::joinable!(user_profiles -> auth (id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     auth,
@@ -91,5 +107,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     games,
     team_invites,
     teams,
+    user_profiles,
     users,
 );
