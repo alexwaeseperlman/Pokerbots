@@ -3,7 +3,7 @@ use shared::db::{
     schema::auth,
 };
 
-use crate::app::api;
+use crate::app::api::{self, auth::get_display_name_from_email};
 
 use super::*;
 
@@ -103,9 +103,7 @@ pub async fn microsoft_login(
 
         diesel::insert_into(users::dsl::users)
             .values(NewUser {
-                display_name: me
-                    .displayName
-                    .unwrap_or(me.userPrincipalName.clone().unwrap()),
+                display_name: get_display_name_from_email(&auth.email),
                 id: auth.id,
             })
             .on_conflict(users::dsl::id)
@@ -208,7 +206,7 @@ async fn google_login(
             .get_result::<Auth>(conn)?;
         diesel::insert_into(users::dsl::users)
             .values(NewUser {
-                display_name: user_info.name.unwrap_or(user_info.email.clone().unwrap()),
+                display_name: get_display_name_from_email(&auth.email),
                 id: auth.id,
             })
             .on_conflict(users::dsl::id)

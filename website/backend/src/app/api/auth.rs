@@ -34,6 +34,10 @@ pub fn mangle(password: &str) -> argon2::password_hash::Result<String> {
         .map(|m| m.to_string())
 }
 
+pub fn get_display_name_from_email(email: &str) -> String {
+    email.split('@').next().unwrap().to_string()
+}
+
 fn verify(password: &str, mangled: &str) -> argon2::password_hash::Result<()> {
     Argon2::default().verify_password(password.as_bytes(), &PasswordHash::new(mangled)?)
 }
@@ -109,7 +113,7 @@ async fn register(
     };
     diesel::insert_into(users::dsl::users)
         .values(NewUser {
-            display_name: id.to_string(),
+            display_name: get_display_name_from_email(&email),
             id,
         })
         .execute(conn)?;
