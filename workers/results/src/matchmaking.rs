@@ -54,7 +54,7 @@ pub async fn matchmake_round(
         }
         let other = &teams[other];
         let this = &teams[i];
-        db_conn
+        match db_conn
             .create_game(
                 other,
                 this,
@@ -64,7 +64,19 @@ pub async fn matchmake_round(
                 &sqs_client,
                 &s3_client,
             )
-            .await?;
+            .await
+        {
+            Ok(_) => {
+                log::info!("Created game between {} and {}", this.name, other.name);
+            }
+            Err(_) => {
+                log::info!(
+                    "Failed to create game between {} and {}",
+                    this.name,
+                    other.name
+                );
+            }
+        }
     }
 
     log::info!("teams: {:?}", teams);
