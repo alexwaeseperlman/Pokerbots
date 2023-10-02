@@ -423,8 +423,8 @@ export function TeamBar({
             </Table>
           </Box>
         </Box>
-        <Box></Box>
       </Box>
+      <Box>Rating: {team.rating.toFixed(0)}</Box>
     </Box>
   );
 }

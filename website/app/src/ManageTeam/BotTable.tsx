@@ -210,7 +210,15 @@ export default function BotTable({
   ): React.MouseEventHandler<HTMLDivElement> | undefined {
     return () => {
       if (!window.confirm("Are you sure you want to delete a bot?")) return;
-      fetch(`${apiUrl}/delete-bot?id=${botId}`).then(() => getBots());
+      fetch(`${apiUrl}/delete-bot?id=${botId}`).then(async (res) => {
+        if (res.status !== 200) {
+          const error = await res.json();
+          enqueueSnackbar(`Error deleting bot: ${error.error}`, {
+            variant: "error",
+          });
+        }
+        getBots();
+      });
     };
   }
 

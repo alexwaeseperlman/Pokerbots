@@ -52,6 +52,12 @@ export function DisplayTeam({
           <Card sx={{ p: 4, pt: 4, mb: 4 }}>
             <CardContent>
               <Typography level="h2">Bots</Typography>
+              {team.active_bot == null && (
+                <Typography color="danger">
+                  This team doesn't have an active bot.{" "}
+                  {!readonly && "Upload a bot to start playing."}
+                </Typography>
+              )}
               {!readonly && (
                 <FileUpload onUpload={handleUpload}>
                   Drag a zipped bot here

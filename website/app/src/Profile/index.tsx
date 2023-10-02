@@ -79,7 +79,9 @@ export default function Profile() {
     profile?.last_name ?? ""
   );
   const [country, setCountry] = React.useState<string>(profile?.country ?? "");
-  const [school, setSchool] = React.useState<string>(profile?.school ?? "");
+  const [school, setSchool] = React.useState<string | null>(
+    profile?.school ?? null
+  );
   const [github, setGithub] = React.useState<string>(profile?.github ?? "");
   const [linkedin, setLinkedin] = React.useState<string>(
     profile?.linkedin ?? ""
@@ -159,8 +161,8 @@ export default function Profile() {
           <Autocomplete
             options={schools}
             value={school}
-            onChange={(e) => {
-              setSchool(schools[e.target.value]);
+            onChange={(e, newValue) => {
+              setSchool(newValue);
             }}
             placeholder="McGill University"
           />
@@ -170,7 +172,6 @@ export default function Profile() {
             prizes.
           </FormHelperText>
         </FormControl>
-
         <Divider role="presentation" />
 
         <Typography level="h3">Recruiting information (optional)</Typography>
