@@ -1,0 +1,2 @@
+ALTER TABLE auth DROP CONSTRAINT id_fk_users_id;
+ALTER TABLE users ADD CONSTRAINT id_fk_auth_id FOREIGN KEY (id) REFERENCES auth(id);

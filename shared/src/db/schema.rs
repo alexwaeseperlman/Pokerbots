@@ -93,12 +93,12 @@ diesel::table! {
     }
 }
 
-diesel::joinable!(auth -> users (id));
 diesel::joinable!(bots -> auth (uploaded_by));
 diesel::joinable!(game_results -> games (id));
 diesel::joinable!(team_invites -> teams (team));
 diesel::joinable!(teams -> users (owner));
 diesel::joinable!(user_profiles -> auth (id));
+diesel::joinable!(users -> auth (id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     auth,
