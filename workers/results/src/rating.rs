@@ -1,4 +1,6 @@
-const K_FACTOR: f32 = 32.0;
+// chosen arbitrarily. 32 is the standard for chess,
+// but games are much, much faster here
+const K_FACTOR: f32 = 8.0;
 /// elo rating system
 pub fn get_rating_change(
     defender_rating: f32,

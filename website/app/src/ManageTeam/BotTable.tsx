@@ -149,6 +149,7 @@ export default function BotTable({
         render: ({ id }: { id: number }) => {
           const ref = React.useRef(null);
 
+          if (readonly) return <></>;
           return (
             <Dropdown>
               <MenuButton
@@ -174,6 +175,7 @@ export default function BotTable({
                 >
                   Get build log
                 </MenuItem>
+
                 <MenuItem onClick={handleDelete(id)} color="danger">
                   Delete
                 </MenuItem>
@@ -218,6 +220,7 @@ export default function BotTable({
           });
         }
         getBots();
+        fetchTeam();
       });
     };
   }
