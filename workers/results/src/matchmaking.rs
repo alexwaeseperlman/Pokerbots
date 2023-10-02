@@ -23,9 +23,9 @@ pub async fn matchmake(s3_client: &aws_sdk_s3::Client, sqs_client: &aws_sdk_sqs:
                 player_count = Some(updated_player_count as u64);
             }
         }
-        // give an average of 10 seconds per game, plus 10
+        // give an average of 3 seconds per game, plus 3
         tokio::time::sleep(std::time::Duration::from_secs(
-            (10 + player_count.unwrap_or(10)) * 10,
+            3 + (player_count.unwrap_or(10)) * 3,
         ))
         .await;
     }
@@ -37,6 +37,7 @@ pub async fn matchmake_round(
 ) -> Result<usize, Box<dyn Error>> {
     let db_conn = &mut (*DB_CONNECTION).get().unwrap();
     let teams: Vec<Team> = schema::teams::table
+        .filter(schema::teams::dsl::deleted_at.is_null())
         .order_by(schema::teams::dsl::rating)
         .load::<Team>(db_conn)?;
 

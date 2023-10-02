@@ -85,7 +85,7 @@ export function TeamsTable() {
             let color: ChipProps["color"] = "success";
             if ((score ?? 0) == 0) color = "neutral";
             else if ((score ?? 0) < 0) color = "danger";
-            return <Chip color={color}>{score ?? 0}</Chip>;
+            return <Chip color={color}>{score?.toFixed(0) ?? 0}</Chip>;
           },
         },
         {

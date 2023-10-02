@@ -165,7 +165,7 @@ export default function BotTable({
                   {id == team?.active_bot ? "Currently active" : "Set active"}
                 </MenuItem>
 
-                <MenuItem onClick={handleChallenge(id)}>Challenge</MenuItem>
+                {/*<MenuItem onClick={handleChallenge(id)}>Challenge</MenuItem>*/}
 
                 <MenuItem
                   target="_tab"
