@@ -110,5 +110,5 @@ lazy_static! {
 }
 
 pub fn schools() -> Vec<String> {
-    vec!["McGill University".into()]
+    vec!["McGill University".into(), "Other".into()]
 }
