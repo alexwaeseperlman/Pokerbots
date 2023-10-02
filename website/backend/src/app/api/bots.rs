@@ -123,7 +123,6 @@ pub async fn upload_bot(
             team: team.id,
             name: bot.name,
             description: bot.description,
-            rating: 0.0,
             uploaded_by: user.id,
             build_status: shared::BuildStatus::Queued,
         })

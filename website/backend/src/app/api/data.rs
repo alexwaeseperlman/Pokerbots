@@ -55,10 +55,10 @@ pub async fn teams(
         match sort {
             Some(TeamsQuerySort::Score) | None => match sort_direction {
                 Some(TeamsQuerySortDirection::Asc) => {
-                    base = base.order_by(schema::teams::dsl::score.asc());
+                    base = base.order_by(schema::teams::dsl::rating.asc());
                 }
                 Some(TeamsQuerySortDirection::Desc) | None => {
-                    base = base.order_by(schema::teams::dsl::score.desc());
+                    base = base.order_by(schema::teams::dsl::rating.desc());
                 }
             },
             Some(TeamsQuerySort::Created) => match sort_direction {
@@ -123,7 +123,7 @@ pub async fn teams(
                     active_bot: t.active_bot,
                     id: t.id,
                     owner: t.owner,
-                    score: t.score,
+                    rating: t.rating,
                     name: t.name,
                     deleted_at: t.deleted_at,
                 })
@@ -202,7 +202,6 @@ pub async fn bots(
             description: b.description,
             name: b.name,
             uploaded_by: u,
-            rating: b.rating,
         })
         .collect();
     Ok(web::Json(BotsResponse::Bots(result)))

@@ -59,6 +59,7 @@ async fn main() {
                 handle_game_result(task).await.is_ok()
             },
             |err| log::error!("Error receiving game result: {}", err),
-        )
+        ),
+        results::matchmaking::matchmake(&s3, &sqs)
     );
 }

@@ -24,9 +24,9 @@ pub struct Team {
     pub id: i32,
     pub name: String,
     pub owner: Uuid,
-    pub score: Option<i32>,
     pub active_bot: Option<i32>,
     pub deleted_at: Option<i64>,
+    pub rating: f32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, TS)]
@@ -35,11 +35,11 @@ pub struct TeamWithMembers<T> {
     pub id: i32,
     pub name: String,
     pub owner: Uuid,
-    pub score: Option<i32>,
     pub active_bot: Option<i32>,
     pub members: Vec<T>,
     pub invites: Option<Vec<TeamInvite>>,
     pub deleted_at: Option<i64>,
+    pub rating: f32,
 }
 
 #[derive(Insertable, Debug)]
@@ -91,6 +91,7 @@ pub struct NewGame {
     pub challenger: i32,
     pub defender_rating: f32,
     pub challenger_rating: f32,
+    pub rated: bool,
 }
 
 #[derive(Queryable, Serialize, Deserialize, Debug, Selectable, TS)]
@@ -103,6 +104,7 @@ pub struct Game {
     pub created: i64,
     pub defender_rating: f32,
     pub challenger_rating: f32,
+    pub rated: bool,
 }
 
 #[derive(
@@ -149,6 +151,7 @@ pub struct GameWithResult {
     pub defender_rating: f32,
     pub challenger_rating: f32,
     pub result: Option<GameResult>,
+    pub rated: bool,
 }
 
 #[derive(Serialize, TS)]
@@ -161,6 +164,7 @@ pub struct GameWithBotsWithResult<T> {
     pub defender_rating: f32,
     pub challenger_rating: f32,
     pub result: Option<GameResult>,
+    pub rated: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Queryable, Selectable, TS)]
@@ -175,7 +179,6 @@ pub struct Bot {
     pub uploaded_by: Uuid,
     pub build_status: BuildStatus,
     pub deleted_at: Option<i64>,
-    pub rating: f32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Queryable, TS)]
@@ -185,7 +188,6 @@ pub struct BotWithTeam<T> {
     pub team: T,
     pub name: String,
     pub description: Option<String>,
-    pub rating: f32,
     pub created: i64,
     pub uploaded_by: User,
     pub build_status: BuildStatus,
@@ -198,7 +200,6 @@ impl<T> BotWithTeam<T> {
             team,
             name: bot.name,
             description: bot.description,
-            rating: bot.rating,
             created: bot.created,
             uploaded_by: user,
             build_status: bot.build_status,
@@ -213,6 +214,7 @@ pub struct GameWithBots<T> {
     pub defender: T,
     pub challenger: T,
     pub created: i64,
+    pub rated: bool,
 }
 
 #[derive(Debug, diesel::Insertable)]
@@ -221,7 +223,6 @@ pub struct NewBot {
     pub team: i32,
     pub name: String,
     pub description: Option<String>,
-    pub rating: f32,
     pub uploaded_by: Uuid,
     pub build_status: BuildStatus,
 }

@@ -349,7 +349,7 @@ pub fn get_team(session: &Session) -> Option<TeamWithMembers<User>> {
         id: team.id,
         name: team.name,
         owner: team.owner,
-        score: team.score,
+        rating: team.rating,
         active_bot: team.active_bot,
         members,
         invites,

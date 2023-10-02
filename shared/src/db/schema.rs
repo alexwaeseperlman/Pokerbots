@@ -24,7 +24,6 @@ diesel::table! {
         uploaded_by -> Uuid,
         build_status -> Int4,
         deleted_at -> Nullable<Int8>,
-        rating -> Float4,
     }
 }
 
@@ -51,6 +50,7 @@ diesel::table! {
         created -> Int8,
         defender_rating -> Float4,
         challenger_rating -> Float4,
+        rated -> Bool,
     }
 }
 
@@ -67,9 +67,9 @@ diesel::table! {
         id -> Int4,
         name -> Text,
         owner -> Uuid,
-        score -> Nullable<Int4>,
         active_bot -> Nullable<Int4>,
         deleted_at -> Nullable<Int8>,
+        rating -> Float4,
     }
 }
 

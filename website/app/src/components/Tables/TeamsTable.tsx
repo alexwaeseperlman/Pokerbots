@@ -80,7 +80,7 @@ export function TeamsTable() {
           name: "Score",
           width: "100px",
           key: "score",
-          getProps: (team) => ({ score: team.score }),
+          getProps: (team) => ({ score: team.rating }),
           render: ({ score }: { score: number | null }) => {
             let color: ChipProps["color"] = "success";
             if ((score ?? 0) == 0) color = "neutral";

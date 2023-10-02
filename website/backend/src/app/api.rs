@@ -67,7 +67,6 @@ pub fn api_service() -> actix_web::Scope {
         .service(data::bots)
         .service(data::code)
         .service(data::pfp)
-        .service(games::create_game)
         .service(games::games)
         .service(games::count_games)
         .service(games::game_log)
