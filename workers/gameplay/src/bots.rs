@@ -194,14 +194,15 @@ pub async fn run_game(
         .stderr(Stdio::null())
         .stdout(Stdio::null())
         .status()
-        .await;
+        .await?;
 
     Command::new("umount")
         .arg(format!("/tmp/{}/defender", defender_path.display()))
         .stderr(Stdio::null())
         .stdout(Stdio::null())
         .status()
-        .await;
+        .await?;
+
     fs::remove_dir_all(tmp_dir).await?;
     Ok(GameResult {
         status,
