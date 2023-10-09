@@ -155,15 +155,20 @@ pub async fn run_game(
     // download bots from s3
     log::debug!("Making bot directories");
     let defender_path = tmp_dir.join("defender");
-    fs::create_dir_all(&defender_path).await?;
+    fs::create_dir_all(&defender_path.clone()).await?;
     let challenger_path = tmp_dir.join("challenger");
-    fs::create_dir_all(&challenger_path).await?;
+    fs::create_dir_all(&challenger_path.clone()).await?;
     log::debug!("Downloading bots from aws");
     let (defender, challenger) = try_join!(
-        download_and_run(defender.to_string(), defender_path, &bot_bucket, s3_client),
+        download_and_run(
+            defender.to_string(),
+            defender_path.clone(),
+            &bot_bucket,
+            s3_client
+        ),
         download_and_run(
             challenger.to_string(),
-            challenger_path,
+            challenger_path.clone(),
             &bot_bucket,
             s3_client
         )
@@ -184,6 +189,19 @@ pub async fn run_game(
     let defender_log = tokio::fs::read(tmp_dir.join("defender/logs")).await?;
     let challenger_log = tokio::fs::read(tmp_dir.join("challenger/logs")).await?;
     let public_log = tokio::fs::read(tmp_dir.join("logs")).await?;
+    Command::new("umount")
+        .arg(format!("/tmp/{}/challenger", challenger_path.display()))
+        .stderr(Stdio::null())
+        .stdout(Stdio::null())
+        .status()
+        .await;
+
+    Command::new("umount")
+        .arg(format!("/tmp/{}/defender", defender_path.display()))
+        .stderr(Stdio::null())
+        .stdout(Stdio::null())
+        .status()
+        .await;
     fs::remove_dir_all(tmp_dir).await?;
     Ok(GameResult {
         status,
@@ -528,6 +546,7 @@ impl Game {
                 kill(-(id as i32), 18);
             }
         }
+
         self.defender.kill().await?;
         self.challenger.kill().await?;
         self.cleaned_up = true;
