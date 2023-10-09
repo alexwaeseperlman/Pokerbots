@@ -20,7 +20,7 @@ pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
         Ok(GameStatus::TestGameSucceeded) => (0, 0, None, None),
         Ok(GameStatus::TestGameFailed) => (0, 0, None, None),
         Err(e) => match e {
-            GameError::InternalError => (100, 100, Some("INTERNAL".into()), None),
+            GameError::InternalError => (50, 50, Some("INTERNAL".into()), None),
             GameError::InvalidActionError(which_bot) => match which_bot {
                 shared::WhichBot::Defender => (-100, 100, Some("INVALID_ACTION".into()), Some(0)),
                 shared::WhichBot::Challenger => (100, -100, Some("INVALID_ACTION".into()), Some(1)),
@@ -59,12 +59,16 @@ pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
                         defender_score,
                         challenger_score
                     );
+                    // Don't rate games that had an internal error
                     (defender_rating_change, challenger_rating_change) = get_rating_change(
                         game.defender_rating,
                         score,
                         game.challenger_rating,
                         1.0 - score,
                     );
+                    if error_type.clone().is_some_and(|e| e == "INTERNAL") {
+                        (defender_rating_change, challenger_rating_change) = (0.0, 0.0);
+                    }
 
                     let (defender_bot, defender_team) = shared::db::schema::bots::dsl::bots
                         .find(game.defender)

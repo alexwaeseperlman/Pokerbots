@@ -190,14 +190,14 @@ pub async fn run_game(
     let challenger_log = tokio::fs::read(tmp_dir.join("challenger/logs")).await?;
     let public_log = tokio::fs::read(tmp_dir.join("logs")).await?;
     Command::new("umount")
-        .arg(format!("/tmp/{}/challenger", challenger_path.display()))
+        .arg(format!("{}", challenger_path.display()))
         .stderr(Stdio::null())
         .stdout(Stdio::null())
         .status()
         .await?;
 
     Command::new("umount")
-        .arg(format!("/tmp/{}/defender", defender_path.display()))
+        .arg(format!("{}", defender_path.display()))
         .stderr(Stdio::null())
         .stdout(Stdio::null())
         .status()
