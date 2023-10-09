@@ -25,6 +25,7 @@ services:
       - DB_USER=postgres
       - DB_PASSWORD=${DB_PASSWORD}
       - APP_MICROSOFT_CLIENT_ID=${APP_MICROSOFT_CLIENT_ID}
+      - APP_GOOGLE_CLIENT_ID=${APP_GOOGLE_CLIENT_ID}
 
       - PFP_S3_BUCKET=${PFP_S3_BUCKET}
       - BOT_S3_BUCKET=${BOT_S3_BUCKET}
@@ -55,6 +56,7 @@ services:
     volumes:
       - ~/.aws/:/root/.aws:ro
     privileged: true
+    init: true
     environment:
       - RUST_LOG=info
       - S3_ACCESS_KEY=${S3_ACCESS_KEY}
@@ -73,6 +75,7 @@ services:
     volumes:
       - ~/.aws/:/root/.aws:ro
     privileged: true
+    init: true
     environment:
       - RUST_LOG=info
       - COMPILED_BOT_S3_BUCKET=${COMPILED_BOT_S3_BUCKET}

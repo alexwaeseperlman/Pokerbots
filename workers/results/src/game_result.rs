@@ -4,7 +4,7 @@ use shared::{
         models::{self, Bot, Game, Team},
         schema::{game_results, teams},
     },
-    GameError, GameResult, GameStatus, GameStatusMessage,
+    GameError, GameStatus, GameStatusMessage,
 };
 
 use crate::rating::get_rating_change;

@@ -25,7 +25,7 @@ pub async fn matchmake(s3_client: &aws_sdk_s3::Client, sqs_client: &aws_sdk_sqs:
         }
         // give an average of 30 seconds per game, plus 3
         tokio::time::sleep(std::time::Duration::from_secs(
-            3 + (player_count.unwrap_or(30)) * 30,
+            3 + (player_count.unwrap_or(30)) * 5,
         ))
         .await;
     }

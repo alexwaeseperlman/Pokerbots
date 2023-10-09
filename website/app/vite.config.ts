@@ -13,7 +13,6 @@ export default defineConfig({
     sourcemap: true,
   },
   envPrefix: "APP_",
-  envDir: "../../",
   server: {
     host: "0.0.0.0",
     proxy: {

@@ -136,10 +136,9 @@ pub enum GameStatus {
     TestGameSucceeded,
 }
 
-pub type GameResult = Result<GameStatus, GameError>;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GameStatusMessage {
-    pub result: GameResult,
+    pub result: Result<GameStatus, GameError>,
     pub id: String,
 }
 

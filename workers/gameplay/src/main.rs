@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use gameplay::bots::run_game;
-use shared::{GameStatus, GameStatusMessage, GameTask};
+use shared::{GameError, GameStatus, GameStatusMessage, GameTask};
 
 #[tokio::main]
 async fn main() {
@@ -30,52 +30,42 @@ async fn main() {
                     defender_logs_presigned,
                     challenger_logs_presigned,
                 } => {
-                    let mut path = PathBuf::default();
-                    let result = run_game(defender, challenger, &s3, &id, rounds, &mut path).await;
+                    let result = run_game(defender, challenger, &s3, &id, rounds).await;
 
-                    if let Err(e) = result.clone() {
-                        log::error!("Game failed: {:?}", e);
-                    }
-
-                    // upload logs
-                    // ignore if they have errors
-                    tokio::join!(
-                        async {
-                            if let Ok(log) = tokio::fs::read(path.join("defender/logs")).await {
-                                let _ = reqwest_client
+                    match result {
+                        Err(e) => {
+                            log::error!("Game failed: {:?}", e);
+                            Err(GameError::InternalError)
+                        }
+                        Ok(result) => {
+                            // upload logs
+                            // ignore if they have errors
+                            if let Err(e) = tokio::try_join!(
+                                reqwest_client
                                     .put(defender_logs_presigned.url)
                                     .headers(defender_logs_presigned.headers.into())
-                                    .body(log)
-                                    .send()
-                                    .await;
-                            }
-                        },
-                        async {
-                            if let Ok(f) = tokio::fs::read(path.join("challenger/logs")).await {
-                                let _ = reqwest_client
+                                    .body(result.defender_log)
+                                    .send(),
+                                reqwest_client
                                     .put(challenger_logs_presigned.url)
                                     .headers(challenger_logs_presigned.headers.into())
-                                    .body(f)
-                                    .send()
-                                    .await;
-                            }
-                        },
-                        async {
-                            if let Ok(f) = tokio::fs::read(path.join("logs")).await {
-                                let _ = reqwest_client
+                                    .body(result.challenger_log)
+                                    .send(),
+                                reqwest_client
                                     .put(public_logs_presigned.url)
                                     .headers(public_logs_presigned.headers.into())
-                                    .body(f)
-                                    .send()
-                                    .await;
-                            }
-                        },
-                    );
-                    result
+                                    .body(result.public_log)
+                                    .send(),
+                            ) {
+                                log::error!("Error uploading logs: {:?}", e);
+                            };
+                            result.status
+                        }
+                    }
                 }
                 GameTask::TestGame { bot, log_presigned } => {
                     let mut path = PathBuf::default();
-                    if let Err(_) = run_game(bot, bot, &s3, &bot.to_string(), 5, &mut path).await {
+                    if let Err(_) = run_game(bot, bot, &s3, &bot.to_string(), 5).await {
                         Ok(GameStatus::TestGameFailed)
                     } else {
                         Ok(GameStatus::TestGameSucceeded)
