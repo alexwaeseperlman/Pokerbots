@@ -1,6 +1,6 @@
 use itertools::Itertools;
 use rand::{thread_rng, Rng};
-use shared::{BotJson, GameError, GameResult, WhichBot};
+use shared::{BotJson, GameError, WhichBot};
 use std::borrow::BorrowMut;
 use std::{
     env,
@@ -23,7 +23,7 @@ pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>
     bot_path: V,
     bot_bucket: T,
     s3_client: &aws_sdk_s3::Client,
-) -> Result<tokio::process::Child, GameError> {
+) -> Result<tokio::process::Child, anyhow::Error> {
     let bot_path: PathBuf = bot_path.into();
     Command::new("mount")
         .arg("-t")
@@ -87,7 +87,7 @@ pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>
         .status()
         .await?;
 
-    Command::new("bwrap")
+    Ok(Command::new("bwrap")
         .args([
             "--unshare-all",
             "--die-with-parent",
@@ -123,14 +123,17 @@ pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>
         .stderr(log_file)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
-        .spawn()
-        .map_err(|e| {
-            log::error!("Error running bot: {}", e);
-            GameError::InternalError
-        })
+        .spawn()?)
 }
 extern "C" {
     fn kill(pid: i32, sig: i32) -> i32;
+}
+
+pub struct GameResult {
+    pub status: Result<shared::GameStatus, GameError>,
+    pub defender_log: Vec<u8>,
+    pub challenger_log: Vec<u8>,
+    pub public_log: Vec<u8>,
 }
 
 pub async fn run_game(
@@ -139,39 +142,33 @@ pub async fn run_game(
     s3_client: &aws_sdk_s3::Client,
     task_id: &String,
     rounds: usize,
-    game_path: &mut PathBuf,
-) -> GameResult {
+) -> Result<GameResult, anyhow::Error> {
     // create tmp directory
     // doesn't have the same id as the task
     let game_id = format!("{:x}", rand::thread_rng().gen::<u32>());
     let tmp_dir = Path::new("/tmp").join(&game_id);
-    *game_path = tmp_dir.clone();
     log::debug!("Playing {} against {}", defender, challenger);
     log::info!("Running game {} with local id {}", task_id, game_id);
-    let bot_bucket = std::env::var("COMPILED_BOT_S3_BUCKET").map_err(|e| {
-        log::error!("Error getting COMPILED_BOT_S3_BUCKET: {}", e);
-        GameError::InternalError
-    })?;
+    let bot_bucket = std::env::var("COMPILED_BOT_S3_BUCKET")?;
     log::debug!("Bot bucket: {}", bot_bucket);
 
     // download bots from s3
     log::debug!("Making bot directories");
     let defender_path = tmp_dir.join("defender");
-    fs::create_dir_all(&defender_path).await.map_err(|e| {
-        log::error!("Error creating defender directory: {}", e);
-        shared::GameError::InternalError
-    })?;
+    fs::create_dir_all(&defender_path.clone()).await?;
     let challenger_path = tmp_dir.join("challenger");
-    fs::create_dir_all(&challenger_path).await.map_err(|e| {
-        log::error!("Error creating challenger directory: {}", e);
-        shared::GameError::InternalError
-    })?;
+    fs::create_dir_all(&challenger_path.clone()).await?;
     log::debug!("Downloading bots from aws");
     let (defender, challenger) = try_join!(
-        download_and_run(defender.to_string(), defender_path, &bot_bucket, s3_client),
+        download_and_run(
+            defender.to_string(),
+            defender_path.clone(),
+            &bot_bucket,
+            s3_client
+        ),
         download_and_run(
             challenger.to_string(),
-            challenger_path,
+            challenger_path.clone(),
             &bot_bucket,
             s3_client
         )
@@ -186,7 +183,33 @@ pub async fn run_game(
         tokio::fs::File::create(tmp_dir.join("logs")).await?,
     );
 
-    game.play(rounds).await
+    let status = game.play(rounds).await;
+    game.drop().await?;
+    // TODO: issues reading the logs probably shouldn't cause an internal error
+    let defender_log = tokio::fs::read(tmp_dir.join("defender/logs")).await?;
+    let challenger_log = tokio::fs::read(tmp_dir.join("challenger/logs")).await?;
+    let public_log = tokio::fs::read(tmp_dir.join("logs")).await?;
+    Command::new("umount")
+        .arg(format!("{}", challenger_path.display()))
+        .stderr(Stdio::null())
+        .stdout(Stdio::null())
+        .status()
+        .await?;
+
+    Command::new("umount")
+        .arg(format!("{}", defender_path.display()))
+        .stderr(Stdio::null())
+        .stdout(Stdio::null())
+        .status()
+        .await?;
+
+    fs::remove_dir_all(tmp_dir).await?;
+    Ok(GameResult {
+        status,
+        defender_log,
+        challenger_log,
+        public_log,
+    })
 }
 
 pub struct Game {
@@ -199,6 +222,8 @@ pub struct Game {
     timeout: Duration,
     logs: tokio::fs::File,
     start_time: Instant,
+    // I suck at this :'(
+    cleaned_up: bool,
 }
 impl Game {
     pub fn new(
@@ -218,6 +243,7 @@ impl Game {
             id,
             logs,
             start_time: Instant::now(),
+            cleaned_up: false,
         }
     }
 
@@ -339,7 +365,7 @@ impl Game {
             GameState::get_shuffled_deck(&mut rng),
         );
 
-        log::debug!("Game state: {:?}. ", state);
+        //log::debug!("Game state: {:?}. ", state);
 
         let mut round = None;
 
@@ -363,7 +389,7 @@ impl Game {
             };
 
             if state.round_over() {
-                log::debug!("Round ended.");
+                //log::debug!("Round ended.");
                 self.print_round_end(WhichBot::Defender)
                     .await
                     .map_err(|_| {
@@ -381,7 +407,7 @@ impl Game {
             }
             // Print community cards to both bots
             if round != Some(state.round) {
-                log::debug!("Printing community cards.");
+                //log::debug!("Printing community cards.");
                 round = Some(state.round);
                 self.print_cards(WhichBot::Defender, &state)
                     .await
@@ -424,7 +450,7 @@ impl Game {
                 .await?;
             };
             // write current game state to the bots stream
-            log::debug!("Writing current state.");
+            //log::debug!("Writing current state.");
             let status = format!(
                 "S {} {} {} {} {}",
                 state.target_push,
@@ -439,7 +465,7 @@ impl Game {
                 GameError::RunTimeError(whose_turn)
             })?;
 
-            log::debug!("Reading action from {:?}.", whose_turn);
+            //log::debug!("Reading action from {:?}.", whose_turn);
             let mut line: String = Default::default();
             tokio::time::timeout(self.timeout, target_reader.read_line(&mut line))
                 .await
@@ -448,7 +474,7 @@ impl Game {
 
             self.write_log(format!("{} > {}", whose_turn, line.trim()))
                 .await?;
-            log::debug!("Reading action from {:?}.", line);
+            //log::debug!("Reading action from {:?}.", line);
             state = state
                 .post_action(
                     parse_action(line.trim())
@@ -470,7 +496,7 @@ impl Game {
     }
 
     /// Play a game of poker, returning a [shared::GameResult]
-    pub async fn play(&mut self, rounds: usize) -> shared::GameResult {
+    pub async fn play(&mut self, rounds: usize) -> Result<shared::GameStatus, GameError> {
         log::debug!("Playing game {} with {} rounds", self.id, rounds);
         let mut defender_reader = BufReader::new(
             self.defender
@@ -494,7 +520,7 @@ impl Game {
             }
             self.write_log(format!("System > round {}/{}", i + 1, rounds))
                 .await?;
-            log::debug!("Playing round. Current stacks: {:?}.", self.stacks);
+            //log::debug!("Playing round. Current stacks: {:?}.", self.stacks);
             if let Err(e) = self
                 .play_round(&mut defender_reader, &mut challenger_reader)
                 .await
@@ -509,9 +535,8 @@ impl Game {
             i32::try_from(self.stacks[1]).unwrap() - i32::try_from(self.initial_stacks[1]).unwrap(),
         ));
     }
-}
-impl Drop for Game {
-    fn drop(&mut self) {
+
+    pub async fn drop(&mut self) -> Result<(), anyhow::Error> {
         if let Some(id) = self.defender.id() {
             unsafe {
                 kill(-(id as i32), 18);
@@ -522,8 +547,18 @@ impl Drop for Game {
                 kill(-(id as i32), 18);
             }
         }
-        self.defender.start_kill();
-        self.challenger.start_kill();
+
+        self.defender.kill().await?;
+        self.challenger.kill().await?;
+        self.cleaned_up = true;
+        Ok(())
+    }
+}
+impl Drop for Game {
+    fn drop(&mut self) {
+        if !self.cleaned_up {
+            panic!("Game dropped without manually calling drop")
+        }
     }
 }
 

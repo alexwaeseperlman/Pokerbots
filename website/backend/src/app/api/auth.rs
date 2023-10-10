@@ -97,7 +97,6 @@ async fn register(
             ),
         )
         .unwrap();
-    config::MAILER.send(&email_body)?;
 
     let id = Uuid::new_v4();
 
@@ -111,12 +110,6 @@ async fn register(
         email_confirmed: false,
         id,
     };
-    diesel::insert_into(users::dsl::users)
-        .values(NewUser {
-            display_name: get_display_name_from_email(&email),
-            id,
-        })
-        .execute(conn)?;
 
     diesel::insert_into(auth::dsl::auth)
         .values(&auth)
@@ -127,6 +120,14 @@ async fn register(
     let auth: Auth = auth::dsl::auth
         .filter(auth::dsl::email.eq(email.clone()))
         .first::<Auth>(conn)?;
+
+    diesel::insert_into(users::dsl::users)
+        .values(NewUser {
+            display_name: get_display_name_from_email(&email),
+            id,
+        })
+        .execute(conn)?;
+    config::MAILER.send(&email_body)?;
 
     Ok(web::Json(()))
 }
@@ -349,7 +350,7 @@ pub fn get_team(session: &Session) -> Option<TeamWithMembers<User>> {
         id: team.id,
         name: team.name,
         owner: team.owner,
-        score: team.score,
+        rating: team.rating,
         active_bot: team.active_bot,
         members,
         invites,

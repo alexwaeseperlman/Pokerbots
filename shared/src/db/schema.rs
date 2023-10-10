@@ -24,7 +24,6 @@ diesel::table! {
         uploaded_by -> Uuid,
         build_status -> Int4,
         deleted_at -> Nullable<Int8>,
-        rating -> Float4,
     }
 }
 
@@ -51,6 +50,7 @@ diesel::table! {
         created -> Int8,
         defender_rating -> Float4,
         challenger_rating -> Float4,
+        rated -> Bool,
     }
 }
 
@@ -67,9 +67,9 @@ diesel::table! {
         id -> Int4,
         name -> Text,
         owner -> Uuid,
-        score -> Nullable<Int4>,
         active_bot -> Nullable<Int4>,
         deleted_at -> Nullable<Int8>,
+        rating -> Float4,
     }
 }
 
@@ -93,12 +93,12 @@ diesel::table! {
     }
 }
 
-diesel::joinable!(auth -> users (id));
 diesel::joinable!(bots -> auth (uploaded_by));
 diesel::joinable!(game_results -> games (id));
 diesel::joinable!(team_invites -> teams (team));
 diesel::joinable!(teams -> users (owner));
 diesel::joinable!(user_profiles -> auth (id));
+diesel::joinable!(users -> auth (id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     auth,

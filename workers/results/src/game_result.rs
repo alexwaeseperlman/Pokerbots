@@ -2,9 +2,9 @@ use diesel::prelude::*;
 use shared::{
     db::{
         models::{self, Bot, Game, Team},
-        schema::game_results,
+        schema::{game_results, teams},
     },
-    GameError, GameResult, GameStatus, GameStatusMessage,
+    GameError, GameStatus, GameStatusMessage,
 };
 
 use crate::rating::get_rating_change;
@@ -20,7 +20,7 @@ pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
         Ok(GameStatus::TestGameSucceeded) => (0, 0, None, None),
         Ok(GameStatus::TestGameFailed) => (0, 0, None, None),
         Err(e) => match e {
-            GameError::InternalError => (100, 100, Some("INTERNAL".into()), None),
+            GameError::InternalError => (50, 50, Some("INTERNAL".into()), None),
             GameError::InvalidActionError(which_bot) => match which_bot {
                 shared::WhichBot::Defender => (-100, 100, Some("INVALID_ACTION".into()), Some(0)),
                 shared::WhichBot::Challenger => (100, -100, Some("INVALID_ACTION".into()), Some(1)),
@@ -59,20 +59,40 @@ pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
                         defender_score,
                         challenger_score
                     );
+                    // Don't rate games that had an internal error
                     (defender_rating_change, challenger_rating_change) = get_rating_change(
                         game.defender_rating,
                         score,
                         game.challenger_rating,
                         1.0 - score,
                     );
+                    if error_type.clone().is_some_and(|e| e == "INTERNAL") {
+                        (defender_rating_change, challenger_rating_change) = (0.0, 0.0);
+                    }
 
+                    let (defender_bot, defender_team) = shared::db::schema::bots::dsl::bots
+                        .find(game.defender)
+                        .inner_join(
+                            shared::db::schema::teams::dsl::teams
+                                .on(shared::db::schema::bots::dsl::team
+                                    .eq(shared::db::schema::teams::dsl::id)),
+                        )
+                        .first::<(Bot, Team)>(db_conn)?;
+                    let (challenger_bot, challenger_team) = shared::db::schema::bots::dsl::bots
+                        .find(game.challenger)
+                        .inner_join(
+                            shared::db::schema::teams::dsl::teams
+                                .on(shared::db::schema::bots::dsl::team
+                                    .eq(shared::db::schema::teams::dsl::id)),
+                        )
+                        .first::<(Bot, Team)>(db_conn)?;
                     // Update rating
-                    let defender: Bot = diesel::update(bots::table.find(game.defender))
-                        .set(bots::dsl::rating.eq(bots::dsl::rating + defender_rating_change))
-                        .get_result::<Bot>(db_conn)?;
-                    let challenger: Bot = diesel::update(bots::table.find(game.challenger))
-                        .set(bots::dsl::rating.eq(bots::dsl::rating + challenger_rating_change))
-                        .get_result::<Bot>(db_conn)?;
+                    let defender: Team = diesel::update(teams::table.find(defender_team.id))
+                        .set(teams::dsl::rating.eq(teams::dsl::rating + defender_rating_change))
+                        .get_result::<Team>(db_conn)?;
+                    let challenger: Team = diesel::update(teams::table.find(challenger_team.id))
+                        .set(teams::dsl::rating.eq(teams::dsl::rating + challenger_rating_change))
+                        .get_result::<Team>(db_conn)?;
                     log::debug!(
                         "Defender (+{}): {:?}, challenger (+{}): {:?}",
                         defender_rating_change,
@@ -80,22 +100,6 @@ pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
                         challenger_rating_change,
                         challenger
                     );
-
-                    // Update team rating
-                    diesel::update(shared::db::schema::teams::dsl::teams)
-                        .filter(shared::db::schema::teams::dsl::id.eq(defender.team))
-                        .set(
-                            shared::db::schema::teams::dsl::score
-                                .eq(defender.rating.round() as i32),
-                        )
-                        .execute(db_conn)?;
-                    diesel::update(shared::db::schema::teams::dsl::teams)
-                        .filter(shared::db::schema::teams::dsl::id.eq(challenger.team))
-                        .set(
-                            shared::db::schema::teams::dsl::score
-                                .eq(challenger.rating.round() as i32),
-                        )
-                        .execute(db_conn)?;
 
                     diesel::insert_into(game_results::table)
                         .values(models::NewGameResult {

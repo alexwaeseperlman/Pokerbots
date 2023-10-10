@@ -177,7 +177,7 @@ pub async fn put_resume(
     while let Some(chunk) = payload.next().await {
         let chunk = chunk?;
         // limit max size of in-memory payload
-        if (body.len() + chunk.len()) > (config::bot_size()).try_into()? {
+        if (body.len() + chunk.len()) > usize::try_from(config::bot_size())? {
             return Err(actix_web::error::ErrorBadRequest("File too large").into());
         }
         body.extend_from_slice(&chunk);

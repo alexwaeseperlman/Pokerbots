@@ -95,7 +95,7 @@ pub async fn upload_bot(
     while let Some(chunk) = payload.next().await {
         let chunk = chunk?;
         // limit max size of in-memory payload
-        if (body.len() + chunk.len()) > (bot_size()).try_into()? {
+        if (body.len() + chunk.len()) > usize::try_from(bot_size())? {
             return Err(actix_web::error::ErrorBadRequest("Bot too large").into());
         }
         body.extend_from_slice(&chunk);
@@ -123,7 +123,6 @@ pub async fn upload_bot(
             team: team.id,
             name: bot.name,
             description: bot.description,
-            rating: 0.0,
             uploaded_by: user.id,
             build_status: shared::BuildStatus::Queued,
         })

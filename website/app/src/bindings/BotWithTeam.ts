@@ -2,4 +2,4 @@
 import type { BuildStatus } from "./BuildStatus";
 import type { User } from "./User";
 
-export interface BotWithTeam<T> { id: number, team: T, name: string, description: string | null, rating: number, created: bigint, uploaded_by: User, build_status: BuildStatus, }
+export interface BotWithTeam<T> { id: number, team: T, name: string, description: string | null, created: bigint, uploaded_by: User, build_status: BuildStatus, }

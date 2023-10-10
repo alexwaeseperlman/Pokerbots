@@ -149,6 +149,7 @@ export default function BotTable({
         render: ({ id }: { id: number }) => {
           const ref = React.useRef(null);
 
+          if (readonly) return <></>;
           return (
             <Dropdown>
               <MenuButton
@@ -165,7 +166,7 @@ export default function BotTable({
                   {id == team?.active_bot ? "Currently active" : "Set active"}
                 </MenuItem>
 
-                <MenuItem onClick={handleChallenge(id)}>Challenge</MenuItem>
+                {/*<MenuItem onClick={handleChallenge(id)}>Challenge</MenuItem>*/}
 
                 <MenuItem
                   target="_tab"
@@ -174,6 +175,7 @@ export default function BotTable({
                 >
                   Get build log
                 </MenuItem>
+
                 <MenuItem onClick={handleDelete(id)} color="danger">
                   Delete
                 </MenuItem>
@@ -210,7 +212,16 @@ export default function BotTable({
   ): React.MouseEventHandler<HTMLDivElement> | undefined {
     return () => {
       if (!window.confirm("Are you sure you want to delete a bot?")) return;
-      fetch(`${apiUrl}/delete-bot?id=${botId}`).then(() => getBots());
+      fetch(`${apiUrl}/delete-bot?id=${botId}`).then(async (res) => {
+        if (res.status !== 200) {
+          const error = await res.json();
+          enqueueSnackbar(`Error deleting bot: ${error.error}`, {
+            variant: "error",
+          });
+        }
+        getBots();
+        fetchTeam();
+      });
     };
   }
 

@@ -147,12 +147,15 @@ const renderScore = ({
   scoreChange,
   errorType,
   whichBot,
+  running,
 }: {
   scoreChange: number | null;
   errorType: string;
   whichBot: WhichBot;
+  running: boolean;
 }) => {
   let color: ChipProps["color"] = "success";
+  if (running) return <></>;
   if (scoreChange == null) color = "warning";
   else if (scoreChange < 0) color = "danger";
   else if (scoreChange == 0) color = "neutral";
@@ -266,6 +269,7 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
           whichBot: "Challenger",
           scoreChange: game.result?.challenger_score,
           errorType: game.result?.error_type,
+          running: !game.result,
         }),
         render: renderScore,
       },
@@ -278,6 +282,7 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
           whichBot: "Defender",
           scoreChange: game.result?.defender_score,
           errorType: game.result?.error_type,
+          running: !game.result,
         }),
         render: renderScore,
       },

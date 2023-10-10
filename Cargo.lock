@@ -4155,17 +4155,21 @@ dependencies = [
 name = "shared"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "async-trait",
  "aws-config",
  "aws-sdk-s3",
  "aws-sdk-sqs",
  "chrono",
  "diesel",
  "diesel_migrations",
+ "futures-util",
  "lazy_static",
  "log",
  "num",
  "num-derive",
  "num-traits",
+ "rand 0.8.5",
  "reqwest",
  "serde",
  "serde_json",

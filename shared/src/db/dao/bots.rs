@@ -23,7 +23,6 @@ impl BotsDao for PgConnection {
                 id: bot.id,
                 name: bot.name,
                 description: bot.description,
-                rating: bot.rating,
                 created: bot.created,
                 uploaded_by: user,
                 build_status: bot.build_status,
