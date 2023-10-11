@@ -16,7 +16,8 @@ use tokio::{
     try_join,
 };
 
-use crate::poker::game::{GameState, PlayerPosition};
+use crate::communication::{parse_action, EngineCommunication};
+use crate::poker::game::{EndReason, GameState, PlayerPosition, Round};
 
 pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>>(
     bot: U,
@@ -217,7 +218,7 @@ pub struct Game {
     challenger: tokio::process::Child,
     stacks: [u32; 2],
     initial_stacks: [u32; 2],
-    button: usize,
+    sb: WhichBot,
     id: String,
     timeout: Duration,
     logs: tokio::fs::File,
@@ -238,7 +239,7 @@ impl Game {
             challenger,
             stacks: [50, 50],
             initial_stacks: [50, 50],
-            button: 0,
+            sb: WhichBot::Defender,
             timeout,
             id,
             logs,
@@ -247,12 +248,13 @@ impl Game {
         }
     }
 
-    async fn write_bot<T: Into<String>>(
+    async fn write_bot(
         &mut self,
         which_bot: WhichBot,
-        message: T,
+        message: &EngineCommunication,
     ) -> Result<(), GameError> {
-        let message: String = message.into();
+        let message: String =
+            message.render_for_bot(which_bot, self.get_position_from_bot(which_bot));
         self.write_log(format!("{} < {}", which_bot, message.clone()))
             .await?;
         let bot = match which_bot {
@@ -286,52 +288,13 @@ impl Game {
                     )
                     .as_bytes(),
                 )
-                .await?;
+                .await
+                .map_err(|_| GameError::RunTimeError(which_bot))?;
             // TODO: determine cause of close
             self.write_log(format!("System > Ending because {} lost stdin", which_bot))
                 .await?;
             Err(GameError::RunTimeError(which_bot))
         }
-    }
-
-    async fn print_position(&mut self, which_bot: WhichBot) -> Result<(), GameError> {
-        let position = format!(
-            "P {}",
-            match which_bot {
-                WhichBot::Defender => self.button,
-                WhichBot::Challenger => (self.button + 1) % 2,
-            }
-        );
-        self.write_bot(which_bot, position).await?;
-        Ok(())
-    }
-
-    async fn print_round_end(&mut self, which_bot: WhichBot) -> Result<(), shared::GameError> {
-        self.write_bot(which_bot, "E").await?;
-        Ok(())
-    }
-
-    async fn print_cards(
-        &mut self,
-        which_bot: WhichBot,
-        state: &GameState,
-    ) -> Result<(), shared::GameError> {
-        let cards = [
-            state.player_states[match which_bot {
-                WhichBot::Defender => self.button,
-                WhichBot::Challenger => 1 - self.button,
-            }]
-            .hole_cards
-            .clone(),
-            state.community_cards.clone(),
-        ]
-        .concat()
-        .iter()
-        .map(|card| format!("{}", card))
-        .join(" ");
-        self.write_bot(which_bot, format!("C {}", cards)).await?;
-
-        Ok(())
     }
 
     async fn write_log<S: Into<String>>(&mut self, msg: S) -> Result<(), shared::GameError> {
@@ -346,7 +309,17 @@ impl Game {
                 )
                 .as_bytes(),
             )
-            .await?;
+            .await
+            .map_err(|e| {
+                log::error!("Error writing to log: {}", e);
+                shared::GameError::InternalError
+            })?;
+        Ok(())
+    }
+
+    async fn write_bots(&mut self, message: EngineCommunication) -> Result<(), GameError> {
+        self.write_bot(WhichBot::Defender, &message).await?;
+        self.write_bot(WhichBot::Challenger, &message).await?;
         Ok(())
     }
 
@@ -354,13 +327,12 @@ impl Game {
         &mut self,
         defender_reader: &mut BufReader<ChildStdout>,
         challenger_reader: &mut BufReader<ChildStdout>,
-    ) -> Result<(), shared::GameError> {
+    ) -> Result<GameState, shared::GameError> {
         let mut rng = thread_rng();
         let mut state = crate::poker::game::GameState::new(
-            if self.button == 1 {
-                [self.stacks[1], self.stacks[0]]
-            } else {
-                [self.stacks[0], self.stacks[1]]
+            match self.sb {
+                WhichBot::Defender => [self.stacks[0], self.stacks[1]],
+                WhichBot::Challenger => [self.stacks[1], self.stacks[0]],
             },
             GameState::get_shuffled_deck(&mut rng),
         );
@@ -369,85 +341,42 @@ impl Game {
 
         let mut round = None;
 
-        self.print_position(WhichBot::Defender).await.map_err(|_| {
-            log::info!("Failed to print position to bot A.");
-            GameError::RunTimeError(WhichBot::Defender)
-        })?;
+        self.write_bots(EngineCommunication::StartGame { sb: self.sb });
 
-        self.print_position(WhichBot::Challenger)
-            .await
-            .map_err(|_| {
-                log::info!("Failed to print position to bot B.");
-                GameError::RunTimeError(WhichBot::Challenger)
-            })?;
-
-        loop {
-            self.stacks = {
-                let mut out = [
-                    state
-                        .get_state(crate::poker::game::PlayerPosition::Button)
-                        .stack,
-                    state
-                        .get_state(crate::poker::game::PlayerPosition::BigBlind)
-                        .stack,
-                ];
-                if self.button == 1 {
-                    out.reverse()
-                }
-                out
-            };
-
-            if state.round_over() {
-                //log::debug!("Round ended.");
-                self.print_round_end(WhichBot::Defender)
-                    .await
-                    .map_err(|_| {
-                        log::info!("Failed to print round end to bot A.");
-                        GameError::RunTimeError(WhichBot::Defender)
-                    })?;
-
-                self.print_round_end(WhichBot::Challenger)
-                    .await
-                    .map_err(|_| {
-                        log::info!("Failed to print round end to bot B.");
-                        GameError::RunTimeError(WhichBot::Challenger)
-                    })?;
-                break;
-            }
+        while !state.round_over() {
             // Print community cards to both bots
             if round != Some(state.round) {
                 //log::debug!("Printing community cards.");
                 round = Some(state.round);
-                self.print_cards(WhichBot::Defender, &state)
-                    .await
-                    .map_err(|_| {
-                        log::info!("Failed to print community cards to bot A.");
-                        GameError::RunTimeError(WhichBot::Defender)
-                    })?;
-                self.print_cards(WhichBot::Challenger, &state)
-                    .await
-                    .map_err(|_| {
-                        log::info!("Failed to print community cards to bot B.");
-                        GameError::RunTimeError(WhichBot::Challenger)
-                    })?;
+                match round {
+                    Some(Round::PreFlop) => {
+                        self.write_bots(EngineCommunication::PreFlopCards(
+                            state.player_states[0].hole_cards,
+                            state.player_states[1].hole_cards,
+                        ))
+                        .await?;
+                    }
+                    Some(Round::Flop) => {
+                        self.write_bots(EngineCommunication::FlopCards([
+                            state.community_cards[0],
+                            state.community_cards[1],
+                            state.community_cards[2],
+                        ]))
+                        .await?;
+                    }
+                    Some(Round::River) => {
+                        self.write_bots(EngineCommunication::RiverCard(state.community_cards[3]))
+                            .await?;
+                    }
+                    Some(Round::Turn) => {
+                        self.write_bots(EngineCommunication::TurnCard(state.community_cards[4]))
+                            .await?;
+                    }
+                    _ => Err(GameError::InternalError)?,
+                }
             }
-            // Assume state.whose_turn() is not None
-            let whose_turn: WhichBot = match state.whose_turn().ok_or(GameError::InternalError)? {
-                crate::poker::game::PlayerPosition::Button => {
-                    if self.button == 0 {
-                        WhichBot::Defender
-                    } else {
-                        WhichBot::Challenger
-                    }
-                }
-                crate::poker::game::PlayerPosition::BigBlind => {
-                    if self.button == 0 {
-                        WhichBot::Challenger
-                    } else {
-                        WhichBot::Defender
-                    }
-                }
-            };
+            let whose_turn: WhichBot =
+                self.get_bot_from_position(state.whose_turn().ok_or(GameError::InternalError)?);
 
             let (target_reader, opponent_gid) = match whose_turn {
                 WhichBot::Defender => (
@@ -470,19 +399,13 @@ impl Game {
             };
             // write current game state to the bots stream
             //log::debug!("Writing current state.");
-            let status = format!(
-                "S {} {} {} {} {}",
-                state.target_push,
-                state.get_state(PlayerPosition::Button).pushed,
-                state.get_state(PlayerPosition::BigBlind).pushed,
-                state.get_state(PlayerPosition::Button).stack,
-                state.get_state(PlayerPosition::BigBlind).stack,
-            );
-            self.write_bot(whose_turn, status).await.map_err(|_| {
-                unsafe { kill(-(opponent_gid as i32), 18) };
-                log::info!("Failed to write current state to bot {:?}.", whose_turn);
-                GameError::RunTimeError(whose_turn)
-            })?;
+            self.write_bots(EngineCommunication::get_betting_state(&state))
+                .await
+                .map_err(|_| {
+                    unsafe { kill(-(opponent_gid as i32), 18) };
+                    log::info!("Failed to write current state to bot {:?}.", whose_turn);
+                    GameError::RunTimeError(whose_turn)
+                })?;
 
             //log::debug!("Reading action from {:?}.", whose_turn);
             let mut line: String = Default::default();
@@ -511,7 +434,7 @@ impl Game {
             };
         }
 
-        Ok(())
+        Ok(state)
     }
 
     /// Play a game of poker, returning a [shared::GameResult]
@@ -540,19 +463,49 @@ impl Game {
             self.write_log(format!("System > round {}/{}", i + 1, rounds))
                 .await?;
             //log::debug!("Playing round. Current stacks: {:?}.", self.stacks);
-            if let Err(e) = self
+            match self
                 .play_round(&mut defender_reader, &mut challenger_reader)
                 .await
             {
-                self.write_log(format!("System > {:?}", e)).await?;
-                Err(e)?;
+                Err(e) => {
+                    self.write_log(format!("System > {:?}", e)).await?;
+                    Err(e)?;
+                }
+                Ok(state) => {
+                    self.write_bots(EngineCommunication::get_round_end(&state))
+                        .await?;
+
+                    self.stacks = [
+                        state.player_states
+                            [self.get_position_from_bot(WhichBot::Defender) as usize]
+                            .stack,
+                        state.player_states
+                            [self.get_position_from_bot(WhichBot::Challenger) as usize]
+                            .stack,
+                    ];
+                }
             }
-            self.button = 1 - self.button;
+            self.sb = self.sb.other();
         }
         return Ok(shared::GameStatus::ScoreChanged(
             i32::try_from(self.stacks[0]).unwrap() - i32::try_from(self.initial_stacks[0]).unwrap(),
             i32::try_from(self.stacks[1]).unwrap() - i32::try_from(self.initial_stacks[1]).unwrap(),
         ));
+    }
+
+    fn get_bot_from_position(&self, position: PlayerPosition) -> WhichBot {
+        match position {
+            PlayerPosition::SmallBlind => self.sb,
+            PlayerPosition::BigBlind => self.sb.other(),
+        }
+    }
+
+    fn get_position_from_bot(&self, which_bot: WhichBot) -> PlayerPosition {
+        let other = which_bot.other();
+        match self.sb {
+            which_bot => PlayerPosition::SmallBlind,
+            other => PlayerPosition::BigBlind,
+        }
     }
 
     pub async fn drop(&mut self) -> Result<(), anyhow::Error> {
@@ -578,87 +531,5 @@ impl Drop for Game {
         if !self.cleaned_up {
             panic!("Game dropped without manually calling drop")
         }
-    }
-}
-
-fn parse_action<T: AsRef<str>>(
-    line: T,
-) -> Result<crate::poker::game::Action, shared::GameActionError> {
-    let line = line.as_ref();
-    Ok(match line.as_ref() {
-        "F" => crate::poker::game::Action::Fold,
-        "C" => crate::poker::game::Action::Raise { amt: 0 },
-        _ => {
-            if line.chars().nth(0) != Some('R') {
-                Err(shared::GameActionError::CouldNotParse)?;
-            }
-            let amount = line[1..]
-                .parse::<u32>()
-                .map_err(|_| shared::GameActionError::CouldNotParse)?;
-            crate::poker::game::Action::Raise { amt: amount }
-        }
-    })
-}
-
-#[cfg(test)]
-mod tests {
-    use super::parse_action;
-    #[test]
-    fn parse_action_check() {
-        assert!(parse_action(&"X".to_owned()).is_err());
-    }
-
-    #[test]
-    fn parse_action_fold() {
-        assert_eq!(
-            parse_action(&"F".to_owned()).unwrap(),
-            crate::poker::game::Action::Fold
-        );
-    }
-
-    #[test]
-    fn parse_action_call() {
-        assert_eq!(
-            parse_action(&"C".to_owned()).unwrap(),
-            crate::poker::game::Action::Raise { amt: 0 }
-        );
-    }
-
-    #[test]
-    fn parse_action_raise() {
-        assert_eq!(
-            parse_action(&"R1234".to_owned()).unwrap(),
-            crate::poker::game::Action::Raise { amt: 1234 }
-        );
-    }
-
-    #[test]
-    fn parse_action_raise_invalid() {
-        assert!(parse_action(&"R".to_owned()).is_err());
-    }
-
-    #[test]
-    fn parse_action_raise_invalid2() {
-        assert!(parse_action(&"R1234a".to_owned()).is_err());
-    }
-
-    #[test]
-    fn parse_action_raise_invalid3() {
-        assert!(parse_action(&"R-1234".to_owned()).is_err());
-    }
-
-    #[test]
-    fn parse_action_raise_invalid4() {
-        assert!(parse_action(&"R-1".to_owned()).is_err());
-    }
-
-    #[test]
-    fn parse_action_raise_invalid5() {
-        assert!(parse_action(&"R1234.0".to_owned()).is_err());
-    }
-
-    #[test]
-    fn parse_action_raise_invalid6() {
-        assert!(parse_action(&"B".to_owned()).is_err());
     }
 }
