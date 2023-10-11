@@ -13,7 +13,7 @@ use actix_web::{delete, get, web};
 use aws_sdk_s3 as s3;
 use chrono;
 use diesel::prelude::*;
-use futures_util::{future::try_join3, StreamExt};
+use futures_util::StreamExt;
 
 use actix_web::{post, put};
 use aws_sdk_s3::presigning::PresigningConfig;
@@ -21,11 +21,11 @@ use rand::{self, Rng};
 use shared::{
     db::{
         conn::DB_CONNECTION,
-        models::{Bot, Game, NewGame, NewInvite, NewTeam, Team, TeamInvite, User},
+        models::{Bot, Game, NewInvite, NewTeam, Team, TeamInvite, User},
         schema,
         schema::{team_invites, teams, users},
     },
-    GameTask, PresignedRequest,
+    PresignedRequest,
 };
 
 pub mod auth;
@@ -75,7 +75,9 @@ pub fn api_service() -> actix_web::Scope {
 pub fn auth_service() -> actix_web::Scope {
     actix_web::web::scope("/auth")
         .service(oauth::google_login)
+        .service(oauth::google_client_id)
         .service(oauth::microsoft_login)
+        .service(oauth::microsoft_client_id)
         .service(auth::register)
         .service(auth::login)
         .service(auth::signout)

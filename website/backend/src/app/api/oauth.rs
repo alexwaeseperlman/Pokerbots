@@ -7,6 +7,11 @@ use crate::app::api::{self, auth::get_display_name_from_email};
 
 use super::*;
 
+#[get("/oauth/microsoft/client-id")]
+pub async fn microsoft_client_id() -> ApiResult<String> {
+    Ok(web::Json(config::microsoft_client_id()))
+}
+
 #[derive(Deserialize)]
 pub struct MicrosoftLoginCode {
     code: Option<String>,
@@ -115,6 +120,11 @@ pub async fn microsoft_login(
     })?;
 
     Ok(web::Json(()))
+}
+
+#[get("/oauth/google/client-id")]
+pub async fn google_client_id() -> ApiResult<String> {
+    Ok(web::Json(config::google_client_id()))
 }
 
 #[derive(Deserialize)]

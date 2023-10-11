@@ -20,28 +20,44 @@ import { UserProfile } from "@bindings/UserProfile";
 export const apiUrl = window.location.origin + "/api";
 export const authUrl = window.location.origin + "/auth";
 
-export const googleSigninUrl =
-  `https://accounts.google.com/o/oauth2/auth?` +
-  `scope=${encodeURIComponent(
-    `https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile`
-  )}&` +
-  `client_id=${encodeURIComponent(import.meta.env.APP_GOOGLE_CLIENT_ID)}&` +
-  `redirect_uri=${encodeURIComponent(
-    `${window.location.origin}/login/google`
-  )}&` +
-  `response_type=code&` +
-  `prompt=select_account`;
+const googleSigninUrlAtom = atom<Promise<string>>(
+  fetch(`${authUrl}/oauth/google/client-id`)
+    .then((res) => res.json())
+    .then(
+      (clientId) =>
+        `https://accounts.google.com/o/oauth2/auth?` +
+        `scope=${encodeURIComponent(
+          `https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile`
+        )}&` +
+        `client_id=${encodeURIComponent(clientId)}&` +
+        `redirect_uri=${encodeURIComponent(
+          `${window.location.origin}/login/google`
+        )}&` +
+        `response_type=code&` +
+        `prompt=select_account`
+    )
+);
 
-export const microsoftSigninUrl =
-  `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?` +
-  `client_id=${encodeURIComponent(import.meta.env.APP_MICROSOFT_CLIENT_ID)}&` +
-  `redirect_uri=${encodeURIComponent(
-    `${window.location.origin}/login/microsoft`
-  )}&` +
-  `response_type=code&` +
-  `response_mode=query&` +
-  `scope=User.Read&` +
-  `prompt=select_account`;
+export const useGoogleSigninUrl = () => useAtomValue(googleSigninUrlAtom);
+
+const microsoftSigninUrlAtom = atom<Promise<string>>(
+  fetch(`${authUrl}/oauth/microsoft/client-id`)
+    .then((res) => res.json())
+    .then(
+      (clientId) =>
+        `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?` +
+        `client_id=${encodeURIComponent(clientId)}&` +
+        `redirect_uri=${encodeURIComponent(
+          `${window.location.origin}/login/microsoft`
+        )}&` +
+        `response_type=code&` +
+        `response_mode=query&` +
+        `scope=User.Read&` +
+        `prompt=select_account`
+    )
+);
+
+export const useMicrosoftSigninUrl = () => useAtomValue(microsoftSigninUrlAtom);
 
 // choose default value based on route
 const teamAtom = atomFamily<

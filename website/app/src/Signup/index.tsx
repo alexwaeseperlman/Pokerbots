@@ -16,7 +16,7 @@ import styled from "@mui/system/styled";
 import { ButtonProps, Sheet } from "@mui/joy";
 import { useParams, useSearchParams } from "react-router-dom";
 import { enqueueSnackbar } from "notistack";
-import { authUrl, googleSigninUrl, microsoftSigninUrl } from "../state";
+import { authUrl, useGoogleSigninUrl, useMicrosoftSigninUrl } from "../state";
 import { InfoOutlined } from "@mui/icons-material";
 function MicrosoftLogo(props: SvgIconProps) {
   return (
@@ -81,6 +81,11 @@ export default function Signup() {
   const [confirmPassword, setConfirmPassword] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const validPassword = password === confirmPassword && password.length >= 6;
+
+  const googleSigninUrl = useGoogleSigninUrl();
+  console.log(googleSigninUrl);
+  const microsoftSigninUrl = useMicrosoftSigninUrl();
+
   return (
     <Container
       maxWidth="sm"
