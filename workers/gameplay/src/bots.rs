@@ -191,15 +191,15 @@ pub async fn run_game(
     let challenger_log = tokio::fs::read(tmp_dir.join("challenger/logs")).await?;
     let public_log = tokio::fs::read(tmp_dir.join("logs")).await?;
     Command::new("umount")
+        .arg("-l")
         .arg(format!("{}", challenger_path.display()))
-        .stderr(Stdio::null())
         .stdout(Stdio::null())
         .status()
         .await?;
 
     Command::new("umount")
+        .arg("-l")
         .arg(format!("{}", defender_path.display()))
-        .stderr(Stdio::null())
         .stdout(Stdio::null())
         .status()
         .await?;
@@ -341,7 +341,7 @@ impl Game {
 
         let mut round = None;
 
-        self.write_bots(EngineCommunication::StartGame { sb: self.sb });
+        self.write_bots(EngineCommunication::StartGame { sb: self.sb }).await?;
 
         while !state.round_over() {
             // Print community cards to both bots
@@ -364,11 +364,11 @@ impl Game {
                         ]))
                         .await?;
                     }
-                    Some(Round::River) => {
+                    Some(Round::Turn) => {
                         self.write_bots(EngineCommunication::RiverCard(state.community_cards[3]))
                             .await?;
                     }
-                    Some(Round::Turn) => {
+                    Some(Round::River) => {
                         self.write_bots(EngineCommunication::TurnCard(state.community_cards[4]))
                             .await?;
                     }
@@ -391,11 +391,6 @@ impl Game {
 
             unsafe {
                 let status = kill(-(opponent_gid as i32), 19);
-                self.write_log(format!(
-                    "Sleeping process group {}, status: {}",
-                    opponent_gid, status
-                ))
-                .await?;
             };
             // write current game state to the bots stream
             //log::debug!("Writing current state.");
@@ -426,11 +421,6 @@ impl Game {
 
             unsafe {
                 let status = kill(-(opponent_gid as i32), 18);
-                self.write_log(format!(
-                    "Waking up process group {}, status: {}",
-                    opponent_gid, status
-                ))
-                .await?;
             };
         }
 
@@ -501,10 +491,11 @@ impl Game {
     }
 
     fn get_position_from_bot(&self, which_bot: WhichBot) -> PlayerPosition {
-        let other = which_bot.other();
-        match self.sb {
-            which_bot => PlayerPosition::SmallBlind,
-            other => PlayerPosition::BigBlind,
+        if self.sb == which_bot {
+            PlayerPosition::SmallBlind
+        }
+        else {
+            PlayerPosition::BigBlind
         }
     }
 
