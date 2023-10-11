@@ -9,7 +9,7 @@ use super::hands::{self, Card, Suite};
 #[derive(PartialEq, Debug)]
 pub enum Action {
     // Call and check are the same as raising 0
-    Raise { amt: u32 },
+    Raise(u32),
     Fold,
 }
 
@@ -46,7 +46,13 @@ impl PlayerPosition {
 }
 
 #[derive(Clone, Debug)]
+pub enum WinReason {
+    Showdown(PlayerPosition),
+    OtherPlayerFolded(PlayerPosition),
+    Tie,
+}
 
+#[derive(Clone, Debug)]
 pub struct GameState {
     // Cards in the deck
     pub deck: Vec<Card>,
@@ -60,6 +66,7 @@ pub struct GameState {
     pub last_aggressor: PlayerPosition,
     // The amount of money the next player to act must push to call
     pub target_push: u32,
+    pub win_reason: Option<WinReason>,
 }
 
 pub enum RoundResult {
@@ -86,6 +93,7 @@ impl GameState {
                 acted: false,
                 pushed: 0,
             }),
+            win_reason: None,
         };
 
         // Deal hole cards
@@ -168,12 +176,6 @@ impl GameState {
         !self.should_act(PlayerPosition::Button) && !self.should_act(PlayerPosition::BigBlind)
     }
 
-    pub fn get_player_hand(&self, player: bool) -> hands::Hand {
-        let mut cards = self.community_cards.clone();
-        cards.extend(self.player_states[player as usize].hole_cards.clone());
-        hands::hand_eval::best5(&cards)
-    }
-
     pub fn showdown(self) -> GameState {
         let mut out = self;
         // draw the rest of the cards
@@ -182,20 +184,26 @@ impl GameState {
         }
         out.round = Round::End;
         // Calculate payout
-        match out.get_player_hand(false).cmp(&out.get_player_hand(true)) {
+        match out
+            .get_player_hand(PlayerPosition::Button)
+            .cmp(&out.get_player_hand(PlayerPosition::BigBlind))
+        {
             Ordering::Equal => {
                 // Players get back what they put in
                 // So do nothing
+                out.win_reason = Some(WinReason::Tie);
             }
             Ordering::Greater => {
                 // Player 0 wins
                 out.player_states[0].stack += out.player_states[1].pushed;
                 out.player_states[1].stack -= out.player_states[1].pushed;
+                out.win_reason = Some(WinReason::Showdown(PlayerPosition::Button));
             }
             Ordering::Less => {
                 // Player 1 wins
                 out.player_states[1].stack += out.player_states[0].pushed;
                 out.player_states[0].stack -= out.player_states[0].pushed;
+                out.win_reason = Some(WinReason::Showdown(PlayerPosition::BigBlind));
             }
         }
         out
@@ -211,7 +219,7 @@ impl GameState {
             let mut cur_state = out.get_state(turn);
             let mut other_state = out.get_state(turn.not());
             match action {
-                Action::Raise { amt } => {
+                Action::Raise(amt) => {
                     let added = min(
                         out.target_push + amt,
                         min(cur_state.stack, other_state.stack),
@@ -233,6 +241,7 @@ impl GameState {
                     out.round = Round::End;
                     out.set_state(turn, cur_state);
                     out.set_state(turn.not(), other_state);
+                    out.win_reason = Some(WinReason::OtherPlayerFolded(turn.not()));
                     return Ok(out);
                 }
             }
@@ -265,6 +274,13 @@ impl GameState {
         }
         Ok(out)
     }
+
+    pub fn get_player_hand(&self, player: PlayerPosition) -> hands::Hand {
+        let mut cards = self.community_cards.clone();
+        cards.extend(self.player_states[player as usize].hole_cards.clone());
+        hands::hand_eval::best5(&cards)
+    }
+
     pub fn get_state(&self, player: PlayerPosition) -> PlayerState {
         self.player_states[player as usize].clone()
     }
@@ -279,7 +295,7 @@ mod tests {
     use rand::{rngs::StdRng, SeedableRng};
 
     use crate::poker::{
-        game::{Action, GameState, PlayerPosition, Round},
+        game::{Action, GameState, PlayerPosition, Round, WinReason},
         hands::{
             self,
             hand_eval::{self, cards_from},
@@ -306,28 +322,28 @@ mod tests {
         assert!(matches!(state.whose_turn(), Some(PlayerPosition::Button)));
         assert_eq!(state.round, Round::PreFlop);
         // It is the little blind's turn
-        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        state = state.post_action(Action::Raise(0)).unwrap();
         assert!(matches!(state.whose_turn(), Some(PlayerPosition::BigBlind)));
         // It is the big blind's turn
-        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        state = state.post_action(Action::Raise(0)).unwrap();
 
         assert_eq!(state.round, Round::Flop);
         assert!(matches!(state.whose_turn(), Some(PlayerPosition::BigBlind)));
-        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        state = state.post_action(Action::Raise(0)).unwrap();
         assert!(matches!(state.whose_turn(), Some(PlayerPosition::Button)));
-        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        state = state.post_action(Action::Raise(0)).unwrap();
 
         assert_eq!(state.round, Round::Turn);
         assert!(matches!(state.whose_turn(), Some(PlayerPosition::BigBlind)));
-        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        state = state.post_action(Action::Raise(0)).unwrap();
         assert!(matches!(state.whose_turn(), Some(PlayerPosition::Button)));
-        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        state = state.post_action(Action::Raise(0)).unwrap();
 
         assert_eq!(state.round, Round::River);
         assert!(matches!(state.whose_turn(), Some(PlayerPosition::BigBlind)));
-        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        state = state.post_action(Action::Raise(0)).unwrap();
         assert!(matches!(state.whose_turn(), Some(PlayerPosition::Button)));
-        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        state = state.post_action(Action::Raise(0)).unwrap();
         // The round should be over
         assert_eq!(state.round, Round::End);
 
@@ -340,13 +356,13 @@ mod tests {
         let mut rng = StdRng::from_seed([0; 32]);
         let mut state = GameState::new([50, 50], GameState::get_shuffled_deck(&mut rng));
 
-        state = state.post_action(Action::Raise { amt: 10 }).unwrap();
+        state = state.post_action(Action::Raise(10)).unwrap();
         assert_eq!(state.player_states[0].pushed, 12);
         assert_eq!(state.player_states[1].pushed, 2);
         assert_eq!(state.target_push, 12);
         assert!(matches!(state.whose_turn(), Some(PlayerPosition::BigBlind)));
         assert_eq!(state.round, Round::PreFlop);
-        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        state = state.post_action(Action::Raise(0)).unwrap();
 
         assert_eq!(state.round, Round::Flop);
 
@@ -364,7 +380,7 @@ mod tests {
                 .stack,
             62
         );
-        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        state = state.post_action(Action::Raise(0)).unwrap();
         assert_eq!(
             state
                 .clone()
@@ -381,20 +397,20 @@ mod tests {
         let mut rng = StdRng::from_seed([0; 32]);
         let mut state = GameState::new([50, 50], GameState::get_shuffled_deck(&mut rng));
 
-        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        state = state.post_action(Action::Raise(0)).unwrap();
         assert_eq!(state.player_states[0].pushed, 2);
         assert_eq!(state.player_states[1].pushed, 2);
         assert_eq!(state.target_push, 2);
         assert!(matches!(state.whose_turn(), Some(PlayerPosition::BigBlind)));
         // bb raises 10
-        state = state.post_action(Action::Raise { amt: 10 }).unwrap();
+        state = state.post_action(Action::Raise(10)).unwrap();
         // target push is now 12
         assert_eq!(state.target_push, 12);
         assert_eq!(state.player_states[1].pushed, 12);
         // round is still pre-flop
         assert_eq!(state.round, Round::PreFlop);
         // sb should have the option to call or raise
-        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        state = state.post_action(Action::Raise(0)).unwrap();
         // sb should have pushed 12
         assert_eq!(state.player_states[0].pushed, 12);
         // target push should be 12
@@ -411,6 +427,11 @@ mod tests {
         assert_eq!(state.player_states[1].stack, 38);
         // sb stack should be 50 + 12 = 62
         assert_eq!(state.player_states[0].stack, 62);
+
+        assert!(matches!(
+            state.win_reason,
+            Some(WinReason::OtherPlayerFolded(PlayerPosition::Button))
+        ));
     }
 
     #[test]
@@ -418,7 +439,7 @@ mod tests {
         let mut rng = StdRng::from_seed([0; 32]);
         let mut state = GameState::new([50, 50], GameState::get_shuffled_deck(&mut rng));
 
-        state = state.post_action(Action::Raise { amt: 10 }).unwrap();
+        state = state.post_action(Action::Raise(10)).unwrap();
         assert_eq!(state.player_states[0].pushed, 12);
         assert_eq!(state.player_states[1].pushed, 2);
         assert_eq!(state.target_push, 12);
@@ -432,6 +453,11 @@ mod tests {
         assert_eq!(state.player_states[0].stack, 52);
         // bb stack should be 50 - 2 = 48
         assert_eq!(state.player_states[1].stack, 48);
+
+        assert!(matches!(
+            state.win_reason,
+            Some(WinReason::OtherPlayerFolded(PlayerPosition::Button))
+        ));
     }
 
     #[test]
@@ -447,7 +473,7 @@ mod tests {
         state.player_states[0].hole_cards = hands::hand_eval::cards_from("2s2c");
         state.player_states[1].hole_cards = hands::hand_eval::cards_from("QhTh");
 
-        state = state.post_action(Action::Raise { amt: 100 }).unwrap();
+        state = state.post_action(Action::Raise(100)).unwrap();
         // sb should be limited to the bb stack size
         assert_eq!(state.player_states[0].pushed, 40);
         assert_eq!(state.player_states[1].pushed, 2);
@@ -455,7 +481,7 @@ mod tests {
         assert!(matches!(state.whose_turn(), Some(PlayerPosition::BigBlind)));
 
         // bb raises but they are already maxed
-        state = state.post_action(Action::Raise { amt: 2 }).unwrap();
+        state = state.post_action(Action::Raise(2)).unwrap();
         assert_eq!(state.player_states[0].pushed, 40);
         assert_eq!(state.player_states[1].pushed, 40);
         assert_eq!(state.target_push, 40);
@@ -467,29 +493,33 @@ mod tests {
         assert_eq!(state.round, Round::Flop);
 
         // raising does nothing
-        state = state.post_action(Action::Raise { amt: 5 }).unwrap();
+        state = state.post_action(Action::Raise(5)).unwrap();
         assert_eq!(state.player_states[0].pushed, 40);
         assert_eq!(state.player_states[1].pushed, 40);
         assert_eq!(state.target_push, 40);
         assert!(matches!(state.whose_turn(), Some(PlayerPosition::Button)));
-        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        state = state.post_action(Action::Raise(0)).unwrap();
         assert_eq!(state.round, Round::Turn);
 
         assert!(matches!(state.whose_turn(), Some(PlayerPosition::BigBlind)));
-        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        state = state.post_action(Action::Raise(0)).unwrap();
         assert!(matches!(state.whose_turn(), Some(PlayerPosition::Button)));
-        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        state = state.post_action(Action::Raise(0)).unwrap();
         assert_eq!(state.round, Round::River);
 
         assert!(matches!(state.whose_turn(), Some(PlayerPosition::BigBlind)));
-        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        state = state.post_action(Action::Raise(0)).unwrap();
         assert!(matches!(state.whose_turn(), Some(PlayerPosition::Button)));
-        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        state = state.post_action(Action::Raise(0)).unwrap();
         assert_eq!(state.round, Round::End);
         // Since bb won the hand, they should have 50 + 40 = 90
         assert_eq!(state.player_states[1].stack, 80);
         // sb should have 50 - 40 = 10
         assert_eq!(state.player_states[0].stack, 10);
+        assert!(matches!(
+            state.win_reason,
+            Some(WinReason::Showdown(PlayerPosition::BigBlind))
+        ));
     }
 
     #[test]
@@ -508,10 +538,14 @@ mod tests {
                 assert_eq!(button_fold.round, Round::End);
                 assert_eq!(button_fold.player_states[0].stack, 49);
                 assert_eq!(button_fold.player_states[1].stack, 2);
+                assert!(matches!(
+                    button_fold.win_reason,
+                    Some(WinReason::OtherPlayerFolded(PlayerPosition::BigBlind))
+                ));
             }
             {
                 // If button raises then nothing happens
-                let button_raise = state.clone().post_action(Action::Raise { amt: 2 }).unwrap();
+                let button_raise = state.clone().post_action(Action::Raise(2)).unwrap();
                 assert_eq!(button_raise.round, Round::PreFlop);
                 assert_eq!(button_raise.target_push, 1);
                 assert_eq!(button_raise.player_states[0].pushed, 1);
@@ -525,33 +559,63 @@ mod tests {
                 assert_eq!(button_fold.round, Round::End);
                 assert_eq!(button_fold.player_states[0].stack, 0);
                 assert_eq!(button_fold.player_states[1].stack, 2);
+                assert!(matches!(
+                    button_fold.win_reason,
+                    Some(WinReason::OtherPlayerFolded(PlayerPosition::BigBlind))
+                ));
             }
             {
                 // If button raises then nothing happens
-                let button_raise = state.clone().post_action(Action::Raise { amt: 2 }).unwrap();
+                let button_raise = state.clone().post_action(Action::Raise(2)).unwrap();
                 assert_eq!(button_raise.round, Round::PreFlop);
                 assert_eq!(button_raise.target_push, 1);
                 assert_eq!(button_raise.player_states[0].pushed, 1);
             }
             // skip to the end
-            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
-            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+            state = state.post_action(Action::Raise(0)).unwrap();
+            {
+                // if bb folds then button gets all the money
+                let mut bb_fold = state.clone();
+                bb_fold = bb_fold.post_action(Action::Fold).unwrap();
+                assert_eq!(bb_fold.round, Round::End);
+                assert_eq!(bb_fold.player_states[0].stack, 2);
+                assert_eq!(bb_fold.player_states[1].stack, 0);
+                assert!(matches!(
+                    bb_fold.win_reason,
+                    Some(WinReason::OtherPlayerFolded(PlayerPosition::Button))
+                ));
+            }
+            state = state.post_action(Action::Raise(0)).unwrap();
 
-            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
-            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+            state = state.post_action(Action::Raise(0)).unwrap();
+            state = state.post_action(Action::Raise(0)).unwrap();
 
-            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
-            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+            state = state.post_action(Action::Raise(0)).unwrap();
+            state = state.post_action(Action::Raise(0)).unwrap();
 
-            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
-            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+            state = state.post_action(Action::Raise(0)).unwrap();
+            state = state.post_action(Action::Raise(0)).unwrap();
 
             // The bb should be all in, so the target push is 1
             // We should already be at showdown since no one can act
             // for the whole game
             assert_eq!(state.round, Round::End);
             match (state.player_states[0].stack, state.player_states[1].stack) {
-                (1, 1) | (0, 2) | (2, 0) => (),
+                (1, 1) => {
+                    assert!(matches!(state.win_reason, Some(WinReason::Tie)))
+                }
+                (0, 2) => {
+                    assert!(matches!(
+                        state.win_reason,
+                        Some(WinReason::Showdown(PlayerPosition::BigBlind))
+                    ))
+                }
+                (2, 0) => {
+                    assert!(matches!(
+                        state.win_reason,
+                        Some(WinReason::Showdown(PlayerPosition::Button))
+                    ))
+                }
                 _ => panic!("stacks should be 1,1 or 0,2 or 2,0"),
             }
         }
@@ -566,23 +630,23 @@ mod tests {
             let mut state = GameState::new([50, 50], GameState::get_shuffled_deck(&mut rng));
 
             // sb raises
-            state = state.post_action(Action::Raise { amt: 4 }).unwrap();
+            state = state.post_action(Action::Raise(4)).unwrap();
             // bb calls
-            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+            state = state.post_action(Action::Raise(0)).unwrap();
 
             // flop
-            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
-            state = state.post_action(Action::Raise { amt: 4 }).unwrap();
+            state = state.post_action(Action::Raise(0)).unwrap();
+            state = state.post_action(Action::Raise(4)).unwrap();
 
             // it should be possible to have a bidding war here
             assert!(matches!(state.whose_turn(), Some(PlayerPosition::BigBlind)));
-            state = state.post_action(Action::Raise { amt: 6 }).unwrap();
+            state = state.post_action(Action::Raise(6)).unwrap();
             assert!(matches!(state.whose_turn(), Some(PlayerPosition::Button)));
             assert_eq!(state.round, Round::Flop);
             assert_eq!(state.target_push, 16);
 
             // call
-            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+            state = state.post_action(Action::Raise(0)).unwrap();
 
             // both players are in 16
             // bb goes all in in the turn
@@ -591,7 +655,7 @@ mod tests {
             assert_eq!(state.round, Round::Turn);
             // turn
             assert!(matches!(state.whose_turn(), Some(PlayerPosition::BigBlind)));
-            state = state.post_action(Action::Raise { amt: 100 }).unwrap();
+            state = state.post_action(Action::Raise(100)).unwrap();
             assert_eq!(state.target_push, 50);
             assert_eq!(state.round, Round::Turn);
             // if sb folds then bb gets all the money
@@ -602,10 +666,10 @@ mod tests {
                 assert_eq!(sb_fold.player_states[0].stack, 34);
                 assert_eq!(sb_fold.player_states[1].stack, 66);
             }
-            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+            state = state.post_action(Action::Raise(0)).unwrap();
             assert_eq!(state.round, Round::River);
-            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
-            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+            state = state.post_action(Action::Raise(0)).unwrap();
+            state = state.post_action(Action::Raise(0)).unwrap();
 
             // River should have been skipped
             assert_eq!(state.round, Round::End);
@@ -615,7 +679,21 @@ mod tests {
             assert!(matches!(state.last_aggressor, PlayerPosition::BigBlind));
 
             match (state.player_states[0].stack, state.player_states[1].stack) {
-                (100, 0) | (50, 50) | (0, 100) => (),
+                (100, 0) => {
+                    assert!(matches!(
+                        state.win_reason,
+                        Some(WinReason::Showdown(PlayerPosition::Button))
+                    ))
+                }
+                (50, 50) => {
+                    assert!(matches!(state.win_reason, Some(WinReason::Tie)))
+                }
+                (0, 100) => {
+                    assert!(matches!(
+                        state.win_reason,
+                        Some(WinReason::Showdown(PlayerPosition::BigBlind))
+                    ))
+                }
                 _ => panic!("stacks should be 100,0 or 0,100"),
             }
         }
@@ -625,18 +703,19 @@ mod tests {
         let mut rng = StdRng::from_seed(core::array::from_fn(|i| i as u8 + 1));
         for _ in 0..1000 {
             let mut state = GameState::new([20, 50], GameState::get_shuffled_deck(&mut rng));
-            state = state.post_action(Action::Raise { amt: 49 }).unwrap();
-            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+            state = state.post_action(Action::Raise(49)).unwrap();
+            state = state.post_action(Action::Raise(0)).unwrap();
 
             // check until the end
-            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
-            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+            state = state.post_action(Action::Raise(0)).unwrap();
+            state = state.post_action(Action::Raise(0)).unwrap();
 
-            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
-            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+            state = state.post_action(Action::Raise(0)).unwrap();
+            state = state.post_action(Action::Raise(0)).unwrap();
 
-            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
-            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+            state = state.post_action(Action::Raise(0)).unwrap();
+            assert!(matches!(state.win_reason, None));
+            state = state.post_action(Action::Raise(0)).unwrap();
 
             assert_eq!(state.round, Round::End);
             // Player with better hand should have 100, player with worse should have 0
@@ -646,17 +725,26 @@ mod tests {
 
             let stacks = (state.player_states[0].stack, state.player_states[1].stack);
             match hand_eval::compare_hands(
-                &state.get_player_hand(false).cards,
-                &state.get_player_hand(true).cards,
+                &state.get_player_hand(PlayerPosition::Button).cards,
+                &state.get_player_hand(PlayerPosition::BigBlind).cards,
             ) {
                 std::cmp::Ordering::Equal => {
                     assert_eq!(stacks, (20, 50));
+                    assert!(matches!(state.win_reason, Some(WinReason::Tie)))
                 }
                 std::cmp::Ordering::Less => {
                     assert_eq!(stacks, (0, 70));
+                    assert!(matches!(
+                        state.win_reason,
+                        Some(WinReason::Showdown(PlayerPosition::BigBlind))
+                    ))
                 }
                 std::cmp::Ordering::Greater => {
                     assert_eq!(stacks, (40, 30));
+                    assert!(matches!(
+                        state.win_reason,
+                        Some(WinReason::Showdown(PlayerPosition::Button))
+                    ))
                 }
             }
         }
@@ -704,23 +792,24 @@ mod tests {
         assert_eq!(state.player_states[0].hole_cards, cards_from("Jc9h"));
         assert_eq!(state.player_states[1].hole_cards, cards_from("7s7h"));
 
-        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        state = state.post_action(Action::Raise(0)).unwrap();
 
-        state = state.post_action(Action::Raise { amt: 5 }).unwrap();
+        state = state.post_action(Action::Raise(5)).unwrap();
 
-        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        state = state.post_action(Action::Raise(0)).unwrap();
 
-        state = state.post_action(Action::Raise { amt: 5 }).unwrap();
+        state = state.post_action(Action::Raise(5)).unwrap();
 
-        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        state = state.post_action(Action::Raise(0)).unwrap();
 
-        state = state.post_action(Action::Raise { amt: 5 }).unwrap();
+        state = state.post_action(Action::Raise(5)).unwrap();
 
-        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        state = state.post_action(Action::Raise(0)).unwrap();
 
-        state = state.post_action(Action::Raise { amt: 5 }).unwrap();
+        state = state.post_action(Action::Raise(5)).unwrap();
 
-        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        assert!(matches!(state.win_reason, None));
+        state = state.post_action(Action::Raise(0)).unwrap();
 
         assert_eq!(state.round, Round::End);
         assert!(matches!(state.last_aggressor, PlayerPosition::BigBlind));
@@ -728,6 +817,10 @@ mod tests {
         assert!(matches!(
             state.get_state(PlayerPosition::BigBlind).stack,
             74
+        ));
+        assert!(matches!(
+            state.win_reason,
+            Some(WinReason::Showdown(PlayerPosition::BigBlind))
         ));
     }
 }
