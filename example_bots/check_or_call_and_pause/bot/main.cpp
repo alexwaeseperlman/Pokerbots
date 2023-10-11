@@ -1,54 +1,108 @@
-#include <chrono>
+#include <cassert>
 #include <iostream>
-#include <stdlib.h>
+#include <vector>
+#include <chrono>
 #include <thread>
-#include <unistd.h>
 using namespace std;
 
-int vals[4] = {2, 5, 6, 7};
-int inp[5] = {0};
 int main() {
-  int round = -1, position = 0;
+  int round = -1;
+
   while (true) {
-    char type;
+    cerr << "Starting round" << endl;
+
+    int position = 0;
+    int curStack = 0, oppStack = 0;
+    int curPush = 0, oppPush = 0;
+
+    vector<string> hole;
+    vector<string> community;
+    string type;
     cin >> type;
-    if (type == 'E') {
-      round = -1;
-      cerr << "Round ended." << endl << endl;
-    } else if (type == 'P') {
-      cin >> position;
-      cerr << "My position is " << position << endl;
-    } else if (type == 'C') {
-      round++;
-      char a;
-      cerr << "Cards: ";
-      for (int i = 0; i < vals[round]; i++) {
-        cin >> a;
-        cerr << a;
-        cin >> a;
-        cerr << a << ' ';
-      }
-      cerr << endl;
-    } else {
-      cerr << "Stacks: ";
-      for (int i = 0; i < 5; i++) {
-        cin >> inp[i];
-      }
-      for (int i = 0; i < 5; i++) {
-        cerr << inp[i] << " ";
-      }
-      cerr << endl;
+    assert(type == "START");
+
+    string pos;
+    cin >> pos;
+    if (pos == "BB")
+      position = 1;
+
+    while (type != "END") {
       std::this_thread::sleep_for(std::chrono::milliseconds(50));
-      cerr << "Deciding on an action: ";
-      if (inp[position + 1] == inp[0]) {
-        cerr << "Check." << endl;
-        cout << 'X' << endl;
-      } else {
-        cerr << "Call." << endl;
-        cout << 'C' << endl;
+      if (type == "STACK") {
+        cin >> curPush >> curStack >> oppPush >> oppStack;
+        // Time to act!
+        // R<x> - raise to <x> chips
+        // C - call
+        // F - fold
+        cout << "C" << endl;
       }
-      cout.flush();
+
+      else if (type == "PREFLOP") {
+        // we won't use this, but we need to take the input
+        string x, y;
+        cin >> x >> y;
+        hole.push_back(x);
+        hole.push_back(y);
+        cerr << "Hole: " << hole[0] << " " << hole[1] << endl;
+      }
+
+      else if (type == "FLOP") {
+        string x, y, z;
+        cin >> x >> y >> z;
+        community.push_back(x);
+        community.push_back(y);
+        community.push_back(z);
+        cerr << "Flop: " << community[0] << " " << community[1] << " "
+             << community[2] << endl;
+      }
+
+      else if (type == "TURN") {
+        string x;
+        cin >> x;
+        community.push_back(x);
+        cerr << "Turn: " << x << endl;
+      }
+
+      else if (type == "RIVER") {
+        string x;
+        cin >> x;
+        community.push_back(x);
+        cerr << "River: " << x << endl;
+      }
+
+      cin >> type;
     }
-    // cerr << endl;
+
+    assert(type == "END");
+    cin >> type;
+    if (type == "FOLD") {
+      string loser;
+      cin >> loser;
+      cerr << loser << " folded." << endl;
+    } else {
+      assert(type == "SHOWDOWN");
+      string type;
+      cin >> type;
+
+      if (type == "TIE") {
+        cerr << "Tie." << endl;
+      } else {
+        assert(type == "WINNER");
+        string winner;
+        cin >> winner;
+
+        cerr << winner << " won." << endl;
+        cin >> type;
+
+        if (type == "HIDDEN") {
+          cerr << "Opponent cards are hidden." << endl;
+        } else {
+          assert(type == "SHOWN");
+          string x, y;
+          cin >> x >> y;
+          cerr << "Opponent cards: " << x << " " << y << endl;
+        }
+      }
+    }
   }
 }

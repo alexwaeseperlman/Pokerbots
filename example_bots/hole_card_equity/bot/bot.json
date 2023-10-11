@@ -1,0 +1,4 @@
+{
+    "name": "Hole card equity",
+    "run": "python3 bot.py"
+}

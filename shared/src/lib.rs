@@ -94,12 +94,21 @@ pub enum GameTask {
     },
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, TS, FromPrimitive, ToPrimitive)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, TS, FromPrimitive, ToPrimitive, PartialEq)]
 #[repr(i32)]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
 pub enum WhichBot {
     Defender = 0,
     Challenger = 1,
+}
+
+impl WhichBot {
+    pub fn other(&self) -> Self {
+        match self {
+            WhichBot::Defender => WhichBot::Challenger,
+            WhichBot::Challenger => WhichBot::Defender,
+        }
+    }
 }
 
 impl Display for WhichBot {
@@ -113,8 +122,6 @@ impl Display for WhichBot {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub enum GameActionError {
-    InvalidCheck,
-    Raise0,
     GameOver,
     CouldNotParse,
 }
@@ -148,12 +155,6 @@ pub struct BotJson {
     pub description: Option<String>,
     pub build: Option<String>,
     pub run: String,
-}
-
-impl From<io::Error> for GameError {
-    fn from(e: io::Error) -> Self {
-        Self::InternalError
-    }
 }
 
 pub async fn aws_config() -> SdkConfig {

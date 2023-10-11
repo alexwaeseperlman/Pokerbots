@@ -17,8 +17,8 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { enqueueSnackbar } from "notistack";
 import {
   authUrl,
-  googleSigninUrl,
-  microsoftSigninUrl,
+  useGoogleSigninUrl,
+  useMicrosoftSigninUrl,
   useUser,
 } from "../state";
 function MicrosoftLogo(props: SvgIconProps) {
@@ -88,6 +88,10 @@ export default function Login() {
       navigate(redirect);
     }
   }, [user]);
+
+  const googleSigninUrl = useGoogleSigninUrl();
+  const microsoftSigninUrl = useMicrosoftSigninUrl();
+
   return (
     <Container
       maxWidth="sm"
