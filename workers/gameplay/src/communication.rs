@@ -19,8 +19,8 @@ pub enum EngineCommunication {
     },
     PreFlopCards([Card; 2], [Card; 2]),
     FlopCards([Card; 3]),
-    RiverCard(Card),
     TurnCard(Card),
+    RiverCard(Card),
     EndGame {
         end_reason: EndReason,
         last_aggressor: PlayerPosition,
@@ -84,8 +84,8 @@ impl EngineCommunication {
             EngineCommunication::FlopCards(cards) => {
                 format!("FLOP {} {} {}", cards[0], cards[1], cards[2])
             }
-            EngineCommunication::RiverCard(card) => format!("RIVER {}", card),
             EngineCommunication::TurnCard(card) => format!("TURN {}", card),
+            EngineCommunication::RiverCard(card) => format!("RIVER {}", card),
             EngineCommunication::EndGame {
                 end_reason,
                 sb_hole_cards,
@@ -96,7 +96,7 @@ impl EngineCommunication {
                     format!("END FOLD {}", winner.other())
                 }
                 EndReason::WonShowdown(winner) => {
-                    let other_cards = match winner {
+                    let other_cards = match position {
                         PlayerPosition::BigBlind => sb_hole_cards,
                         PlayerPosition::SmallBlind => bb_hole_cards,
                     };

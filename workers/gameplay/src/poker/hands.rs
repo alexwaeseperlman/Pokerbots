@@ -74,11 +74,14 @@ impl Ord for Hand {
 }
 
 pub mod hand_eval {
-    use std::cmp::Ordering;
+    use std::{cmp::Ordering, ops::Deref};
 
     use super::*;
 
-    fn hand_value(hand: &[Card; 5]) -> (u8, Vec<u8>, Vec<u8>) {
+    #[derive(Debug)]
+    pub struct HandValue(pub (u8, Vec<u8>, Vec<u8>));
+
+    pub fn hand_value(hand: &[Card; 5]) -> HandValue {
         let mut hist = hand
             .iter()
             .counts_by(|c| if c.value == 1 { 14 } else { c.value })
@@ -92,7 +95,7 @@ pub mod hand_eval {
             hist = vec![(1, 5), (1, 4), (1, 3), (1, 2), (1, 1)];
         }
 
-        (
+        HandValue((
             if hist.len() < 5 {
                 (hist[0].0 + hist[1].0 == 5) as u8 * 4
             } else {
@@ -101,11 +104,11 @@ pub mod hand_eval {
             },
             hist.iter().map(|(k, _)| *k).collect(),
             hist.iter().map(|(_, v)| *v).collect(),
-        )
+        ))
     }
 
     pub fn compare_hands(hand1: &[Card; 5], hand2: &[Card; 5]) -> Ordering {
-        hand_value(hand1).cmp(&hand_value(hand2))
+        hand_value(hand1).0.cmp(&hand_value(hand2).0)
     }
 
     pub fn best5(hand: &Vec<Card>) -> Hand {

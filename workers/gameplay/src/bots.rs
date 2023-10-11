@@ -341,7 +341,8 @@ impl Game {
 
         let mut round = None;
 
-        self.write_bots(EngineCommunication::StartGame { sb: self.sb }).await?;
+        self.write_bots(EngineCommunication::StartGame { sb: self.sb })
+            .await?;
 
         while !state.round_over() {
             // Print community cards to both bots
@@ -365,11 +366,11 @@ impl Game {
                         .await?;
                     }
                     Some(Round::Turn) => {
-                        self.write_bots(EngineCommunication::RiverCard(state.community_cards[3]))
+                        self.write_bots(EngineCommunication::TurnCard(state.community_cards[3]))
                             .await?;
                     }
                     Some(Round::River) => {
-                        self.write_bots(EngineCommunication::TurnCard(state.community_cards[4]))
+                        self.write_bots(EngineCommunication::RiverCard(state.community_cards[4]))
                             .await?;
                     }
                     _ => Err(GameError::InternalError)?,
@@ -394,7 +395,7 @@ impl Game {
             };
             // write current game state to the bots stream
             //log::debug!("Writing current state.");
-            self.write_bots(EngineCommunication::get_betting_state(&state))
+            self.write_bot(whose_turn, &EngineCommunication::get_betting_state(&state))
                 .await
                 .map_err(|_| {
                     unsafe { kill(-(opponent_gid as i32), 18) };
@@ -493,8 +494,7 @@ impl Game {
     fn get_position_from_bot(&self, which_bot: WhichBot) -> PlayerPosition {
         if self.sb == which_bot {
             PlayerPosition::SmallBlind
-        }
-        else {
+        } else {
             PlayerPosition::BigBlind
         }
     }
