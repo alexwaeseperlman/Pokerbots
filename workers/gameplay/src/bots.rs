@@ -16,7 +16,7 @@ use tokio::{
     try_join,
 };
 
-use crate::poker::game::GameState;
+use crate::poker::game::{GameState, PlayerPosition};
 
 pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>>(
     bot: U,
@@ -382,10 +382,19 @@ impl Game {
             })?;
 
         loop {
-            self.stacks = if self.button == 1 {
-                [state.get_stack(true), state.get_stack(false)]
-            } else {
-                [state.get_stack(false), state.get_stack(true)]
+            self.stacks = {
+                let mut out = [
+                    state
+                        .get_state(crate::poker::game::PlayerPosition::Button)
+                        .stack,
+                    state
+                        .get_state(crate::poker::game::PlayerPosition::BigBlind)
+                        .stack,
+                ];
+                if self.button == 1 {
+                    out.reverse()
+                }
+                out
             };
 
             if state.round_over() {
@@ -423,12 +432,22 @@ impl Game {
                     })?;
             }
             // Assume state.whose_turn() is not None
-            let whose_turn: WhichBot =
-                if state.whose_turn().ok_or(GameError::InternalError)? == self.button {
-                    WhichBot::Defender
-                } else {
-                    WhichBot::Challenger
-                };
+            let whose_turn: WhichBot = match state.whose_turn().ok_or(GameError::InternalError)? {
+                crate::poker::game::PlayerPosition::Button => {
+                    if self.button == 0 {
+                        WhichBot::Defender
+                    } else {
+                        WhichBot::Challenger
+                    }
+                }
+                crate::poker::game::PlayerPosition::BigBlind => {
+                    if self.button == 0 {
+                        WhichBot::Challenger
+                    } else {
+                        WhichBot::Defender
+                    }
+                }
+            };
 
             let (target_reader, opponent_gid) = match whose_turn {
                 WhichBot::Defender => (
@@ -454,10 +473,10 @@ impl Game {
             let status = format!(
                 "S {} {} {} {} {}",
                 state.target_push,
-                state.player_states[0].pushed,
-                state.player_states[1].pushed,
-                state.player_states[0].stack,
-                state.player_states[1].stack,
+                state.get_state(PlayerPosition::Button).pushed,
+                state.get_state(PlayerPosition::BigBlind).pushed,
+                state.get_state(PlayerPosition::Button).stack,
+                state.get_state(PlayerPosition::BigBlind).stack,
             );
             self.write_bot(whose_turn, status).await.map_err(|_| {
                 unsafe { kill(-(opponent_gid as i32), 18) };
@@ -567,9 +586,8 @@ fn parse_action<T: AsRef<str>>(
 ) -> Result<crate::poker::game::Action, shared::GameActionError> {
     let line = line.as_ref();
     Ok(match line.as_ref() {
-        "X" => crate::poker::game::Action::Check,
         "F" => crate::poker::game::Action::Fold,
-        "C" => crate::poker::game::Action::Call,
+        "C" => crate::poker::game::Action::Raise { amt: 0 },
         _ => {
             if line.chars().nth(0) != Some('R') {
                 Err(shared::GameActionError::CouldNotParse)?;
@@ -587,10 +605,7 @@ mod tests {
     use super::parse_action;
     #[test]
     fn parse_action_check() {
-        assert_eq!(
-            parse_action(&"X".to_owned()).unwrap(),
-            crate::poker::game::Action::Check
-        );
+        assert!(parse_action(&"X".to_owned()).is_err());
     }
 
     #[test]
@@ -605,7 +620,7 @@ mod tests {
     fn parse_action_call() {
         assert_eq!(
             parse_action(&"C".to_owned()).unwrap(),
-            crate::poker::game::Action::Call
+            crate::poker::game::Action::Raise { amt: 0 }
         );
     }
 

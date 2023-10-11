@@ -8,9 +8,7 @@ use super::hands::{self, Card, Suite};
 
 #[derive(PartialEq, Debug)]
 pub enum Action {
-    // Call and check are the same
-    Call,
-    Check,
+    // Call and check are the same as raising 0
     Raise { amt: u32 },
     Fold,
 }
@@ -33,6 +31,20 @@ pub struct PlayerState {
     pub acted: bool,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub enum PlayerPosition {
+    Button = 0,
+    BigBlind = 1,
+}
+impl PlayerPosition {
+    pub fn not(self) -> PlayerPosition {
+        match self {
+            PlayerPosition::Button => PlayerPosition::BigBlind,
+            PlayerPosition::BigBlind => PlayerPosition::Button,
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 
 pub struct GameState {
@@ -45,7 +57,7 @@ pub struct GameState {
     // The index of the player who was the last aggressor
     // If no player has raised then this is the non-button player
     // Using bool instead of usize because there are only 2 players
-    pub last_aggressor: bool,
+    pub last_aggressor: PlayerPosition,
     // The amount of money the next player to act must push to call
     pub target_push: u32,
 }
@@ -66,7 +78,7 @@ impl GameState {
             deck,
             community_cards: vec![],
             round: Round::PreFlop,
-            last_aggressor: true,
+            last_aggressor: PlayerPosition::BigBlind,
             target_push: 2,
             player_states: stacks.map(|stack: u32| PlayerState {
                 hole_cards: vec![],
@@ -90,14 +102,9 @@ impl GameState {
         out.player_states[0].pushed = 1;
         out.player_states[1].pushed = min(2, stacks[1]);
 
-        // If the big blind is all in then the small blind does not have to call
         out.target_push = min(out.player_states[1].pushed, min(stacks[0], stacks[1]));
 
-        if out.target_push == 1 {
-            out.showdown()
-        } else {
-            out
-        }
+        out
     }
 
     pub fn get_deck() -> Vec<Card> {
@@ -129,7 +136,7 @@ impl GameState {
         out.shuffle(rng);
         out
     }
-    pub fn should_act(&self, pos: bool) -> bool {
+    pub fn should_act(&self, pos: PlayerPosition) -> bool {
         (!self.player_states[pos as usize].acted
             || self.player_states[pos as usize].pushed < self.target_push)
             && self.round != Round::End
@@ -141,24 +148,24 @@ impl GameState {
     // yet, or has acted, is not all in, and has not covered the highest bet
     // If the round is PreFlop then it starts two seats to the left of the button
     // Returns None if the betting round is over
-    pub fn whose_turn(&self) -> Option<usize> {
+    pub fn whose_turn(&self) -> Option<PlayerPosition> {
         let pos = if self.round == Round::PreFlop {
-            false
+            PlayerPosition::Button
         } else {
-            true
+            PlayerPosition::BigBlind
         };
 
         if self.should_act(pos) {
-            Some(pos as usize)
-        } else if self.should_act(!pos) {
-            Some(!pos as usize)
+            Some(pos)
+        } else if self.should_act(pos.not()) {
+            Some(pos.not())
         } else {
             None
         }
     }
 
     pub fn round_over(&self) -> bool {
-        !self.should_act(false) && !self.should_act(true)
+        !self.should_act(PlayerPosition::Button) && !self.should_act(PlayerPosition::BigBlind)
     }
 
     pub fn get_player_hand(&self, player: bool) -> hands::Hand {
@@ -198,66 +205,42 @@ impl GameState {
         if self.round == Round::End {
             return Err(GameActionError::GameOver);
         }
+        let turn = self.whose_turn();
         let mut out: GameState = self;
-        let turn = out.whose_turn();
         if let Some(turn) = turn {
-            // If a check is not possible then revert to folding
-            if action == Action::Check && out.target_push > out.player_states[turn].pushed {
-                return Err(GameActionError::InvalidCheck);
-            }
-            // Raise amount must be positive
-            if let Action::Raise { amt } = action {
-                if amt == 0 {
-                    return Err(GameActionError::Raise0);
-                }
-            }
+            let mut cur_state = out.get_state(turn);
+            let mut other_state = out.get_state(turn.not());
             match action {
-                Action::Check => {
-                    // Do nothing
-                }
-                Action::Call => {
-                    let to_call = min(out.target_push, out.player_states[turn].stack)
-                        - out.player_states[turn].pushed;
-
-                    out.player_states[turn].pushed += to_call;
-                }
                 Action::Raise { amt } => {
                     let added = min(
                         out.target_push + amt,
-                        min(
-                            out.player_states[turn].stack,
-                            out.player_states[1 - turn].stack,
-                        ),
+                        min(cur_state.stack, other_state.stack),
                     );
-                    if added > out.player_states[turn].pushed {
-                        out.last_aggressor = turn == 1;
+                    if amt > 0 {
+                        out.last_aggressor = turn;
                     }
-                    out.player_states[turn].pushed = added;
-                    out.target_push = added;
+                    cur_state.pushed = added;
+                    out.target_push = added.max(out.target_push);
+                    cur_state.acted = true;
+                    out.set_state(turn, cur_state);
+                    out.set_state(turn.not(), other_state);
                 }
                 Action::Fold => {
                     // If the player folds then they lose all of their pushed chips
                     // Set the round to End
-                    out.player_states[turn].stack -= out.player_states[turn].pushed;
-                    out.player_states[1 - turn].stack += out.player_states[turn].pushed;
+                    cur_state.stack -= cur_state.pushed;
+                    other_state.stack += cur_state.pushed;
                     out.round = Round::End;
+                    out.set_state(turn, cur_state);
+                    out.set_state(turn.not(), other_state);
                     return Ok(out);
                 }
             }
-            out.player_states[turn].acted = true;
         }
         if out.round_over() {
             out.player_states.iter_mut().for_each(|ps| {
                 ps.acted = false;
             });
-            // If someone is all in then skip straight to showdown
-            if out.player_states[0].pushed == out.player_states[0].stack
-                || out.player_states[1].pushed == out.player_states[1].stack
-            {
-                out.round = Round::End;
-                out = out.showdown();
-                return Ok(out);
-            }
             match out.round {
                 Round::PreFlop => {
                     out.round = Round::Flop;
@@ -282,8 +265,12 @@ impl GameState {
         }
         Ok(out)
     }
-    pub fn get_stack(&self, player: bool) -> u32 {
-        self.player_states[player as usize].stack
+    pub fn get_state(&self, player: PlayerPosition) -> PlayerState {
+        self.player_states[player as usize].clone()
+    }
+
+    pub fn set_state(&mut self, player: PlayerPosition, state: PlayerState) {
+        self.player_states[player as usize] = state
     }
 }
 #[cfg(test)]
@@ -292,7 +279,7 @@ mod tests {
     use rand::{rngs::StdRng, SeedableRng};
 
     use crate::poker::{
-        game::{Action, GameState, Round},
+        game::{Action, GameState, PlayerPosition, Round},
         hands::{
             self,
             hand_eval::{self, cards_from},
@@ -316,36 +303,36 @@ mod tests {
         let mut state = GameState::new([50, 50], GameState::get_shuffled_deck(&mut rng));
 
         // Start with the button
-        assert_eq!(state.whose_turn(), Some(0));
+        assert!(matches!(state.whose_turn(), Some(PlayerPosition::Button)));
         assert_eq!(state.round, Round::PreFlop);
         // It is the little blind's turn
-        state = state.post_action(Action::Call).unwrap();
-        assert_eq!(state.whose_turn(), Some(1));
+        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        assert!(matches!(state.whose_turn(), Some(PlayerPosition::BigBlind)));
         // It is the big blind's turn
-        state = state.post_action(Action::Check).unwrap();
+        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
 
         assert_eq!(state.round, Round::Flop);
-        assert_eq!(state.whose_turn(), Some(1));
-        state = state.post_action(Action::Check).unwrap();
-        assert_eq!(state.whose_turn(), Some(0));
-        state = state.post_action(Action::Check).unwrap();
+        assert!(matches!(state.whose_turn(), Some(PlayerPosition::BigBlind)));
+        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        assert!(matches!(state.whose_turn(), Some(PlayerPosition::Button)));
+        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
 
         assert_eq!(state.round, Round::Turn);
-        assert_eq!(state.whose_turn(), Some(1));
-        state = state.post_action(Action::Check).unwrap();
-        assert_eq!(state.whose_turn(), Some(0));
-        state = state.post_action(Action::Check).unwrap();
+        assert!(matches!(state.whose_turn(), Some(PlayerPosition::BigBlind)));
+        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        assert!(matches!(state.whose_turn(), Some(PlayerPosition::Button)));
+        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
 
         assert_eq!(state.round, Round::River);
-        assert_eq!(state.whose_turn(), Some(1));
-        state = state.post_action(Action::Check).unwrap();
-        assert_eq!(state.whose_turn(), Some(0));
-        state = state.post_action(Action::Check).unwrap();
+        assert!(matches!(state.whose_turn(), Some(PlayerPosition::BigBlind)));
+        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        assert!(matches!(state.whose_turn(), Some(PlayerPosition::Button)));
+        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
         // The round should be over
         assert_eq!(state.round, Round::End);
 
         // If the round is over then whose_turn should return None
-        assert_eq!(state.whose_turn(), None);
+        assert!(matches!(state.whose_turn(), None));
     }
 
     #[test]
@@ -357,19 +344,36 @@ mod tests {
         assert_eq!(state.player_states[0].pushed, 12);
         assert_eq!(state.player_states[1].pushed, 2);
         assert_eq!(state.target_push, 12);
-        assert_eq!(state.whose_turn(), Some(1));
-        assert!(state.clone().post_action(Action::Check).is_err());
+        assert!(matches!(state.whose_turn(), Some(PlayerPosition::BigBlind)));
         assert_eq!(state.round, Round::PreFlop);
-        state = state.post_action(Action::Call).unwrap();
+        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
 
         assert_eq!(state.round, Round::Flop);
-        assert!(state.clone().post_action(Action::Check).is_ok());
 
         assert_eq!(state.player_states[1].pushed, 12);
         assert_eq!(state.player_states[0].pushed, 12);
 
         assert_eq!(state.target_push, 12);
-        assert_eq!(state.whose_turn(), Some(1));
+        assert!(matches!(state.whose_turn(), Some(PlayerPosition::BigBlind)));
+        assert_eq!(
+            state
+                .clone()
+                .post_action(Action::Fold)
+                .unwrap()
+                .player_states[0]
+                .stack,
+            62
+        );
+        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        assert_eq!(
+            state
+                .clone()
+                .post_action(Action::Fold)
+                .unwrap()
+                .player_states[0]
+                .stack,
+            38
+        );
     }
 
     #[test]
@@ -377,11 +381,11 @@ mod tests {
         let mut rng = StdRng::from_seed([0; 32]);
         let mut state = GameState::new([50, 50], GameState::get_shuffled_deck(&mut rng));
 
-        state = state.post_action(Action::Call).unwrap();
+        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
         assert_eq!(state.player_states[0].pushed, 2);
         assert_eq!(state.player_states[1].pushed, 2);
         assert_eq!(state.target_push, 2);
-        assert_eq!(state.whose_turn(), Some(1));
+        assert!(matches!(state.whose_turn(), Some(PlayerPosition::BigBlind)));
         // bb raises 10
         state = state.post_action(Action::Raise { amt: 10 }).unwrap();
         // target push is now 12
@@ -390,14 +394,14 @@ mod tests {
         // round is still pre-flop
         assert_eq!(state.round, Round::PreFlop);
         // sb should have the option to call or raise
-        state = state.post_action(Action::Call).unwrap();
+        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
         // sb should have pushed 12
         assert_eq!(state.player_states[0].pushed, 12);
         // target push should be 12
         assert_eq!(state.target_push, 12);
         // round is now flop
         assert_eq!(state.round, Round::Flop);
-        assert_eq!(state.whose_turn(), Some(1));
+        assert!(matches!(state.whose_turn(), Some(PlayerPosition::BigBlind)));
 
         // bb folds and sb wins
         state = state.post_action(Action::Fold).unwrap();
@@ -418,10 +422,7 @@ mod tests {
         assert_eq!(state.player_states[0].pushed, 12);
         assert_eq!(state.player_states[1].pushed, 2);
         assert_eq!(state.target_push, 12);
-        assert_eq!(state.whose_turn(), Some(1));
-
-        // bb cannot check, so this throws an error
-        assert!(state.clone().post_action(Action::Check).is_err());
+        assert!(matches!(state.whose_turn(), Some(PlayerPosition::BigBlind)));
 
         // bb folds
         state = state.post_action(Action::Fold).unwrap();
@@ -434,7 +435,7 @@ mod tests {
     }
 
     #[test]
-    pub fn all_in_limited_raise_skip_to_showdown() {
+    pub fn all_in_limited_raise_dont_skip_to_showdown() {
         let mut rng = StdRng::from_seed([0; 32]);
         let mut state = GameState::new([50, 40], GameState::get_shuffled_deck(&mut rng));
 
@@ -451,15 +452,39 @@ mod tests {
         assert_eq!(state.player_states[0].pushed, 40);
         assert_eq!(state.player_states[1].pushed, 2);
         assert_eq!(state.target_push, 40);
-        assert_eq!(state.whose_turn(), Some(1));
+        assert!(matches!(state.whose_turn(), Some(PlayerPosition::BigBlind)));
 
         // bb raises but they are already maxed
         state = state.post_action(Action::Raise { amt: 2 }).unwrap();
         assert_eq!(state.player_states[0].pushed, 40);
         assert_eq!(state.player_states[1].pushed, 40);
         assert_eq!(state.target_push, 40);
+        assert!(matches!(state.whose_turn(), Some(PlayerPosition::BigBlind)));
 
-        // now we should be post-showdown since no one can act anymore
+        // in a normal game now we would be at the showdown since no one can act anymore
+        // however this engine should force the game to be played out, despite
+        // the fact that no one can act
+        assert_eq!(state.round, Round::Flop);
+
+        // raising does nothing
+        state = state.post_action(Action::Raise { amt: 5 }).unwrap();
+        assert_eq!(state.player_states[0].pushed, 40);
+        assert_eq!(state.player_states[1].pushed, 40);
+        assert_eq!(state.target_push, 40);
+        assert!(matches!(state.whose_turn(), Some(PlayerPosition::Button)));
+        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        assert_eq!(state.round, Round::Turn);
+
+        assert!(matches!(state.whose_turn(), Some(PlayerPosition::BigBlind)));
+        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        assert!(matches!(state.whose_turn(), Some(PlayerPosition::Button)));
+        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        assert_eq!(state.round, Round::River);
+
+        assert!(matches!(state.whose_turn(), Some(PlayerPosition::BigBlind)));
+        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+        assert!(matches!(state.whose_turn(), Some(PlayerPosition::Button)));
+        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
         assert_eq!(state.round, Round::End);
         // Since bb won the hand, they should have 50 + 40 = 90
         assert_eq!(state.player_states[1].stack, 80);
@@ -469,26 +494,57 @@ mod tests {
 
     #[test]
     pub fn broke_blind_straight_to_showdown() {
-        // can't control the deck so we run this multiple times
         for i in 0..20 {
             let mut rng = StdRng::from_seed([i; 32]);
             let mut state = GameState::new([50, 1], GameState::get_shuffled_deck(&mut rng));
-
-            assert_eq!(state.round, Round::End);
-
-            // The bb should be all in, so the target push is 1
-            // We should already be at showdown since no one can act
-            // for the whole game
-            assert_eq!(state.round, Round::End);
-            assert_eq!(
-                state.player_states[0].stack == 49,
-                state.player_states[1].stack == 2
-            );
-
+            // make sure no one can bet anything
+            assert_eq!(state.target_push, 1);
+            assert_eq!(state.player_states[0].pushed, 1);
+            assert_eq!(state.player_states[1].pushed, 1);
+            {
+                // If button folds then bb gets all the money
+                let mut button_fold = state.clone();
+                button_fold = button_fold.post_action(Action::Fold).unwrap();
+                assert_eq!(button_fold.round, Round::End);
+                assert_eq!(button_fold.player_states[0].stack, 49);
+                assert_eq!(button_fold.player_states[1].stack, 2);
+            }
+            {
+                // If button raises then nothing happens
+                let button_raise = state.clone().post_action(Action::Raise { amt: 2 }).unwrap();
+                assert_eq!(button_raise.round, Round::PreFlop);
+                assert_eq!(button_raise.target_push, 1);
+                assert_eq!(button_raise.player_states[0].pushed, 1);
+            }
             // What if neither player can cover the blind
             state = GameState::new([1, 1], GameState::get_shuffled_deck(&mut rng));
+            {
+                // If button folds then bb gets all the money
+                let mut button_fold = state.clone();
+                button_fold = button_fold.post_action(Action::Fold).unwrap();
+                assert_eq!(button_fold.round, Round::End);
+                assert_eq!(button_fold.player_states[0].stack, 0);
+                assert_eq!(button_fold.player_states[1].stack, 2);
+            }
+            {
+                // If button raises then nothing happens
+                let button_raise = state.clone().post_action(Action::Raise { amt: 2 }).unwrap();
+                assert_eq!(button_raise.round, Round::PreFlop);
+                assert_eq!(button_raise.target_push, 1);
+                assert_eq!(button_raise.player_states[0].pushed, 1);
+            }
+            // skip to the end
+            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
 
-            assert_eq!(state.round, Round::End);
+            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+
+            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+
+            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
 
             // The bb should be all in, so the target push is 1
             // We should already be at showdown since no one can act
@@ -502,7 +558,7 @@ mod tests {
     }
 
     #[test]
-    pub fn all_in_on_turn_skip_to_showdown() {
+    pub fn all_in_on_turn_dont_skip_to_showdown() {
         // randomly choose the deck so we can test multiple times
         // we will check that the stacks are correct
         for i in 0..20 {
@@ -512,26 +568,32 @@ mod tests {
             // sb raises
             state = state.post_action(Action::Raise { amt: 4 }).unwrap();
             // bb calls
-            state = state.post_action(Action::Call).unwrap();
+            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
 
             // flop
-            state = state.post_action(Action::Check).unwrap();
+            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
             state = state.post_action(Action::Raise { amt: 4 }).unwrap();
 
             // it should be possible to have a bidding war here
-            assert_eq!(state.whose_turn(), Some(1));
+            assert!(matches!(state.whose_turn(), Some(PlayerPosition::BigBlind)));
             state = state.post_action(Action::Raise { amt: 6 }).unwrap();
-            assert_eq!(state.whose_turn(), Some(0));
+            assert!(matches!(state.whose_turn(), Some(PlayerPosition::Button)));
             assert_eq!(state.round, Round::Flop);
             assert_eq!(state.target_push, 16);
-            state = state.post_action(Action::Call).unwrap();
+
+            // call
+            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
 
             // both players are in 16
             // bb goes all in in the turn
             // we should skip the river
 
+            assert_eq!(state.round, Round::Turn);
             // turn
-            state = state.post_action(Action::Raise { amt: 50 }).unwrap();
+            assert!(matches!(state.whose_turn(), Some(PlayerPosition::BigBlind)));
+            state = state.post_action(Action::Raise { amt: 100 }).unwrap();
+            assert_eq!(state.target_push, 50);
+            assert_eq!(state.round, Round::Turn);
             // if sb folds then bb gets all the money
             {
                 let mut sb_fold = state.clone();
@@ -540,17 +602,17 @@ mod tests {
                 assert_eq!(sb_fold.player_states[0].stack, 34);
                 assert_eq!(sb_fold.player_states[1].stack, 66);
             }
-            // sb cannot check
-            assert!(state.clone().post_action(Action::Check).is_err());
-            // sb calls
-            state = state.post_action(Action::Call).unwrap();
+            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+            assert_eq!(state.round, Round::River);
+            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
 
             // River should have been skipped
             assert_eq!(state.round, Round::End);
 
             // Player with better hand should have 100, player with worse should have 0
             // Also last aggressor is bb
-            assert_eq!(state.last_aggressor, true);
+            assert!(matches!(state.last_aggressor, PlayerPosition::BigBlind));
 
             match (state.player_states[0].stack, state.player_states[1].stack) {
                 (100, 0) | (50, 50) | (0, 100) => (),
@@ -564,12 +626,23 @@ mod tests {
         for _ in 0..1000 {
             let mut state = GameState::new([20, 50], GameState::get_shuffled_deck(&mut rng));
             state = state.post_action(Action::Raise { amt: 49 }).unwrap();
-            state = state.post_action(Action::Call).unwrap();
+            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+
+            // check until the end
+            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+
+            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+
+            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+            state = state.post_action(Action::Raise { amt: 0 }).unwrap();
+
             assert_eq!(state.round, Round::End);
             // Player with better hand should have 100, player with worse should have 0
             // If tied they should have equal amounts
             // Also last aggressor is sb
-            assert_eq!(state.last_aggressor, false);
+            assert!(matches!(state.last_aggressor, PlayerPosition::Button));
 
             let stacks = (state.player_states[0].stack, state.player_states[1].stack);
             match hand_eval::compare_hands(
@@ -631,27 +704,30 @@ mod tests {
         assert_eq!(state.player_states[0].hole_cards, cards_from("Jc9h"));
         assert_eq!(state.player_states[1].hole_cards, cards_from("7s7h"));
 
-        state = state.post_action(Action::Call).unwrap();
+        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
 
         state = state.post_action(Action::Raise { amt: 5 }).unwrap();
 
-        state = state.post_action(Action::Call).unwrap();
+        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
 
         state = state.post_action(Action::Raise { amt: 5 }).unwrap();
 
-        state = state.post_action(Action::Call).unwrap();
+        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
 
         state = state.post_action(Action::Raise { amt: 5 }).unwrap();
 
-        state = state.post_action(Action::Call).unwrap();
+        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
 
         state = state.post_action(Action::Raise { amt: 5 }).unwrap();
 
-        state = state.post_action(Action::Call).unwrap();
+        state = state.post_action(Action::Raise { amt: 0 }).unwrap();
 
         assert_eq!(state.round, Round::End);
-        assert_eq!(state.last_aggressor, true);
-        assert_eq!(state.get_stack(false), 26);
-        assert_eq!(state.get_stack(true), 74);
+        assert!(matches!(state.last_aggressor, PlayerPosition::BigBlind));
+        assert!(matches!(state.get_state(PlayerPosition::Button).stack, 26));
+        assert!(matches!(
+            state.get_state(PlayerPosition::BigBlind).stack,
+            74
+        ));
     }
 }

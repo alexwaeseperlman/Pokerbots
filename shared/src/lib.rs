@@ -113,8 +113,6 @@ impl Display for WhichBot {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub enum GameActionError {
-    InvalidCheck,
-    Raise0,
     GameOver,
     CouldNotParse,
 }
