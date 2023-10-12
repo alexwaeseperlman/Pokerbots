@@ -23,15 +23,13 @@ while True:
     p = 0.0
 
     while line[0] != 'END':
-        print(hand, line, cards, file=sys.stderr)
         if line[0] == 'STACK':
             pushed, stack, opPushed, opStack = [int(i) for i in line[1:]]
             # Act
             # maximize p log (1+x) + (1-p) log (1-x)
             target = int((2*p-1)*stack)
-            print('target', target, pushed, stack, opPushed, opStack, line, p, file=sys.stderr)
-            print(f'R{max(target-pushed, 0)}', flush=True)
-            print('action', max(target-pushed, 0), file=sys.stderr)
+            if position == 'SB' and target <= 1: print('F')
+            else: print(f'R{max(target-pushed, 0)}', flush=True)
         elif line[0] == 'PREFLOP':
             hand = line[1:]
             state = 0
@@ -52,5 +50,4 @@ while True:
             state = 3
 
         line = input().split()
-    print('ended', line, file=sys.stderr)
     

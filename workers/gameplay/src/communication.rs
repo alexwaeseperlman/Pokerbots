@@ -91,33 +91,37 @@ impl EngineCommunication {
                 sb_hole_cards,
                 bb_hole_cards,
                 last_aggressor,
-            } => match end_reason {
-                EndReason::LastToAct(winner) => {
-                    format!("END FOLD {}", winner.other())
-                }
-                EndReason::WonShowdown(winner) => {
-                    let other_cards = match position {
-                        PlayerPosition::BigBlind => sb_hole_cards,
-                        PlayerPosition::SmallBlind => bb_hole_cards,
-                    };
-                    // winner always shows cards
-                    // loser shows cards if they are the last aggressor
-                    if *winner == position && *last_aggressor != *winner {
-                        format!(
-                            "END SHOWDOWN WINNER {} SHOWN {} {}",
-                            winner, other_cards[0], other_cards[1]
-                        )
-                    } else if *winner == position && *last_aggressor == *winner {
-                        format!("END SHOWDOWN WINNER {} HIDDEN", winner)
-                    } else {
-                        format!(
-                            "END SHOWDOWN WINNER {} SHOWN {} {}",
-                            winner, other_cards[0], other_cards[1]
-                        )
+            } => {
+                let other_cards = match position {
+                    PlayerPosition::BigBlind => sb_hole_cards,
+                    PlayerPosition::SmallBlind => bb_hole_cards,
+                };
+                match end_reason {
+                    EndReason::LastToAct(winner) => {
+                        format!("END FOLD {}", winner.other())
+                    }
+                    EndReason::WonShowdown(winner) => {
+                        // winner always shows cards
+                        // loser shows cards if they are the last aggressor
+                        if *winner == position && *last_aggressor != *winner {
+                            format!(
+                                "END SHOWDOWN WINNER {} SHOWN {} {}",
+                                winner, other_cards[0], other_cards[1]
+                            )
+                        } else if *winner == position && *last_aggressor == *winner {
+                            format!("END SHOWDOWN WINNER {} HIDDEN", winner)
+                        } else {
+                            format!(
+                                "END SHOWDOWN WINNER {} SHOWN {} {}",
+                                winner, other_cards[0], other_cards[1]
+                            )
+                        }
+                    }
+                    EndReason::Tie => {
+                        format!("END SHOWDOWN TIE {} {}", other_cards[0], other_cards[1])
                     }
                 }
-                EndReason::Tie => format!("END SHOWDOWN TIE"),
-            },
+            }
         }
     }
 }
