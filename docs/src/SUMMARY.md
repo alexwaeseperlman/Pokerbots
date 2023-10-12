@@ -12,8 +12,7 @@
 - [Scoring](./scoring.md)
 - [FAQ](./faq.md)
 - [Appendices](./appendices.md)
-    - [Game log](./sample_log.md)
-    - [Sample bot](./sample_bot.md)
+- [Game log](./sample_log.md)
 
 # Contact us
 - [Sponsorship](./sponsorship.md)
