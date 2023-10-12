@@ -31,7 +31,7 @@ This is the structure of a round. I will assume that you know the rules for head
     If the showdown was a tie, then the engine prints `END SHOWDOWN TIE (Card) (Card)`, 
     where the two cards are the opponents hole cards.
     Else if the showdown was not a tie, the engine outputs a winner.
-    The engine always outputs `END SHOWDOWN (SB|BB) SHOWN (Card) (Card)` to the loser, since the winner
+    The engine always outputs `END SHOWDOWN WINNER (SB|BB) SHOWN (Card) (Card)` to the loser, since the winner
     must show their cards (the printed cards are the ones belonging to the opposing player). 
     If the loser was the last aggressor (last person to raise by a positive amount) 
     then they must show their hand to the winner too. 
