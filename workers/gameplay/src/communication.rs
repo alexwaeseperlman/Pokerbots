@@ -8,9 +8,7 @@ use crate::poker::{
 };
 
 pub enum EngineCommunication {
-    StartGame {
-        sb: WhichBot,
-    },
+    StartGame,
     BettingState {
         sb_pushed: u32,
         sb_stack: u32,
@@ -53,10 +51,10 @@ impl EngineCommunication {
         }
     }
 
-    pub fn render_for_bot(&self, bot: WhichBot, position: PlayerPosition) -> String {
+    pub fn render_for_bot(&self, position: PlayerPosition) -> String {
         match self {
-            EngineCommunication::StartGame { sb } => {
-                format!("START {}", if *sb == bot { "BB" } else { "SB" })
+            EngineCommunication::StartGame => {
+                format!("START {}", position)
             }
             EngineCommunication::BettingState {
                 bb_pushed,

@@ -253,8 +253,7 @@ impl Game {
         which_bot: WhichBot,
         message: &EngineCommunication,
     ) -> Result<(), GameError> {
-        let message: String =
-            message.render_for_bot(which_bot, self.get_position_from_bot(which_bot));
+        let message: String = message.render_for_bot(self.get_position_from_bot(which_bot));
         self.write_log(format!("{} < {}", which_bot, message.clone()))
             .await?;
         let bot = match which_bot {
@@ -341,8 +340,7 @@ impl Game {
 
         let mut round = None;
 
-        self.write_bots(EngineCommunication::StartGame { sb: self.sb })
-            .await?;
+        self.write_bots(EngineCommunication::StartGame).await?;
 
         while !state.round_over() {
             // Print community cards to both bots
