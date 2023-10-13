@@ -45,7 +45,7 @@ Betting rounds are where bots get to act. They are structured like this:
    that your bot has pushed in this round. `b` is the total number of chips in your stack
    (including the amount that you pushed in this round). And `c` and `d` are these quantities
    but for the opposing player
-2. Your bot gives an action, either outputting `F`, `C`, or `R(n)` (`(n)` is an integer, e.g. `R6`).
+2. Your bot gives an action, either outputting `F`, `C`, or `R<n>` (`<n>` is an integer, e.g. `R6`).
    These actions respectively represent "Fold", "Call", or "Raise by `n`". 
    Raising will first match the opponent's bet, and then push an additional `n` chips. 
    Note that this means that `C` is equivalent `R0`.
