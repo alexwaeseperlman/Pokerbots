@@ -1,3 +1,4 @@
+from math import log1p, log
 import pandas as pd
 import sys
 df = pd.read_csv('hands.csv')
@@ -28,8 +29,13 @@ while True:
             # Act
             # maximize p log (1+x) + (1-p) log (1-x)
             target = int((2*p-1)*stack)
-            if position == 'SB' and target <= 1: print('F')
-            else: print(f'R{max(target-pushed, 0)}', flush=True)
+            a = max((stack + opPushed)/stack, 0.01)
+            b = max((stack - opPushed)/stack, 0.01)
+            c = max((stack + pushed)/stack, 0.01)
+            d = max((stack - pushed)/stack, 0.01)
+            if opPushed == pushed or p*(a) + (1.0-p)*(b) > (d):
+                print(f'R{max(target-max(pushed, opPushed), 0)}', flush=True)
+            else: print('F', flush=True)
         elif line[0] == 'PREFLOP':
             hand = line[1:]
             state = 0
