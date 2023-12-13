@@ -98,7 +98,33 @@ async fn register(
         )
         .unwrap();
 
-    let id = Uuid::new_v4();
+    // check if a user already exists with this email
+    let id = match auth::dsl::auth
+        .filter(auth::dsl::email.eq(email.clone()))
+        .first::<Auth>(conn) {
+            Ok(auth) => {
+                if auth.mangled_password.is_some() {
+                    config::MAILER.send(&email_body)?;
+
+                    diesel::update(auth::dsl::auth)
+                        .filter(auth::dsl::email.eq(&email))
+                        .set((
+                            auth::dsl::email_verification_link.eq(Some(email_verification_link.clone())),
+                            auth::dsl::email_verification_link_expiration.eq(Some(
+                                Utc::now().naive_utc() + chrono::Duration::minutes(15),
+                            )),
+                        ))
+                        .execute(conn)?;
+
+                    return Err(ApiError {
+                        status_code: StatusCode::BAD_REQUEST,
+                        message: "There is already an account with this email. Another verification request was sent.".to_string(),
+                    });
+                }
+                auth.id
+            }
+            _ => Uuid::new_v4(),
+        };
 
     let auth = NewAuth {
         email: email.clone(),
@@ -113,10 +139,11 @@ async fn register(
 
     diesel::insert_into(auth::dsl::auth)
         .values(&auth)
-        .on_conflict(auth::dsl::email)
+        .on_conflict(auth::dsl::id)
         .do_update()
         .set(&auth)
         .execute(conn)?;
+
     let auth: Auth = auth::dsl::auth
         .filter(auth::dsl::email.eq(email.clone()))
         .first::<Auth>(conn)?;
