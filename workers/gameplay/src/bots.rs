@@ -237,12 +237,22 @@ impl Game {
         timeout: Duration,
         logs: tokio::fs::File,
     ) -> Self {
+        let starting_stack_size = env::var("STARTING_STACK_SIZE")
+            .unwrap_or_else(|_| "500".into())
+            .parse::<u32>()
+            .unwrap_or(500);
+
+        let max_bet_size = env::var("MAX_BET_SIZE")
+            .unwrap_or_else(|_| "100".into())
+            .parse::<u32>()
+            .unwrap_or(50);
+
         Self {
             defender,
             challenger,
-            stacks: [500, 500],
-            initial_stacks: [500, 500],
-            limit: 50,
+            stacks: [starting_stack_size, starting_stack_size],
+            initial_stacks: [starting_stack_size, starting_stack_size],
+            limit: max_bet_size,
             sb: WhichBot::Defender,
             defender_timeout: timeout,
             challenger_timeout: timeout,

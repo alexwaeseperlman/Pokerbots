@@ -10,6 +10,11 @@ use shared::{
 use crate::rating::get_rating_change;
 
 pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
+    let starting_stack_size = std::env::var("STARTING_STACK_SIZE")
+        .unwrap_or("500".to_string())
+        .parse::<i32>()
+        .unwrap_or(500);
+
     use shared::db::schema::{bots, games};
     let db_conn = &mut (*shared::db::conn::DB_CONNECTION.get().map_err(|_| ())?);
     let GameStatusMessage { id, result } = status;
@@ -20,22 +25,22 @@ pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
         Ok(GameStatus::TestGameSucceeded) => (0, 0, None, None),
         Ok(GameStatus::TestGameFailed) => (0, 0, None, None),
         Err(e) => match e {
-            GameError::InternalError => (50, 50, Some("INTERNAL".into()), None),
+            GameError::InternalError => (starting_stack_size, starting_stack_size, Some("INTERNAL".into()), None),
             GameError::InvalidActionError(which_bot) => match which_bot {
-                shared::WhichBot::Defender => (-100, 100, Some("INVALID_ACTION".into()), Some(0)),
-                shared::WhichBot::Challenger => (100, -100, Some("INVALID_ACTION".into()), Some(1)),
+                shared::WhichBot::Defender => (-2*starting_stack_size, 2*starting_stack_size, Some("INVALID_ACTION".into()), Some(0)),
+                shared::WhichBot::Challenger => (2*starting_stack_size, -2*starting_stack_size, Some("INVALID_ACTION".into()), Some(1)),
             },
             GameError::MemoryError(which_bot) => match which_bot {
-                shared::WhichBot::Defender => (-100, 100, Some("MEMORY".into()), Some(0)),
-                shared::WhichBot::Challenger => (100, -100, Some("MEMORY".into()), Some(1)),
+                shared::WhichBot::Defender => (-2*starting_stack_size, 2*starting_stack_size, Some("MEMORY".into()), Some(0)),
+                shared::WhichBot::Challenger => (2*starting_stack_size, -2*starting_stack_size, Some("MEMORY".into()), Some(1)),
             },
             GameError::RunTimeError(which_bot) => match which_bot {
-                shared::WhichBot::Defender => (-100, 100, Some("RUNTIME".into()), Some(0)),
-                shared::WhichBot::Challenger => (100, -100, Some("RUNTIME".into()), Some(1)),
+                shared::WhichBot::Defender => (-2*starting_stack_size, 2*starting_stack_size, Some("RUNTIME".into()), Some(0)),
+                shared::WhichBot::Challenger => (2*starting_stack_size, -2*starting_stack_size, Some("RUNTIME".into()), Some(1)),
             },
             GameError::TimeoutError(which_bot) => match which_bot {
-                shared::WhichBot::Defender => (-100, 100, Some("TIMEOUT".into()), Some(0)),
-                shared::WhichBot::Challenger => (100, -100, Some("TIMEOUT".into()), Some(1)),
+                shared::WhichBot::Defender => (-2*starting_stack_size, 2*starting_stack_size, Some("TIMEOUT".into()), Some(0)),
+                shared::WhichBot::Challenger => (2*starting_stack_size, -2*starting_stack_size, Some("TIMEOUT".into()), Some(1)),
             },
         },
     };
@@ -52,7 +57,7 @@ pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
                             e
                         })?;
                     // calculate the bots ratings
-                    let score = (50.0 + defender_score as f32) / (100.0f32);
+                    let score = (starting_stack_size as f32 + defender_score as f32) / (2.0f32*starting_stack_size as f32);
                     log::info!(
                         "Score: {}, defender score {}, challenger score {}",
                         score,
