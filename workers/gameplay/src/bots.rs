@@ -225,6 +225,7 @@ pub struct Game {
     start_time: Instant,
     // I suck at this :'(
     cleaned_up: bool,
+    limit: u32,
 }
 impl Game {
     pub fn new(
@@ -237,8 +238,9 @@ impl Game {
         Self {
             defender,
             challenger,
-            stacks: [50, 50],
-            initial_stacks: [50, 50],
+            stacks: [500, 500],
+            initial_stacks: [500, 500],
+            limit: 100,
             sb: WhichBot::Defender,
             timeout,
             id,
@@ -334,6 +336,7 @@ impl Game {
                 WhichBot::Challenger => [self.stacks[1], self.stacks[0]],
             },
             GameState::get_shuffled_deck(&mut rng),
+            self.limit
         );
 
         //log::debug!("Game state: {:?}. ", state);
