@@ -180,7 +180,7 @@ pub async fn run_game(
         defender,
         challenger,
         game_id,
-        Duration::from_secs(1),
+        Duration::from_secs(10),
         tokio::fs::File::create(tmp_dir.join("logs")).await?,
     );
 
@@ -220,7 +220,9 @@ pub struct Game {
     initial_stacks: [u32; 2],
     sb: WhichBot,
     id: String,
-    timeout: Duration,
+    // Total time allowed for a bot to respond
+    defender_timeout: Duration,
+    challenger_timeout: Duration,
     logs: tokio::fs::File,
     start_time: Instant,
     // I suck at this :'(
@@ -240,9 +242,10 @@ impl Game {
             challenger,
             stacks: [500, 500],
             initial_stacks: [500, 500],
-            limit: 100,
+            limit: 50,
             sb: WhichBot::Defender,
-            timeout,
+            defender_timeout: timeout,
+            challenger_timeout: timeout,
             id,
             logs,
             start_time: Instant::now(),
@@ -406,10 +409,26 @@ impl Game {
 
             //log::debug!("Reading action from {:?}.", whose_turn);
             let mut line: String = Default::default();
-            tokio::time::timeout(self.timeout, target_reader.read_line(&mut line))
+            let time_before_action = Instant::now();
+            let t = tokio::time::timeout(match whose_turn {
+                WhichBot::Defender => self.defender_timeout,
+                WhichBot::Challenger => self.challenger_timeout,
+            }, target_reader.read_line(&mut line))
                 .await
                 .map_err(|_| shared::GameError::TimeoutError(whose_turn))?
                 .map_err(|_| shared::GameError::RunTimeError(whose_turn))?;
+
+            let time_after_action = Instant::now();
+
+            // update time left
+            match whose_turn {
+                WhichBot::Defender => {
+                    self.defender_timeout -= time_after_action - time_before_action;
+                }
+                WhichBot::Challenger => {
+                    self.challenger_timeout -= time_after_action - time_before_action;
+                }
+            }
 
             self.write_log(format!("{} > {}", whose_turn, line.trim()))
                 .await?;

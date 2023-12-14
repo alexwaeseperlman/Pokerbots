@@ -266,7 +266,7 @@ impl GamesDao for PgConnection {
                     defender: defender_team.active_bot.unwrap(),
                     challenger: challenger_team.active_bot.unwrap(),
                     id: id.clone(),
-                    rounds: 100,
+                    rounds: 1000,
                     public_logs_presigned,
                     defender_logs_presigned,
                     challenger_logs_presigned,
