@@ -23,9 +23,9 @@ pub async fn matchmake(s3_client: &aws_sdk_s3::Client, sqs_client: &aws_sdk_sqs:
                 player_count = Some(updated_player_count as u64);
             }
         }
-        // give an average of 5 seconds per game, plus 3
+        // give an average of 60 seconds per game, plus 10
         tokio::time::sleep(std::time::Duration::from_secs(
-            3 + (player_count.unwrap_or(30)) * 5,
+            10 + (player_count.unwrap_or(30)) * 60,
         ))
         .await;
     }
