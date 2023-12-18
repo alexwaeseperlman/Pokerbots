@@ -5,6 +5,7 @@ use std::{
 };
 
 use rand::{seq::SliceRandom, Rng};
+use serde::{ser::SerializeStruct, Deserialize, Serialize};
 use shared::GameActionError;
 
 use super::hands::{self, Card, Suite};
@@ -16,7 +17,7 @@ pub enum Action {
     Fold,
 }
 
-#[derive(Clone, PartialEq, Debug, Copy)]
+#[derive(Clone, PartialEq, Debug, Copy, Serialize)]
 pub enum Round {
     PreFlop,
     Flop,
@@ -25,7 +26,7 @@ pub enum Round {
     End,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct PlayerState {
     pub stack: u32,
     pub hole_cards: [Card; 2],
@@ -34,7 +35,7 @@ pub struct PlayerState {
     pub acted: bool,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize)]
 pub enum PlayerPosition {
     SmallBlind = 0,
     BigBlind = 1,
@@ -57,7 +58,7 @@ impl Display for PlayerPosition {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum EndReason {
     WonShowdown(PlayerPosition),
     LastToAct(PlayerPosition),
@@ -79,6 +80,22 @@ pub struct GameState {
     // The amount of money the next player to act must push to call
     pub target_push: u32,
     pub end_reason: Option<EndReason>,
+}
+
+impl Serialize for GameState {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut state = serializer.serialize_struct("GameState", 7)?;
+        state.serialize_field("player_states", &self.player_states)?;
+        state.serialize_field("community_cards", &self.community_cards)?;
+        state.serialize_field("round", &self.round)?;
+        state.serialize_field("last_aggressor", &self.last_aggressor)?;
+        state.serialize_field("target_push", &self.target_push)?;
+        state.serialize_field("end_reason", &self.end_reason)?;
+        state.end()
+    }
 }
 
 pub enum RoundResult {

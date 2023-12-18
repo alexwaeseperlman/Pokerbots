@@ -3,7 +3,7 @@ use diesel::{
     pg::Pg,
     query_builder::{BoxedSqlQuery, Query, QueryBuilder, QueryFragment, SelectQuery},
 };
-use futures_util::future::try_join3;
+use futures_util::future::try_join4;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -221,7 +221,12 @@ impl GamesDao for PgConnection {
             let presign_config =
                 PresigningConfig::expires_in(std::time::Duration::from_secs(60 * 60 * 24 * 7))?;
 
-            let (public_logs, defender_logs, challenger_logs) = try_join3(
+            let (game_records, public_logs, defender_logs, challenger_logs) = try_join4(
+                s3_client
+                    .put_object()
+                    .bucket(game_logs_s3_bucket)
+                    .key(format!("game_record/{}", id.clone()))
+                    .presigned(presign_config.clone()),
                 s3_client
                     .put_object()
                     .bucket(game_logs_s3_bucket)
@@ -240,12 +245,22 @@ impl GamesDao for PgConnection {
             )
             .await?;
             log::debug!(
-                "Log presigned keys created {}, {}, {}",
+                "Log presigned keys created {}, {}, {}, {}",
+                game_records.uri(),
                 public_logs.uri(),
                 defender_logs.uri(),
                 challenger_logs.uri()
             );
-            let (public_logs_presigned, defender_logs_presigned, challenger_logs_presigned) = (
+            let (
+                game_record_presigned,
+                public_logs_presigned,
+                defender_logs_presigned,
+                challenger_logs_presigned,
+            ) = (
+                PresignedRequest {
+                    url: game_records.uri().to_string(),
+                    headers: game_records.headers().into(),
+                },
                 PresignedRequest {
                     url: public_logs.uri().to_string(),
                     headers: public_logs.headers().into(),
@@ -267,6 +282,7 @@ impl GamesDao for PgConnection {
                     challenger: challenger_team.active_bot.unwrap(),
                     id: id.clone(),
                     rounds: 100,
+                    game_record_presigned,
                     public_logs_presigned,
                     defender_logs_presigned,
                     challenger_logs_presigned,

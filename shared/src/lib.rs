@@ -84,6 +84,7 @@ pub enum GameTask {
         challenger: i32,
         id: String,
         rounds: usize,
+        game_record_presigned: PresignedRequest,
         public_logs_presigned: PresignedRequest,
         defender_logs_presigned: PresignedRequest,
         challenger_logs_presigned: PresignedRequest,

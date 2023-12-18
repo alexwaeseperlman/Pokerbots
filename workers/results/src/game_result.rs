@@ -1,13 +1,31 @@
+use aws_sdk_s3::{config, primitives::ByteStreamError};
 use diesel::prelude::*;
+use futures_lite::StreamExt;
 use shared::{
     db::{
-        models::{self, Bot, Game, Team},
+        models::{self, Bot, Game, NewBot, Team},
         schema::{game_results, teams},
     },
     GameError, GameStatus, GameStatusMessage,
 };
 
 use crate::rating::get_rating_change;
+
+// pub async fn save_game_details(status: GameStatusMessage) -> Result<(), ()> {
+//     let config = shared::aws_config().await;
+//     let s3 = shared::s3_client(&config).await;
+//     let key = format!("game_record/{}", status.id);
+//     let mut response = s3
+//         .get_object()
+//         .bucket(std::env::var("GAME_LOGS_S3_BUCKET").unwrap())
+//         .key(key)
+//         .send()
+//         .await
+//         .map_err(|e| ())?;
+//     let x = response.body.collect().await.map_err(|_| ())?;
+//     let line = x.to_vec().split(|b| *b == 0xA).into_iter();
+//     Ok(())
+// }
 
 pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
     use shared::db::schema::{bots, games};

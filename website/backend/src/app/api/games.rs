@@ -1,4 +1,7 @@
+use std::usize;
+
 use diesel::alias;
+use futures_util::TryStreamExt;
 use itertools::Itertools;
 use shared::{
     db::{
@@ -55,6 +58,12 @@ pub struct GameLogQuery {
     which_bot: Option<WhichBot>,
 }
 
+#[derive(Deserialize)]
+pub struct GameRecordQuery {
+    id: String,
+    round: usize,
+}
+
 #[get("/game-log")]
 pub async fn game_log(
     session: Session,
@@ -97,4 +106,34 @@ pub async fn game_log(
         .await?;
 
     Ok(HttpResponse::Ok().streaming(response.body))
+}
+
+#[get("/game-record")]
+pub async fn game_record(
+    session: Session,
+    web::Query::<GameRecordQuery>(GameRecordQuery { id, round }): web::Query<GameRecordQuery>,
+    s3_client: web::Data<aws_sdk_s3::Client>,
+) -> Result<HttpResponse, ApiError> {
+    let key = format!("game_record/{}", id);
+    let mut response = s3_client
+        .get_object()
+        .bucket(game_logs_s3_bucket())
+        .key(key)
+        .send()
+        .await?;
+    let mut out = Vec::new();
+    while let Some(bytes) = response
+        .body
+        .try_next()
+        .await
+        .map_err(|_| actix_web::error::ErrorBadRequest("Not working"))?
+    {
+        out.extend_from_slice(&bytes);
+    }
+    let line = out
+        .split(|b| *b == 0xA)
+        .nth(round)
+        .unwrap_or_default()
+        .to_vec();
+    Ok(HttpResponse::Ok().body(line))
 }

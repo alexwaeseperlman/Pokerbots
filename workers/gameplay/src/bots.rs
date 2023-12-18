@@ -1,5 +1,7 @@
 use itertools::Itertools;
 use rand::{thread_rng, Rng};
+use serde::ser::SerializeStruct;
+use serde::{Deserialize, Serialize, Serializer};
 use shared::{BotJson, GameError, WhichBot};
 use std::borrow::BorrowMut;
 use std::{
@@ -135,6 +137,7 @@ pub struct GameResult {
     pub defender_log: Vec<u8>,
     pub challenger_log: Vec<u8>,
     pub public_log: Vec<u8>,
+    pub game_record: Vec<u8>,
 }
 
 pub async fn run_game(
@@ -148,6 +151,7 @@ pub async fn run_game(
     // doesn't have the same id as the task
     let game_id = format!("{:x}", rand::thread_rng().gen::<u32>());
     let tmp_dir = Path::new("/tmp").join(&game_id);
+
     log::debug!("Playing {} against {}", defender, challenger);
     log::info!("Running game {} with local id {}", task_id, game_id);
     let bot_bucket = std::env::var("COMPILED_BOT_S3_BUCKET")?;
@@ -179,9 +183,10 @@ pub async fn run_game(
     let mut game = Game::new(
         defender,
         challenger,
-        game_id,
+        game_id.clone(),
         Duration::from_secs(1),
         tokio::fs::File::create(tmp_dir.join("logs")).await?,
+        tokio::fs::File::create(tmp_dir.join("game_record")).await?,
     );
 
     let status = game.play(rounds).await;
@@ -190,6 +195,7 @@ pub async fn run_game(
     let defender_log = tokio::fs::read(tmp_dir.join("defender/logs")).await?;
     let challenger_log = tokio::fs::read(tmp_dir.join("challenger/logs")).await?;
     let public_log = tokio::fs::read(tmp_dir.join("logs")).await?;
+    let game_record = tokio::fs::read(tmp_dir.join("game_record")).await?;
     Command::new("umount")
         .arg("-l")
         .arg(format!("{}", challenger_path.display()))
@@ -210,6 +216,7 @@ pub async fn run_game(
         defender_log,
         challenger_log,
         public_log,
+        game_record,
     })
 }
 
@@ -222,10 +229,12 @@ pub struct Game {
     id: String,
     timeout: Duration,
     logs: tokio::fs::File,
+    game_record: tokio::fs::File,
     start_time: Instant,
     // I suck at this :'(
     cleaned_up: bool,
 }
+
 impl Game {
     pub fn new(
         defender: tokio::process::Child,
@@ -233,6 +242,7 @@ impl Game {
         id: String,
         timeout: Duration,
         logs: tokio::fs::File,
+        game_record: tokio::fs::File,
     ) -> Self {
         Self {
             defender,
@@ -243,6 +253,7 @@ impl Game {
             timeout,
             id,
             logs,
+            game_record,
             start_time: Instant::now(),
             cleaned_up: false,
         }
@@ -296,6 +307,49 @@ impl Game {
         }
     }
 
+    fn encode<S>(&self, serializer: S, game_state: &GameState) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut state = serializer.serialize_struct("GameState", 7)?;
+        state.serialize_field("player_states", &game_state.player_states)?;
+        state.serialize_field("community_cards", &game_state.community_cards)?;
+        state.serialize_field("round", &game_state.round)?;
+        state.serialize_field("last_aggressor", &game_state.last_aggressor)?;
+        state.serialize_field("target_push", &game_state.target_push)?;
+        state.serialize_field("end_reason", &game_state.end_reason)?;
+        state.serialize_field("sb", &self.sb)?;
+        state.end()
+    }
+
+    async fn save_round(&mut self, state: &GameState) -> Result<(), shared::GameError> {
+        let mut serializer = serde_json::Serializer::new(Vec::new());
+        match &self.encode(&mut serializer, &state) {
+            Ok(v) => {
+                let json_bytes = serializer.into_inner();
+                match std::str::from_utf8(&json_bytes) {
+                    Ok(json_str) => {
+                        self.game_record
+                            .write_all(format!("{}\n", json_str).as_bytes())
+                            .await
+                            .map_err(|e| {
+                                log::error!("Error while writting game state to file: {}", e);
+                                shared::GameError::InternalError
+                            });
+                        Ok(())
+                    }
+                    Err(e) => {
+                        log::error!("Error converting game state to utf8: {}", e);
+                        Err(shared::GameError::InternalError)
+                    }
+                }
+            }
+            Err(e) => {
+                log::error!("Error writting to game record: {}", e);
+                Err(shared::GameError::InternalError)
+            }
+        }
+    }
     async fn write_log<S: Into<String>>(&mut self, msg: S) -> Result<(), shared::GameError> {
         self.logs
             .write_all(
@@ -419,8 +473,9 @@ impl Game {
                 .map_err(|_| shared::GameError::InvalidActionError(whose_turn.clone()))?;
 
             unsafe {
-                let status = kill(-(opponent_gid as i32), 18);
+                kill(-(opponent_gid as i32), 18);
             };
+            self.save_round(&state).await?;
         }
 
         Ok(state)
