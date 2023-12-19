@@ -6,7 +6,7 @@ use std::{
 
 use rand::{seq::SliceRandom, Rng};
 use serde::{ser::SerializeStruct, Deserialize, Serialize};
-use shared::GameActionError;
+use shared::{GameActionError, WhichBot};
 
 use super::hands::{self, Card, Suite};
 
@@ -17,7 +17,7 @@ pub enum Action {
     Fold,
 }
 
-#[derive(Clone, PartialEq, Debug, Copy, Serialize)]
+#[derive(Clone, PartialEq, Debug, Copy, Serialize, Deserialize)]
 pub enum Round {
     PreFlop,
     Flop,
@@ -26,7 +26,7 @@ pub enum Round {
     End,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PlayerState {
     pub stack: u32,
     pub hole_cards: [Card; 2],
@@ -35,7 +35,7 @@ pub struct PlayerState {
     pub acted: bool,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum PlayerPosition {
     SmallBlind = 0,
     BigBlind = 1,
@@ -58,14 +58,14 @@ impl Display for PlayerPosition {
     }
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum EndReason {
     WonShowdown(PlayerPosition),
     LastToAct(PlayerPosition),
     Tie,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct GameState {
     // Cards in the deck
     pub deck: Vec<Card>,

@@ -1,11 +1,8 @@
 use itertools::Itertools;
 use rand::{thread_rng, Rng};
-use serde::ser::SerializeStruct;
-use serde::{Deserialize, Serialize, Serializer};
+use shared::db::models::GameStateSQL;
 use shared::{BotJson, GameError, WhichBot};
-use std::borrow::BorrowMut;
 use std::{
-    env,
     path::{Path, PathBuf},
     process::Stdio,
     time::Duration,
@@ -19,7 +16,7 @@ use tokio::{
 };
 
 use crate::communication::{parse_action, EngineCommunication};
-use crate::poker::game::{EndReason, GameState, PlayerPosition, Round};
+use crate::poker::game::{GameState, PlayerPosition, Round};
 
 pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>>(
     bot: U,
@@ -307,45 +304,60 @@ impl Game {
         }
     }
 
-    fn encode<S>(&self, serializer: S, game_state: &GameState) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let mut state = serializer.serialize_struct("GameState", 7)?;
-        state.serialize_field("player_states", &game_state.player_states)?;
-        state.serialize_field("community_cards", &game_state.community_cards)?;
-        state.serialize_field("round", &game_state.round)?;
-        state.serialize_field("last_aggressor", &game_state.last_aggressor)?;
-        state.serialize_field("target_push", &game_state.target_push)?;
-        state.serialize_field("end_reason", &game_state.end_reason)?;
-        state.serialize_field("sb", &self.sb)?;
-        state.end()
-    }
+    // fn encode<S>(&self, serializer: S, game_state: &GameState) -> Result<S::Ok, S::Error>
+    // where
+    //     S: serde::Serializer,
+    // {
+    //     let mut state = serializer.serialize_struct("GameState", 7)?;
+    //     state.serialize_field("player_states", &game_state.player_states)?;
+    //     state.serialize_field("community_cards", &game_state.community_cards)?;
+    //     state.serialize_field("round", &game_state.round)?;
+    //     state.serialize_field("last_aggressor", &game_state.last_aggressor)?;
+    //     state.serialize_field("target_push", &game_state.target_push)?;
+    //     state.serialize_field("end_reason", &game_state.end_reason)?;
+    //     state.serialize_field("sb", &self.sb)?;
+    //     state.end()
+    // }
 
-    async fn save_round(&mut self, state: &GameState) -> Result<(), shared::GameError> {
-        let mut serializer = serde_json::Serializer::new(Vec::new());
-        match &self.encode(&mut serializer, &state) {
-            Ok(v) => {
-                let json_bytes = serializer.into_inner();
-                match std::str::from_utf8(&json_bytes) {
-                    Ok(json_str) => {
-                        self.game_record
-                            .write_all(format!("{}\n", json_str).as_bytes())
-                            .await
-                            .map_err(|e| {
-                                log::error!("Error while writting game state to file: {}", e);
-                                shared::GameError::InternalError
-                            });
-                        Ok(())
-                    }
-                    Err(e) => {
-                        log::error!("Error converting game state to utf8: {}", e);
-                        Err(shared::GameError::InternalError)
-                    }
-                }
+    async fn save_round(&mut self, state: &GameState, step: i32) -> Result<(), shared::GameError> {
+        let (defender_state, challenger_state) = match self.sb {
+            WhichBot::Defender => (&state.player_states[0], &state.player_states[1]),
+            WhichBot::Challenger => (&state.player_states[1], &state.player_states[0]),
+        };
+        let game_state_sql = GameStateSQL {
+            game_id: self.id.clone(),
+            step: step,
+            defender_stack: defender_state.stack as i32,
+            challenger_stack: challenger_state.stack as i32,
+            defender_pushed: defender_state.pushed as i32,
+            challenger_pushed: challenger_state.pushed as i32,
+            defender_hand: defender_state.hole_cards.map(|c| c.to_string()).join(" "),
+            challenger_hand: challenger_state.hole_cards.map(|c| c.to_string()).join(" "),
+            flop: state
+                .community_cards
+                .get(0..3)
+                .map(|v| v.iter().map(|c| c.to_string()).join(" ")),
+            turn: state.community_cards.get(3).map(|c| c.to_string()),
+            river: state.community_cards.get(4).map(|c| c.to_string()),
+            button: self.sb.other().to_string(),
+            sb: self.sb.to_string(),
+            action_time: 0,
+            last_action: state.last_aggressor.to_string(),
+        };
+        match serde_json::to_string(&game_state_sql) {
+            Ok(json_str) => {
+                let _ = self
+                    .game_record
+                    .write_all(format!("{}\n", json_str).as_bytes())
+                    .await
+                    .map_err(|e| {
+                        log::error!("Error while writting game state to file: {}", e);
+                        shared::GameError::InternalError
+                    });
+                Ok(())
             }
             Err(e) => {
-                log::error!("Error writting to game record: {}", e);
+                log::error!("Error converting game state to json: {}", e);
                 Err(shared::GameError::InternalError)
             }
         }
@@ -380,6 +392,7 @@ impl Game {
         &mut self,
         defender_reader: &mut BufReader<ChildStdout>,
         challenger_reader: &mut BufReader<ChildStdout>,
+        state_id: &mut i32,
     ) -> Result<GameState, shared::GameError> {
         let mut rng = thread_rng();
         let mut state = crate::poker::game::GameState::new(
@@ -475,7 +488,8 @@ impl Game {
             unsafe {
                 kill(-(opponent_gid as i32), 18);
             };
-            self.save_round(&state).await?;
+            self.save_round(&state, *state_id).await?;
+            *state_id += 1;
         }
 
         Ok(state)
@@ -498,6 +512,7 @@ impl Game {
         );
 
         log::info!("Clients connected for {}", self.id);
+        let mut state_id: i32 = 0;
         for i in 0..rounds {
             if self.stacks[0] == 0 || self.stacks[1] == 0 {
                 self.write_log(format!("System > Ending because a bot has an empty stack"))
@@ -508,7 +523,7 @@ impl Game {
                 .await?;
             //log::debug!("Playing round. Current stacks: {:?}.", self.stacks);
             match self
-                .play_round(&mut defender_reader, &mut challenger_reader)
+                .play_round(&mut defender_reader, &mut challenger_reader, &mut state_id)
                 .await
             {
                 Err(e) => {

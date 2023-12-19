@@ -1,31 +1,53 @@
 use aws_sdk_s3::{config, primitives::ByteStreamError};
 use diesel::prelude::*;
 use futures_lite::StreamExt;
+use log::error;
 use shared::{
     db::{
-        models::{self, Bot, Game, NewBot, Team},
-        schema::{game_results, teams},
+        self,
+        models::{self, Bot, Game, GameStateSQL, NewBot, Team},
+        schema::{
+            game_results,
+            game_states::{self, defender_hand},
+            teams,
+        },
     },
-    GameError, GameStatus, GameStatusMessage,
+    GameError, GameStatus, GameStatusMessage, WhichBot,
 };
 
 use crate::rating::get_rating_change;
 
-// pub async fn save_game_details(status: GameStatusMessage) -> Result<(), ()> {
-//     let config = shared::aws_config().await;
-//     let s3 = shared::s3_client(&config).await;
-//     let key = format!("game_record/{}", status.id);
-//     let mut response = s3
-//         .get_object()
-//         .bucket(std::env::var("GAME_LOGS_S3_BUCKET").unwrap())
-//         .key(key)
-//         .send()
-//         .await
-//         .map_err(|e| ())?;
-//     let x = response.body.collect().await.map_err(|_| ())?;
-//     let line = x.to_vec().split(|b| *b == 0xA).into_iter();
-//     Ok(())
-// }
+pub fn sb_to_team(sb: WhichBot) -> [usize; 2] {
+    match sb {
+        WhichBot::Defender => [1, 0],
+        WhichBot::Challenger => [0, 1],
+    }
+}
+
+pub async fn save_game_details(status: GameStatusMessage) -> Result<(), ()> {
+    let config = shared::aws_config().await;
+    let s3 = shared::s3_client(&config).await;
+    let key = format!("game_record/{}", status.id);
+    let mut response = s3
+        .get_object()
+        .bucket(std::env::var("GAME_LOGS_S3_BUCKET").unwrap())
+        .key(key)
+        .send()
+        .await
+        .map_err(|e| ())?;
+    let body = response.body.collect().await.map_err(|_| ())?;
+    let vec = body.to_vec();
+    let lines = vec.split(|b| *b == 0xA);
+    let conn = &mut (*shared::db::conn::DB_CONNECTION).get().map_err(|_| ())?;
+    for line in lines {
+        let game_state: GameStateSQL = serde_json::from_slice(line).map_err(|_| ())?;
+        diesel::insert_into(db::schema::game_states::dsl::game_states)
+            .values(game_state)
+            .execute(conn)
+            .map_err(|err| log::debug!("{}", err));
+    }
+    Ok(())
+}
 
 pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
     use shared::db::schema::{bots, games};

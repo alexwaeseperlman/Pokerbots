@@ -16,4 +16,4 @@ CREATE TABLE game_states (
   last_action TEXT NOT NULL,
   PRIMARY KEY(game_id, step),
   FOREIGN KEY(game_id) REFERENCES games(id)
-)-- Your SQL goes here
+)

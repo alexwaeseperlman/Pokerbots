@@ -1,8 +1,8 @@
 use itertools::Itertools;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::{cmp::Ordering, fmt::Display};
 
-#[derive(PartialEq, Eq, Clone, Debug, Copy, Serialize)]
+#[derive(PartialEq, Eq, Clone, Debug, Copy, Serialize, Deserialize)]
 pub enum Suite {
     Clubs,
     Spades,
@@ -26,7 +26,7 @@ impl Display for Suite {
     }
 }
 
-#[derive(Clone, Debug, Copy, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Card {
     pub value: u32,
     pub suite: Suite,
