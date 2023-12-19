@@ -24,11 +24,11 @@ pub fn sb_to_team(sb: WhichBot) -> [usize; 2] {
     }
 }
 
-pub async fn save_game_details(status: GameStatusMessage) -> Result<(), ()> {
+pub async fn save_game_details(id: String) -> Result<(), ()> {
     let config = shared::aws_config().await;
     let s3 = shared::s3_client(&config).await;
-    let key = format!("game_record/{}", status.id);
-    let mut response = s3
+    let key = format!("game_record/{}", &id);
+    let response = s3
         .get_object()
         .bucket(std::env::var("GAME_LOGS_S3_BUCKET").unwrap())
         .key(key)
@@ -40,7 +40,8 @@ pub async fn save_game_details(status: GameStatusMessage) -> Result<(), ()> {
     let lines = vec.split(|b| *b == 0xA);
     let conn = &mut (*shared::db::conn::DB_CONNECTION).get().map_err(|_| ())?;
     for line in lines {
-        let game_state: GameStateSQL = serde_json::from_slice(line).map_err(|_| ())?;
+        let mut game_state: GameStateSQL = serde_json::from_slice(line).map_err(|_| ())?;
+        game_state.game_id = id.clone();
         diesel::insert_into(db::schema::game_states::dsl::game_states)
             .values(game_state)
             .execute(conn)
@@ -52,7 +53,7 @@ pub async fn save_game_details(status: GameStatusMessage) -> Result<(), ()> {
 pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
     use shared::db::schema::{bots, games};
     let db_conn = &mut (*shared::db::conn::DB_CONNECTION.get().map_err(|_| ())?);
-    let GameStatusMessage { id, result } = status;
+    let GameStatusMessage { id, result } = status.clone();
     let (defender_score, challenger_score, error_type, error_bot) = match result.clone() {
         Ok(GameStatus::ScoreChanged(defender_score, challenger_score)) => {
             (defender_score, challenger_score, None, None)
@@ -205,5 +206,6 @@ pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
             Ok::<(), diesel::result::Error>(())
         })
         .map_err(|_| ())?;
+    save_game_details(status.id).await;
     Ok(())
 }

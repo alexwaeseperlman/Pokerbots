@@ -325,7 +325,7 @@ impl Game {
             WhichBot::Challenger => (&state.player_states[1], &state.player_states[0]),
         };
         let game_state_sql = GameStateSQL {
-            game_id: self.id.clone(),
+            game_id: "".to_string(),
             step: step,
             defender_stack: defender_state.stack as i32,
             challenger_stack: challenger_state.stack as i32,
