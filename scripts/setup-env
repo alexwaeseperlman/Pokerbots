@@ -42,6 +42,8 @@ config_vars = {
     'BUILD_RESULTS_QUEUE_URL': 'http://localhost:9324/queue/build_results',
     'SMTP_SERVER': 'smtp.gmail.com',
     'PORT': '3000',
+    # number of milliseconds between matchmaking, per team
+    'MATCHMAKING_INTERVAL': '60000',
     'BOT_SIZE': '5000000',
     'STARTING_STACK_SIZE': '500',
     'MAX_BET_SIZE': '50',
