@@ -71,6 +71,7 @@ pub fn api_service() -> actix_web::Scope {
         .service(games::count_games)
         .service(games::game_log)
         .service(games::game_record)
+        .service(games::game_length)
 }
 
 pub fn auth_service() -> actix_web::Scope {

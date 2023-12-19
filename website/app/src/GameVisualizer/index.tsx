@@ -28,7 +28,7 @@ function GetGameState({ gameId, step }: { gameId: string, step: number; }) {
   const fetchData = () => {
 
     fetch(
-      `${apiUrl}/game-state?id=${gameId}&state=${step}`)
+      `${apiUrl}/game-record?id=${gameId}&round=${step}`)
       .then(res => { return res.json() })
       .then(data => { setLogs(data) }
       )
@@ -109,7 +109,7 @@ export default function GameVisualizer({
   useEffect(
     () => {
       if (max == 0)
-        fetch(`${apiUrl}/game-length?game=${gameId}`).then(data => data.text()).then(data => setMax(parseInt(data)));
+        fetch(`${apiUrl}/game-length?game_id=${gameId}`).then(data => data.text()).then(data => setMax(parseInt(data)));
     },
     [max],
   )

@@ -199,8 +199,7 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
       });
 
     fetch(
-      `${apiUrl}/games?page=${paginationModel.page}&page_size=${
-        paginationModel.pageSize
+      `${apiUrl}/games?page=${paginationModel.page}&page_size=${paginationModel.pageSize
       }&${teamId === undefined ? "" : `team=${team?.id}`}`
     )
       .then((res) => res.json())
@@ -350,9 +349,8 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
                   <MenuItem
                     component="a"
                     target="_tab"
-                    href={`${apiUrl}/game-log?id=${gameId}&which_bot=${
-                      "Defender" as WhichBot
-                    }`}
+                    href={`${apiUrl}/game-log?id=${gameId}&which_bot=${"Defender" as WhichBot
+                      }`}
                   >
                     Defender game log
                   </MenuItem>
@@ -361,9 +359,8 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
                   <MenuItem
                     component="a"
                     target="_tab"
-                    href={`${apiUrl}/game-log?id=${gameId}&which_bot=${
-                      "Challenger" as WhichBot
-                    }`}
+                    href={`${apiUrl}/game-log?id=${gameId}&which_bot=${"Challenger" as WhichBot
+                      }`}
                   >
                     Challenger game log
                   </MenuItem>
@@ -375,6 +372,13 @@ export function GameTable({ teamId }: { teamId?: string | null }) {
                   href={`${apiUrl}/game-log?id=${gameId}`}
                 >
                   Public game log
+                </MenuItem>
+                <MenuItem
+                  component="a"
+                  target="_tab"
+                  href={`/view-game/${gameId}`}
+                >
+                  View game
                 </MenuItem>
               </Menu>
             </Dropdown>

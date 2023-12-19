@@ -20,6 +20,7 @@ import VerifyEmail from "./VerifyEmail";
 import ForgotPassword from "./ForgotPassword";
 import UpdatePassword from "./UpdatePassword";
 import OAuth from "./OAuth";
+import GameVisualizer from "./GameVisualizer";
 
 function HeaderFooter(props: React.PropsWithChildren<{}>) {
   return (
@@ -88,6 +89,14 @@ function TeamDashboard() {
       teamId={teamId}
     />
   );
+}
+function GameDashboard() {
+  const gameId = useParams().gameId ?? "";
+  return (
+    <GameVisualizer
+      gameId={gameId}
+    />
+  )
 }
 
 export default function UPAC() {
@@ -205,6 +214,16 @@ export default function UPAC() {
           element={
             <HeaderFooter>
               <OAuth />
+            </HeaderFooter>
+          }
+        />
+      </Route>
+      <Route path="view-game">
+        <Route
+          path=":gameId"
+          element={
+            <HeaderFooter>
+              <GameDashboard />
             </HeaderFooter>
           }
         />

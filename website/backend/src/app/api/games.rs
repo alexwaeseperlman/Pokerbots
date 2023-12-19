@@ -9,7 +9,7 @@ use shared::{
             bots::BotsDao,
             games::{GameQueryOptions, GamesDao, PageOptions},
         },
-        models::{BotWithTeam, GameWithBots, GameWithBotsWithResult, Team},
+        models::{BotWithTeam, GameStateSQL, GameWithBots, GameWithBotsWithResult, Team},
         schema_aliases::*,
     },
     WhichBot,
@@ -136,4 +136,26 @@ pub async fn game_record(
         .unwrap_or_default()
         .to_vec();
     Ok(HttpResponse::Ok().body(line))
+}
+
+#[derive(Deserialize)]
+pub struct GameLenghtQuery {
+    game_id: String,
+}
+
+#[get("/game-length")]
+pub async fn game_length(
+    session: Session,
+    web::Query::<GameLenghtQuery>(GameLenghtQuery { game_id }): web::Query<GameLenghtQuery>,
+) -> Result<HttpResponse, ApiError> {
+    let conn = &mut (*DB_CONNECTION).get()?;
+    let max = schema::game_states::dsl::game_states
+        .filter(schema::game_states::dsl::game_id.eq(game_id.clone()))
+        .order(schema::game_states::step.desc())
+        .first::<GameStateSQL>(conn)
+        .map(|obj| obj.step.to_string());
+    match max {
+        Ok(max) => return Ok(HttpResponse::Ok().body(max)),
+        Err(err) => return Err(actix_web::error::ErrorNotFound(err).into()),
+    }
 }
