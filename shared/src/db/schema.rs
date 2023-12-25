@@ -35,7 +35,6 @@ diesel::table! {
         defender_score -> Int4,
         challenger_score -> Int4,
         error_type -> Nullable<Text>,
-        error_bot -> Nullable<Int4>,
         updated_at -> Int8,
         defender_rating -> Float4,
         challenger_rating -> Float4,
@@ -96,7 +95,7 @@ diesel::table! {
 diesel::joinable!(bots -> auth (uploaded_by));
 diesel::joinable!(game_results -> games (id));
 diesel::joinable!(team_invites -> teams (team));
-diesel::joinable!(teams -> users (owner));
+diesel::joinable!(teams -> bots (active_bot));
 diesel::joinable!(user_profiles -> auth (id));
 diesel::joinable!(users -> auth (id));
 

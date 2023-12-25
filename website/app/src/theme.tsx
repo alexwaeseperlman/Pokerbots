@@ -27,7 +27,6 @@ const theme = extendTheme({
     h1: {
       fontWeight: 700,
     },
-
     h2: {
       fontWeight: 700,
     },

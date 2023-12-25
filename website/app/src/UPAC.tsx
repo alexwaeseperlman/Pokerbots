@@ -20,60 +20,7 @@ import VerifyEmail from "./VerifyEmail";
 import ForgotPassword from "./ForgotPassword";
 import UpdatePassword from "./UpdatePassword";
 import OAuth from "./OAuth";
-
-function HeaderFooter(props: React.PropsWithChildren<{}>) {
-  return (
-    <Sheet
-      sx={{
-        flexDirection: "column",
-        minHeight: "100vh",
-        position: "relative",
-        display: "flex",
-        background: "linear-gradient(269.89deg,#392889 0%,#191335 100%)",
-        pb: 4,
-        boxSizing: "border-box",
-      }}
-      color="primary"
-      variant="solid"
-    >
-      <TopBar />
-      <Suspense
-        fallback={
-          <>
-            <Box
-              sx={{
-                flexGrow: 1,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <CircularProgress />
-            </Box>
-          </>
-        }
-      >
-        <Container
-          sx={{
-            margin: "auto",
-          }}
-        >
-          {props.children}
-        </Container>
-      </Suspense>
-
-      <Box
-        sx={{
-          position: "absolute",
-          bottom: 0,
-          width: "100%",
-        }}
-      >
-        <BottomBar />
-      </Box>
-    </Sheet>
-  );
-}
+import HeaderFooter from "./components/HeaderFooter";
 
 function TeamDashboard() {
   const myTeam = useTeam(null)[0];
@@ -94,129 +41,23 @@ export default function UPAC() {
   return (
     <Routes>
       <Route path="/">
-        <Route
-          index
-          element={
-            <HeaderFooter>
-              <Home />
-            </HeaderFooter>
-          }
-        />
-        <Route
-          path="manage-team"
-          element={
-            <HeaderFooter>
-              <TeamDashboard />
-            </HeaderFooter>
-          }
-        />
-        <Route
-          path="leaderboard"
-          element={
-            <HeaderFooter>
-              <Leaderboard />
-            </HeaderFooter>
-          }
-        />
-        <Route
-          path="recent-games"
-          element={
-            <HeaderFooter>
-              <RecentGames />
-            </HeaderFooter>
-          }
-        />
-
-        <Route
-          path="profile"
-          element={
-            <HeaderFooter>
-              <Profile />
-            </HeaderFooter>
-          }
-        />
+        <Route index element={<Home />} />
+        <Route path="manage-team" element={<TeamDashboard />} />
+        <Route path="leaderboard" element={<Leaderboard />} />
+        <Route path="recent-games" element={<RecentGames />} />
+        <Route path="profile" element={<Profile />} />
         <Route path="team">
-          <Route
-            path=":teamId"
-            element={
-              <HeaderFooter>
-                <TeamDashboard />
-              </HeaderFooter>
-            }
-          />
+          <Route path=":teamId" element={<TeamDashboard />} />
         </Route>
-
-        <Route
-          path="join-team"
-          element={
-            <HeaderFooter>
-              <JoinTeam />
-            </HeaderFooter>
-          }
-        />
-
-        <Route
-          path="login"
-          element={
-            <HeaderFooter>
-              <Login />
-            </HeaderFooter>
-          }
-        />
-
-        <Route
-          path="signup"
-          element={
-            <HeaderFooter>
-              <Signup />
-            </HeaderFooter>
-          }
-        />
-
-        <Route
-          path="verify-email/:token"
-          element={
-            <HeaderFooter>
-              <VerifyEmail />
-            </HeaderFooter>
-          }
-        />
-
-        <Route
-          path="forgot-password"
-          element={
-            <HeaderFooter>
-              <ForgotPassword />
-            </HeaderFooter>
-          }
-        />
-
-        <Route
-          path="update-password/:token"
-          element={
-            <HeaderFooter>
-              <UpdatePassword />
-            </HeaderFooter>
-          }
-        />
-
-        <Route
-          path="/login/:provider"
-          element={
-            <HeaderFooter>
-              <OAuth />
-            </HeaderFooter>
-          }
-        />
+        <Route path="join-team" element={<JoinTeam />} />
+        <Route path="login" element={<Login />} />
+        <Route path="signup" element={<Signup />} />
+        <Route path="verify-email/:token" element={<VerifyEmail />} />
+        <Route path="forgot-password" element={<ForgotPassword />} />
+        <Route path="update-password/:token" element={<UpdatePassword />} />
+        <Route path="/login/:provider" element={<OAuth />} />
       </Route>
-      <Route
-        path="*"
-        element={
-          <HeaderFooter>
-            <NotFound />
-          </HeaderFooter>
-        }
-      />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

@@ -7,6 +7,7 @@ import { enqueueSnackbar } from "notistack";
 import Login from "../Login";
 import { Team } from "@bindings/Team";
 import { InviteCodeResponse } from "@bindings/InviteCodeResponse";
+import HeaderFooter from "../components/HeaderFooter";
 
 export default function JoinTeam() {
   const navigate = useNavigate();
@@ -44,62 +45,62 @@ export default function JoinTeam() {
   }, [user]);
 
   return (
-    <Box
-      sx={{
-        width: "100%",
-        flexGrow: 1,
-        padding: "20px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <Card
+    <HeaderFooter>
+      <Box
         sx={{
-          p: 4,
+          gridArea: 'content',
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
         }}
       >
-        <Typography level="h3">
-          {team?.name ? (
-            `You are invited to join "${team?.name}"`
-          ) : (
-            <Skeleton
-              sx={{
-                width: "70vw",
-              }}
-            />
-          )}
-        </Typography>
-        <Button
-          variant="solid"
-          color="primary"
+        <Card
           sx={{
-            mt: 2,
-          }}
-          disabled={myTeam !== null || profile === null}
-          onClick={() => {
-            fetch(`${apiUrl}/join-team?code=${code}`)
-              .then((res) => res.json())
-              .then((data) => {
-                if (data) {
-                  enqueueSnackbar(data.error, { variant: "error" });
-                } else {
-                  navigate("/manage-team");
-                  enqueueSnackbar("Joined team!", { variant: "success" });
-                  fetchMyTeam();
-                }
-              });
+            p: 4,
           }}
         >
-          {profile === null
-            ? "Complete your profile before joining a team."
-            : myTeam === null
-            ? "Join team"
-            : myTeam.id == team?.id
-            ? "Already toined"
-            : "Already on a team. Leave your team to join this one."}
-        </Button>
-      </Card>
-    </Box>
+          <Typography level="h3">
+            {team?.name ? (
+              `You are invited to join "${team?.name}"`
+            ) : (
+              <Skeleton
+                sx={{
+                  width: "70vw",
+                }}
+              />
+            )}
+          </Typography>
+          <Button
+            variant="solid"
+            color="primary"
+            sx={{
+              mt: 2,
+            }}
+            disabled={myTeam !== null || profile === null}
+            onClick={() => {
+              fetch(`${apiUrl}/join-team?code=${code}`)
+                .then((res) => res.json())
+                .then((data) => {
+                  if (data) {
+                    enqueueSnackbar(data.error, { variant: "error" });
+                  } else {
+                    navigate("/manage-team");
+                    enqueueSnackbar("Joined team!", { variant: "success" });
+                    fetchMyTeam();
+                  }
+                });
+            }}
+          >
+            {profile === null
+              ? "Complete your profile before joining a team."
+              : myTeam === null
+              ? "Join team"
+              : myTeam.id == team?.id
+              ? "Already toined"
+              : "Already on a team. Leave your team to join this one."}
+          </Button>
+        </Card>
+      </Box>
+    </HeaderFooter>
   );
 }

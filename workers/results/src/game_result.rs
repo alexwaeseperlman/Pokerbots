@@ -13,29 +13,30 @@ pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
     use shared::db::schema::{bots, games};
     let db_conn = &mut (*shared::db::conn::DB_CONNECTION.get().map_err(|_| ())?);
     let GameStatusMessage { id, result } = status;
-    let (defender_score, challenger_score, error_type, error_bot) = match result.clone() {
+    let error_type = result.clone().err();
+    let (defender_score, challenger_score) = match result.clone() {
         Ok(GameStatus::ScoreChanged(defender_score, challenger_score)) => {
-            (defender_score, challenger_score, None, None)
+            (defender_score, challenger_score)
         }
-        Ok(GameStatus::TestGameSucceeded) => (0, 0, None, None),
-        Ok(GameStatus::TestGameFailed) => (0, 0, None, None),
+        Ok(GameStatus::TestGameSucceeded) => (0, 0),
+        Ok(GameStatus::TestGameFailed) => (0, 0),
         Err(e) => match e {
-            GameError::InternalError => (50, 50, Some("INTERNAL".into()), None),
+            GameError::InternalError => (50, 50,),
             GameError::InvalidActionError(which_bot) => match which_bot {
-                shared::WhichBot::Defender => (-100, 100, Some("INVALID_ACTION".into()), Some(0)),
-                shared::WhichBot::Challenger => (100, -100, Some("INVALID_ACTION".into()), Some(1)),
+                shared::WhichBot::Defender => (-100, 100),
+                shared::WhichBot::Challenger => (100, -100),
             },
             GameError::MemoryError(which_bot) => match which_bot {
-                shared::WhichBot::Defender => (-100, 100, Some("MEMORY".into()), Some(0)),
-                shared::WhichBot::Challenger => (100, -100, Some("MEMORY".into()), Some(1)),
+                shared::WhichBot::Defender => (-100, 100),
+                shared::WhichBot::Challenger => (100, -100),
             },
             GameError::RunTimeError(which_bot) => match which_bot {
-                shared::WhichBot::Defender => (-100, 100, Some("RUNTIME".into()), Some(0)),
-                shared::WhichBot::Challenger => (100, -100, Some("RUNTIME".into()), Some(1)),
+                shared::WhichBot::Defender => (-100, 100),
+                shared::WhichBot::Challenger => (100, -100),
             },
             GameError::TimeoutError(which_bot) => match which_bot {
-                shared::WhichBot::Defender => (-100, 100, Some("TIMEOUT".into()), Some(0)),
-                shared::WhichBot::Challenger => (100, -100, Some("TIMEOUT".into()), Some(1)),
+                shared::WhichBot::Defender => (-100, 100),
+                shared::WhichBot::Challenger => (100, -100),
             },
         },
     };
@@ -66,8 +67,12 @@ pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
                         game.challenger_rating,
                         1.0 - score,
                     );
-                    if error_type.clone().is_some_and(|e| e == "INTERNAL") {
-                        (defender_rating_change, challenger_rating_change) = (0.0, 0.0);
+                    // don't update rating for internal errors
+                    match error_type {
+                        Some(GameError::InternalError) => {
+                            (defender_rating_change, challenger_rating_change) = (0.0, 0.0);
+                        }
+                        _ => {}
                     }
 
                     let (defender_bot, defender_team) = shared::db::schema::bots::dsl::bots
@@ -108,8 +113,7 @@ pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
                             defender_rating_change,
                             defender_score,
                             challenger_score,
-                            error_type,
-                            error_bot,
+                            error_type: error_type.clone(),
                             challenger_rating: challenger.rating,
                             defender_rating: defender.rating,
                         })

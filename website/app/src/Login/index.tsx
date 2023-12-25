@@ -21,6 +21,7 @@ import {
   useMicrosoftSigninUrl,
   useUser,
 } from "../state";
+import HeaderFooter from "../components/HeaderFooter";
 function MicrosoftLogo(props: SvgIconProps) {
   return (
     <SvgIcon {...props}>
@@ -93,76 +94,79 @@ export default function Login() {
   const microsoftSigninUrl = useMicrosoftSigninUrl();
 
   return (
-    <Container
-      maxWidth="sm"
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "stretch",
-        justifyContent: "center",
-        flexGrow: 1,
-        gap: 2,
-      }}
-    >
-      <Typography textColor="inherit" level="h1">
-        Log in to your account
-      </Typography>
-      <Input
-        placeholder="Email"
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
-      <Input
-        placeholder="Password"
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            handleSubmit();
-          }
-        }}
-      />
-      <Button
-        variant="solid"
-        onClick={() => {
-          handleSubmit();
+    <HeaderFooter>
+      <Container
+        maxWidth="sm"
+        sx={{
+          gridArea: 'content',
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "stretch",
+          justifyContent: "center",
+          flexGrow: 1,
+          gap: 2,
         }}
       >
-        Log in
-      </Button>
-      <Stack direction="row" gap={2}>
-        <LoginButton
-          variant="soft"
+        <Typography textColor="inherit" level="h1">
+          Log in to your account
+        </Typography>
+        <Input
+          placeholder="Email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <Input
+          placeholder="Password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleSubmit();
+            }
+          }}
+        />
+        <Button
+          variant="solid"
           onClick={() => {
-            navigate(`/forgot-password?redirect=${redirect}`);
+            handleSubmit();
           }}
         >
-          Forgot your password?
-        </LoginButton>
-      </Stack>
-      <Stack direction="row" gap={2}>
-        <LoginButton
-          onClick={() => {
-            window.location.href =
-              googleSigninUrl + "&state=" + encodeURIComponent(redirect);
-          }}
-          startDecorator={<GoogleLogo />}
-        >
-          Log in with Google
-        </LoginButton>
-        <LoginButton
-          onClick={() => {
-            window.location.href =
-              microsoftSigninUrl + "&state=" + encodeURIComponent(redirect);
-          }}
-          startDecorator={<MicrosoftLogo />}
-        >
-          Log in with Microsoft
-        </LoginButton>
-      </Stack>
-    </Container>
+          Log in
+        </Button>
+        <Stack direction="row" gap={2}>
+          <LoginButton
+            variant="soft"
+            onClick={() => {
+              navigate(`/forgot-password?redirect=${redirect}`);
+            }}
+          >
+            Forgot your password?
+          </LoginButton>
+        </Stack>
+        <Stack direction="row" gap={2}>
+          <LoginButton
+            onClick={() => {
+              window.location.href =
+                googleSigninUrl + "&state=" + encodeURIComponent(redirect);
+            }}
+            startDecorator={<GoogleLogo />}
+          >
+            Log in with Google
+          </LoginButton>
+          <LoginButton
+            onClick={() => {
+              window.location.href =
+                microsoftSigninUrl + "&state=" + encodeURIComponent(redirect);
+            }}
+            startDecorator={<MicrosoftLogo />}
+          >
+            Log in with Microsoft
+          </LoginButton>
+        </Stack>
+      </Container>
+    </HeaderFooter>
   );
   function handleSubmit() {
     fetch(`${authUrl}/email/login`, {

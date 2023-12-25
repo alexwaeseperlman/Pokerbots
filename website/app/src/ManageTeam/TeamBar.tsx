@@ -256,13 +256,16 @@ export function TeamBar({
             <Table size="sm">
               <thead>
                 <tr>
+                  {/* user/invite */}
                   <td
                     style={{
                       height: 0,
                     }}
                   ></td>
+                  {/* leave/kick/delete team */}
                   <td style={{ width: "150px", height: 0 }}></td>
-                  {team.owner === user?.id && (
+                  {/* make owner */}
+                  {team.owner === user?.id && team.members.length > 1 && (
                     <td style={{ width: "150px", height: 0 }}></td>
                   )}
                 </tr>
@@ -424,7 +427,6 @@ export function TeamBar({
           </Box>
         </Box>
       </Box>
-      <Box>Rating: {team.rating.toFixed(0)}</Box>
     </Box>
   );
 }

@@ -9,13 +9,15 @@ import { team_member_table_row } from "./styles.module.css";
 import { TeamBar } from "./TeamBar";
 import BotTable from "./BotTable";
 import FileUpload from "../components/BotUpload";
-import { GameTable } from "../components/Tables/GameTable";
+import { GameList } from "../components/Tables/GameTable";
 import Sheet from "@mui/joy/Sheet";
 import Stack from "@mui/joy/Stack";
 import { Card, CardContent, CardCover, Typography } from "@mui/joy";
 import { useNavigate } from "react-router-dom";
 import { enqueueSnackbar } from "notistack";
 import NoProfile from "./NoProfile";
+import HeaderFooter from "../components/HeaderFooter";
+import BotList from "./BotList";
 
 function NoTeam() {
   return (
@@ -42,35 +44,41 @@ export function DisplayTeam({
   if (!team) return <NoTeam />;
   return (
     <>
-      <TeamBar readonly={readonly} teamId={teamId} />
       <Box
         sx={{
-          flexGrow: 1,
+          display: "grid",
+          gridArea: "head",
+        }}
+      >
+        <TeamBar readonly={readonly} teamId={teamId} />
+      </Box>
+      <Box
+        sx={{
+          display: "grid",
+          gridArea: "content",
         }}
       >
         <Stack gap={2}>
-          <Card sx={{ p: 4, pt: 4, mb: 4 }}>
-            <CardContent>
-              <Typography level="h2">Bots</Typography>
-              {team.active_bot == null && (
-                <Typography color="danger">
-                  This team doesn't have an active bot.{" "}
-                  {!readonly && "Upload a bot to start playing."}
-                </Typography>
-              )}
-              {!readonly && (
-                <FileUpload onUpload={handleUpload}>
-                  Drag a zipped bot here
-                </FileUpload>
-              )}
+          <Typography level="h2" color="inherit">
+            Bots
+          </Typography>
+          {team.active_bot == null && (
+            <Typography color="danger">
+              This team doesn't have an active bot.{" "}
+              {!readonly && "Upload a bot to start playing."}
+            </Typography>
+          )}
+          {!readonly && (
+            <FileUpload onUpload={handleUpload}>
+              Drag a zipped bot here
+            </FileUpload>
+          )}
 
-              <BotTable readonly={readonly} teamId={teamId} />
-            </CardContent>
-          </Card>
-          <Card sx={{ p: 4, pt: 4, mb: 4 }}>
-            <Typography level="h2">Games</Typography>
-            <GameTable teamId={teamId} />
-          </Card>
+          <BotList readonly={readonly} teamId={teamId} />
+          <Typography level="h2" color="inherit">
+            Games
+          </Typography>
+          <GameList teamId={teamId} />
         </Stack>
       </Box>
     </>
@@ -107,13 +115,49 @@ export default function ManageTeam({
       navigate("/login?redirect=%2Fmanage-team");
     }
   });
-  if (readonly || (team && user)) {
-    return <DisplayTeam readonly={readonly} teamId={teamId} />;
-  } else if (user && !profile) {
-    return <NoProfile />;
-  } else if (user) {
-    return <CreateTeam />;
-  } else {
-    return <Login />;
-  }
+  const render = () => {
+    if (readonly || (team && user)) {
+      return <DisplayTeam readonly={readonly} teamId={teamId} />;
+    } else if (user && !profile) {
+      return (
+        <Box
+          sx={{
+            gridArea: "content",
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'stretch'
+          }}
+        >
+          <NoProfile />
+        </Box>
+      );
+    } else if (user) {
+      return (
+        <Box
+          sx={{
+            gridArea: "content",
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'stretch'
+          }}
+        >
+          <CreateTeam />
+        </Box>
+      );
+    } else {
+      return (
+        <Box
+          sx={{
+            gridArea: "content",
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'stretch'
+          }}
+        >
+          <Login />
+        </Box>
+      );
+    }
+  };
+  return <HeaderFooter>{render()}</HeaderFooter>;
 }

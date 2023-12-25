@@ -1,0 +1,1 @@
+ALTER TABLE game_results ADD COLUMN error_bot INTEGER;

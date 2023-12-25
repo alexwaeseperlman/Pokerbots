@@ -18,7 +18,7 @@ import {
   Typography,
   styled,
 } from "@mui/joy";
-import { GameTable } from "../components/Tables/GameTable";
+import { GameList } from "../components/Tables/GameTable";
 import { TeamsTable } from "../components/Tables/TeamsTable";
 import { apiUrl, useProfile, useUser } from "../state";
 import { InfoOutlined, Mail } from "@mui/icons-material";
@@ -28,6 +28,7 @@ import { enqueueSnackbar } from "notistack";
 import { UserProfile } from "@bindings/UserProfile";
 import { UpdateProfileRequest } from "@bindings/UpdateProfileRequest";
 import Resume from "./Resume";
+import HeaderFooter from "../components/HeaderFooter";
 
 const Cell = styled("td")(({ theme }) => ({
   padding: theme.spacing(1),
@@ -88,7 +89,7 @@ export default function Profile() {
   );
 
   return (
-    <>
+    <HeaderFooter>
       <Card>
         <Typography level="h2" mb={2}>
           Your profile
@@ -261,6 +262,6 @@ export default function Profile() {
           </Button>
         </Box>
       </Card>
-    </>
+    </HeaderFooter>
   );
 }

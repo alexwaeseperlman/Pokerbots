@@ -1,27 +1,34 @@
 import React from "react";
 import Box from "@mui/joy/Box";
-import { Card, Grid, Sheet, Typography } from "@mui/joy";
-import { GameTable } from "../components/Tables/GameTable";
+import { Card, Grid, Sheet, Stack, Typography } from "@mui/joy";
+import { GameList } from "../components/Tables/GameTable";
 import { TeamsTable } from "../components/Tables/TeamsTable";
 import BackgroundImage from "../components/BackgroundImage";
 import banner from "./banner.jpg";
+import HeaderFooter from "../components/HeaderFooter";
 
-export default function Leaderboard() {
+export default function RecentGames() {
   return (
-    <Box>
-      <Card size="lg">
-        <Typography level="h3" mb={2}>
+    <HeaderFooter>
+      <Box
+        sx={{
+          gridArea: "content",
+          display: 'grid'
+        }}
+      >
+        <Typography level="h3" mb={2} color="inherit">
           Recent games
         </Typography>
-        <Box
+        <Stack
           sx={{
             width: "100%",
             overflow: "hidden",
+            gap: 2,
           }}
         >
-          <GameTable />
-        </Box>
-      </Card>
-    </Box>
+          <GameList />
+        </Stack>
+      </Box>
+    </HeaderFooter>
   );
 }
