@@ -18,6 +18,7 @@ import { enqueueSnackbar } from "notistack";
 import NoProfile from "./NoProfile";
 import HeaderFooter from "../components/HeaderFooter";
 import BotList from "./BotList";
+import { ReadOnlyProvider, useReadOnly } from "./state";
 
 function NoTeam() {
   return (
@@ -33,14 +34,9 @@ function NoTeam() {
   );
 }
 
-export function DisplayTeam({
-  readonly,
-  teamId,
-}: {
-  readonly: boolean;
-  teamId: string | null;
-}) {
+export function DisplayTeam({ teamId }: { teamId: string | null }) {
   const team = useTeam(teamId)[0];
+  const isReadOnly = useReadOnly();
   if (!team) return <NoTeam />;
   return (
     <>
@@ -50,7 +46,7 @@ export function DisplayTeam({
           gridArea: "head",
         }}
       >
-        <TeamBar readonly={readonly} teamId={teamId} />
+        <TeamBar teamId={teamId} />
       </Box>
       <Box
         sx={{
@@ -65,16 +61,16 @@ export function DisplayTeam({
           {team.active_bot == null && (
             <Typography color="danger">
               This team doesn't have an active bot.{" "}
-              {!readonly && "Upload a bot to start playing."}
+              {!isReadOnly && "Upload a bot to start playing."}
             </Typography>
           )}
-          {!readonly && (
+          {!isReadOnly && (
             <FileUpload onUpload={handleUpload}>
               Drag a zipped bot here
             </FileUpload>
           )}
 
-          <BotList readonly={readonly} teamId={teamId} />
+          <BotList teamId={teamId} />
           <Typography level="h2" color="inherit">
             Games
           </Typography>
@@ -117,15 +113,19 @@ export default function ManageTeam({
   });
   const render = () => {
     if (readonly || (team && user)) {
-      return <DisplayTeam readonly={readonly} teamId={teamId} />;
+      return (
+        <ReadOnlyProvider isReadOnly={readonly}>
+          <DisplayTeam teamId={teamId} />
+        </ReadOnlyProvider>
+      );
     } else if (user && !profile) {
       return (
         <Box
           sx={{
             gridArea: "content",
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'stretch'
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "stretch",
           }}
         >
           <NoProfile />
@@ -136,9 +136,9 @@ export default function ManageTeam({
         <Box
           sx={{
             gridArea: "content",
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'stretch'
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "stretch",
           }}
         >
           <CreateTeam />
@@ -149,9 +149,9 @@ export default function ManageTeam({
         <Box
           sx={{
             gridArea: "content",
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'stretch'
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "stretch",
           }}
         >
           <Login />

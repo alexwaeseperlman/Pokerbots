@@ -13,18 +13,19 @@ import {
   Typography,
 } from "@mui/joy";
 import * as React from "react";
+import { useReadOnly } from "./state";
 
 function KeyValue(props: {
   keyName: string;
   value: React.JSX.Element | string;
 }) {
   return (
-    <Stack direction="column" >
+    <Stack direction="column">
       <Typography
         textColor="inherit"
         sx={{
           opacity: 0.5,
-          mb: -0.5
+          mb: -0.5,
         }}
       >
         {props.keyName}
@@ -99,6 +100,7 @@ export default function BotCard(props: {
   onSetActive: () => void;
   onDelete: () => void;
 }) {
+  const isReadOnly = useReadOnly();
   return (
     <Card>
       <CardContent
@@ -125,37 +127,43 @@ export default function BotCard(props: {
             Number(props.bot.created) * 1000
           ).toLocaleDateString()}
         />
-        <Box sx={{
-          gridColumn: "1 / span 2",
-          display: "flex",
-          flexDirection: "row",
-          gap: 1,
-          mt: 2
-        }}>
-          <Button
+        {(!isReadOnly || props.bot.team.active_bot == props.bot.id) && (
+          <Box
             sx={{
-              flexGrow: 1,
+              gridColumn: "1 / span 2",
+              display: "flex",
+              flexDirection: "row",
+              gap: 1,
+              mt: 2,
             }}
-            color="primary"
-            variant="outlined"
-            disabled={props.bot.team.active_bot == props.bot.id}
-            onClick={() => props.onSetActive()}
           >
-            {props.bot.team.active_bot == props.bot.id
-              ? "Currently active"
-              : "Make active"}
-          </Button>
-          <Button
-            sx={{
-              flexGrow: 1,
-            }}
-            color="danger"
-            variant="outlined"
-            onClick={() => props.onDelete()}
-          >
-            Delete
-          </Button>
-        </Box>
+            <Button
+              sx={{
+                flexGrow: 1,
+              }}
+              color="primary"
+              variant="outlined"
+              disabled={isReadOnly || props.bot.team.active_bot == props.bot.id}
+              onClick={() => props.onSetActive()}
+            >
+              {props.bot.team.active_bot == props.bot.id
+                ? "Currently active"
+                : "Make active"}
+            </Button>
+            {!isReadOnly && (
+              <Button
+                sx={{
+                  flexGrow: 1,
+                }}
+                color="danger"
+                variant="outlined"
+                onClick={() => props.onDelete()}
+              >
+                Delete
+              </Button>
+            )}
+          </Box>
+        )}
       </CardContent>
     </Card>
   );

@@ -14,6 +14,7 @@ const light: ColorSystemOptions = {
     },
   },
 };
+console.log('palette', light.palette)
 const theme = extendTheme({
   colorSchemes: {
     light,
@@ -22,6 +23,17 @@ const theme = extendTheme({
     body: "Figtree",
     code: "Fira Code",
     display: "Figtree",
+  },
+  components: {
+    JoyLink: {
+      styleOverrides: {
+        root: {
+          color: "inherit",
+          textDecoration: "underline",
+          textDecorationColor: "var(--joy-palette-primary-500)",
+        },
+      },
+    },
   },
   typography: {
     h1: {

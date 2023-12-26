@@ -119,6 +119,7 @@ export default function Profile() {
 
         <Stack
           flexDirection="row"
+          flexWrap={'wrap'}
           justifyContent={"stretch"}
           width="100%"
           gap={2}

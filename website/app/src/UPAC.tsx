@@ -45,7 +45,20 @@ class ErrorBoundary extends React.Component<
       return <ErrorPage />;
     }
 
-    return this.props.children;
+    return <Suspense fallback={
+      <HeaderFooter>
+        <Box
+          sx={{
+            gridArea: "content",
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center'
+          }}
+        >
+          <CircularProgress />
+        </Box>
+      </HeaderFooter>
+    }>{this.props.children}</Suspense>;
   }
 }
 
@@ -84,6 +97,7 @@ export default function UPAC() {
           <Route path="forgot-password" element={<ForgotPassword />} />
           <Route path="update-password/:token" element={<UpdatePassword />} />
           <Route path="/login/:provider" element={<OAuth />} />
+          <Route path="error" element={<ErrorPage />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

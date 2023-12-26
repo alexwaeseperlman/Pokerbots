@@ -14,8 +14,10 @@ import CopyIcon from "@mui/icons-material/ContentCopy";
 import { enqueueSnackbar } from "notistack";
 import { Team } from "@bindings/Team";
 import { User } from "@bindings/User";
+import { useReadOnly } from "./state";
 
-function PfpUpload({ team, readonly }: { team: Team; readonly: boolean }) {
+function PfpUpload({ team }: { team: Team }) {
+  const isReadOnly = useReadOnly();
   const [drag, setDrag] = useState(false);
   const fetchTeam = useTeam(null)[1];
 
@@ -67,22 +69,22 @@ function PfpUpload({ team, readonly }: { team: Team; readonly: boolean }) {
           flexDirection: "column",
         })}
         onDragEnter={(e) => {
-          if (readonly) return;
+          if (isReadOnly) return;
           e.preventDefault();
           setDrag(true);
         }}
         onDragOver={(e) => {
-          if (readonly) return;
+          if (isReadOnly) return;
           e.preventDefault();
           setDrag(true);
         }}
         onDragLeave={(e) => {
-          if (readonly) return;
+          if (isReadOnly) return;
           e.preventDefault();
           setDrag(false);
         }}
         onDrop={(e) => {
-          if (readonly) return;
+          if (isReadOnly) return;
           e.preventDefault();
           handleUpload(e.dataTransfer.files[0]);
           setDrag(false);
@@ -143,18 +145,13 @@ function CopyableInput({ value }: { value: string }) {
   );
 }
 
-export function TeamBar({
-  readonly,
-  teamId,
-}: {
-  readonly: boolean;
-  teamId: string | null;
-}) {
+export function TeamBar({ teamId }: { teamId: string | null }) {
   const [team, fetchTeam] = useTeam(teamId);
   const [editing, setEditing] = useState(false);
   const theme = useTheme();
   const [user, fetchUser] = useUser();
   const headerRef = React.useRef<HTMLHeadingElement>(null);
+  const isReadOnly = useReadOnly();
   if (!team) throw new Error("Cannot render team bar without a team");
   console.log(team);
 
@@ -177,7 +174,7 @@ export function TeamBar({
         },
       }}
     >
-      <PfpUpload team={team} readonly={readonly} />
+      <PfpUpload team={team} />
       <Box
         sx={{
           flexDirection: "column",
@@ -225,13 +222,13 @@ export function TeamBar({
           >
             {team?.name}
           </Typography>
-          {readonly || editing || (
+          {isReadOnly || editing || (
             <TableButton
-              sx={{
-                margin: "10px",
-              }}
+              sx={(theme) => ({
+                margin: 1,
+              })}
               onClick={() => {
-                if (!readonly) setEditing(true);
+                setEditing(true);
                 // set a timeout so that the focus happens after the contenteditable is enabled
                 setTimeout(() => {
                   if (headerRef.current) {
@@ -240,8 +237,24 @@ export function TeamBar({
                 }, 5);
               }}
             >
-              <EditIcon sx={{ mr: "4px" }} fontSize="small" />
-              Rename
+              <EditIcon
+                sx={(theme) => ({
+                  mr: "4px",
+                  [theme.breakpoints.down("sm")]: {
+                    mr: "0px",
+                  },
+                })}
+                fontSize="small"
+              />
+              <Box
+                sx={(theme) => ({
+                  [theme.breakpoints.down("sm")]: {
+                    display: "none",
+                  },
+                })}
+              >
+                Rename
+              </Box>
             </TableButton>
           )}
         </Box>
@@ -263,29 +276,28 @@ export function TeamBar({
                     }}
                   ></td>
                   {/* leave/kick/delete team */}
-                  <td style={{ width: "150px", height: 0 }}></td>
+                  <td style={{ height: 0 }}></td>
                   {/* make owner */}
                   {team.owner === user?.id && team.members.length > 1 && (
-                    <td style={{ width: "150px", height: 0 }}></td>
+                    <td style={{ height: 0, width: "54px" }}></td>
                   )}
                 </tr>
               </thead>
               <tbody>
                 {team.members.map((member: User) => (
                   <tr key={member.id}>
-                    <td>
+                    <td
+                      style={{
+                        overflow: "hidden",
+                      }}
+                    >
                       <Typography textColor="white" level="title-sm">
                         {member.display_name}
                       </Typography>
                     </td>
-                    <Box
-                      sx={{
-                        width: "150px",
-                      }}
-                      component={(props: any) => <td {...props}></td>}
-                    >
+                    <Box component={(props: any) => <td {...props}></td>}>
                       {(team.owner === user?.id || member.id === user?.id) &&
-                        (readonly || (
+                        (isReadOnly || (
                           <TableButton
                             onClick={() => {
                               const confirmed = confirm(
@@ -294,7 +306,7 @@ export function TeamBar({
                                     ? team.owner == user?.id
                                       ? "delete the team"
                                       : "leave the team"
-                                    : "kick this member"
+                                    : `change the owner of this team to ${member.display_name}?`
                                 }?`
                               );
                               if (!confirmed) return;
@@ -315,39 +327,6 @@ export function TeamBar({
                                 }
                               } else {
                                 fetch(
-                                  `${apiUrl}/kick-member?user_id=${member.id}`
-                                ).then((response) => {
-                                  fetchTeam();
-                                });
-                              }
-                            }}
-                          >
-                            {member.id === user?.id
-                              ? team.owner === user?.id
-                                ? "Delete team"
-                                : "Leave"
-                              : "Kick"}
-                          </TableButton>
-                        ))}
-                    </Box>
-                    {team.owner === user?.id &&
-                      member.id !== user?.id &&
-                      (readonly || (
-                        <Box
-                          sx={{
-                            backgroundColor: "white",
-                            width: "150px",
-                          }}
-                          component={(props: any) => <td {...props}></td>}
-                        >
-                          <TableButton
-                            onClick={() => {
-                              if (
-                                confirm(
-                                  `Are you sure you would like to change the owner of this team to ${member.display_name}?`
-                                )
-                              ) {
-                                fetch(
                                   `${apiUrl}/update-owner?user_id=${member.id}`
                                 )
                                   .then(async (result) => {
@@ -366,7 +345,39 @@ export function TeamBar({
                               }
                             }}
                           >
-                            Make owner
+                            {member.id === user?.id
+                              ? team.owner === user?.id
+                                ? "Delete team"
+                                : "Leave"
+                              : "Make owner"}
+                          </TableButton>
+                        ))}
+                    </Box>
+                    {team.owner === user?.id &&
+                      member.id !== user?.id &&
+                      (isReadOnly || (
+                        <Box
+                          sx={{
+                            backgroundColor: "white",
+                          }}
+                          component={(props: any) => <td {...props}></td>}
+                        >
+                          <TableButton
+                            onClick={() => {
+                              if (
+                                !confirm(
+                                  `Are you sure you want to kick ${member.display_name}?`
+                                )
+                              )
+                                return;
+                              fetch(
+                                `${apiUrl}/kick-member?user_id=${member.id}`
+                              ).then((response) => {
+                                fetchTeam();
+                              });
+                            }}
+                          >
+                            Kick
                           </TableButton>
                         </Box>
                       ))}
@@ -381,7 +392,7 @@ export function TeamBar({
                             value={`${window.location.origin}/join-team?code=${invite.code}`}
                           />
                         </td>
-                        {!readonly && (
+                        {!isReadOnly && (
                           <td>
                             <TableButton
                               onClick={() => {
@@ -396,7 +407,7 @@ export function TeamBar({
                         )}
                       </tr>
                     ))}
-                {readonly ||
+                {isReadOnly ||
                 (team.invites?.length ?? 0) + team.members.length >= 5 ? (
                   []
                 ) : (

@@ -18,7 +18,7 @@ import {
   MenuButton,
   useTheme,
 } from "@mui/joy";
-import { Person } from "@mui/icons-material";
+import { MenuOpen, Person, Menu as MenuIcon } from "@mui/icons-material";
 import { BoxProps } from "@mui/joy/Box";
 
 function RawBarItem({
@@ -96,37 +96,41 @@ function BarItem({
 export function TopBar() {
   return (
     <>
-      <Dropdown
-        sx={(theme) => ({
-          [theme.breakpoints.up("sm")]: {
-            display: "none",
-          },
-        })}
-      >
-        <MenuButton
-          sx={(theme) => ({
-            [theme.breakpoints.up("sm")]: {
-              display: "none",
-            },
-            background: "none",
-            border: "none",
-            ":hover": {
-              background: "#00000011",
-            },
-          })}
-        >
-          <Typography textColor="white">Options</Typography>
-        </MenuButton>
-        <Menu
+      <Box>
+        <Dropdown
           sx={(theme) => ({
             [theme.breakpoints.up("sm")]: {
               display: "none",
             },
           })}
         >
-          <TopBarContent vertical black={true} />
-        </Menu>
-      </Dropdown>
+          <MenuButton
+            sx={(theme) => ({
+              [theme.breakpoints.up("sm")]: {
+                display: "none",
+              },
+              background: "none",
+              border: "none",
+              ":hover": {
+                background: "#00000011",
+              },
+              justifyContent: "flex-start",
+              alignItems: "center",
+            })}
+          >
+            <MenuIcon sx={{ color: "white" }} />
+          </MenuButton>
+          <Menu
+            sx={(theme) => ({
+              [theme.breakpoints.up("sm")]: {
+                display: "none",
+              },
+            })}
+          >
+            <TopBarContent vertical black={true} />
+          </Menu>
+        </Dropdown>
+      </Box>
       <Box
         sx={(theme) => ({
           [theme.breakpoints.down("sm")]: {

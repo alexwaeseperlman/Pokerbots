@@ -3,6 +3,7 @@ import graphic from "./404.webp";
 import React from "react";
 import BackgroundImage from "../components/BackgroundImage";
 import HeaderFooter from "../components/HeaderFooter";
+import { Link } from "@mui/joy";
 
 export default function ErrorPage() {
   return (
@@ -22,7 +23,7 @@ export default function ErrorPage() {
           </Typography>
           <Typography color="inherit">
             If the problem persists, please contact us at{" "}
-            <a href="mailto:alex@alexwp.com">alex@alexwp.com</a>
+            <Link href="mailto:alex@alexwp.com">alex@alexwp.com</Link>
           </Typography>
         </Box>
       </Box>
