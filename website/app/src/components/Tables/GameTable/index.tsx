@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect } from "react";
-import { apiUrl, useTeam } from "../../state";
+import { apiUrl, useTeam } from "../../../state";
 import Box from "@mui/system/Box";
 import { styled } from "@mui/joy/styles";
 import Button, { ButtonProps } from "@mui/joy/Button";
@@ -21,10 +21,10 @@ import { BotWithTeam } from "@bindings/BotWithTeam";
 import { Team } from "@bindings/Team";
 import { enqueueSnackbar } from "notistack";
 import { WhichBot } from "@bindings/WhichBot";
-import DataTable, { DataTableProps } from "../DataTable";
+import DataTable, { DataTableProps } from "../../DataTable";
 import { ArrowRight, MoreVert } from "@mui/icons-material";
 import { GameWithBotsWithResult } from "@bindings/GameWithBotsWithResult";
-import GameCard from "../GameCard";
+import GameCard from "./GameCard";
 
 export const TableButton = styled((props: ButtonProps) => (
   <Button
@@ -32,7 +32,7 @@ export const TableButton = styled((props: ButtonProps) => (
     variant="plain"
     sx={{
       color: "#bbb",
-      whiteSpace: 'nowrap',
+      whiteSpace: "nowrap",
       background: "none",
       ":hover": {
         background: "#00000040",
@@ -167,12 +167,11 @@ export function GameList({ teamId }: { teamId?: string | null }) {
 
   console.log(games);
 
-
   return (
     <>
-    {games.map((game) => (
-      <GameCard game={game}/>
-    ))}
-</>
+      {games.map((game) => (
+        <GameCard game={game} />
+      ))}
+    </>
   );
 }

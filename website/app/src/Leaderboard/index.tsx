@@ -1,8 +1,6 @@
 import React from "react";
 import Box from "@mui/joy/Box";
 import { Card, Grid, Sheet, Typography } from "@mui/joy";
-import { GameList } from "../components/Tables/GameTable";
-import { TeamsTable } from "../components/Tables/TeamsTable";
 import banner from "./banner.jpg";
 import HeaderFooter from "../components/HeaderFooter";
 
@@ -23,7 +21,6 @@ export default function Leaderboard() {
             overflow: "hidden",
           }}
         >
-          <TeamsTable />
         </Box>
       </Box>
     </HeaderFooter>

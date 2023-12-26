@@ -14,7 +14,7 @@ import {
   Typography,
 } from "@mui/joy";
 import * as React from "react";
-import { apiUrl } from "../state";
+import { apiUrl } from "../../../state";
 import { Link } from "react-router-dom";
 import { GameError } from "@bindings/GameError";
 import { PlayArrow, Replay } from "@mui/icons-material";

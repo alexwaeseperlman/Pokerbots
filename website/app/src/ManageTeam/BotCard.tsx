@@ -9,6 +9,7 @@ import {
   Card,
   CardContent,
   CircularProgress,
+  Skeleton,
   Stack,
   Typography,
 } from "@mui/joy";
@@ -30,7 +31,11 @@ function KeyValue(props: {
       >
         {props.keyName}
       </Typography>
-      {props.value}
+      {props.value ?? (
+        <Typography>
+          <Skeleton>12345</Skeleton>
+        </Typography>
+      )}
     </Stack>
   );
 }
@@ -103,6 +108,9 @@ export default function BotCard(props: {
   const isReadOnly = useReadOnly();
   return (
     <Card>
+      <CardContent>
+        <Typography level="h4">{props.bot.name}</Typography>
+      </CardContent>
       <CardContent
         sx={{
           display: "grid",
@@ -110,7 +118,6 @@ export default function BotCard(props: {
           gap: 1,
         }}
       >
-        <KeyValue keyName="Bot name" value={props.bot.name} />
         <KeyValue keyName="Version" value={props.bot.version} />
         <KeyValue keyName="Rating" value={props.bot.rating} />
         <KeyValue

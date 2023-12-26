@@ -1,13 +1,33 @@
 import React from "react";
 import Box from "@mui/joy/Box";
 import Logo from "../components/Logo";
-import { Button, Sheet, Typography } from "@mui/joy";
+import { Button, Link, Sheet, Typography } from "@mui/joy";
 import { DiscordLogo } from "./Discord";
 import Container from "@mui/joy/Container";
 import graphic_small from "./graphic_small.png";
 import graphic from "./graphic.png";
 import BackgroundImage from "../components/BackgroundImage";
 import HeaderFooter from "../components/HeaderFooter";
+
+export function LogoText({text}: { text: string }) {
+  let vals = '0px 0px';
+  for (let i = 0; i <= 20; i++) vals += `, ${i/2}px ${i/2}px`;
+  console.log(vals);
+  return <Typography level="h1" fontSize={100} color='inherit' sx={{
+    position:'relative',
+    letterSpacing: '10px',
+    '&:before': {
+      content: `"${text}"`,
+      position:'absolute',
+      zIndex: -1,
+      top:0,
+      left:0,
+      textShadow: vals,
+      color: '#CDC0FF',
+      mask: 'repeating-linear-gradient(45deg, transparent 0 3px, rgba(0,0,0,0.5) 0 6px)'
+    },
+  }}>{text}</Typography>
+}
 
 export default function HomePage() {
   return (
@@ -40,16 +60,7 @@ export default function HomePage() {
               alignItems: "left",
             }}
           >
-            <Logo
-              color="inherit"
-              sx={{
-                width: "100px",
-                height: "100px",
-              }}
-            />
-            <Typography textColor="inherit" level="h1" fontSize={64}>
-              UPAC
-            </Typography>
+            <LogoText text="UPAC"/>
           </Box>
           <Box
             sx={{
@@ -71,7 +82,7 @@ export default function HomePage() {
           </Box>
           <Typography textColor="inherit" level="body-md">
             The competition will start in 2024. For sponsorship inquiries,
-            please contact alexwaeseperlman@gmail.com.
+            please contact <Link href="mailto:alex@alexwp.com">alex@alexwp.com</Link>
           </Typography>
         </Box>
       </Container>

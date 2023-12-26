@@ -19,8 +19,6 @@ import {
   Typography,
   styled,
 } from "@mui/joy";
-import { GameList } from "../components/Tables/GameTable";
-import { TeamsTable } from "../components/Tables/TeamsTable";
 import { apiUrl, useProfile, useUser } from "../state";
 import { InfoOutlined, Mail } from "@mui/icons-material";
 import Accordion from "@mui/joy/Accordion";

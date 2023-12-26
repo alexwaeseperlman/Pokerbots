@@ -162,25 +162,16 @@ export function TopBarContent(props: { vertical?: boolean; black?: boolean }) {
           : {}),
       })}
     >
-      <RawBarItem
+      <BarItem
         tabIndex={1}
         command={() => {
           navigate("/");
         }}
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          pt: 1,
-        }}
         underlineColor={props.black ? "black" : "white"}
+        label='HOME'
+          selected={window.location.pathname === "/"}
       >
-        <Logo
-          sx={{
-            color: "inherit",
-          }}
-        />
-      </RawBarItem>
+      </BarItem>
       {user && (
         <BarItem
           tabIndex={2}
@@ -290,12 +281,12 @@ export function BottomBar() {
           flexGrow: 1,
         }}
       >
-        <BarItem label="© UPAC 2023" />
+        <BarItem label="© UPAC 2024" />
       </Box>
       <BarItem
         label="REPORT AN ISSUE"
         command={() => {
-          window.open("https://github.com/alexwaeseperlman/UPAC/issues");
+          window.open("https://github.com/alexwaeseperlman/Pokerbots/issues");
         }}
       />
     </Box>
