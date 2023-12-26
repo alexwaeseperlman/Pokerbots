@@ -32,6 +32,7 @@ export const TableButton = styled((props: ButtonProps) => (
     variant="plain"
     sx={{
       color: "#bbb",
+      whiteSpace: 'nowrap',
       background: "none",
       ":hover": {
         background: "#00000040",

@@ -12,6 +12,7 @@ import { CircularProgress, LinearProgress } from "@mui/joy";
 import { useAtom } from "jotai";
 import JoinTeam from "./JoinTeam";
 import NotFound from "./NotFound";
+import ErrorPage from "./ErrorPage";
 import RecentGames from "./RecentGames";
 import Profile from "./Profile";
 import Login from "./Login";
@@ -21,6 +22,32 @@ import ForgotPassword from "./ForgotPassword";
 import UpdatePassword from "./UpdatePassword";
 import OAuth from "./OAuth";
 import HeaderFooter from "./components/HeaderFooter";
+
+class ErrorBoundary extends React.Component<
+  any,
+  { hasError: boolean; error: any }
+> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error(error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <ErrorPage />;
+    }
+
+    return this.props.children;
+  }
+}
 
 function TeamDashboard() {
   const myTeam = useTeam(null)[0];
@@ -39,25 +66,27 @@ function TeamDashboard() {
 
 export default function UPAC() {
   return (
-    <Routes>
-      <Route path="/">
-        <Route index element={<Home />} />
-        <Route path="manage-team" element={<TeamDashboard />} />
-        <Route path="leaderboard" element={<Leaderboard />} />
-        <Route path="recent-games" element={<RecentGames />} />
-        <Route path="profile" element={<Profile />} />
-        <Route path="team">
-          <Route path=":teamId" element={<TeamDashboard />} />
+    <ErrorBoundary>
+      <Routes>
+        <Route path="/">
+          <Route index element={<Home />} />
+          <Route path="manage-team" element={<TeamDashboard />} />
+          <Route path="leaderboard" element={<Leaderboard />} />
+          <Route path="recent-games" element={<RecentGames />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="team">
+            <Route path=":teamId" element={<TeamDashboard />} />
+          </Route>
+          <Route path="join-team" element={<JoinTeam />} />
+          <Route path="login" element={<Login />} />
+          <Route path="signup" element={<Signup />} />
+          <Route path="verify-email/:token" element={<VerifyEmail />} />
+          <Route path="forgot-password" element={<ForgotPassword />} />
+          <Route path="update-password/:token" element={<UpdatePassword />} />
+          <Route path="/login/:provider" element={<OAuth />} />
         </Route>
-        <Route path="join-team" element={<JoinTeam />} />
-        <Route path="login" element={<Login />} />
-        <Route path="signup" element={<Signup />} />
-        <Route path="verify-email/:token" element={<VerifyEmail />} />
-        <Route path="forgot-password" element={<ForgotPassword />} />
-        <Route path="update-password/:token" element={<UpdatePassword />} />
-        <Route path="/login/:provider" element={<OAuth />} />
-      </Route>
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </ErrorBoundary>
   );
 }

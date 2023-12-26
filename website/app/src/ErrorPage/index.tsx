@@ -4,12 +4,12 @@ import React from "react";
 import BackgroundImage from "../components/BackgroundImage";
 import HeaderFooter from "../components/HeaderFooter";
 
-export default function NotFound() {
+export default function ErrorPage() {
   return (
     <HeaderFooter graphics={[`url(${graphic})`]}>
       <Box
         sx={{
-          gridArea:'content',
+          gridArea: "content",
         }}
       >
         <Box
@@ -18,7 +18,11 @@ export default function NotFound() {
           }}
         >
           <Typography variant="h2" color="inherit">
-            There is no page at this address.
+            Something went wrong. Try reloading the page.
+          </Typography>
+          <Typography color="inherit">
+            If the problem persists, please contact us at{" "}
+            <a href="mailto:alex@alexwp.com">alex@alexwp.com</a>
           </Typography>
         </Box>
       </Box>

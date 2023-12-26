@@ -164,7 +164,11 @@ function TeamObject({
               </Typography>
             </Link>
 
-            <Typography fontSize="small" textColor="text.secondary" whiteSpace='nowrap'>
+            <Typography
+              fontSize="small"
+              textColor="text.secondary"
+              whiteSpace="nowrap"
+            >
               {botName ?? "Deleted bot"}
             </Typography>
           </Box>
@@ -194,6 +198,7 @@ export default function GameCard(props: {
       <CardContent
         sx={{
           flexDirection: "row",
+          justifyContent: "space-between",
         }}
       >
         <Box
@@ -202,6 +207,7 @@ export default function GameCard(props: {
             display: "flex",
             flexWrap: "wrap",
             flexGrow: 1,
+            maxWidth: '700px',
             gap: 4,
           }}
         >
@@ -224,14 +230,16 @@ export default function GameCard(props: {
             error={props.game.result?.error_type}
           />
         </Box>
-        <IconButton
+        <Button
           sx={{
             height: "100%",
-            width: "32px",
+            whiteSpace: "nowrap",
           }}
+          variant="plain"
+          color="neutral"
         >
-          <PlayArrow />
-        </IconButton>
+          Replay
+        </Button>
       </CardContent>
     </Card>
   );

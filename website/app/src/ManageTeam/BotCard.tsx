@@ -19,11 +19,12 @@ function KeyValue(props: {
   value: React.JSX.Element | string;
 }) {
   return (
-    <Stack direction="column">
+    <Stack direction="column" >
       <Typography
         textColor="inherit"
         sx={{
           opacity: 0.5,
+          mb: -0.5
         }}
       >
         {props.keyName}
@@ -47,22 +48,22 @@ function BuildStatusChip(props: { status: BuildStatus }) {
     case "Queued":
       text = "Queued";
       color = "warning";
-      icon = <CircularProgress size='sm' />;
+      icon = <CircularProgress size="sm" />;
       break;
     case "Building":
       text = "Building";
       color = "warning";
-      icon = <CircularProgress size='sm' />;
+      icon = <CircularProgress size="sm" />;
       break;
     case "BuildSucceeded":
       text = "Build succeeded";
       color = "warning";
-      icon = <CircularProgress size='sm' />;
+      icon = <CircularProgress size="sm" />;
       break;
     case "PlayingTestGame":
       text = "Playing test game";
       color = "warning";
-      icon = <CircularProgress size='sm' />;
+      icon = <CircularProgress size="sm" />;
       break;
     case "TestGameSucceeded":
       text = "Test game succeeded";
@@ -78,15 +79,19 @@ function BuildStatusChip(props: { status: BuildStatus }) {
       break;
   }
 
-  return <Box sx={{
-    display: "flex",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 1,
-  }}>
-    <Typography textColor={color}>{text}</Typography>
-    {icon}
-  </Box>
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 1,
+      }}
+    >
+      <Typography textColor={color}>{text}</Typography>
+      {icon}
+    </Box>
+  );
 }
 
 export default function BotCard(props: {
@@ -100,6 +105,7 @@ export default function BotCard(props: {
         sx={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
+          gap: 1,
         }}
       >
         <KeyValue keyName="Bot name" value={props.bot.name} />
@@ -119,29 +125,37 @@ export default function BotCard(props: {
             Number(props.bot.created) * 1000
           ).toLocaleDateString()}
         />
-        <Button
-          sx={{
-            flexGrow: 1,
-          }}
-          color="primary"
-          variant="plain"
-          disabled={props.bot.team.active_bot == props.bot.id}
-          onClick={() => props.onSetActive()}
-        >
-          {props.bot.team.active_bot == props.bot.id
-            ? "Currently active"
-            : "Make active"}
-        </Button>
-        <Button
-          sx={{
-            flexGrow: 1,
-          }}
-          color="danger"
-          variant="plain"
-          onClick={() => props.onDelete()}
-        >
-          Delete
-        </Button>
+        <Box sx={{
+          gridColumn: "1 / span 2",
+          display: "flex",
+          flexDirection: "row",
+          gap: 1,
+          mt: 2
+        }}>
+          <Button
+            sx={{
+              flexGrow: 1,
+            }}
+            color="primary"
+            variant="outlined"
+            disabled={props.bot.team.active_bot == props.bot.id}
+            onClick={() => props.onSetActive()}
+          >
+            {props.bot.team.active_bot == props.bot.id
+              ? "Currently active"
+              : "Make active"}
+          </Button>
+          <Button
+            sx={{
+              flexGrow: 1,
+            }}
+            color="danger"
+            variant="outlined"
+            onClick={() => props.onDelete()}
+          >
+            Delete
+          </Button>
+        </Box>
       </CardContent>
     </Card>
   );

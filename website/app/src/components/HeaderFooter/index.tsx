@@ -4,7 +4,14 @@ import { BottomBar, TopBar } from "../AppBar";
 import { Suspense } from "react";
 import BackgroundImage from "../BackgroundImage";
 import bgImage from "./bg.png";
-export default function HeaderFooter(props: React.PropsWithChildren<{}>) {
+
+export interface IHeaderFooterProps {
+  graphics?: string[];
+}
+
+export default function HeaderFooter(
+  props: React.PropsWithChildren<IHeaderFooterProps>
+) {
   return (
     <Sheet
       sx={{
@@ -55,6 +62,9 @@ export default function HeaderFooter(props: React.PropsWithChildren<{}>) {
               pl: 8,
               gridTemplateRows: "auto 1fr",
               gridTemplateColumns: "3fr 1fr",
+              [theme.breakpoints.up("lg")]: {
+                gridTemplateColumns: "2fr 1fr",
+              },
               gridTemplateAreas: `
                 "head extra"
                 "content ."
@@ -75,7 +85,7 @@ export default function HeaderFooter(props: React.PropsWithChildren<{}>) {
         <BottomBar />
       </Box>
       <BackgroundImage
-        graphics={[`url(${bgImage})`]}
+        graphics={props.graphics ?? [`url(${bgImage})`]}
         sx={(theme) => ({
           backgroundPosition: "top",
           maxWidth: "100vw",
