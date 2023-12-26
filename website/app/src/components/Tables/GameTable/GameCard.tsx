@@ -11,13 +11,14 @@ import {
   CardContent,
   CircularProgress,
   IconButton,
+  Stack,
   Typography,
 } from "@mui/joy";
 import * as React from "react";
 import { apiUrl } from "../../../state";
 import { Link } from "react-router-dom";
 import { GameError } from "@bindings/GameError";
-import { PlayArrow, Replay } from "@mui/icons-material";
+import { ErrorOutline, PlayArrow, Replay } from "@mui/icons-material";
 
 function RatingChange({
   ratingChange,
@@ -77,8 +78,6 @@ function TeamObject({
   rating: number | undefined;
   error: GameError | null | undefined;
 }) {
-  console.log(error, ratingChange, rating);
-
   let error_message = null;
   if (error) {
     if (error == "InternalError") {
@@ -98,7 +97,7 @@ function TeamObject({
   }
 
   return (
-    <Box
+    <Stack
       sx={{
         flexDirection: "column",
         alignItems: "stretch",
@@ -174,25 +173,25 @@ function TeamObject({
           </Box>
         </Box>
       </Box>
-      <Box>
-        {error_message && (
-          <Typography
-            sx={{
-              color: "danger",
-            }}
-          >
-            {error_message}
-          </Typography>
-        )}
-      </Box>
-    </Box>
+      {error_message && (
+        <Typography
+          textColor={"warning.500"}
+          display={"flex"}
+          alignItems={"center"}
+          justifyContent={direction == "Challenger" ? "left" : "right"}
+          gap={1}
+        >
+          <ErrorOutline color="warning" />
+          {error_message}
+        </Typography>
+      )}
+    </Stack>
   );
 }
 
 export default function GameCard(props: {
   game: GameWithBotsWithResult<BotWithTeam<Team>>;
 }) {
-  console.log(props.game);
   return (
     <Card size="md">
       <CardContent
@@ -207,7 +206,7 @@ export default function GameCard(props: {
             display: "flex",
             flexWrap: "wrap",
             flexGrow: 1,
-            maxWidth: '700px',
+            maxWidth: "700px",
             gap: 4,
           }}
         >
