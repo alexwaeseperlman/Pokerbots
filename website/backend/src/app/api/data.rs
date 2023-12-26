@@ -78,7 +78,9 @@ pub async fn teams(
         let ids = ids?;
         base = base.filter(schema::teams::dsl::id.eq_any(ids));
     }
-    let page_size = page_size.unwrap_or(10).min(100);
+
+    // We probably won't have more than 500 teams
+    let page_size = page_size.unwrap_or(500).min(500);
     let page = page.unwrap_or(0);
     if count.unwrap_or(false) {
         return Ok(web::Json(TeamsResponse::Count(
