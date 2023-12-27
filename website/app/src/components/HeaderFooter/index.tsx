@@ -7,6 +7,7 @@ import bgImage from "./bg.png";
 
 export interface IHeaderFooterProps {
   graphics?: string[];
+  fullWidth?: boolean;
 }
 
 export default function HeaderFooter(
@@ -17,6 +18,7 @@ export default function HeaderFooter(
       sx={{
         flexDirection: "column",
         minHeight: "100vh",
+        width: '100vw',
         position: "relative",
         display: "flex",
         background: "linear-gradient(269.89deg,#392889 0%,#191335 100%)",
@@ -49,7 +51,6 @@ export default function HeaderFooter(
             zIndex: 2,
             display: "grid",
             flexGrow: 1,
-            gap: 4,
             [theme.breakpoints.down("md")]: {
               gridTemplateRows: "auto auto 1fr",
               gridTemplateColumns: "1fr",
@@ -68,7 +69,7 @@ export default function HeaderFooter(
               },
               gridTemplateAreas: `
                 "head extra"
-                "content ."
+                "${props.fullWidth ? "content content " : "content ."}"
               `,
             },
           })}

@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import Box from "@mui/joy/Box";
 import { Card, Grid, Sheet, Stack, Typography } from "@mui/joy";
-import { GameList } from "../components/Tables/GameTable";
+import { GameList } from "../components/Tables/GameList";
 import BackgroundImage from "../components/BackgroundImage";
 import banner from "./banner.jpg";
 import HeaderFooter from "../components/HeaderFooter";

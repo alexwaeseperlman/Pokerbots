@@ -117,6 +117,8 @@ export function TopBar() {
               justifyContent: "flex-start",
               alignItems: "center",
             })}
+            color='primary'
+            variant="solid"
           >
             <MenuIcon sx={{ color: "inherit" }} />
           </MenuButton>

@@ -1,6 +1,5 @@
 .game{
   position: relative;
-  left: 0;
   justify-content: center;
   align-items: center;
 }
@@ -18,23 +17,17 @@
   grid-template-columns: repeat(3, 1fr); /* Divide into three rows */
 }
 
-.col {
-  /* border: 1px solid #000; /* Optional: Border for visualization */ */
-}
-
-
 .cards{
   display: flex;
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  margin: 20px;
   gap: 6px;
 }
 .card {
   position: relative;
-  width: 100px;
-  height: 150px;
+  width: 75px;
+  height: 100px;
   background-color: white;
   border-radius: 10px;
   border: 2px solid #333;
@@ -44,18 +37,7 @@
   font-size: 24px;
   font-weight: bold;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.bots-information{
-  position: relative;
-  width: 100%;
-  height: 100%;
-  padding: 10px;
   box-sizing: border-box;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex: 1;
 }
 
 
@@ -78,18 +60,52 @@
 }
 
 .suit{
-  font-size: 25px;
+  font-size: 15px;
 }
+
+@media screen and (max-width: 600px) {
+  .card {
+    width: 50px;
+    height: 75px;
+    font-size: 16px;
+  }
+
+  .suit {
+    font-size: 10px;
+  }
+
+  .rank {
+    font-size: 20px;
+  }
+}
+
+
+@media screen and (min-width: 1200px) {
+  .card {
+    width: 100px;
+    height: 133px;
+    font-size: 24px;
+  }
+
+  .suit {
+    font-size: 20px;
+  }
+
+  .rank {
+    font-size: 48px !important;
+  }
+}
+
 .rank{
-  font-size: 50px;
+  font-size: 32px;
 }
 .top{
   position: absolute;
-  top: 0;
+  top: 4px;
 }
 .bottom{
   position: absolute;
-  bottom: 0;
+  bottom: 4px;
 }
 
 /* Example suit styles (customize as needed) */
@@ -110,10 +126,10 @@
 }
 .left{
   position: absolute;
-  left: 0
+  left: 4px
 }
 .right{
   position: absolute;
-  right: 0
+  right: 4px
 }
 

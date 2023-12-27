@@ -9,7 +9,7 @@ import { team_member_table_row } from "./styles.module.css";
 import { TeamBar } from "./TeamBar";
 import BotTable from "./BotTable";
 import FileUpload from "../components/BotUpload";
-import { GameList } from "../components/Tables/GameTable";
+import { GameList } from "../components/Tables/GameList";
 import Sheet from "@mui/joy/Sheet";
 import Stack from "@mui/joy/Stack";
 import { Card, CardContent, CardCover, Typography } from "@mui/joy";
