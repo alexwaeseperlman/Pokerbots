@@ -22,9 +22,11 @@ import { Check, MoreVert } from "@mui/icons-material";
 import BotCard from "./BotCard";
 
 // Group bots by name and output versions
-function groupBots<T>(bots: BotWithTeam<T>[]): { bot: BotWithTeam<T>, version: number }[] {
+function groupBots<T>(
+  bots: BotWithTeam<T>[]
+): { bot: BotWithTeam<T>; version: number }[] {
   const grouped: {
-    [key: string]: BotWithTeam<T>[]
+    [key: string]: BotWithTeam<T>[];
   } = {};
 
   for (const bot of bots) {
@@ -34,11 +36,11 @@ function groupBots<T>(bots: BotWithTeam<T>[]): { bot: BotWithTeam<T>, version: n
     grouped[bot.name].push(bot);
   }
 
-  const output: { bot: BotWithTeam<T>, version: number }[] = [];
+  const output: { bot: BotWithTeam<T>; version: number }[] = [];
 
   for (const name in grouped) {
     const bots = grouped[name];
-    const newest = bots.reduce((a, b) => a.created > b.created ? a : b);
+    const newest = bots.reduce((a, b) => (a.created > b.created ? a : b));
     output.push({ bot: newest, version: bots.length });
   }
 
@@ -61,8 +63,6 @@ export default function BotList({
     pageSize: 10,
   });
   const [loading, setLoading] = React.useState(true);
-
-  
 
   const getBots = () => {
     fetch(`${apiUrl}/bots?team=${team?.id}&count=true`)
@@ -103,16 +103,20 @@ export default function BotList({
           display: "flex",
           flexDirection: "row",
           flexWrap: "wrap",
-          gap: 2
+          gap: 2,
         }}
       >
-        {groups.map((bot) => {
+        {groups.map(({ bot, version }) => {
           return (
             <BotCard
-              bot={bot.bot}
-              version={bot.version}
-              onSetActive={() => handleSetActive(bot.bot.id)}
-              onDelete={() => handleDelete(bot.bot.id)}
+              bot={bot}
+              version={version}
+              onSetActive={() => handleSetActive(bot.id)}
+              onDelete={() =>
+                handleDelete(
+                  bots.filter((b) => b.name == bot.name).map((b) => b.id)
+                )
+              }
             ></BotCard>
           );
         })}
@@ -120,18 +124,20 @@ export default function BotList({
     </>
   );
 
-  function handleDelete(botId: number) {
+  function handleDelete(botIds: number[]) {
     if (!window.confirm("Are you sure you want to delete a bot?")) return;
-    fetch(`${apiUrl}/delete-bot?id=${botId}`).then(async (res) => {
-      if (res.status !== 200) {
-        const error = await res.json();
-        enqueueSnackbar(`Error deleting bot: ${error.error}`, {
-          variant: "error",
-        });
-      }
-      getBots();
-      fetchTeam();
-    });
+    for (const botId of botIds) {
+      fetch(`${apiUrl}/delete-bot?id=${botId}`).then(async (res) => {
+        if (res.status !== 200) {
+          const error = await res.json();
+          enqueueSnackbar(`Error deleting bot: ${error.error}`, {
+            variant: "error",
+          });
+        }
+        getBots();
+        fetchTeam();
+      });
+    }
   }
 
   function handleSetActive(botId: number) {
