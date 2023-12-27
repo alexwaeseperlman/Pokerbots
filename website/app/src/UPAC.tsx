@@ -12,6 +12,7 @@ import { CircularProgress, LinearProgress } from "@mui/joy";
 import { useAtom } from "jotai";
 import JoinTeam from "./JoinTeam";
 import NotFound from "./NotFound";
+import ErrorPage from "./ErrorPage";
 import RecentGames from "./RecentGames";
 import Profile from "./Profile";
 import Login from "./Login";
@@ -20,59 +21,45 @@ import VerifyEmail from "./VerifyEmail";
 import ForgotPassword from "./ForgotPassword";
 import UpdatePassword from "./UpdatePassword";
 import OAuth from "./OAuth";
+import HeaderFooter from "./components/HeaderFooter";
 
-function HeaderFooter(props: React.PropsWithChildren<{}>) {
-  return (
-    <Sheet
-      sx={{
-        flexDirection: "column",
-        minHeight: "100vh",
-        position: "relative",
-        display: "flex",
-        background: "linear-gradient(269.89deg,#392889 0%,#191335 100%)",
-        pb: 4,
-        boxSizing: "border-box",
-      }}
-      color="primary"
-      variant="solid"
-    >
-      <TopBar />
-      <Suspense
-        fallback={
-          <>
-            <Box
-              sx={{
-                flexGrow: 1,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <CircularProgress />
-            </Box>
-          </>
-        }
-      >
-        <Container
+class ErrorBoundary extends React.Component<
+  any,
+  { hasError: boolean; error: any }
+> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error(error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <ErrorPage />;
+    }
+
+    return <Suspense fallback={
+      <HeaderFooter>
+        <Box
           sx={{
-            margin: "auto",
+            gridArea: "content",
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center'
           }}
         >
-          {props.children}
-        </Container>
-      </Suspense>
-
-      <Box
-        sx={{
-          position: "absolute",
-          bottom: 0,
-          width: "100%",
-        }}
-      >
-        <BottomBar />
-      </Box>
-    </Sheet>
-  );
+          <CircularProgress />
+        </Box>
+      </HeaderFooter>
+    }>{this.props.children}</Suspense>;
+  }
 }
 
 function TeamDashboard() {
@@ -92,131 +79,28 @@ function TeamDashboard() {
 
 export default function UPAC() {
   return (
-    <Routes>
-      <Route path="/">
-        <Route
-          index
-          element={
-            <HeaderFooter>
-              <Home />
-            </HeaderFooter>
-          }
-        />
-        <Route
-          path="manage-team"
-          element={
-            <HeaderFooter>
-              <TeamDashboard />
-            </HeaderFooter>
-          }
-        />
-        <Route
-          path="leaderboard"
-          element={
-            <HeaderFooter>
-              <Leaderboard />
-            </HeaderFooter>
-          }
-        />
-        <Route
-          path="recent-games"
-          element={
-            <HeaderFooter>
-              <RecentGames />
-            </HeaderFooter>
-          }
-        />
-
-        <Route
-          path="profile"
-          element={
-            <HeaderFooter>
-              <Profile />
-            </HeaderFooter>
-          }
-        />
-        <Route path="team">
-          <Route
-            path=":teamId"
-            element={
-              <HeaderFooter>
-                <TeamDashboard />
-              </HeaderFooter>
-            }
-          />
+    <ErrorBoundary>
+      <Routes>
+        <Route path="/">
+          <Route index element={<Home />} />
+          <Route path="manage-team" element={<TeamDashboard />} />
+          <Route path="leaderboard" element={<Leaderboard />} />
+          <Route path="recent-games" element={<RecentGames />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="team">
+            <Route path=":teamId" element={<TeamDashboard />} />
+          </Route>
+          <Route path="join-team" element={<JoinTeam />} />
+          <Route path="login" element={<Login />} />
+          <Route path="signup" element={<Signup />} />
+          <Route path="verify-email/:token" element={<VerifyEmail />} />
+          <Route path="forgot-password" element={<ForgotPassword />} />
+          <Route path="update-password/:token" element={<UpdatePassword />} />
+          <Route path="/login/:provider" element={<OAuth />} />
+          <Route path="error" element={<ErrorPage />} />
         </Route>
-
-        <Route
-          path="join-team"
-          element={
-            <HeaderFooter>
-              <JoinTeam />
-            </HeaderFooter>
-          }
-        />
-
-        <Route
-          path="login"
-          element={
-            <HeaderFooter>
-              <Login />
-            </HeaderFooter>
-          }
-        />
-
-        <Route
-          path="signup"
-          element={
-            <HeaderFooter>
-              <Signup />
-            </HeaderFooter>
-          }
-        />
-
-        <Route
-          path="verify-email/:token"
-          element={
-            <HeaderFooter>
-              <VerifyEmail />
-            </HeaderFooter>
-          }
-        />
-
-        <Route
-          path="forgot-password"
-          element={
-            <HeaderFooter>
-              <ForgotPassword />
-            </HeaderFooter>
-          }
-        />
-
-        <Route
-          path="update-password/:token"
-          element={
-            <HeaderFooter>
-              <UpdatePassword />
-            </HeaderFooter>
-          }
-        />
-
-        <Route
-          path="/login/:provider"
-          element={
-            <HeaderFooter>
-              <OAuth />
-            </HeaderFooter>
-          }
-        />
-      </Route>
-      <Route
-        path="*"
-        element={
-          <HeaderFooter>
-            <NotFound />
-          </HeaderFooter>
-        }
-      />
-    </Routes>
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </ErrorBoundary>
   );
 }

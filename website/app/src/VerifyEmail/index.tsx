@@ -3,6 +3,7 @@ import { enqueueSnackbar } from "notistack";
 import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { authUrl } from "../state";
+import HeaderFooter from "../components/HeaderFooter";
 
 export default function VerifyEmail() {
   const params = useParams();
@@ -25,18 +26,21 @@ export default function VerifyEmail() {
     });
   }, [params.token]);
   return (
-    <Container
-      maxWidth="sm"
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "stretch",
-        justifyContent: "center",
-        flexGrow: 1,
-        gap: 2,
-      }}
-    >
-      <CircularProgress />
-    </Container>
+    <HeaderFooter>
+      <Container
+        maxWidth="sm"
+        sx={{
+          gridArea: 'content',
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "stretch",
+          justifyContent: "center",
+          flexGrow: 1,
+          gap: 2,
+        }}
+      >
+        <CircularProgress />
+      </Container>
+    </HeaderFooter>
   );
 }

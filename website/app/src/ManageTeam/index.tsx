@@ -9,13 +9,19 @@ import { team_member_table_row } from "./styles.module.css";
 import { TeamBar } from "./TeamBar";
 import BotTable from "./BotTable";
 import FileUpload from "../components/BotUpload";
-import { GameTable } from "../components/Tables/GameTable";
+import { GameList } from "../components/Tables/GameTable";
 import Sheet from "@mui/joy/Sheet";
 import Stack from "@mui/joy/Stack";
 import { Card, CardContent, CardCover, Typography } from "@mui/joy";
 import { useNavigate } from "react-router-dom";
 import { enqueueSnackbar } from "notistack";
 import NoProfile from "./NoProfile";
+import HeaderFooter from "../components/HeaderFooter";
+import BotList from "./BotList";
+import { ReadOnlyProvider, useReadOnly } from "./state";
+import { KeyValue } from "../components/KeyValue";
+import { TeamWithMembers } from "@bindings/TeamWithMembers";
+import { User } from "@bindings/User";
 
 function NoTeam() {
   return (
@@ -31,46 +37,110 @@ function NoTeam() {
   );
 }
 
-export function DisplayTeam({
-  readonly,
-  teamId,
-}: {
-  readonly: boolean;
-  teamId: string | null;
-}) {
+// TODO: polling for team rank is incredibly inefficient
+function TeamStats({ team }: { team: TeamWithMembers<User> }) {
+  const [gamesPlayed, setGamesPlayed] = React.useState<number | null>(null);
+  const [teamRank, setTeamRank] = React.useState<number | null>(null);
+
+  useEffect(() => {
+    const getGames = () => {
+      fetch(`${apiUrl}/count-games?team_id=${team.id}`).then(async (res) => {
+        const json = await res.json();
+        if (res.status === 200) {
+          setGamesPlayed(json);
+        } else {
+          console.log(json);
+        }
+      });
+    };
+    getGames();
+    const interval = setInterval(getGames, 1000);
+    return () => clearInterval(interval);
+  }, [team.id]);
+
+  useEffect(() => {
+    const getRank = () => {
+      fetch(`${apiUrl}/teams?sort=Score`).then(async (res) => {
+        const json = await res.json();
+        if (res.status === 200) {
+          const teams = json.Teams;
+          const teamRank = teams.findIndex((t) => t.id === team.id) + 1;
+          setTeamRank(teamRank);
+        } else {
+          console.log(json);
+        }
+      });
+    }
+    getRank();
+    const interval = setInterval(getRank, 1000);
+    return () => clearInterval(interval);
+  }, [team.id]);
+
+  return (
+    <Box
+      sx={{
+        display: "grid",
+        height: "fit-content",
+        gridTemplateColumns: "repeat(2, 1fr)",
+      }}
+    >
+      <KeyValue keyName="Rank" value={teamRank} />
+      <KeyValue keyName="Rating" value={team.rating.toFixed(0)} />
+      <KeyValue keyName="Games played" value={gamesPlayed} />
+      <KeyValue keyName="Team ID" value={team.id.toString()} />
+    </Box>
+  );
+}
+
+export function DisplayTeam({ teamId }: { teamId: string | null }) {
   const team = useTeam(teamId)[0];
+  const isReadOnly = useReadOnly();
   if (!team) return <NoTeam />;
   return (
     <>
-      <TeamBar readonly={readonly} teamId={teamId} />
       <Box
         sx={{
-          flexGrow: 1,
+          display: "grid",
+          gridArea: "extra",
+        }}
+      >
+        <TeamStats team={team} />
+      </Box>
+      <Box
+        sx={{
+          display: "grid",
+          gridArea: "head",
+        }}
+      >
+        <TeamBar teamId={teamId} />
+      </Box>
+      <Box
+        sx={{
+          display: "grid",
+          gridArea: "content",
         }}
       >
         <Stack gap={2}>
-          <Card sx={{ p: 4, pt: 4, mb: 4 }}>
-            <CardContent>
-              <Typography level="h2">Bots</Typography>
-              {team.active_bot == null && (
-                <Typography color="danger">
-                  This team doesn't have an active bot.{" "}
-                  {!readonly && "Upload a bot to start playing."}
-                </Typography>
-              )}
-              {!readonly && (
-                <FileUpload onUpload={handleUpload}>
-                  Drag a zipped bot here
-                </FileUpload>
-              )}
+          <Typography level="h2" color="inherit">
+            Bots
+          </Typography>
+          {team.active_bot == null && (
+            <Typography color="danger">
+              This team doesn't have an active bot.{" "}
+              {!isReadOnly && "Upload a bot to start playing."}
+            </Typography>
+          )}
+          {!isReadOnly && (
+            <FileUpload onUpload={handleUpload}>
+              Drag a zipped bot here
+            </FileUpload>
+          )}
 
-              <BotTable readonly={readonly} teamId={teamId} />
-            </CardContent>
-          </Card>
-          <Card sx={{ p: 4, pt: 4, mb: 4 }}>
-            <Typography level="h2">Games</Typography>
-            <GameTable teamId={teamId} />
-          </Card>
+          <BotList teamId={teamId} />
+          <Typography level="h2" color="inherit">
+            Games
+          </Typography>
+          <GameList teamId={teamId} />
         </Stack>
       </Box>
     </>
@@ -107,13 +177,53 @@ export default function ManageTeam({
       navigate("/login?redirect=%2Fmanage-team");
     }
   });
-  if (readonly || (team && user)) {
-    return <DisplayTeam readonly={readonly} teamId={teamId} />;
-  } else if (user && !profile) {
-    return <NoProfile />;
-  } else if (user) {
-    return <CreateTeam />;
-  } else {
-    return <Login />;
-  }
+  const render = () => {
+    if (readonly || (team && user)) {
+      return (
+        <ReadOnlyProvider isReadOnly={readonly}>
+          <DisplayTeam teamId={teamId} />
+        </ReadOnlyProvider>
+      );
+    } else if (user && !profile) {
+      return (
+        <Box
+          sx={{
+            gridArea: "content",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "stretch",
+          }}
+        >
+          <NoProfile />
+        </Box>
+      );
+    } else if (user) {
+      return (
+        <Box
+          sx={{
+            gridArea: "content",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "stretch",
+          }}
+        >
+          <CreateTeam />
+        </Box>
+      );
+    } else {
+      return (
+        <Box
+          sx={{
+            gridArea: "content",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "stretch",
+          }}
+        >
+          <Login />
+        </Box>
+      );
+    }
+  };
+  return <HeaderFooter>{render()}</HeaderFooter>;
 }

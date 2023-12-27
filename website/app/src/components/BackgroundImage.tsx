@@ -2,7 +2,7 @@ import { styled } from "@mui/system";
 
 export default styled("div")<{ graphics: string[] }>(({ theme, graphics }) => ({
   backgroundImage: graphics.join(", "),
-  filter: "grayscale(100%)",
+  //filter: "grayscale(100%)",
   opacity: 0.4,
   backgroundPosition: "center",
   position: "absolute",
@@ -10,7 +10,7 @@ export default styled("div")<{ graphics: string[] }>(({ theme, graphics }) => ({
   left: 0,
   backgroundSize: "contain",
   backgroundRepeat: "no-repeat",
-  mixBlendMode: "screen",
+  mixBlendMode: "lighten",
   width: "100%",
   maxWidth: "100vw",
   height: "100%",

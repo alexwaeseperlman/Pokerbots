@@ -18,7 +18,7 @@ import {
   MenuButton,
   useTheme,
 } from "@mui/joy";
-import { Person } from "@mui/icons-material";
+import { MenuOpen, Person, Menu as MenuIcon } from "@mui/icons-material";
 import { BoxProps } from "@mui/joy/Box";
 
 function RawBarItem({
@@ -96,37 +96,41 @@ function BarItem({
 export function TopBar() {
   return (
     <>
-      <Dropdown
-        sx={(theme) => ({
-          [theme.breakpoints.up("sm")]: {
-            display: "none",
-          },
-        })}
-      >
-        <MenuButton
-          sx={(theme) => ({
-            [theme.breakpoints.up("sm")]: {
-              display: "none",
-            },
-            background: "none",
-            border: "none",
-            ":hover": {
-              background: "#00000011",
-            },
-          })}
-        >
-          <Typography textColor="white">Options</Typography>
-        </MenuButton>
-        <Menu
+      <Box>
+        <Dropdown
           sx={(theme) => ({
             [theme.breakpoints.up("sm")]: {
               display: "none",
             },
           })}
         >
-          <TopBarContent vertical black={true} />
-        </Menu>
-      </Dropdown>
+          <MenuButton
+            sx={(theme) => ({
+              [theme.breakpoints.up("sm")]: {
+                display: "none",
+              },
+              background: "none",
+              border: "none",
+              ":hover": {
+                background: "#00000011",
+              },
+              justifyContent: "flex-start",
+              alignItems: "center",
+            })}
+          >
+            <MenuIcon sx={{ color: "inherit" }} />
+          </MenuButton>
+          <Menu
+            sx={(theme) => ({
+              [theme.breakpoints.up("sm")]: {
+                display: "none",
+              },
+            })}
+          >
+            <TopBarContent vertical black={true} />
+          </Menu>
+        </Dropdown>
+      </Box>
       <Box
         sx={(theme) => ({
           [theme.breakpoints.down("sm")]: {
@@ -158,25 +162,16 @@ export function TopBarContent(props: { vertical?: boolean; black?: boolean }) {
           : {}),
       })}
     >
-      <RawBarItem
+      <BarItem
         tabIndex={1}
         command={() => {
           navigate("/");
         }}
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          pt: 1,
-        }}
         underlineColor={props.black ? "black" : "white"}
+        label='HOME'
+          selected={window.location.pathname === "/"}
       >
-        <Logo
-          sx={{
-            color: "inherit",
-          }}
-        />
-      </RawBarItem>
+      </BarItem>
       {user && (
         <BarItem
           tabIndex={2}
@@ -286,12 +281,12 @@ export function BottomBar() {
           flexGrow: 1,
         }}
       >
-        <BarItem label="© UPAC 2023" />
+        <BarItem label="© UPAC 2024" />
       </Box>
       <BarItem
         label="REPORT AN ISSUE"
         command={() => {
-          window.open("https://github.com/alexwaeseperlman/UPAC/issues");
+          window.open("https://github.com/alexwaeseperlman/Pokerbots/issues");
         }}
       />
     </Box>

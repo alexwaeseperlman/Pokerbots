@@ -14,12 +14,11 @@ import {
   Input,
   Sheet,
   Skeleton,
+  Stack,
   Table,
   Typography,
   styled,
 } from "@mui/joy";
-import { GameTable } from "../components/Tables/GameTable";
-import { TeamsTable } from "../components/Tables/TeamsTable";
 import { apiUrl, useProfile, useUser } from "../state";
 import { InfoOutlined, Mail } from "@mui/icons-material";
 import Accordion from "@mui/joy/Accordion";
@@ -28,6 +27,7 @@ import { enqueueSnackbar } from "notistack";
 import { UserProfile } from "@bindings/UserProfile";
 import { UpdateProfileRequest } from "@bindings/UpdateProfileRequest";
 import Resume from "./Resume";
+import HeaderFooter from "../components/HeaderFooter";
 
 const Cell = styled("td")(({ theme }) => ({
   padding: theme.spacing(1),
@@ -88,7 +88,7 @@ export default function Profile() {
   );
 
   return (
-    <>
+    <HeaderFooter>
       <Card>
         <Typography level="h2" mb={2}>
           Your profile
@@ -115,15 +115,19 @@ export default function Profile() {
           />
         </FormControl>
 
-        <FormControl>
-          <FormLabel>Name</FormLabel>
-          <Box
+        <Stack
+          flexDirection="row"
+          flexWrap={'wrap'}
+          justifyContent={"stretch"}
+          width="100%"
+          gap={2}
+        >
+          <FormControl
             sx={{
-              display: "flex",
-              flexDirection: "row",
-              gap: 2,
+              flexGrow: 1,
             }}
           >
+            <FormLabel>First Name</FormLabel>
             <Input
               sx={{
                 flexGrow: 1,
@@ -132,6 +136,13 @@ export default function Profile() {
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
             />
+          </FormControl>
+          <FormControl
+            sx={{
+              flexGrow: 1,
+            }}
+          >
+            <FormLabel>Last Name</FormLabel>
             <Input
               sx={{
                 flexGrow: 1,
@@ -140,12 +151,12 @@ export default function Profile() {
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
             />
-          </Box>
-          <FormHelperText>
-            In order to receive prizes and be eligible for the leaderboard,
-            please enter your real name.
-          </FormHelperText>
-        </FormControl>
+          </FormControl>
+        </Stack>
+        <FormHelperText>
+          In order to receive prizes and be eligible for the leaderboard, please
+          enter your real name.
+        </FormHelperText>
 
         <FormControl>
           <FormLabel>Country</FormLabel>
@@ -172,7 +183,13 @@ export default function Profile() {
             prizes.
           </FormHelperText>
         </FormControl>
-        <Divider role="presentation" />
+        <Divider
+          sx={{
+            mt: 4,
+            mb: 4,
+          }}
+          role="presentation"
+        />
 
         <Typography level="h3">Recruiting information (optional)</Typography>
         <Typography level="body-sm">
@@ -261,6 +278,6 @@ export default function Profile() {
           </Button>
         </Box>
       </Card>
-    </>
+    </HeaderFooter>
   );
 }
