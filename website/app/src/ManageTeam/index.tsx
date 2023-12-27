@@ -19,6 +19,9 @@ import NoProfile from "./NoProfile";
 import HeaderFooter from "../components/HeaderFooter";
 import BotList from "./BotList";
 import { ReadOnlyProvider, useReadOnly } from "./state";
+import { KeyValue } from "../components/KeyValue";
+import { TeamWithMembers } from "@bindings/TeamWithMembers";
+import { User } from "@bindings/User";
 
 function NoTeam() {
   return (
@@ -34,12 +37,75 @@ function NoTeam() {
   );
 }
 
+// TODO: polling for team rank is incredibly inefficient
+function TeamStats({ team }: { team: TeamWithMembers<User> }) {
+  const [gamesPlayed, setGamesPlayed] = React.useState<number | null>(null);
+  const [teamRank, setTeamRank] = React.useState<number | null>(null);
+
+  useEffect(() => {
+    const getGames = () => {
+      fetch(`${apiUrl}/count-games?team_id=${team.id}`).then(async (res) => {
+        const json = await res.json();
+        if (res.status === 200) {
+          setGamesPlayed(json);
+        } else {
+          console.log(json);
+        }
+      });
+    };
+    getGames();
+    const interval = setInterval(getGames, 1000);
+    return () => clearInterval(interval);
+  }, [team.id]);
+
+  useEffect(() => {
+    const getRank = () => {
+      fetch(`${apiUrl}/teams?sort=Score`).then(async (res) => {
+        const json = await res.json();
+        if (res.status === 200) {
+          const teams = json.Teams;
+          const teamRank = teams.findIndex((t) => t.id === team.id) + 1;
+          setTeamRank(teamRank);
+        } else {
+          console.log(json);
+        }
+      });
+    }
+    getRank();
+    const interval = setInterval(getRank, 1000);
+    return () => clearInterval(interval);
+  }, [team.id]);
+
+  return (
+    <Box
+      sx={{
+        display: "grid",
+        height: "fit-content",
+        gridTemplateColumns: "repeat(2, 1fr)",
+      }}
+    >
+      <KeyValue keyName="Rank" value={teamRank} />
+      <KeyValue keyName="Rating" value={team.rating.toFixed(0)} />
+      <KeyValue keyName="Games played" value={gamesPlayed} />
+      <KeyValue keyName="Team ID" value={team.id.toString()} />
+    </Box>
+  );
+}
+
 export function DisplayTeam({ teamId }: { teamId: string | null }) {
   const team = useTeam(teamId)[0];
   const isReadOnly = useReadOnly();
   if (!team) return <NoTeam />;
   return (
     <>
+      <Box
+        sx={{
+          display: "grid",
+          gridArea: "extra",
+        }}
+      >
+        <TeamStats team={team} />
+      </Box>
       <Box
         sx={{
           display: "grid",

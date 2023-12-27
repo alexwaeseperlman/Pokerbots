@@ -49,12 +49,13 @@ export default function HeaderFooter(
             zIndex: 2,
             display: "grid",
             flexGrow: 1,
+            gap: 4,
             [theme.breakpoints.down("md")]: {
               gridTemplateRows: "auto auto 1fr",
               gridTemplateColumns: "1fr",
               gridTemplateAreas: `
-                "head"
                 "extra"
+                "head"
                 "content"
               `,
             },
