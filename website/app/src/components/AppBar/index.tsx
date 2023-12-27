@@ -118,7 +118,7 @@ export function TopBar() {
               alignItems: "center",
             })}
           >
-            <MenuIcon sx={{ color: "white" }} />
+            <MenuIcon sx={{ color: "inherit" }} />
           </MenuButton>
           <Menu
             sx={(theme) => ({

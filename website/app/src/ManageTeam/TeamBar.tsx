@@ -7,7 +7,7 @@ import Table from "@mui/joy/Table";
 import Avatar from "@mui/joy/Avatar";
 import CircularProgress from "@mui/joy/CircularProgress";
 import FileUpload from "../components/BotUpload";
-import { TableButton } from "../components/Tables/GameTable";
+import { TableButton } from "../components/Tables/GameTable/TableButton";
 import { Button, Input, TextField, Typography, useTheme } from "@mui/joy";
 import EditIcon from "@mui/icons-material/Edit";
 import CopyIcon from "@mui/icons-material/ContentCopy";
@@ -266,7 +266,9 @@ export function TeamBar({ teamId }: { teamId: string | null }) {
           }}
         >
           <Box display="flex">
-            <Table size="sm">
+            <Table size="sm" color='primary' variant='solid' sx={{
+              background: 'none'
+            }}>
               <thead>
                 <tr>
                   {/* user/invite */}
@@ -291,7 +293,7 @@ export function TeamBar({ teamId }: { teamId: string | null }) {
                         overflow: "hidden",
                       }}
                     >
-                      <Typography textColor="white" level="title-sm">
+                      <Typography textColor="inherit" level="title-sm">
                         {member.display_name}
                       </Typography>
                     </td>

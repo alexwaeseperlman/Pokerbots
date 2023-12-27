@@ -87,6 +87,8 @@ export default function Signup() {
   console.log(googleSigninUrl);
   const microsoftSigninUrl = useMicrosoftSigninUrl();
 
+  const passwordValid = password === confirmPassword && password.length >= 6;
+
   return (
     <HeaderFooter>
       <Container
@@ -148,7 +150,7 @@ export default function Signup() {
         </FormControl>
         <Button
           variant="solid"
-          disabled={password !== confirmPassword || password.length < 6}
+          disabled={!passwordValid}
           {...(loading ? { loading: true } : {})}
           onClick={() => {
             handleSubmit();
@@ -178,6 +180,7 @@ export default function Signup() {
     </HeaderFooter>
   );
   function handleSubmit() {
+    if (!passwordValid) return;
     setLoading(true);
     fetch(`${authUrl}/email/register`, {
       method: "POST",

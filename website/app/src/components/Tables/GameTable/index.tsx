@@ -1,8 +1,6 @@
 import React, { useCallback, useEffect } from "react";
 import { apiUrl, useTeam } from "../../../state";
 import Box from "@mui/system/Box";
-import { styled } from "@mui/joy/styles";
-import Button, { ButtonProps } from "@mui/joy/Button";
 import {
   Avatar,
   Chip,
@@ -25,25 +23,6 @@ import DataTable, { DataTableProps } from "../../DataTable";
 import { ArrowRight, MoreVert } from "@mui/icons-material";
 import { GameWithBotsWithResult } from "@bindings/GameWithBotsWithResult";
 import GameCard from "./GameCard";
-
-export const TableButton = styled((props: ButtonProps) => (
-  <Button
-    {...props}
-    variant="plain"
-    sx={{
-      color: "#bbb",
-      whiteSpace: "nowrap",
-      background: "none",
-      ":hover": {
-        background: "#00000040",
-      },
-      ":active": {
-        background: "#00000080",
-      },
-    }}
-    size="sm"
-  />
-))(() => ({}));
 
 const RatingChange = ({
   before,
