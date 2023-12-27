@@ -18,6 +18,7 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { enqueueSnackbar } from "notistack";
 import { authUrl, useGoogleSigninUrl, useMicrosoftSigninUrl } from "../state";
 import { InfoOutlined } from "@mui/icons-material";
+import HeaderFooter from "../components/HeaderFooter";
 function MicrosoftLogo(props: SvgIconProps) {
   return (
     <SvgIcon {...props}>
@@ -86,94 +87,100 @@ export default function Signup() {
   console.log(googleSigninUrl);
   const microsoftSigninUrl = useMicrosoftSigninUrl();
 
+  const passwordValid = password === confirmPassword && password.length >= 6;
+
   return (
-    <Container
-      maxWidth="sm"
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "stretch",
-        justifyContent: "center",
-        flexGrow: 1,
-        gap: 2,
-      }}
-    >
-      <Typography textColor="inherit" level="h1">
-        Join UPAC
-      </Typography>
-      <Input
-        placeholder="Email"
-        type="email"
-        value={email}
-        onChange={(e) => {
-          setEmail(e.target.value);
-        }}
-      />
-      <Input
-        placeholder="Password"
-        type="password"
-        value={password}
-        onChange={(e) => {
-          setPassword(e.target.value);
-        }}
-      />
-      <FormControl>
-        <Input
-          placeholder="Confirm your password"
-          type="password"
-          value={confirmPassword}
-          error={!validPassword}
-          onChange={(e) => {
-            setConfirmPassword(e.target.value);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              handleSubmit();
-            }
-          }}
-        />
-        <FormHelperText
-          sx={{
-            display: validPassword ? "none" : "block",
-          }}
-        >
-          <Typography color="danger">
-            Your password must be at least 6 characters long, and match the
-            confirmation.
-          </Typography>
-        </FormHelperText>
-      </FormControl>
-      <Button
-        variant="solid"
-        disabled={password !== confirmPassword || password.length < 6}
-        {...(loading ? { loading: true } : {})}
-        onClick={() => {
-          handleSubmit();
+    <HeaderFooter>
+      <Container
+        maxWidth="sm"
+        sx={{
+          gridArea: "content",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "stretch",
+          justifyContent: "center",
+          flexGrow: 1,
+          gap: 2,
         }}
       >
-        Sign up
-      </Button>
-      <Stack direction="row" gap={2}>
-        <LoginButton
-          onClick={() => {
-            window.location.href = googleSigninUrl;
+        <Typography textColor="inherit" level="h1">
+          Join UPAC
+        </Typography>
+        <Input
+          placeholder="Email"
+          type="email"
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
           }}
-          startDecorator={<GoogleLogo />}
-        >
-          Sign up with Google
-        </LoginButton>
-        <LoginButton
-          onClick={() => {
-            window.location.href = microsoftSigninUrl;
+        />
+        <Input
+          placeholder="Password"
+          type="password"
+          value={password}
+          onChange={(e) => {
+            setPassword(e.target.value);
           }}
-          startDecorator={<MicrosoftLogo />}
+        />
+        <FormControl>
+          <Input
+            placeholder="Confirm your password"
+            type="password"
+            value={confirmPassword}
+            error={!validPassword}
+            onChange={(e) => {
+              setConfirmPassword(e.target.value);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleSubmit();
+              }
+            }}
+          />
+          <FormHelperText
+            sx={{
+              display: validPassword ? "none" : "block",
+            }}
+          >
+            <Typography color="danger">
+              Your password must be at least 6 characters long, and match the
+              confirmation.
+            </Typography>
+          </FormHelperText>
+        </FormControl>
+        <Button
+          variant="solid"
+          disabled={!passwordValid}
+          {...(loading ? { loading: true } : {})}
+          onClick={() => {
+            handleSubmit();
+          }}
         >
-          Sign up with Microsoft
-        </LoginButton>
-      </Stack>
-    </Container>
+          Sign up
+        </Button>
+        <Stack direction="row" gap={2}>
+          <LoginButton
+            onClick={() => {
+              window.location.href = googleSigninUrl;
+            }}
+            startDecorator={<GoogleLogo />}
+          >
+            With Google
+          </LoginButton>
+          <LoginButton
+            onClick={() => {
+              window.location.href = microsoftSigninUrl;
+            }}
+            startDecorator={<MicrosoftLogo />}
+          >
+            With Microsoft
+          </LoginButton>
+        </Stack>
+      </Container>
+    </HeaderFooter>
   );
   function handleSubmit() {
+    if (!passwordValid) return;
     setLoading(true);
     fetch(`${authUrl}/email/register`, {
       method: "POST",
