@@ -21,6 +21,30 @@ import DataTable, { DataTableColumn } from "../components/DataTable";
 import { Check, MoreVert } from "@mui/icons-material";
 import BotCard from "./BotCard";
 
+// Group bots by name and output versions
+function groupBots<T>(bots: BotWithTeam<T>[]): { bot: BotWithTeam<T>, version: number }[] {
+  const grouped: {
+    [key: string]: BotWithTeam<T>[]
+  } = {};
+
+  for (const bot of bots) {
+    if (!(bot.name in grouped)) {
+      grouped[bot.name] = [];
+    }
+    grouped[bot.name].push(bot);
+  }
+
+  const output: { bot: BotWithTeam<T>, version: number }[] = [];
+
+  for (const name in grouped) {
+    const bots = grouped[name];
+    const newest = bots.reduce((a, b) => a.created > b.created ? a : b);
+    output.push({ bot: newest, version: bots.length });
+  }
+
+  return output;
+}
+
 export default function BotList({
   readonly,
   teamId,
@@ -37,6 +61,9 @@ export default function BotList({
     pageSize: 10,
   });
   const [loading, setLoading] = React.useState(true);
+
+  
+
   const getBots = () => {
     fetch(`${apiUrl}/bots?team=${team?.id}&count=true`)
       .then((res) => res.json())
@@ -67,6 +94,8 @@ export default function BotList({
     return () => clearInterval(int);
   }, [paginationModel, team?.active_bot]);
 
+  const groups = groupBots(bots);
+
   return (
     <>
       <Box
@@ -77,12 +106,13 @@ export default function BotList({
           gap: 2
         }}
       >
-        {bots.map((bot) => {
+        {groups.map((bot) => {
           return (
             <BotCard
-              bot={bot}
-              onSetActive={() => handleSetActive(bot.id)}
-              onDelete={() => handleDelete(bot.id)}
+              bot={bot.bot}
+              version={bot.version}
+              onSetActive={() => handleSetActive(bot.bot.id)}
+              onDelete={() => handleDelete(bot.bot.id)}
             ></BotCard>
           );
         })}

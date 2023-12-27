@@ -21,7 +21,7 @@ pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
         Ok(GameStatus::TestGameSucceeded) => (0, 0),
         Ok(GameStatus::TestGameFailed) => (0, 0),
         Err(e) => match e {
-            GameError::InternalError => (50, 50,),
+            GameError::InternalError => (50, 50),
             GameError::InvalidActionError(which_bot) => match which_bot {
                 shared::WhichBot::Defender => (-100, 100),
                 shared::WhichBot::Challenger => (100, -100),
@@ -137,12 +137,14 @@ pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
                             e
                         })?;
                     log::debug!("Bot: {:?}, team: {:?}", bot, team);
-                    if team.active_bot.is_none() {
-                        diesel::update(shared::db::schema::teams::dsl::teams)
-                            .filter(shared::db::schema::teams::dsl::id.eq(team.id))
-                            .set(shared::db::schema::teams::dsl::active_bot.eq(bot.id))
-                            .execute(db_conn)?;
-                    }
+
+                    // set the active bot for the team if they don't have one
+                    //if team.active_bot.is_none() {
+                    diesel::update(shared::db::schema::teams::dsl::teams)
+                        .filter(shared::db::schema::teams::dsl::id.eq(team.id))
+                        .set(shared::db::schema::teams::dsl::active_bot.eq(bot.id))
+                        .execute(db_conn)?;
+                    //}
                     diesel::update(bots::dsl::bots)
                         .filter(
                             bots::dsl::id.eq(id

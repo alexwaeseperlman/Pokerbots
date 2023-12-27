@@ -102,6 +102,7 @@ function BuildStatusChip(props: { status: BuildStatus }) {
 
 export default function BotCard(props: {
   bot: BotWithTeam<Team>;
+  version: number;
   onSetActive: () => void;
   onDelete: () => void;
 }) {
@@ -118,8 +119,7 @@ export default function BotCard(props: {
           gap: 1,
         }}
       >
-        <KeyValue keyName="Version" value={props.bot.version} />
-        <KeyValue keyName="Rating" value={props.bot.rating} />
+        <KeyValue keyName="Version" value={props.version} />
         <KeyValue
           keyName="Status"
           value={<BuildStatusChip status={props.bot.build_status} />}

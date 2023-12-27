@@ -43,30 +43,11 @@ export function TeamsTable() {
   }, [getTeams]);
   const teamList = teams.map((team, i) => (
     <Box>
-      <Typography color="inherit">
-        {getNumberWithOrdinal(i + 1)}: {team.rating.toFixed(0)}
+      <Typography textColor="#CDC0FF" level="h4" mb={1}>
+        {getNumberWithOrdinal(i + 1)} place, rating {team.rating.toFixed(0)}
       </Typography>
-      <TeamCard variant="small" team={team} />
+      <TeamCard variant={i < 3 ? "large" : "small"} team={team} />
     </Box>
   ));
-  if (teams.length >= 3) {
-    return (
-      <>
-        <Box>
-          <Typography color="inherit">1st: {teams[0].rating.toFixed(0)}</Typography>
-          <TeamCard variant="large" team={teams[0]} />
-
-          <Typography color="inherit">2nd: {teams[1].rating.toFixed(0)}</Typography>
-          <TeamCard variant="large" team={teams[1]} />
-
-          <Typography color="inherit">3rd: {teams[2].rating.toFixed(0)}</Typography>
-          <TeamCard variant="large" team={teams[2]} />
-
-          {teamList.slice(3)}
-        </Box>
-      </>
-    );
-  } else {
-    return <>{teamList}</>;
-  }
+  return <Box>{teamList}</Box>;
 }

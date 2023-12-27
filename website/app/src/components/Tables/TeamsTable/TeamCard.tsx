@@ -12,7 +12,7 @@ export default function TeamCard(props: {
   const avatarSize = props.variant == "large" ? 64 : 32;
   const navigate = useNavigate();
   return (
-    <Stack direction="row" gap={2} mb={4}>
+    <Stack direction="row" gap={2} mb={4} alignItems={'center'}>
       <Avatar
         key="avatar"
         sx={{
@@ -36,10 +36,10 @@ export default function TeamCard(props: {
           {props.team.name}
         </Typography>
         {props.variant === "large" &&
-          props.team.members.map(() => {
+          props.team.members.map((member) => {
             return (
               <Typography color="inherit">
-                {props.team.members[0].display_name}
+                {member.display_name}
               </Typography>
             );
           })}
