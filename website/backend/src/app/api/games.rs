@@ -139,21 +139,23 @@ pub async fn game_record(
 }
 
 #[derive(Deserialize)]
-pub struct GameLenghtQuery {
+pub struct GameLengthQuery {
     game_id: String,
 }
 
+use diesel::prelude::*;
 #[get("/game-length")]
 pub async fn game_length(
     session: Session,
-    web::Query::<GameLenghtQuery>(GameLenghtQuery { game_id }): web::Query<GameLenghtQuery>,
+    web::Query::<GameLengthQuery>(GameLengthQuery { game_id }): web::Query<GameLengthQuery>,
 ) -> Result<HttpResponse, ApiError> {
     let conn = &mut (*DB_CONNECTION).get()?;
     let max = schema::game_states::dsl::game_states
         .filter(schema::game_states::dsl::game_id.eq(game_id.clone()))
-        .order(schema::game_states::step.desc())
-        .first::<GameStateSQL>(conn)
-        .map(|obj| obj.step.to_string());
+        .order(schema::game_states::dsl::step.desc())
+        .select(schema::game_states::dsl::step)
+        .first::<i32>(conn)
+        .map(|obj| obj.to_string());
     match max {
         Ok(max) => return Ok(HttpResponse::Ok().body(max)),
         Err(err) => return Err(actix_web::error::ErrorNotFound(err).into()),

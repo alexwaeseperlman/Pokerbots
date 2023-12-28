@@ -14,6 +14,8 @@ extern crate num_derive;
 #[cfg(feature = "db")]
 pub mod db;
 
+pub mod poker;
+
 #[derive(Serialize, Deserialize, Debug, Clone, TS)]
 pub struct SerializableHeaderMap(Vec<(String, String)>);
 
@@ -98,6 +100,8 @@ pub enum GameTask {
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, TS, FromPrimitive, ToPrimitive, PartialEq)]
 #[repr(i32)]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
+#[cfg_attr(feature = "db", derive(diesel::AsExpression))]
+#[cfg_attr(feature="db", diesel(sql_type=diesel::sql_types::Integer))]
 pub enum WhichBot {
     Defender = 0,
     Challenger = 1,

@@ -2,15 +2,21 @@ use core::panic;
 use std::{
     cmp::{min, Ordering},
     fmt::Display,
+    ops::{Deref, DerefMut},
 };
 
+use crate::GameActionError;
 use rand::{seq::SliceRandom, Rng};
 use serde::{ser::SerializeStruct, Deserialize, Serialize};
-use shared::{GameActionError, WhichBot};
+use ts_rs::TS;
 
 use super::hands::{self, Card, Suite};
 
-#[derive(PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize, TS)]
+//#[serde(tag = "type")]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
+#[cfg_attr(feature="db", derive(diesel::AsExpression))]
+#[cfg_attr(feature="db", diesel(sql_type=diesel::sql_types::VarChar))]
 pub enum Action {
     // Call and check are the same as raising 0
     Raise(u32),
@@ -29,13 +35,17 @@ pub enum Round {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PlayerState {
     pub stack: u32,
-    pub hole_cards: [Card; 2],
+    pub hole_cards: HoleCards,
     pub pushed: u32,
     // Did the player act yet in the current betting round
     pub acted: bool,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, TS, FromPrimitive, ToPrimitive)]
+#[repr(i32)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
+#[cfg_attr(feature="db", derive(diesel::AsExpression))]
+#[cfg_attr(feature="db", diesel(sql_type=diesel::sql_types::Integer))]
 pub enum PlayerPosition {
     SmallBlind = 0,
     BigBlind = 1,
@@ -58,11 +68,54 @@ impl Display for PlayerPosition {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
+#[cfg_attr(feature="db", derive(diesel::AsExpression))]
+#[cfg_attr(feature="db", diesel(sql_type=diesel::sql_types::VarChar))]
 pub enum EndReason {
     WonShowdown(PlayerPosition),
     LastToAct(PlayerPosition),
     Tie,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
+#[cfg_attr(feature="db", derive(diesel::AsExpression))]
+#[cfg_attr(feature="db", diesel(sql_type=diesel::sql_types::Varchar))]
+pub struct CommunityCards(pub Vec<Card>);
+
+impl Deref for CommunityCards {
+    type Target = Vec<Card>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for CommunityCards {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[cfg_attr(feature="db", derive(diesel::AsExpression))]
+#[cfg_attr(feature="db", diesel(sql_type=diesel::sql_types::Varchar))]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
+pub struct HoleCards(pub [Card; 2]);
+
+impl Deref for HoleCards {
+    type Target = [Card; 2];
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for HoleCards {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -71,7 +124,7 @@ pub struct GameState {
     pub deck: Vec<Card>,
     pub player_states: [PlayerState; 2],
     // Amount of money each player has bet in the current round
-    pub community_cards: Vec<Card>,
+    pub community_cards: CommunityCards,
     pub round: Round,
     // The index of the player who was the last aggressor
     // If no player has raised then this is the non-sb player
@@ -80,27 +133,6 @@ pub struct GameState {
     // The amount of money the next player to act must push to call
     pub target_push: u32,
     pub end_reason: Option<EndReason>,
-}
-
-impl Serialize for GameState {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let mut state = serializer.serialize_struct("GameState", 7)?;
-        state.serialize_field("player_states", &self.player_states)?;
-        state.serialize_field("community_cards", &self.community_cards)?;
-        state.serialize_field("round", &self.round)?;
-        state.serialize_field("last_aggressor", &self.last_aggressor)?;
-        state.serialize_field("target_push", &self.target_push)?;
-        state.serialize_field("end_reason", &self.end_reason)?;
-        state.end()
-    }
-}
-
-pub enum RoundResult {
-    Accept,
-    End { payouts: Vec<u32> },
 }
 
 impl GameState {
@@ -113,13 +145,13 @@ impl GameState {
         let mut deck = deck.clone();
         let player_states = [
             PlayerState {
-                hole_cards: [deck.pop().unwrap(), deck.pop().unwrap()],
+                hole_cards: HoleCards([deck.pop().unwrap(), deck.pop().unwrap()]),
                 stack: stacks[0],
                 acted: false,
                 pushed: 0,
             },
             PlayerState {
-                hole_cards: [deck.pop().unwrap(), deck.pop().unwrap()],
+                hole_cards: HoleCards([deck.pop().unwrap(), deck.pop().unwrap()]),
                 stack: stacks[1],
                 acted: false,
                 pushed: 0,
@@ -127,7 +159,7 @@ impl GameState {
         ];
         let mut out = Self {
             deck,
-            community_cards: vec![],
+            community_cards: CommunityCards(vec![]),
             round: Round::PreFlop,
             last_aggressor: PlayerPosition::BigBlind,
             target_push: 2,
@@ -304,7 +336,7 @@ impl GameState {
 
     pub fn get_player_hand(&self, player: PlayerPosition) -> hands::Hand {
         let mut cards = self.community_cards.clone();
-        cards.extend(self.player_states[player as usize].hole_cards.clone());
+        cards.extend(self.player_states[player as usize].hole_cards.0.clone());
         hands::hand_eval::best5(&cards)
     }
 }
@@ -314,7 +346,7 @@ mod tests {
     use rand::{rngs::StdRng, SeedableRng};
 
     use crate::poker::{
-        game::{Action, EndReason, GameState, PlayerPosition, Round},
+        game::{Action, EndReason, GameState, PlayerPosition, Round, HoleCards},
         hands::{
             self,
             hand_eval::{self, cards_from},
@@ -502,9 +534,9 @@ mod tests {
         // and bb with a flush (also 3 jacks)
         state.deck = hands::hand_eval::cards_from("2h3h9hJsQc");
         state.player_states[0].hole_cards =
-            hands::hand_eval::cards_from("2s2c").try_into().unwrap();
+            HoleCards(hands::hand_eval::cards_from("2s2c").try_into().unwrap());
         state.player_states[1].hole_cards =
-            hands::hand_eval::cards_from("QhTh").try_into().unwrap();
+            HoleCards(hands::hand_eval::cards_from("QhTh").try_into().unwrap());
 
         state = state.post_action(Action::Raise(100)).unwrap();
         // sb should be limited to the bb stack size

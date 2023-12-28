@@ -43,21 +43,20 @@ diesel::table! {
 
 diesel::table! {
     game_states (game_id, step) {
-        game_id -> Text,
+        game_id -> Varchar,
         step -> Int4,
         challenger_stack -> Int4,
         defender_stack -> Int4,
         challenger_pushed -> Int4,
         defender_pushed -> Int4,
-        challenger_hand -> Text,
-        defender_hand -> Text,
-        flop -> Nullable<Text>,
-        turn -> Nullable<Text>,
-        river -> Nullable<Text>,
-        button -> Text,
-        sb -> Text,
+        challenger_hand -> Varchar,
+        defender_hand -> Varchar,
+        community_cards -> Varchar,
+        sb -> Int4,
         action_time -> Int4,
-        last_action -> Text,
+        whose_turn -> Nullable<Int4>,
+        action_val -> Varchar,
+        end_reason -> Nullable<Varchar>,
     }
 }
 
@@ -94,17 +93,11 @@ diesel::table! {
 
 diesel::table! {
     user_profiles (id) {
-        #[max_length = 255]
         first_name -> Varchar,
-        #[max_length = 255]
         last_name -> Varchar,
-        #[max_length = 255]
         country -> Nullable<Varchar>,
-        #[max_length = 255]
         school -> Varchar,
-        #[max_length = 255]
         linkedin -> Nullable<Varchar>,
-        #[max_length = 255]
         github -> Nullable<Varchar>,
         id -> Uuid,
     }

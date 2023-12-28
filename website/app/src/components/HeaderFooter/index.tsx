@@ -18,7 +18,6 @@ export default function HeaderFooter(
       sx={{
         flexDirection: "column",
         minHeight: "100vh",
-        width: '100vw',
         position: "relative",
         display: "flex",
         background: "linear-gradient(269.89deg,#392889 0%,#191335 100%)",

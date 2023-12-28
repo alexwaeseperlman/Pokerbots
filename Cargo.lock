@@ -4164,6 +4164,7 @@ dependencies = [
  "diesel",
  "diesel_migrations",
  "futures-util",
+ "itertools 0.10.5",
  "lazy_static",
  "log",
  "num",

@@ -16,7 +16,7 @@ use tokio::{
 };
 
 use crate::communication::{parse_action, EngineCommunication};
-use crate::poker::game::{GameState, PlayerPosition, Round};
+use shared::poker::game::{GameState, PlayerPosition, Round, Action};
 
 pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>>(
     bot: U,
@@ -319,7 +319,7 @@ impl Game {
     //     state.end()
     // }
 
-    async fn save_round(&mut self, state: &GameState, step: i32) -> Result<(), shared::GameError> {
+    async fn save_round(&mut self, state: &GameState, step: i32, action_val: Action) -> Result<(), shared::GameError> {
         let (defender_state, challenger_state) = match self.sb {
             WhichBot::Defender => (&state.player_states[0], &state.player_states[1]),
             WhichBot::Challenger => (&state.player_states[1], &state.player_states[0]),
@@ -331,18 +331,15 @@ impl Game {
             challenger_stack: challenger_state.stack as i32,
             defender_pushed: defender_state.pushed as i32,
             challenger_pushed: challenger_state.pushed as i32,
-            defender_hand: defender_state.hole_cards.map(|c| c.to_string()).join(" "),
-            challenger_hand: challenger_state.hole_cards.map(|c| c.to_string()).join(" "),
-            flop: state
-                .community_cards
-                .get(0..3)
-                .map(|v| v.iter().map(|c| c.to_string()).join(" ")),
-            turn: state.community_cards.get(3).map(|c| c.to_string()),
-            river: state.community_cards.get(4).map(|c| c.to_string()),
-            button: self.sb.other().to_string(),
-            sb: self.sb.to_string(),
+            defender_hand: defender_state.hole_cards.clone(),
+            challenger_hand: challenger_state.hole_cards.clone(),
+            community_cards: state.community_cards.clone(),
+            sb: self.sb,
+            end_reason: state.end_reason.clone(),
+            whose_turn: state.whose_turn(),
+            // TODO: set this to time since game started
             action_time: 0,
-            last_action: state.last_aggressor.to_string(),
+            action_val,
         };
         match serde_json::to_string(&game_state_sql) {
             Ok(json_str) => {
@@ -395,7 +392,7 @@ impl Game {
         state_id: &mut i32,
     ) -> Result<GameState, shared::GameError> {
         let mut rng = thread_rng();
-        let mut state = crate::poker::game::GameState::new(
+        let mut state = shared::poker::game::GameState::new(
             match self.sb {
                 WhichBot::Defender => [self.stacks[0], self.stacks[1]],
                 WhichBot::Challenger => [self.stacks[1], self.stacks[0]],
@@ -417,8 +414,8 @@ impl Game {
                 match round {
                     Some(Round::PreFlop) => {
                         self.write_bots(EngineCommunication::PreFlopCards(
-                            state.player_states[0].hole_cards,
-                            state.player_states[1].hole_cards,
+                            state.player_states[0].hole_cards.clone(),
+                            state.player_states[1].hole_cards.clone(),
                         ))
                         .await?;
                     }
@@ -478,17 +475,18 @@ impl Game {
             self.write_log(format!("{} > {}", whose_turn, line.trim()))
                 .await?;
             //log::debug!("Reading action from {:?}.", line);
+            let action = parse_action(line.trim())
+                        .map_err(|_| shared::GameError::InvalidActionError(whose_turn.clone()))?;
             state = state
                 .post_action(
-                    parse_action(line.trim())
-                        .map_err(|_| shared::GameError::InvalidActionError(whose_turn.clone()))?,
+                    action.clone()
                 )
                 .map_err(|_| shared::GameError::InvalidActionError(whose_turn.clone()))?;
 
             unsafe {
                 kill(-(opponent_gid as i32), 18);
             };
-            self.save_round(&state, *state_id).await?;
+            self.save_round(&state, *state_id, action).await?;
             *state_id += 1;
         }
 

@@ -2,7 +2,8 @@ use std::fmt::Display;
 
 use shared::WhichBot;
 
-use crate::poker::{
+use shared::poker::game::HoleCards;
+use shared::poker::{
     game::{EndReason, GameState, PlayerPosition, PlayerState},
     hands::Card,
 };
@@ -15,15 +16,15 @@ pub enum EngineCommunication {
         bb_pushed: u32,
         bb_stack: u32,
     },
-    PreFlopCards([Card; 2], [Card; 2]),
+    PreFlopCards(HoleCards, HoleCards),
     FlopCards([Card; 3]),
     TurnCard(Card),
     RiverCard(Card),
     EndGame {
         end_reason: EndReason,
         last_aggressor: PlayerPosition,
-        sb_hole_cards: [Card; 2],
-        bb_hole_cards: [Card; 2],
+        sb_hole_cards: HoleCards,
+        bb_hole_cards: HoleCards,
     },
 }
 
@@ -46,8 +47,8 @@ impl EngineCommunication {
         EngineCommunication::EndGame {
             end_reason,
             last_aggressor: game_state.last_aggressor,
-            sb_hole_cards: game_state.player_states[0].hole_cards,
-            bb_hole_cards: game_state.player_states[1].hole_cards,
+            sb_hole_cards: game_state.player_states[0].hole_cards.clone(),
+            bb_hole_cards: game_state.player_states[1].hole_cards.clone(),
         }
     }
 
@@ -73,10 +74,10 @@ impl EngineCommunication {
             },
             EngineCommunication::PreFlopCards(sb_cards, bb_cards) => match position {
                 PlayerPosition::SmallBlind => {
-                    format!("PREFLOP {} {}", sb_cards[0], sb_cards[1])
+                    format!("PREFLOP {} {}", sb_cards.0[0], sb_cards.0[1])
                 }
                 PlayerPosition::BigBlind => {
-                    format!("PREFLOP {} {}", bb_cards[0], bb_cards[1])
+                    format!("PREFLOP {} {}", bb_cards.0[0], bb_cards.0[1])
                 }
             },
             EngineCommunication::FlopCards(cards) => {
@@ -104,14 +105,14 @@ impl EngineCommunication {
                         if *winner == position && *last_aggressor != *winner {
                             format!(
                                 "END SHOWDOWN WINNER {} SHOWN {} {}",
-                                winner, other_cards[0], other_cards[1]
+                                winner, other_cards.0[0], other_cards.0[1]
                             )
                         } else if *winner == position && *last_aggressor == *winner {
                             format!("END SHOWDOWN WINNER {} HIDDEN", winner)
                         } else {
                             format!(
                                 "END SHOWDOWN WINNER {} SHOWN {} {}",
-                                winner, other_cards[0], other_cards[1]
+                                winner, other_cards.0[0], other_cards.0[1]
                             )
                         }
                     }
@@ -126,11 +127,11 @@ impl EngineCommunication {
 
 pub fn parse_action<T: AsRef<str>>(
     line: T,
-) -> Result<crate::poker::game::Action, shared::GameActionError> {
+) -> Result<shared::poker::game::Action, shared::GameActionError> {
     let line = line.as_ref();
     Ok(match line.as_ref() {
-        "F" => crate::poker::game::Action::Fold,
-        "C" => crate::poker::game::Action::Raise(0),
+        "F" => shared::poker::game::Action::Fold,
+        "C" => shared::poker::game::Action::Raise(0),
         _ => {
             if line.chars().nth(0) != Some('R') {
                 Err(shared::GameActionError::CouldNotParse)?;
@@ -138,7 +139,7 @@ pub fn parse_action<T: AsRef<str>>(
             let amount = line[1..]
                 .parse::<u32>()
                 .map_err(|_| shared::GameActionError::CouldNotParse)?;
-            crate::poker::game::Action::Raise(amount)
+            shared::poker::game::Action::Raise(amount)
         }
     })
 }
@@ -155,7 +156,7 @@ mod tests {
     fn parse_action_fold() {
         assert_eq!(
             parse_action(&"F".to_owned()).unwrap(),
-            crate::poker::game::Action::Fold
+            shared::poker::game::Action::Fold
         );
     }
 
@@ -163,7 +164,7 @@ mod tests {
     fn parse_action_call() {
         assert_eq!(
             parse_action(&"C".to_owned()).unwrap(),
-            crate::poker::game::Action::Raise(0)
+            shared::poker::game::Action::Raise(0)
         );
     }
 
@@ -171,7 +172,7 @@ mod tests {
     fn parse_action_raise() {
         assert_eq!(
             parse_action(&"R1234".to_owned()).unwrap(),
-            crate::poker::game::Action::Raise(1234)
+            shared::poker::game::Action::Raise(1234)
         );
     }
 

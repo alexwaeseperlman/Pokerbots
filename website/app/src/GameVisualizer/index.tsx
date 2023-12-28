@@ -19,6 +19,7 @@ import { BotWithTeam } from "@bindings/BotWithTeam";
 import { Team } from "@bindings/Team";
 import { GameWithBotsWithResult } from "@bindings/GameWithBotsWithResult";
 import { TeamStatusStack } from "../components/Tables/GameList/TeamStatusStack";
+import { KeyValue } from "../components/KeyValue";
 
 interface Card {
   rank: string;
@@ -134,6 +135,7 @@ function GetGameState({
   game: GameWithBotsWithResult<BotWithTeam<Team>>;
 }) {
   const [logs, setLogs] = useState<GameState>();
+  console.log(logs?.last_action);
 
   const fetchData = () => {
     fetch(`${apiUrl}/game-record?id=${gameId}&round=${step}`)
@@ -145,6 +147,12 @@ function GetGameState({
       });
   };
 
+  const actionNote = (
+    <Typography level="h3" color="inherit">
+      {logs?.last_action}
+    </Typography>
+  );
+
   useEffect(() => fetchData(), [step]);
   return logs ? (
     <Box
@@ -153,7 +161,7 @@ function GetGameState({
         gridTemplateRows: "repeat(3, auto)",
         gridTemplateAreas: '"challenger" "game" "defender"',
         [theme.breakpoints.up("md")]: {
-          gridTemplateColumns: "repeat(3, 1fr)",
+          gridTemplateColumns: "auto 1fr auto",
           gridTemplateAreas: '"challenger game defender"',
           gridTemplateRows: "auto",
         },
@@ -165,15 +173,35 @@ function GetGameState({
           display: "flex",
           gridArea: "challenger",
           flexDirection: "column",
+          gap: 2,
         }}
       >
-        <TeamStatusStack
-          direction="Challenger"
-          bot={game.challenger}
-          size="large"
-          error={game.result?.error_type}
-          rating={game.result?.challenger_rating}
-          ratingChange={game.result?.challenger_rating_change}
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "row",
+          }}
+        >
+          <TeamStatusStack
+            direction="Challenger"
+            bot={game.challenger}
+            size="large"
+            error={game.result?.error_type}
+            rating={game.result?.challenger_rating}
+            ratingChange={game.result?.challenger_rating_change}
+          />
+        </Box>
+        <KeyValue
+          keyName="Pushed"
+          value={`${logs.challenger_pushed}/${logs.challenger_stack}`}
+        />
+        <KeyValue
+          keyName="Position"
+          value={
+            <>
+              {logs.button == 'Challenger' ? 'SB' : 'BB'}
+            </>
+          }
         />
       </Box>
       <Box
@@ -196,6 +224,9 @@ function GetGameState({
             gap: 4,
           }}
         >
+          <Typography level="h3" color="inherit">
+            Pot {logs.defender_pushed + logs.challenger_pushed}
+          </Typography>
           <GameTable {...logs} />
         </Box>
       </Box>
@@ -205,9 +236,16 @@ function GetGameState({
           gridArea: "defender",
           flexDirection: "column",
           justifyContent: "flex-end",
+          gap: 2,
         }}
       >
-        <Box>
+        <Box
+          sx={{
+            flexDirection: "row",
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
           <TeamStatusStack
             direction="Defender"
             bot={game.defender}
@@ -217,6 +255,22 @@ function GetGameState({
             ratingChange={game.result?.defender_rating_change}
           />
         </Box>
+        <KeyValue
+          keyName="Pushed"
+          value={
+            <>
+              {logs.defender_pushed}/{logs.defender_stack} ({actionNote})
+            </>
+          }
+        />
+        <KeyValue
+          keyName="Position"
+          value={
+            <>
+              {logs.button == 'Defender' ? 'SB' : 'BB'}
+            </>
+          }
+        />
       </Box>
     </Box>
   ) : (

@@ -2,11 +2,12 @@ use std::io::Write;
 
 use diesel::{
     deserialize::FromSql,
+    expression::AsExpression,
     pg::{self, PgValue},
     prelude::{Associations, Identifiable, Insertable},
     serialize::ToSql,
-    sql_types::{Integer, Text},
-    AsChangeset, Queryable, Selectable,
+    sql_types::{Integer, Text, VarChar},
+    AsChangeset, Expression, Queryable, Selectable,
 };
 
 use chrono;
@@ -18,6 +19,7 @@ use crate::{
     db::schema::{
         auth, bots, game_results, game_states, games, team_invites, teams, user_profiles, users,
     },
+    poker::game::{Action, CommunityCards, EndReason, HoleCards, PlayerPosition},
     BuildStatus, GameError, WhichBot,
 };
 
@@ -286,19 +288,18 @@ pub struct UserProfile {
 pub struct GameStateSQL {
     pub game_id: String,
     pub step: i32,
-    pub defender_stack: i32,
     pub challenger_stack: i32,
-    pub defender_pushed: i32,
+    pub defender_stack: i32,
     pub challenger_pushed: i32,
-    pub defender_hand: String,
-    pub challenger_hand: String,
-    pub flop: Option<String>,
-    pub turn: Option<String>,
-    pub river: Option<String>,
-    pub button: String,
-    pub sb: String,
+    pub defender_pushed: i32,
+    pub challenger_hand: HoleCards,
+    pub defender_hand: HoleCards,
+    pub community_cards: CommunityCards,
+    pub sb: WhichBot,
     pub action_time: i32,
-    pub last_action: String,
+    pub whose_turn: Option<PlayerPosition>,
+    pub action_val: Action,
+    pub end_reason: Option<EndReason>,
 }
 
 impl ToSql<Integer, pg::Pg> for BuildStatus {
@@ -353,6 +354,98 @@ impl ToSql<Text, pg::Pg> for GameError {
 
 impl FromSql<Text, pg::Pg> for GameError {
     fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
+        let s = String::from_sql(bytes)?;
+        serde_json::from_str(&s)
+            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
+    }
+}
+
+impl ToSql<VarChar, pg::Pg> for HoleCards {
+    fn to_sql<'b>(
+        &'b self,
+        out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
+    ) -> diesel::serialize::Result {
+        out.write_all(serde_json::to_vec(self)?.as_slice())?;
+        Ok(diesel::serialize::IsNull::No)
+    }
+}
+
+impl FromSql<VarChar, pg::Pg> for HoleCards {
+    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
+        let s = String::from_sql(bytes)?;
+        serde_json::from_str(&s)
+            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
+    }
+}
+
+impl ToSql<VarChar, pg::Pg> for CommunityCards {
+    fn to_sql<'b>(
+        &'b self,
+        out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
+    ) -> diesel::serialize::Result {
+        out.write_all(serde_json::to_vec(self)?.as_slice())?;
+        Ok(diesel::serialize::IsNull::No)
+    }
+}
+
+impl FromSql<VarChar, pg::Pg> for CommunityCards {
+    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
+        let s = String::from_sql(bytes)?;
+        serde_json::from_str(&s)
+            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
+    }
+}
+
+impl ToSql<VarChar, pg::Pg> for Action {
+    fn to_sql<'b>(
+        &'b self,
+        out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
+    ) -> diesel::serialize::Result {
+        out.write_all(serde_json::to_vec(self)?.as_slice())?;
+        Ok(diesel::serialize::IsNull::No)
+    }
+}
+
+impl FromSql<VarChar, pg::Pg> for Action {
+    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
+        let s = String::from_sql(bytes)?;
+        serde_json::from_str(&s)
+            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
+    }
+}
+
+impl ToSql<Integer, pg::Pg> for PlayerPosition {
+    fn to_sql<'b>(
+        &'b self,
+        out: &mut diesel::serialize::Output<'b, '_, pg::Pg>,
+    ) -> diesel::serialize::Result {
+        let val = *self as i32;
+        ToSql::<Integer, pg::Pg>::to_sql(&val, &mut out.reborrow())
+    }
+}
+
+impl FromSql<Integer, pg::Pg> for PlayerPosition {
+    fn from_sql(bytes: PgValue) -> diesel::deserialize::Result<Self> {
+        if let Some(result) = num::FromPrimitive::from_i32(i32::from_sql(bytes)?) {
+            Ok(result)
+        } else {
+            Err("Invalid build status".into())
+        }
+    }
+}
+
+impl ToSql<VarChar, pg::Pg> for EndReason {
+    fn to_sql<'b>(
+        &'b self,
+        out: &mut diesel::serialize::Output<'b, '_, pg::Pg>,
+    ) -> diesel::serialize::Result {
+        out.write_all(serde_json::to_vec(self)?.as_slice())?;
+        Ok(diesel::serialize::IsNull::No)
+    }
+}
+
+impl FromSql<VarChar, pg::Pg> for EndReason {
+    fn from_sql(bytes: PgValue) -> diesel::deserialize::Result<Self> {
         let s = String::from_sql(bytes)?;
         serde_json::from_str(&s)
             .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
