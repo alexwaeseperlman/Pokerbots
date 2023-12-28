@@ -1,15 +1,20 @@
+use aws_sdk_s3::primitives::ByteStreamError;
+use futures_lite::AsyncReadExt;
 use itertools::Itertools;
+
 use rand::{thread_rng, Rng};
 use shared::db::models::GameStateSQL;
 use shared::{BotJson, GameError, WhichBot};
+use std::process::ChildStderr;
 use std::{
     path::{Path, PathBuf},
     process::Stdio,
     time::Duration,
 };
+use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncWriteExt};
 use tokio::{
     fs,
-    io::{self, AsyncBufReadExt, AsyncWriteExt, BufReader},
+    io::{self, BufReader},
     process::{ChildStdout, Command},
     time::Instant,
     try_join,
@@ -120,11 +125,12 @@ pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>
         .uid(1000)
         .gid(1000)
         .process_group(0)
-        .stderr(log_file)
+        .stderr(Stdio::piped())
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()?)
 }
+
 extern "C" {
     fn kill(pid: i32, sig: i32) -> i32;
 }
@@ -135,6 +141,34 @@ pub struct GameResult {
     pub challenger_log: Vec<u8>,
     pub public_log: Vec<u8>,
     pub game_record: Vec<u8>,
+}
+
+async fn write_std_err(
+    stderr: tokio::process::ChildStderr,
+    bot_path: PathBuf,
+    start_time: Instant,
+) -> Result<(), io::Error> {
+    let mut reader = io::BufReader::new(stderr);
+    let mut buffer = String::new();
+    let mut stderr_file = tokio::fs::File::create(bot_path.join("logs")).await?;
+
+    reader.buffer().read_to_string(&mut buffer).await?;
+
+    while let Ok(n) = reader.read_line(&mut buffer).await {
+        if n == 0 {
+            break;
+        }
+
+        let timestamp = tokio::time::Instant::now()
+            .duration_since(start_time)
+            .as_millis();
+        let formatted_line = format!("[{}] {}", timestamp, buffer);
+        stderr_file.write_all(formatted_line.as_bytes()).await?;
+
+        buffer.clear();
+    }
+
+    Ok(())
 }
 
 pub async fn run_game(
@@ -161,7 +195,7 @@ pub async fn run_game(
     let challenger_path = tmp_dir.join("challenger");
     fs::create_dir_all(&challenger_path.clone()).await?;
     log::debug!("Downloading bots from aws");
-    let (defender, challenger) = try_join!(
+    let (mut defender, mut challenger) = try_join!(
         download_and_run(
             defender.to_string(),
             defender_path.clone(),
@@ -176,19 +210,35 @@ pub async fn run_game(
         )
     )?;
 
-    // run game
+    let def_stderr = defender.stderr.take().unwrap();
+    let chall_stderr = challenger.stderr.take().unwrap();
+
+    let start_time = Instant::now();
+    let def_handle = tokio::spawn(write_std_err(def_stderr, defender_path.clone(), start_time));
+    let chall_handle = tokio::spawn(write_std_err(
+        chall_stderr,
+        challenger_path.clone(),
+        start_time,
+    ));
+
+    // Do other non-blocking tasks here...
+
+    // Await the completion of the task if needed
     let mut game = Game::new(
         defender,
         challenger,
         game_id.clone(),
         Duration::from_secs(1),
         tokio::fs::File::create(tmp_dir.join("logs")).await?,
+        start_time,
         tokio::fs::File::create(tmp_dir.join("game_record")).await?,
     );
 
     let status = game.play(rounds).await;
     game.drop().await?;
     // TODO: issues reading the logs probably shouldn't cause an internal error
+    def_handle.await;
+    chall_handle.await;
     let defender_log = tokio::fs::read(tmp_dir.join("defender/logs")).await?;
     let challenger_log = tokio::fs::read(tmp_dir.join("challenger/logs")).await?;
     let public_log = tokio::fs::read(tmp_dir.join("logs")).await?;
@@ -239,6 +289,7 @@ impl Game {
         id: String,
         timeout: Duration,
         logs: tokio::fs::File,
+        start_time: Instant,
         game_record: tokio::fs::File,
     ) -> Self {
         Self {
@@ -251,7 +302,7 @@ impl Game {
             id,
             logs,
             game_record,
-            start_time: Instant::now(),
+            start_time,
             cleaned_up: false,
         }
     }
