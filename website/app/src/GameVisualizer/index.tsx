@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { apiUrl } from "../state";
 import Box from "@mui/joy/Box";
 import {
@@ -20,6 +20,7 @@ import { Team } from "@bindings/Team";
 import { GameWithBotsWithResult } from "@bindings/GameWithBotsWithResult";
 import { TeamStatusStack } from "../components/Tables/GameList/TeamStatusStack";
 import { KeyValue } from "../components/KeyValue";
+import { relative } from "path";
 
 interface Card {
   rank: string;
@@ -134,8 +135,8 @@ function GetGameState({
   step: number;
   game: GameWithBotsWithResult<BotWithTeam<Team>>;
 }) {
-  const [logs, setLogs] = useState<GameState>();
-  console.log(logs?.last_action);
+  const [game_state, setGameState] = useState<GameState>();
+  const [logs, setLogs] = useState<string>("");
 
   const fetchData = () => {
     fetch(`${apiUrl}/game-record?id=${gameId}&round=${step}`)
@@ -143,18 +144,23 @@ function GetGameState({
         return res.json();
       })
       .then((data: GameState) => {
-        setLogs(data);
+        setGameState(data);
       });
+    fetch(`${apiUrl}/game-log?id=${gameId}`)
+      .then((body) => body.text())
+      .then((text) => setLogs(text));
   };
 
   const actionNote = (
     <Typography level="h3" color="inherit">
-      {logs?.last_action}
+      {JSON.stringify(game_state?.action_val)}
     </Typography>
   );
 
   useEffect(() => fetchData(), [step]);
-  return logs ? (
+  console.log("state", game_state);
+
+  return game_state ? (
     <Box
       sx={(theme) => ({
         display: "grid",
@@ -193,16 +199,13 @@ function GetGameState({
         </Box>
         <KeyValue
           keyName="Pushed"
-          value={`${logs.challenger_pushed}/${logs.challenger_stack}`}
+          value={`${game_state.challenger_pushed}/${game_state.challenger_stack}`}
         />
         <KeyValue
           keyName="Position"
-          value={
-            <>
-              {logs.button == 'Challenger' ? 'SB' : 'BB'}
-            </>
-          }
+          value={<>{game_state.sb == "Challenger" ? "SB" : "BB"}</>}
         />
+        <Box>{game_state.action_time}</Box>
       </Box>
       <Box
         sx={{
@@ -225,9 +228,9 @@ function GetGameState({
           }}
         >
           <Typography level="h3" color="inherit">
-            Pot {logs.defender_pushed + logs.challenger_pushed}
+            Pot {game_state.defender_pushed + game_state.challenger_pushed}
           </Typography>
-          <GameTable {...logs} />
+          <GameTable {...game_state} />
         </Box>
       </Box>
       <Box
@@ -259,17 +262,14 @@ function GetGameState({
           keyName="Pushed"
           value={
             <>
-              {logs.defender_pushed}/{logs.defender_stack} ({actionNote})
+              {game_state.defender_pushed}/{game_state.defender_stack} (
+              {actionNote})
             </>
           }
         />
         <KeyValue
           keyName="Position"
-          value={
-            <>
-              {logs.button == 'Defender' ? 'SB' : 'BB'}
-            </>
-          }
+          value={<>{game_state.sb == "Defender" ? "SB" : "BB"}</>}
         />
       </Box>
     </Box>
@@ -281,7 +281,6 @@ function GetGameState({
 export default function GameVisualizer({ gameId }: { gameId: string }) {
   const [max, setMax] = useState(0);
   const [inputValue, setInputValue] = useState(0);
-
   const [game, setGame] = useState<GameWithBotsWithResult<BotWithTeam<Team>>>();
 
   const handleInputChange = (event: any) => {
@@ -302,14 +301,19 @@ export default function GameVisualizer({ gameId }: { gameId: string }) {
       });
   }, [gameId]);
 
-  if (!game) {
+  if (!game || isNaN(max)) {
     return (
-      <HeaderFooter>
-        <CircularProgress
+      <HeaderFooter fullWidth>
+        <Box
           sx={{
-            gridArea: "head",
+            gridArea: "content",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
           }}
-        />
+        >
+          <CircularProgress />
+        </Box>
       </HeaderFooter>
     );
   }
@@ -323,10 +327,10 @@ export default function GameVisualizer({ gameId }: { gameId: string }) {
         <Typography
           level="h3"
           mb={2}
-          color="inherit"
           sx={{
             overflowWrap: "anywhere",
           }}
+          color='inherit'
         >
           Game {gameId}
         </Typography>
