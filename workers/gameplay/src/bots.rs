@@ -355,22 +355,12 @@ impl Game {
         }
     }
 
-    // fn encode<S>(&self, serializer: S, game_state: &GameState) -> Result<S::Ok, S::Error>
-    // where
-    //     S: serde::Serializer,
-    // {
-    //     let mut state = serializer.serialize_struct("GameState", 7)?;
-    //     state.serialize_field("player_states", &game_state.player_states)?;
-    //     state.serialize_field("community_cards", &game_state.community_cards)?;
-    //     state.serialize_field("round", &game_state.round)?;
-    //     state.serialize_field("last_aggressor", &game_state.last_aggressor)?;
-    //     state.serialize_field("target_push", &game_state.target_push)?;
-    //     state.serialize_field("end_reason", &game_state.end_reason)?;
-    //     state.serialize_field("sb", &self.sb)?;
-    //     state.end()
-    // }
-
-    async fn save_round(&mut self, state: &GameState, step: i32) -> Result<(), shared::GameError> {
+    async fn save_round(
+        &mut self,
+        state: &GameState,
+        step: i32,
+        time: tokio::time::Duration,
+    ) -> Result<(), shared::GameError> {
         let (defender_state, challenger_state) = match self.sb {
             WhichBot::Defender => (&state.player_states[0], &state.player_states[1]),
             WhichBot::Challenger => (&state.player_states[1], &state.player_states[0]),
@@ -392,7 +382,7 @@ impl Game {
             river: state.community_cards.get(4).map(|c| c.to_string()),
             button: self.sb.other().to_string(),
             sb: self.sb.to_string(),
-            action_time: 0,
+            action_time: time.as_millis() as i32,
             last_action: state.last_aggressor.to_string(),
         };
         match serde_json::to_string(&game_state_sql) {
@@ -539,7 +529,12 @@ impl Game {
             unsafe {
                 kill(-(opponent_gid as i32), 18);
             };
-            self.save_round(&state, *state_id).await?;
+            self.save_round(
+                &state,
+                *state_id,
+                tokio::time::Instant::now().duration_since(self.start_time),
+            )
+            .await?;
             *state_id += 1;
         }
 

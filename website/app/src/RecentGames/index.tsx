@@ -30,7 +30,7 @@ export default function RecentGames() {
           display: "grid",
         }}
       >
-        <Typography level="h3" mb={2} color="inherit">
+        <Typography level="h3" mb={2} >
           Recent games
         </Typography>
         <Stack

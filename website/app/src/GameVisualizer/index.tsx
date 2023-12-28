@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { apiUrl } from "../state";
 import Box from "@mui/joy/Box";
 import {
@@ -19,6 +19,7 @@ import { BotWithTeam } from "@bindings/BotWithTeam";
 import { Team } from "@bindings/Team";
 import { GameWithBotsWithResult } from "@bindings/GameWithBotsWithResult";
 import { TeamStatusStack } from "../components/Tables/GameList/TeamStatusStack";
+import { relative } from "path";
 
 interface Card {
   rank: string;
@@ -87,13 +88,13 @@ function GameTable({
     <div className="cards">
       {flop
         ? flop.split(" ").map((c) => {
-            return <GameCard card={stringToCard(c)} />;
-          })
+          return <GameCard card={stringToCard(c)} />;
+        })
         : [
-            <GameCard card={{ rank: "", suit: "" }} />,
-            <GameCard card={{ rank: "", suit: "" }} />,
-            <GameCard card={{ rank: "", suit: "" }} />,
-          ]}
+          <GameCard card={{ rank: "", suit: "" }} />,
+          <GameCard card={{ rank: "", suit: "" }} />,
+          <GameCard card={{ rank: "", suit: "" }} />,
+        ]}
 
       {turn ? (
         turn.split(" ").map((c) => {
@@ -124,6 +125,7 @@ function GameTable({
   ];
 }
 
+
 function GetGameState({
   gameId,
   step,
@@ -133,7 +135,8 @@ function GetGameState({
   step: number;
   game: GameWithBotsWithResult<BotWithTeam<Team>>;
 }) {
-  const [logs, setLogs] = useState<GameState>();
+  const [game_state, setGameState] = useState<GameState>();
+  const [logs, setLogs] = useState<string>("");
 
   const fetchData = () => {
     fetch(`${apiUrl}/game-record?id=${gameId}&round=${step}`)
@@ -141,12 +144,23 @@ function GetGameState({
         return res.json();
       })
       .then((data: GameState) => {
-        setLogs(data);
+        setGameState(data);
       });
+    fetch(`${apiUrl}/game-log?id=${gameId}`).then((body) => body.text()).then((text) => setLogs(text))
   };
 
+  const typographyRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (typographyRef.current) {
+      typographyRef.current.scrollTop = typographyRef.current.scrollHeight;
+    }
+  }, [game_state]);
+
   useEffect(() => fetchData(), [step]);
-  return logs ? (
+  console.log(game_state);
+
+  return game_state ? (
     <Box
       sx={(theme) => ({
         display: "grid",
@@ -175,6 +189,20 @@ function GetGameState({
           rating={game.result?.challenger_rating}
           ratingChange={game.result?.challenger_rating_change}
         />
+        <Box>{game_state.action_time}</Box>
+        <Typography
+          ref={typographyRef}
+
+          sx={{
+            color: "white",
+            whiteSpace: 'pre',
+            overflow: "auto",
+            height: "450px",
+            width: "450px",
+            margin: "15px",
+          }}>
+          {logs.split(/\n/).filter((line) => { return parseInt(line.split(/ms(.*)/s)[0]) <= game_state.action_time; }).join("\n")}
+        </Typography>
       </Box>
       <Box
         sx={{
@@ -196,7 +224,7 @@ function GetGameState({
             gap: 4,
           }}
         >
-          <GameTable {...logs} />
+          <GameTable {...game_state} />
         </Box>
       </Box>
       <Box
@@ -207,6 +235,7 @@ function GetGameState({
           justifyContent: "flex-end",
         }}
       >
+
         <Box>
           <TeamStatusStack
             direction="Defender"
@@ -218,7 +247,7 @@ function GetGameState({
           />
         </Box>
       </Box>
-    </Box>
+    </Box >
   ) : (
     <CircularProgress />
   );
@@ -227,7 +256,6 @@ function GetGameState({
 export default function GameVisualizer({ gameId }: { gameId: string }) {
   const [max, setMax] = useState(0);
   const [inputValue, setInputValue] = useState(0);
-
   const [game, setGame] = useState<GameWithBotsWithResult<BotWithTeam<Team>>>();
 
   const handleInputChange = (event: any) => {
@@ -247,6 +275,7 @@ export default function GameVisualizer({ gameId }: { gameId: string }) {
         setGame(data[0]);
       });
   }, [gameId]);
+
 
   if (!game) {
     return (
@@ -269,7 +298,6 @@ export default function GameVisualizer({ gameId }: { gameId: string }) {
         <Typography
           level="h3"
           mb={2}
-          color="inherit"
           sx={{
             overflowWrap: "anywhere",
           }}
@@ -287,6 +315,7 @@ export default function GameVisualizer({ gameId }: { gameId: string }) {
           alignItems: "stretch",
         }}
       >
+
         <GetGameState gameId={gameId} step={inputValue} game={game} />
         <Input
           type="number"
