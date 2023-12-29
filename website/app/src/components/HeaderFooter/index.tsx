@@ -91,9 +91,9 @@ export default function HeaderFooter(
           backgroundPosition: "top",
           maxWidth: "100vw",
           maxHeight: "100vh",
-          [theme.breakpoints.up("md")]: {
+          ...(props.fullWidth ? {} : {[theme.breakpoints.up("md")]: {
             backgroundPosition: "right",
-          },
+          }}),
         })}
       />{" "}
     </Sheet>

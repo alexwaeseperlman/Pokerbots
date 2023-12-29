@@ -78,24 +78,6 @@
     font-size: 20px;
   }
 }
-
-
-@media screen and (min-width: 1200px) {
-  .card {
-    width: 100px;
-    height: 133px;
-    font-size: 24px;
-  }
-
-  .suit {
-    font-size: 20px;
-  }
-
-  .rank {
-    font-size: 48px !important;
-  }
-}
-
 .rank{
   font-size: 32px;
 }

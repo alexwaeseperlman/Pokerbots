@@ -45,7 +45,6 @@ export function TeamStatusStack({
     <Stack
       sx={{
         flexDirection: "column",
-        alignItems: "stretch",
         flex: "1 0 45%",
       }}
     >
@@ -53,7 +52,7 @@ export function TeamStatusStack({
         sx={{
           flexDirection: direction == "Challenger" ? "row" : "row-reverse",
           display: "flex",
-          justifyContent: "space-between",
+          //justifyContent: "space-between",
         }}
       >
         <Typography

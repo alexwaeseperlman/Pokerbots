@@ -2,13 +2,14 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { apiUrl } from "../state";
 import Box from "@mui/joy/Box";
 import {
-  Card,
   Grid,
   Sheet,
   Slider,
   Typography,
   Input,
   CircularProgress,
+  IconButton,
+  ButtonGroup,
 } from "@mui/joy";
 import GameCard from "./GameCard";
 import { Game } from "@bindings/Game";
@@ -17,113 +18,84 @@ import { GameStateSQL as GameState } from "@bindings/GameStateSQL";
 import { TeamBotStack } from "../components/Tables/GameList/BotCard";
 import { BotWithTeam } from "@bindings/BotWithTeam";
 import { Team } from "@bindings/Team";
+import { Card } from "@bindings/Card";
 import { GameWithBotsWithResult } from "@bindings/GameWithBotsWithResult";
 import { TeamStatusStack } from "../components/Tables/GameList/TeamStatusStack";
 import { KeyValue } from "../components/KeyValue";
 import { relative } from "path";
-
-interface Card {
-  rank: string;
-  suit: string;
-}
-
-function stringToCard(cardStr: string): Card {
-  if (cardStr.length !== 2) {
-    console.error("Invalid card string format. Must be 2 characters.");
-    return { rank: "", suit: "" };
-  }
-  const fixTen = (s: string) => {
-    if (s == "T") {
-      return "10";
-    } else {
-      return s;
-    }
-  };
-  const rankChar = fixTen(cardStr.charAt(0));
-  const suitChar = cardStr.charAt(1);
-
-  const rank = rankChar.toUpperCase();
-  const suit = suitChar.toLowerCase();
-
-  if (!rank || (suit !== "s" && suit !== "h" && suit !== "d" && suit !== "c")) {
-    console.error("Invalid card string values.");
-    return { rank: "", suit: "" };
-  }
-  const abrToFullName = (suit: string) => {
-    switch (suit) {
-      case "h":
-        return "hearts";
-      case "d":
-        return "diamonds";
-      case "c":
-        return "clubs";
-      case "s":
-        return "spades";
-      default:
-        return "";
-    }
-  };
-
-  return { rank, suit: abrToFullName(suit) };
-}
+import { Action } from "@bindings/Action";
+import { useParams, useSearchParams } from "react-router-dom";
+import { Pause, PlayArrow, SkipNext, SkipPrevious } from "@mui/icons-material";
+import bgImage from "./bg.png";
+import { EndReason } from "@bindings/EndReason";
 
 function GameTable({
   challenger_hand,
   defender_hand,
-  flop,
-  turn,
-  river,
+  community_cards,
 }: GameState) {
+  const allCards: (Card | undefined)[] = community_cards.slice();
+  while (allCards.length < 5) allCards.push(undefined);
+  console.log(defender_hand, challenger_hand, allCards, community_cards);
   return [
     <div className="cards">
-      {" "}
-      {challenger_hand ? (
-        challenger_hand.split(" ").map((c) => {
-          return <GameCard card={stringToCard(c)} />;
-        })
-      ) : (
-        <GameCard card={{ rank: "", suit: "" }} />
-      )}
+      {challenger_hand.map((c) => (
+        <GameCard card={c} />
+      ))}
     </div>,
 
     <div className="cards">
-      {flop
-        ? flop.split(" ").map((c) => {
-            return <GameCard card={stringToCard(c)} />;
-          })
-        : [
-            <GameCard card={{ rank: "", suit: "" }} />,
-            <GameCard card={{ rank: "", suit: "" }} />,
-            <GameCard card={{ rank: "", suit: "" }} />,
-          ]}
-
-      {turn ? (
-        turn.split(" ").map((c) => {
-          return <GameCard card={stringToCard(c)} />;
-        })
-      ) : (
-        <GameCard card={{ rank: "", suit: "" }} />
-      )}
-
-      {river ? (
-        river.split(" ").map((c) => {
-          return <GameCard card={stringToCard(c)} />;
-        })
-      ) : (
-        <GameCard card={{ rank: "", suit: "" }} />
-      )}
+      {allCards.map((c) => {
+        return <GameCard card={c} />;
+      })}
     </div>,
     <div className="cards">
-      {" "}
-      {defender_hand ? (
-        defender_hand.split(" ").map((c) => {
-          return <GameCard card={stringToCard(c)} />;
-        })
-      ) : (
-        <GameCard card={{ rank: "", suit: "" }} />
-      )}
+      {defender_hand.map((c) => (
+        <GameCard card={c} />
+      ))}
     </div>,
   ];
+}
+
+function ActionNote({ action }: { action: Action | undefined }) {
+  if (!action)
+    return (
+      <Typography level="h3" color="inherit">
+        Did not act
+      </Typography>
+    );
+  else if (action == "Fold") {
+    return (
+      <Typography level="h3" color="inherit">
+        Fold
+      </Typography>
+    );
+  } else if (action.Raise == 0) {
+    return (
+      <Typography level="h3" color="inherit">
+        Check/call
+      </Typography>
+    );
+  } else {
+    return (
+      <Typography level="h3" color="inherit">
+        Raise {action.Raise}
+      </Typography>
+    );
+  }
+}
+
+function endMessage(endReason: EndReason) {
+  if (endReason == "Tie") {
+    return "Tie";
+  }
+  if ("WonShowdown" in endReason) {
+    return `${endReason.WonShowdown} won by showdown`;
+  }
+
+  if ("LastToAct" in endReason) {
+    return `${endReason.LastToAct} won by fold`;
+  }
 }
 
 function GetGameState({
@@ -151,14 +123,30 @@ function GetGameState({
       .then((text) => setLogs(text));
   };
 
-  const actionNote = (
-    <Typography level="h3" color="inherit">
-      {JSON.stringify(game_state?.action_val)}
-    </Typography>
-  );
-
   useEffect(() => fetchData(), [step]);
   console.log("state", game_state);
+
+  const challengerActionNote = (
+    <ActionNote
+      action={
+        (game_state?.whose_turn == "SmallBlind") ==
+        (game_state?.sb == "Challenger")
+          ? game_state?.action_val
+          : undefined
+      }
+    />
+  );
+
+  const defenderActionNote = (
+    <ActionNote
+      action={
+        (game_state?.whose_turn == "SmallBlind") ==
+        (game_state?.sb == "Defender")
+          ? game_state?.action_val
+          : undefined
+      }
+    />
+  );
 
   return game_state ? (
     <Box
@@ -166,8 +154,8 @@ function GetGameState({
         display: "grid",
         gridTemplateRows: "repeat(3, auto)",
         gridTemplateAreas: '"challenger" "game" "defender"',
-        [theme.breakpoints.up("md")]: {
-          gridTemplateColumns: "auto 1fr auto",
+        [theme.breakpoints.up("lg")]: {
+          gridTemplateColumns: "1fr auto 1fr",
           gridTemplateAreas: '"challenger game defender"',
           gridTemplateRows: "auto",
         },
@@ -180,6 +168,7 @@ function GetGameState({
           gridArea: "challenger",
           flexDirection: "column",
           gap: 2,
+          justifyContent: "stretch",
         }}
       >
         <Box
@@ -197,38 +186,48 @@ function GetGameState({
             ratingChange={game.result?.challenger_rating_change}
           />
         </Box>
-        <KeyValue
-          keyName="Pushed"
-          value={`${game_state.challenger_pushed}/${game_state.challenger_stack}`}
-        />
-        <KeyValue
-          keyName="Position"
-          value={<>{game_state.sb == "Challenger" ? "SB" : "BB"}</>}
-        />
-        <Box>{game_state.action_time}</Box>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "flex-start",
+            gap: 2,
+          }}
+        >
+          <KeyValue
+            keyName="Pushed"
+            value={`${
+              game_state.end_reason ? 0 : game_state.challenger_pushed
+            }/${game_state.challenger_stack}`}
+          />
+          <KeyValue
+            keyName="Position"
+            value={<>{game_state.sb == "Challenger" ? "SB" : "BB"}</>}
+          />
+        </Box>
+        <Box>{challengerActionNote}</Box>
       </Box>
       <Box
         sx={{
           gridArea: "game",
           position: "relative",
-          minHeight: "350px",
         }}
       >
         <Box
           sx={{
-            position: "absolute",
             height: "100%",
             display: "flex",
-            left: 0,
-            right: 0,
             flexDirection: "column",
             justifyContent: "center",
             alignItems: "center",
-            gap: 4,
+            gap: 2,
           }}
         >
           <Typography level="h3" color="inherit">
             Pot {game_state.defender_pushed + game_state.challenger_pushed}
+          </Typography>
+          <Typography level="h3" color="inherit">
+            {game_state.end_reason ? endMessage(game_state.end_reason) : ""}
           </Typography>
           <GameTable {...game_state} />
         </Box>
@@ -258,19 +257,29 @@ function GetGameState({
             ratingChange={game.result?.defender_rating_change}
           />
         </Box>
-        <KeyValue
-          keyName="Pushed"
-          value={
-            <>
-              {game_state.defender_pushed}/{game_state.defender_stack} (
-              {actionNote})
-            </>
-          }
-        />
-        <KeyValue
-          keyName="Position"
-          value={<>{game_state.sb == "Defender" ? "SB" : "BB"}</>}
-        />
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "flex-end",
+            gap: 2,
+          }}
+        >
+          <KeyValue
+            keyName="Pushed"
+            value={
+              <>
+                {game_state.end_reason ? 0 : game_state.defender_pushed}/
+                {game_state.defender_stack}
+              </>
+            }
+          />
+          <KeyValue
+            keyName="Position"
+            value={<>{game_state.sb == "Defender" ? "SB" : "BB"}</>}
+          />
+        </Box>
+        <Box textAlign="right">{defenderActionNote}</Box>
       </Box>
     </Box>
   ) : (
@@ -280,12 +289,29 @@ function GetGameState({
 
 export default function GameVisualizer({ gameId }: { gameId: string }) {
   const [max, setMax] = useState(0);
-  const [inputValue, setInputValue] = useState(0);
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const step = urlParams.get("step");
+  const [inputValue, setInputValue] = useState(step ?? 0);
   const [game, setGame] = useState<GameWithBotsWithResult<BotWithTeam<Team>>>();
 
-  const handleInputChange = (event: any) => {
-    setInputValue(parseInt(event.target.value) || 0);
-  };
+  const [paused, setPaused] = useState(true);
+
+  const handleInputChange = useCallback(
+    (event: any) => {
+      // update params
+      setInputValue(event.target.value);
+      urlParams.set("step", event.target.value);
+
+      // update url
+      window.history.replaceState(
+        {},
+        "",
+        `${window.location.pathname}?${urlParams.toString()}`
+      );
+    },
+    [setInputValue, inputValue]
+  );
   useEffect(() => {
     if (max == 0)
       fetch(`${apiUrl}/game-length?game_id=${gameId}`)
@@ -301,9 +327,18 @@ export default function GameVisualizer({ gameId }: { gameId: string }) {
       });
   }, [gameId]);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!paused) {
+        handleInputChange({ target: { value: inputValue + 1 } });
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [paused, inputValue]);
+
   if (!game || isNaN(max)) {
     return (
-      <HeaderFooter fullWidth>
+      <HeaderFooter fullWidth graphics={[`url(${bgImage})`]}>
         <Box
           sx={{
             gridArea: "content",
@@ -318,7 +353,7 @@ export default function GameVisualizer({ gameId }: { gameId: string }) {
     );
   }
   return (
-    <HeaderFooter fullWidth>
+    <HeaderFooter fullWidth graphics={[`url(${bgImage})`]}>
       <Box
         sx={{
           gridArea: "head",
@@ -330,7 +365,7 @@ export default function GameVisualizer({ gameId }: { gameId: string }) {
           sx={{
             overflowWrap: "anywhere",
           }}
-          color='inherit'
+          color="inherit"
         >
           Game {gameId}
         </Typography>
@@ -346,28 +381,71 @@ export default function GameVisualizer({ gameId }: { gameId: string }) {
         }}
       >
         <GetGameState gameId={gameId} step={inputValue} game={game} />
-        <Input
-          type="number"
+        <Box
           sx={{
-            maxWidth: "150px",
+            mt: 4,
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 2,
           }}
-          value={inputValue}
-          onChange={handleInputChange}
-          slotProps={{
-            input: {
-              min: 0,
-              max: max,
-            },
-          }}
-        />
-        <Slider
-          value={inputValue}
-          onChange={handleInputChange}
-          step={1}
-          marks
-          min={0}
-          max={max}
-        />
+        >
+          <ButtonGroup>
+            <IconButton
+              variant="soft"
+              onClick={() => {
+                handleInputChange({
+                  target: { value: Math.max(inputValue - 1, 0) },
+                });
+              }}
+            >
+              <SkipPrevious />
+            </IconButton>
+            {paused ? (
+              <IconButton variant="soft" onClick={() => setPaused(false)}>
+                <PlayArrow />
+              </IconButton>
+            ) : (
+              <IconButton variant="soft" onClick={() => setPaused(true)}>
+                <Pause />
+              </IconButton>
+            )}
+            <IconButton
+              variant="soft"
+              onClick={() => {
+                handleInputChange({
+                  target: { value: Math.min(inputValue + 1, max) },
+                });
+              }}
+            >
+              <SkipNext />
+            </IconButton>
+          </ButtonGroup>
+          <Typography
+            whiteSpace={"nowrap"}
+            textAlign={"right"}
+            level="h3"
+            color="inherit"
+          >
+            Step {inputValue}/{max}
+          </Typography>
+          <Slider
+            value={inputValue}
+            onChange={handleInputChange}
+            step={1}
+            marks
+            min={0}
+            max={max}
+            variant="solid"
+            color="danger"
+            sx={(theme) => ({
+              width: "100%",
+              [theme.breakpoints.down("md")]: {
+                display: "none",
+              },
+            })}
+          />
+        </Box>
       </Box>
     </HeaderFooter>
   );

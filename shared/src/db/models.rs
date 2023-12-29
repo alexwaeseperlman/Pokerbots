@@ -1,7 +1,7 @@
 use std::io::Write;
 
 use diesel::{
-    deserialize::FromSql,
+    deserialize::{FromSql, FromSqlRow},
     expression::AsExpression,
     pg::{self, PgValue},
     prelude::{Associations, Identifiable, Insertable},

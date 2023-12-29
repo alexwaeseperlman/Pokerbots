@@ -64,8 +64,8 @@ export function TeamBotStack({
           </Link>
 
           <Typography
-            fontSize={'small'}
-            level={size == "large" ? "h3" : undefined}
+            fontSize={size ?? "small"}
+            el={size == "large" ? "h3" : undefined}
             color="inherit"
             whiteSpace="nowrap"
           >
