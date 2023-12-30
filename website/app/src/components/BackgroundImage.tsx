@@ -17,4 +17,5 @@ export default styled("div")<{ graphics: string[] }>(({ theme, graphics }) => ({
   overflow: "hidden",
   pointerEvents: "none",
   zIndex: 1,
+  maskImage: "radial-gradient(circle, black, transparent 50%)",
 }));

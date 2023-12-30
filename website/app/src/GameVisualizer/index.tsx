@@ -29,6 +29,13 @@ import { Pause, PlayArrow, SkipNext, SkipPrevious } from "@mui/icons-material";
 import bgImage from "./bg.png";
 import { EndReason } from "@bindings/EndReason";
 
+function roundName(cardCount: number) {
+  if (cardCount == 0) return "Pre-flop";
+  if (cardCount == 3) return "Flop";
+  if (cardCount == 4) return "Turn";
+  if (cardCount == 5) return "River";
+}
+
 function GameTable({
   challenger_hand,
   defender_hand,
@@ -39,49 +46,26 @@ function GameTable({
   console.log(defender_hand, challenger_hand, allCards, community_cards);
   return [
     <div className="cards">
-      {challenger_hand.map((c) => (
-        <GameCard card={c} />
-      ))}
-    </div>,
-
-    <div className="cards">
-      {allCards.map((c) => {
+      {allCards.slice(0, 3).map((c) => {
         return <GameCard card={c} />;
       })}
     </div>,
     <div className="cards">
-      {defender_hand.map((c) => (
-        <GameCard card={c} />
-      ))}
+      {allCards.slice(3, 5).map((c) => {
+        return <GameCard card={c} />;
+      })}
     </div>,
   ];
 }
 
 function ActionNote({ action }: { action: Action | undefined }) {
-  if (!action)
-    return (
-      <Typography level="h3" color="inherit">
-        Did not act
-      </Typography>
-    );
+  if (!action) return <Typography color="inherit">Did not act</Typography>;
   else if (action == "Fold") {
-    return (
-      <Typography level="h3" color="inherit">
-        Fold
-      </Typography>
-    );
+    return <Typography color="inherit">Fold</Typography>;
   } else if (action.Raise == 0) {
-    return (
-      <Typography level="h3" color="inherit">
-        Check/call
-      </Typography>
-    );
+    return <Typography color="inherit">Check/call</Typography>;
   } else {
-    return (
-      <Typography level="h3" color="inherit">
-        Raise {action.Raise}
-      </Typography>
-    );
+    return <Typography color="inherit">Raise {action.Raise}</Typography>;
   }
 }
 
@@ -98,14 +82,62 @@ function endMessage(endReason: EndReason) {
   }
 }
 
+function Status({
+  hand,
+  pushed,
+  position,
+  lastAction,
+  stack
+}: {
+  hand: Card[];
+  pushed: number;
+  stack: number
+  position: "SB" | "BB";
+  lastAction: Action | undefined;
+}) {
+  return (
+    <>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "flex-start",
+          gap: 1,
+        }}
+      >
+        <KeyValue keyName="Pushed" value={`${pushed}/${stack}`} />
+        <KeyValue keyName="Position" value={position} />
+        <KeyValue
+          keyName="Last Action"
+          value={<ActionNote action={lastAction} />}
+        />
+      </Box>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "row",
+          gap: 1,
+        }}
+      >
+        {hand.map((c) => (
+          <GameCard card={c} />
+        ))}
+      </Box>
+    </>
+  );
+}
+
 function GetGameState({
   gameId,
   step,
   game,
+  defenderLog, challengerLog
 }: {
   gameId: string;
   step: number;
   game: GameWithBotsWithResult<BotWithTeam<Team>>;
+  defenderLog: string | undefined;
+  challengerLog: string | undefined;
 }) {
   const [game_state, setGameState] = useState<GameState>();
   const [logs, setLogs] = useState<string>("");
@@ -118,35 +150,9 @@ function GetGameState({
       .then((data: GameState) => {
         setGameState(data);
       });
-    fetch(`${apiUrl}/game-log?id=${gameId}`)
-      .then((body) => body.text())
-      .then((text) => setLogs(text));
   };
 
   useEffect(() => fetchData(), [step]);
-  console.log("state", game_state);
-
-  const challengerActionNote = (
-    <ActionNote
-      action={
-        (game_state?.whose_turn == "SmallBlind") ==
-        (game_state?.sb == "Challenger")
-          ? game_state?.action_val
-          : undefined
-      }
-    />
-  );
-
-  const defenderActionNote = (
-    <ActionNote
-      action={
-        (game_state?.whose_turn == "SmallBlind") ==
-        (game_state?.sb == "Defender")
-          ? game_state?.action_val
-          : undefined
-      }
-    />
-  );
 
   return game_state ? (
     <Box
@@ -168,7 +174,6 @@ function GetGameState({
           gridArea: "challenger",
           flexDirection: "column",
           gap: 2,
-          justifyContent: "stretch",
         }}
       >
         <Box
@@ -188,24 +193,20 @@ function GetGameState({
         </Box>
         <Box
           sx={{
-            display: "flex",
             flexDirection: "row",
-            justifyContent: "flex-start",
+            display: "flex",
             gap: 2,
+            alignItems: "center",
           }}
         >
-          <KeyValue
-            keyName="Pushed"
-            value={`${
-              game_state.end_reason ? 0 : game_state.challenger_pushed
-            }/${game_state.challenger_stack}`}
-          />
-          <KeyValue
-            keyName="Position"
-            value={<>{game_state.sb == "Challenger" ? "SB" : "BB"}</>}
+          <Status
+            hand={game_state.challenger_hand}
+            pushed={game_state.challenger_pushed}
+            stack={game_state.challenger_stack}
+            position={game_state.sb == "Challenger" ? "SB" : "BB"}
+            lastAction={(game_state.sb == 'Challenger') == (game_state.whose_turn == 'SmallBlind') ? game_state.action_val : undefined}
           />
         </Box>
-        <Box>{challengerActionNote}</Box>
       </Box>
       <Box
         sx={{
@@ -218,7 +219,6 @@ function GetGameState({
             height: "100%",
             display: "flex",
             flexDirection: "column",
-            justifyContent: "center",
             alignItems: "center",
             gap: 2,
           }}
@@ -227,7 +227,7 @@ function GetGameState({
             Pot {game_state.defender_pushed + game_state.challenger_pushed}
           </Typography>
           <Typography level="h3" color="inherit">
-            {game_state.end_reason ? endMessage(game_state.end_reason) : ""}
+            {game_state.end_reason ? endMessage(game_state.end_reason) : (roundName(game_state.community_cards.length))}
           </Typography>
           <GameTable {...game_state} />
         </Box>
@@ -237,7 +237,6 @@ function GetGameState({
           display: "flex",
           gridArea: "defender",
           flexDirection: "column",
-          justifyContent: "flex-end",
           gap: 2,
         }}
       >
@@ -259,27 +258,21 @@ function GetGameState({
         </Box>
         <Box
           sx={{
+            flexDirection: "row-reverse",
             display: "flex",
-            flexDirection: "row",
-            justifyContent: "flex-end",
             gap: 2,
+            textAlign: "right",
+            alignItems: "center",
           }}
         >
-          <KeyValue
-            keyName="Pushed"
-            value={
-              <>
-                {game_state.end_reason ? 0 : game_state.defender_pushed}/
-                {game_state.defender_stack}
-              </>
-            }
-          />
-          <KeyValue
-            keyName="Position"
-            value={<>{game_state.sb == "Defender" ? "SB" : "BB"}</>}
+          <Status
+            hand={game_state.defender_hand}
+            pushed={game_state.defender_pushed}
+            stack={game_state.defender_stack}
+            position={game_state.sb == "Defender" ? "SB" : "BB"}
+            lastAction={(game_state.sb == 'Defender') == (game_state.whose_turn == 'SmallBlind') ? game_state.action_val : undefined}
           />
         </Box>
-        <Box textAlign="right">{defenderActionNote}</Box>
       </Box>
     </Box>
   ) : (
@@ -291,9 +284,12 @@ export default function GameVisualizer({ gameId }: { gameId: string }) {
   const [max, setMax] = useState(0);
 
   const urlParams = new URLSearchParams(window.location.search);
-  const step = urlParams.get("step");
-  const [inputValue, setInputValue] = useState(step ?? 0);
+  const step = parseInt(urlParams.get("step") ?? "0");
+  const [inputValue, setInputValue] = useState(step);
   const [game, setGame] = useState<GameWithBotsWithResult<BotWithTeam<Team>>>();
+
+  const [defenderLog, setDefenderLog] = useState<string | null>();
+  const [challengerLog, setChallengerLog] = useState<string | null>();
 
   const [paused, setPaused] = useState(true);
 
@@ -325,12 +321,20 @@ export default function GameVisualizer({ gameId }: { gameId: string }) {
       .then((data) => {
         setGame(data[0]);
       });
+
+    fetch(`${apiUrl}/game-log?id=${gameId}`)
+      .then((body) => body.text())
+      .then((text) => setDefenderLog(text));
   }, [gameId]);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      if (!paused) {
-        handleInputChange({ target: { value: inputValue + 1 } });
+      if (inputValue == max) {
+        setPaused(true);
+      } else if (!paused) {
+        handleInputChange({
+          target: { value: Math.min((inputValue ?? -1) + 1, max) },
+        });
       }
     }, 1000);
     return () => clearInterval(interval);

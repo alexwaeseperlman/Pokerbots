@@ -88,12 +88,18 @@ export default function HeaderFooter(
       <BackgroundImage
         graphics={props.graphics ?? [`url(${bgImage})`]}
         sx={(theme) => ({
-          backgroundPosition: "top",
-          maxWidth: "100vw",
           maxHeight: "100vh",
-          ...(props.fullWidth ? {} : {[theme.breakpoints.up("md")]: {
-            backgroundPosition: "right",
-          }}),
+          mask: "radial-gradient(circle, white, transparent 50%)",
+          ...(props.fullWidth
+            ? {}
+            : {
+                [theme.breakpoints.up("md")]: {
+                  backgroundPosition: "right",
+                  //maskPosition: "right",
+                  // kinda hacky but works
+                  mask: "radial-gradient(circle at 70%, white, transparent 50%)",
+                },
+              }),
         })}
       />{" "}
     </Sheet>
