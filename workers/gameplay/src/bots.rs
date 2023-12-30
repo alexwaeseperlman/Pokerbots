@@ -210,8 +210,14 @@ pub async fn run_game(
         )
     )?;
 
-    let def_stderr = defender.stderr.take().unwrap();
-    let chall_stderr = challenger.stderr.take().unwrap();
+    let def_stderr = defender
+        .stderr
+        .take()
+        .expect("Could not unwrap defender's stderr");
+    let chall_stderr = challenger
+        .stderr
+        .take()
+        .expect("Could not unwrap challenger's stderr");
 
     let start_time = Instant::now();
     let def_handle = tokio::spawn(write_std_err(def_stderr, defender_path.clone(), start_time));
