@@ -384,8 +384,8 @@ impl Game {
             community_cards: state.community_cards.clone(),
             sb: self.sb,
             end_reason: state.end_reason.clone(),
-            whose_turn: state.whose_turn(),
-            // TODO: set this to time since game started
+            // set to other because save_round is called after an action is taken, so the player who just acted is the other player
+            whose_turn: state.whose_turn().map(|x| x.other()),
             action_val,
             action_time: time.as_millis() as i32,
         };
