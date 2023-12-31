@@ -1,5 +1,3 @@
-use std::usize;
-
 use diesel::alias;
 use futures_util::TryStreamExt;
 use itertools::Itertools;
@@ -10,10 +8,12 @@ use shared::{
             games::{GameQueryOptions, GamesDao, PageOptions},
         },
         models::{BotWithTeam, GameStateSQL, GameWithBots, GameWithBotsWithResult, Team},
+        schema::game_states::{self, game_id, step},
         schema_aliases::*,
     },
     WhichBot,
 };
+use std::usize;
 
 use super::*;
 
@@ -139,19 +139,57 @@ pub async fn game_record(
 }
 
 #[derive(Deserialize)]
-pub struct GameLengthQuery {
-    game_id: String,
+pub struct GameStateQuery {
+    id: String,
+    state: i32,
 }
 
-use diesel::prelude::*;
+#[get("/game-state")]
+pub async fn game_state(
+    session: Session,
+    web::Query::<GameStateQuery>(GameStateQuery { id, state }): web::Query<GameStateQuery>,
+) -> ApiResult<String> {
+    let team =
+        auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
+    let conn = &mut (*DB_CONNECTION).get()?;
+    // Make sure the game has been played by the team
+    let game: Game = schema::games::dsl::games
+        .filter(schema::games::dsl::id.eq(&id))
+        .first::<Game>(conn)?;
+
+    match vec![game.defender, game.challenger]
+        .into_iter()
+        .any(|x| true)
+    {
+        true => {
+            let game_state: GameStateSQL = schema::game_states::table
+                .filter(game_id.eq(id).and(step.eq(state)))
+                .first(conn)?;
+
+            return Ok(web::Json("Yes".to_string()));
+        }
+        false => {
+            return Err(actix_web::error::ErrorUnauthorized(
+                "Only the owner can view a bot's logs.",
+            )
+            .into());
+        }
+    }
+}
+
+#[derive(Deserialize)]
+pub struct GameLengthQuery {
+    id: String,
+}
+
 #[get("/game-length")]
 pub async fn game_length(
     session: Session,
-    web::Query::<GameLengthQuery>(GameLengthQuery { game_id }): web::Query<GameLengthQuery>,
+    web::Query::<GameLengthQuery>(GameLengthQuery { id }): web::Query<GameLengthQuery>,
 ) -> Result<HttpResponse, ApiError> {
     let conn = &mut (*DB_CONNECTION).get()?;
     let max = schema::game_states::dsl::game_states
-        .filter(schema::game_states::dsl::game_id.eq(game_id.clone()))
+        .filter(schema::game_states::dsl::game_id.eq(id))
         .order(schema::game_states::dsl::step.desc())
         .select(schema::game_states::dsl::step)
         .first::<i32>(conn)

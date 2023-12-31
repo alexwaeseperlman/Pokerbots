@@ -1,7 +1,7 @@
-use std::io::Write;
-
+use diesel::serialize::Output;
+use diesel::sql_types::SqlType;
 use diesel::{
-    deserialize::{FromSql, FromSqlRow},
+    deserialize::{FromSql, FromSqlRow, Result},
     expression::AsExpression,
     pg::{self, PgValue},
     prelude::{Associations, Identifiable, Insertable},
@@ -9,6 +9,7 @@ use diesel::{
     sql_types::{Integer, Text, VarChar},
     AsChangeset, Expression, Queryable, Selectable,
 };
+use std::io::Write;
 
 use chrono;
 use serde::{Deserialize, Serialize};
@@ -282,7 +283,7 @@ pub struct UserProfile {
     pub id: Uuid,
 }
 
-#[derive(Serialize, Deserialize, Debug, Queryable, Selectable, Insertable, TS)]
+#[derive(Serialize, Deserialize, Debug, Selectable, Insertable, TS, Queryable, SqlType)]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
 #[diesel(table_name = game_states)]
 pub struct GameStateSQL {

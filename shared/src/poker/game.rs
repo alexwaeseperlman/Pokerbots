@@ -15,7 +15,7 @@ use super::hands::{self, Card, Suite};
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize, TS)]
 //#[serde(tag = "type")]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
-#[cfg_attr(feature="db", derive(diesel::AsExpression, diesel::FromSqlRow))]
+#[cfg_attr(feature = "db", derive(diesel::AsExpression, diesel::FromSqlRow))]
 #[cfg_attr(feature="db", diesel(sql_type=diesel::sql_types::VarChar))]
 pub enum Action {
     // Call and check are the same as raising 0
@@ -44,7 +44,7 @@ pub struct PlayerState {
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, TS, FromPrimitive, ToPrimitive)]
 #[repr(i32)]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
-#[cfg_attr(feature="db", derive(diesel::AsExpression, diesel::FromSqlRow))]
+#[cfg_attr(feature = "db", derive(diesel::AsExpression, diesel::FromSqlRow))]
 #[cfg_attr(feature="db", diesel(sql_type=diesel::sql_types::Integer))]
 pub enum PlayerPosition {
     SmallBlind = 0,
@@ -70,7 +70,7 @@ impl Display for PlayerPosition {
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
-#[cfg_attr(feature="db", derive(diesel::AsExpression, diesel::FromSqlRow))]
+#[cfg_attr(feature = "db", derive(diesel::AsExpression, diesel::FromSqlRow))]
 #[cfg_attr(feature="db", diesel(sql_type=diesel::sql_types::VarChar))]
 pub enum EndReason {
     WonShowdown(PlayerPosition),
@@ -80,7 +80,7 @@ pub enum EndReason {
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
-#[cfg_attr(feature="db", derive(diesel::AsExpression, diesel::FromSqlRow))]
+#[cfg_attr(feature = "db", derive(diesel::AsExpression, diesel::FromSqlRow))]
 #[cfg_attr(feature="db", diesel(sql_type=diesel::sql_types::Varchar))]
 pub struct CommunityCards(pub Vec<Card>);
 
@@ -99,7 +99,7 @@ impl DerefMut for CommunityCards {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
-#[cfg_attr(feature="db", derive(diesel::AsExpression, diesel::FromSqlRow))]
+#[cfg_attr(feature = "db", derive(diesel::AsExpression, diesel::FromSqlRow))]
 #[cfg_attr(feature="db", diesel(sql_type=diesel::sql_types::Varchar))]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
 pub struct HoleCards(pub [Card; 2]);
@@ -346,7 +346,7 @@ mod tests {
     use rand::{rngs::StdRng, SeedableRng};
 
     use crate::poker::{
-        game::{Action, EndReason, GameState, PlayerPosition, Round, HoleCards},
+        game::{Action, EndReason, GameState, HoleCards, PlayerPosition, Round},
         hands::{
             self,
             hand_eval::{self, cards_from},

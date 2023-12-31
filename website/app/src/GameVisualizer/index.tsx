@@ -131,13 +131,10 @@ function GetGameState({
   gameId,
   step,
   game,
-  defenderLog, challengerLog
 }: {
   gameId: string;
   step: number;
   game: GameWithBotsWithResult<BotWithTeam<Team>>;
-  defenderLog: string | undefined;
-  challengerLog: string | undefined;
 }) {
   const [game_state, setGameState] = useState<GameState>();
   const [logs, setLogs] = useState<string>("");
@@ -310,7 +307,7 @@ export default function GameVisualizer({ gameId }: { gameId: string }) {
   );
   useEffect(() => {
     if (max == 0)
-      fetch(`${apiUrl}/game-length?game_id=${gameId}`)
+      fetch(`${apiUrl}/game-length?id=${gameId}`)
         .then((data) => data.text())
         .then((data) => setMax(parseInt(data)));
   }, [max]);
