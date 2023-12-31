@@ -340,20 +340,6 @@ impl Game {
             })?;
             Ok(())
         } else {
-            // TODO: determine cause close
-            self.logs
-                .write_all(
-                    format!(
-                        "{}ms System >>> Ending because {} lost stdin\n",
-                        tokio::time::Instant::now()
-                            .duration_since(self.start_time)
-                            .as_millis(),
-                        which_bot
-                    )
-                    .as_bytes(),
-                )
-                .await
-                .map_err(|_| GameError::RunTimeError(which_bot))?;
             // TODO: determine cause of close
             self.write_log(format!("System > Ending because {} lost stdin", which_bot))
                 .await?;
@@ -411,7 +397,7 @@ impl Game {
         self.logs
             .write_all(
                 format!(
-                    "{}ms {}\n",
+                    "[{}] {}\n",
                     tokio::time::Instant::now()
                         .duration_since(self.start_time)
                         .as_millis(),
