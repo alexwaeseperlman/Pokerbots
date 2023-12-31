@@ -58,12 +58,6 @@ pub struct GameLogQuery {
     which_bot: Option<WhichBot>,
 }
 
-#[derive(Deserialize)]
-pub struct GameRecordQuery {
-    id: String,
-    round: usize,
-}
-
 #[get("/game-log")]
 pub async fn game_log(
     session: Session,
@@ -108,47 +102,17 @@ pub async fn game_log(
     Ok(HttpResponse::Ok().streaming(response.body))
 }
 
-#[get("/game-record")]
-pub async fn game_record(
-    session: Session,
-    web::Query::<GameRecordQuery>(GameRecordQuery { id, round }): web::Query<GameRecordQuery>,
-    s3_client: web::Data<aws_sdk_s3::Client>,
-) -> Result<HttpResponse, ApiError> {
-    let key = format!("game_record/{}", id);
-    let mut response = s3_client
-        .get_object()
-        .bucket(game_logs_s3_bucket())
-        .key(key)
-        .send()
-        .await?;
-    let mut out = Vec::new();
-    while let Some(bytes) = response
-        .body
-        .try_next()
-        .await
-        .map_err(|_| actix_web::error::ErrorBadRequest("Not working"))?
-    {
-        out.extend_from_slice(&bytes);
-    }
-    let line = out
-        .split(|b| *b == 0xA)
-        .nth(round)
-        .unwrap_or_default()
-        .to_vec();
-    Ok(HttpResponse::Ok().body(line))
-}
-
 #[derive(Deserialize)]
 pub struct GameStateQuery {
     id: String,
-    state: i32,
+    round: i32,
 }
 
 #[get("/game-state")]
 pub async fn game_state(
     session: Session,
-    web::Query::<GameStateQuery>(GameStateQuery { id, state }): web::Query<GameStateQuery>,
-) -> ApiResult<String> {
+    web::Query::<GameStateQuery>(GameStateQuery { id, round }): web::Query<GameStateQuery>,
+) -> ApiResult<GameStateSQL> {
     let team =
         auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
     let conn = &mut (*DB_CONNECTION).get()?;
@@ -163,16 +127,13 @@ pub async fn game_state(
     {
         true => {
             let game_state: GameStateSQL = schema::game_states::table
-                .filter(game_id.eq(id).and(step.eq(state)))
+                .filter(game_id.eq(id).and(step.eq(round)))
                 .first(conn)?;
 
-            return Ok(web::Json("Yes".to_string()));
+            Ok(web::Json(game_state))
         }
         false => {
-            return Err(actix_web::error::ErrorUnauthorized(
-                "Only the owner can view a bot's logs.",
-            )
-            .into());
+            Err(actix_web::error::ErrorUnauthorized("Only the owner can view a bot's logs.").into())
         }
     }
 }

@@ -228,7 +228,7 @@ function GetGameState({
   console.log(defenderLog, challengerLog);
 
   const fetchData = () => {
-    fetch(`${apiUrl}/game-record?id=${gameId}&round=${step}`)
+    fetch(`${apiUrl}/game-state?id=${gameId}&round=${step}`)
       .then((res) => {
         return res.json();
       })
