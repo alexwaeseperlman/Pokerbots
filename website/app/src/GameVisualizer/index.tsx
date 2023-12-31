@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { apiUrl } from "../state";
 import Box from "@mui/joy/Box";
 import {
@@ -10,6 +16,7 @@ import {
   CircularProgress,
   IconButton,
   ButtonGroup,
+  Divider,
 } from "@mui/joy";
 import GameCard from "./GameCard";
 import { Game } from "@bindings/Game";
@@ -87,11 +94,11 @@ function Status({
   pushed,
   position,
   lastAction,
-  stack
+  stack,
 }: {
   hand: Card[];
   pushed: number;
-  stack: number
+  stack: number;
   position: "SB" | "BB";
   lastAction: Action | undefined;
 }) {
@@ -127,20 +134,98 @@ function Status({
   );
 }
 
+function BotLog({
+  log,
+  curTime,
+}: {
+  log: string | undefined;
+  curTime: number;
+}) {
+  const currentTimeRef = useRef<HTMLDivElement>(null);
+  const logRef = useRef<HTMLDivElement>(null);
+  // todo: binary search?
+  const lines = log?.split("\n") ?? [];
+  const lineIndex =
+    lines.findIndex((line) => parseInt(line.slice(1)) > curTime) ?? 0;
+
+  useLayoutEffect(() => {
+    // scroll to the line that starts with [curTime]
+    console.log(
+      logRef.current?.scrollHeight,
+      logRef.current?.clientHeight,
+      logRef.current?.offsetTop,
+      logRef.current?.offsetHeight
+    );
+    if (currentTimeRef.current && logRef.current) {
+      logRef.current.scrollTo({
+        top: currentTimeRef.current.offsetTop + currentTimeRef.current.offsetHeight + 20 - logRef.current.offsetTop - logRef.current.offsetHeight,
+      });
+    }
+  });
+
+  if (!log) return <></>;
+  return (
+    <Box
+      ref={logRef}
+      sx={{
+        background: "black",
+        border: "1px solid white",
+        flexGrow: 1,
+        overflow: "scroll",
+        height: 0,
+        minHeight: "150px",
+        minWidth: 0,
+        boxSizing: "border-box",
+      }}
+    >
+      <Typography color="white" fontFamily={"monospace"} whiteSpace={"pre"}>
+        {lines.slice(0, lineIndex).join("\n")}
+      </Typography>
+
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "stretch",
+          padding: 1,
+          gap: 2,
+          userSelect: "none",
+        }}
+        ref={currentTimeRef}
+      >
+        Current Time
+        <Box
+          sx={{
+            flexGrow: 1,
+            background: "white",
+            height: "3px",
+          }}
+        ></Box>
+      </Box>
+
+      <Typography color="white" fontFamily={"monospace"} whiteSpace={"pre"}>
+        {lines.slice(lineIndex).join("\n")}
+      </Typography>
+    </Box>
+  );
+}
 function GetGameState({
   gameId,
   step,
   game,
-  defenderLog, challengerLog
+  defenderLog,
+  challengerLog,
+  gameLog,
 }: {
   gameId: string;
   step: number;
   game: GameWithBotsWithResult<BotWithTeam<Team>>;
   defenderLog: string | undefined;
   challengerLog: string | undefined;
+  gameLog: string | undefined;
 }) {
   const [game_state, setGameState] = useState<GameState>();
-  const [logs, setLogs] = useState<string>("");
+  console.log(defenderLog, challengerLog);
 
   const fetchData = () => {
     fetch(`${apiUrl}/game-record?id=${gameId}&round=${step}`)
@@ -161,10 +246,11 @@ function GetGameState({
         gridTemplateRows: "repeat(3, auto)",
         gridTemplateAreas: '"challenger" "game" "defender"',
         [theme.breakpoints.up("lg")]: {
-          gridTemplateColumns: "1fr auto 1fr",
+          gridTemplateColumns: "1fr 1fr 1fr",
           gridTemplateAreas: '"challenger game defender"',
           gridTemplateRows: "auto",
         },
+        gap: 1,
         flexGrow: 1,
       })}
     >
@@ -174,6 +260,8 @@ function GetGameState({
           gridArea: "challenger",
           flexDirection: "column",
           gap: 2,
+          alignItems: "stretch",
+          minWidth: 0,
         }}
       >
         <Box
@@ -196,7 +284,7 @@ function GetGameState({
             flexDirection: "row",
             display: "flex",
             gap: 2,
-            alignItems: "center",
+            alignItems: "stretch",
           }}
         >
           <Status
@@ -204,33 +292,45 @@ function GetGameState({
             pushed={game_state.challenger_pushed}
             stack={game_state.challenger_stack}
             position={game_state.sb == "Challenger" ? "SB" : "BB"}
-            lastAction={(game_state.sb == 'Challenger') == (game_state.whose_turn == 'SmallBlind') ? game_state.action_val : undefined}
+            lastAction={
+              (game_state.sb == "Challenger") ==
+              (game_state.whose_turn == "SmallBlind")
+                ? game_state.action_val
+                : undefined
+            }
           />
         </Box>
+        <BotLog log={challengerLog} curTime={game_state.action_time} />
       </Box>
       <Box
         sx={{
           gridArea: "game",
-          position: "relative",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "stretch",
+          overflow: "hidden",
         }}
       >
         <Box
           sx={{
-            height: "100%",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             gap: 2,
+            mb: 2,
           }}
         >
           <Typography level="h3" color="inherit">
             Pot {game_state.defender_pushed + game_state.challenger_pushed}
           </Typography>
           <Typography level="h3" color="inherit">
-            {game_state.end_reason ? endMessage(game_state.end_reason) : (roundName(game_state.community_cards.length))}
+            {game_state.end_reason
+              ? endMessage(game_state.end_reason)
+              : roundName(game_state.community_cards.length)}
           </Typography>
           <GameTable {...game_state} />
         </Box>
+        <BotLog log={gameLog} curTime={game_state.action_time} />
       </Box>
       <Box
         sx={{
@@ -238,6 +338,7 @@ function GetGameState({
           gridArea: "defender",
           flexDirection: "column",
           gap: 2,
+          minWidth: 0,
         }}
       >
         <Box
@@ -270,9 +371,15 @@ function GetGameState({
             pushed={game_state.defender_pushed}
             stack={game_state.defender_stack}
             position={game_state.sb == "Defender" ? "SB" : "BB"}
-            lastAction={(game_state.sb == 'Defender') == (game_state.whose_turn == 'SmallBlind') ? game_state.action_val : undefined}
+            lastAction={
+              (game_state.sb == "Defender") ==
+              (game_state.whose_turn == "SmallBlind")
+                ? game_state.action_val
+                : undefined
+            }
           />
         </Box>
+        <BotLog log={defenderLog} curTime={game_state.action_time} />
       </Box>
     </Box>
   ) : (
@@ -288,8 +395,9 @@ export default function GameVisualizer({ gameId }: { gameId: string }) {
   const [inputValue, setInputValue] = useState(step);
   const [game, setGame] = useState<GameWithBotsWithResult<BotWithTeam<Team>>>();
 
-  const [defenderLog, setDefenderLog] = useState<string | null>();
-  const [challengerLog, setChallengerLog] = useState<string | null>();
+  const [defenderLog, setDefenderLog] = useState<string | undefined>();
+  const [challengerLog, setChallengerLog] = useState<string | undefined>();
+  const [gameLog, setGameLog] = useState<string | undefined>();
 
   const [paused, setPaused] = useState(true);
 
@@ -322,9 +430,24 @@ export default function GameVisualizer({ gameId }: { gameId: string }) {
         setGame(data[0]);
       });
 
-    fetch(`${apiUrl}/game-log?id=${gameId}`)
-      .then((body) => body.text())
-      .then((text) => setDefenderLog(text));
+    fetch(`${apiUrl}/game-log?id=${gameId}&which_bot=Defender`).then(
+      async (body) => {
+        if (body.status != 200) return undefined;
+        setDefenderLog(await body.text());
+      }
+    );
+
+    fetch(`${apiUrl}/game-log?id=${gameId}&which_bot=Challenger`).then(
+      async (body) => {
+        if (body.status != 200) return undefined;
+        setChallengerLog(await body.text());
+      }
+    );
+
+    fetch(`${apiUrl}/game-log?id=${gameId}`).then(async (body) => {
+      if (body.status != 200) return undefined;
+      setGameLog(await body.text());
+    });
   }, [gameId]);
 
   useEffect(() => {
@@ -384,7 +507,14 @@ export default function GameVisualizer({ gameId }: { gameId: string }) {
           alignItems: "stretch",
         }}
       >
-        <GetGameState gameId={gameId} step={inputValue} game={game} />
+        <GetGameState
+          gameId={gameId}
+          step={inputValue}
+          game={game}
+          defenderLog={defenderLog}
+          challengerLog={challengerLog}
+          gameLog={gameLog}
+        />
         <Box
           sx={{
             mt: 4,
@@ -430,6 +560,7 @@ export default function GameVisualizer({ gameId }: { gameId: string }) {
             textAlign={"right"}
             level="h3"
             color="inherit"
+            minWidth="150px"
           >
             Step {inputValue}/{max}
           </Typography>
@@ -444,7 +575,7 @@ export default function GameVisualizer({ gameId }: { gameId: string }) {
             color="danger"
             sx={(theme) => ({
               width: "100%",
-              [theme.breakpoints.down("md")]: {
+              [theme.breakpoints.down("sm")]: {
                 display: "none",
               },
             })}
