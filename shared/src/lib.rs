@@ -102,7 +102,6 @@ pub enum GameTask {
 }
 
 #[derive(
-    diesel::FromSqlRow,
     Serialize,
     Deserialize,
     Debug,
@@ -115,7 +114,7 @@ pub enum GameTask {
 )]
 #[repr(i32)]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
-#[cfg_attr(feature = "db", derive(diesel::AsExpression))]
+#[cfg_attr(feature = "db", derive(diesel::AsExpression, diesel::FromSqlRow))]
 #[cfg_attr(feature="db", diesel(sql_type=diesel::sql_types::Integer))]
 pub enum WhichBot {
     Defender = 0,
