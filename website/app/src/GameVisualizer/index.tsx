@@ -141,8 +141,8 @@ function BotLog({
   log: string | undefined;
   curTime: number;
 }) {
-  const currentTimeRef = useRef<HTMLDivElement>(null);
   const logRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLDivElement>(null);
   // todo: binary search?
   const lines = log?.split("\n") ?? [];
   const lineIndex =
@@ -156,54 +156,61 @@ function BotLog({
       logRef.current?.offsetTop,
       logRef.current?.offsetHeight
     );
-    if (currentTimeRef.current && logRef.current) {
+    if (logRef.current && textRef.current) {
       logRef.current.scrollTo({
-        top: currentTimeRef.current.offsetTop + currentTimeRef.current.offsetHeight + 20 - logRef.current.offsetTop - logRef.current.offsetHeight,
+        top:
+          textRef.current.offsetTop +
+          textRef.current.offsetHeight -
+          logRef.current.offsetTop -
+          logRef.current.offsetHeight,
       });
     }
-  });
+  }, [log, curTime]);
 
-  if (!log) return <></>;
+  if (!log)
+    return (
+      <Box
+        ref={logRef}
+        sx={{
+          background: "black",
+          flexGrow: 1,
+          height: 0,
+          minHeight: "150px",
+          minWidth: 0,
+          boxSizing: "border-box",
+
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        Can't view debug logs for a bot you don't own
+      </Box>
+    );
   return (
     <Box
       ref={logRef}
       sx={{
         background: "black",
-        border: "1px solid white",
         flexGrow: 1,
-        overflow: "scroll",
+        overflowX: "auto",
         height: 0,
         minHeight: "150px",
         minWidth: 0,
         boxSizing: "border-box",
       }}
     >
-      <Typography color="white" fontFamily={"monospace"} whiteSpace={"pre"}>
+      <Typography ref={textRef} color="white" fontFamily={"monospace"} whiteSpace={"pre-wrap"}>
         {lines.slice(0, lineIndex).join("\n")}
       </Typography>
-
-      <Box
+      <Typography
+        color="white"
+        fontFamily={"monospace"}
+        whiteSpace={"pre-wrap"}
         sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "stretch",
-          padding: 1,
-          gap: 2,
-          userSelect: "none",
+          opacity: 0.5,
         }}
-        ref={currentTimeRef}
       >
-        Current Time
-        <Box
-          sx={{
-            flexGrow: 1,
-            background: "white",
-            height: "3px",
-          }}
-        ></Box>
-      </Box>
-
-      <Typography color="white" fontFamily={"monospace"} whiteSpace={"pre"}>
         {lines.slice(lineIndex).join("\n")}
       </Typography>
     </Box>
@@ -294,7 +301,7 @@ function GetGameState({
             position={game_state.sb == "Challenger" ? "SB" : "BB"}
             lastAction={
               (game_state.sb == "Challenger") ==
-                (game_state.whose_turn == "SmallBlind")
+              (game_state.whose_turn == "SmallBlind")
                 ? game_state.action_val
                 : undefined
             }
@@ -373,7 +380,7 @@ function GetGameState({
             position={game_state.sb == "Defender" ? "SB" : "BB"}
             lastAction={
               (game_state.sb == "Defender") ==
-                (game_state.whose_turn == "SmallBlind")
+              (game_state.whose_turn == "SmallBlind")
                 ? game_state.action_val
                 : undefined
             }
@@ -463,6 +470,22 @@ export default function GameVisualizer({ gameId }: { gameId: string }) {
     return () => clearInterval(interval);
   }, [paused, inputValue]);
 
+  if (!game) {
+    return (
+      <HeaderFooter fullWidth graphics={[`url(${bgImage})`]}>
+        <Box
+          sx={{
+            gridArea: "content",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          This game has not been played yet. Check back later.
+        </Box>
+      </HeaderFooter>
+    );
+  }
   if (!game || isNaN(max)) {
     return (
       <HeaderFooter fullWidth graphics={[`url(${bgImage})`]}>
