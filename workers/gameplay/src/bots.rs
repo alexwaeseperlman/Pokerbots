@@ -5,6 +5,7 @@ use itertools::Itertools;
 use rand::{thread_rng, Rng};
 use shared::poker::game::GameStateSQL;
 use shared::{BotJson, GameError, WhichBot};
+use std::env;
 use std::process::ChildStderr;
 use std::{
     path::{Path, PathBuf},
@@ -234,7 +235,7 @@ pub async fn run_game(
         defender,
         challenger,
         game_id.clone(),
-        Duration::from_secs(1),
+        Duration::from_secs(10),
         tokio::fs::File::create(tmp_dir.join("logs")).await?,
         start_time,
         tokio::fs::File::create(tmp_dir.join("game_record")).await?,
@@ -280,12 +281,15 @@ pub struct Game {
     initial_stacks: [u32; 2],
     sb: WhichBot,
     id: String,
-    timeout: Duration,
+    // Total time allowed for a bot to respond
+    defender_timeout: Duration,
+    challenger_timeout: Duration,
     logs: tokio::fs::File,
     game_record: tokio::fs::File,
     start_time: Instant,
     // I suck at this :'(
     cleaned_up: bool,
+    limit: u32,
 }
 
 impl Game {
@@ -298,13 +302,25 @@ impl Game {
         start_time: Instant,
         game_record: tokio::fs::File,
     ) -> Self {
+        let starting_stack_size = env::var("STARTING_STACK_SIZE")
+            .unwrap_or_else(|_| "500".into())
+            .parse::<u32>()
+            .unwrap_or(500);
+
+        let max_bet_size = env::var("MAX_BET_SIZE")
+            .unwrap_or_else(|_| "100".into())
+            .parse::<u32>()
+            .unwrap_or(50);
+
         Self {
             defender,
             challenger,
-            stacks: [50, 50],
-            initial_stacks: [50, 50],
+            stacks: [starting_stack_size, starting_stack_size],
+            initial_stacks: [starting_stack_size, starting_stack_size],
+            limit: max_bet_size,
             sb: WhichBot::Defender,
-            timeout,
+            defender_timeout: timeout,
+            challenger_timeout: timeout,
             id,
             logs,
             game_record,
@@ -432,6 +448,7 @@ impl Game {
                 WhichBot::Challenger => [self.stacks[1], self.stacks[0]],
             },
             GameState::get_shuffled_deck(&mut rng),
+            self.limit
         );
 
         //log::debug!("Game state: {:?}. ", state);
@@ -501,10 +518,26 @@ impl Game {
 
             //log::debug!("Reading action from {:?}.", whose_turn);
             let mut line: String = Default::default();
-            tokio::time::timeout(self.timeout, target_reader.read_line(&mut line))
+            let time_before_action = Instant::now();
+            let t = tokio::time::timeout(match whose_turn {
+                WhichBot::Defender => self.defender_timeout,
+                WhichBot::Challenger => self.challenger_timeout,
+            }, target_reader.read_line(&mut line))
                 .await
                 .map_err(|_| shared::GameError::TimeoutError(whose_turn))?
                 .map_err(|_| shared::GameError::RunTimeError(whose_turn))?;
+
+            let time_after_action = Instant::now();
+
+            // update time left
+            match whose_turn {
+                WhichBot::Defender => {
+                    self.defender_timeout -= time_after_action - time_before_action;
+                }
+                WhichBot::Challenger => {
+                    self.challenger_timeout -= time_after_action - time_before_action;
+                }
+            }
 
             self.write_log(format!("{} > {}", whose_turn, line.trim()))
                 .await?;

@@ -23,10 +23,14 @@ pub async fn matchmake(s3_client: &aws_sdk_s3::Client, sqs_client: &aws_sdk_sqs:
                 player_count = Some(updated_player_count as u64);
             }
         }
-        // give an average of 5 seconds per game, plus 3
+        let matchmaking_interval = std::env::var("MATCHMAKING_INTERVAL")
+            .unwrap_or("60000".to_string())
+            .parse::<u64>()
+            .unwrap_or(60000);
+        // give an average of 60 seconds per game, plus 10
         tokio::time::sleep(std::time::Duration::from_secs(
-            3 + (player_count.unwrap_or(30)) * 5,
-        ))
+            1
+        ) + std::time::Duration::from_millis(matchmaking_interval))
         .await;
     }
 }

@@ -132,12 +132,13 @@ pub struct GameState {
     pub last_aggressor: PlayerPosition,
     // The amount of money the next player to act must push to call
     pub target_push: u32,
+    pub limit: u32,
     pub end_reason: Option<EndReason>,
 }
 
 impl GameState {
     /// The sb is always player 0
-    pub fn new<T: Into<[u32; 2]>>(stacks: T, deck: Vec<Card>) -> GameState {
+    pub fn new<T: Into<[u32; 2]>>(stacks: T, deck: Vec<Card>, limit: u32) -> GameState {
         let stacks: [u32; 2] = stacks.into();
         if stacks[0] == 0 || stacks[1] == 0 {
             panic!("Stacks must be greater than 0");
@@ -165,6 +166,7 @@ impl GameState {
             target_push: 2,
             player_states,
             end_reason: None,
+            limit,
         };
         // Pay little and big blinds
         out.player_states[0].pushed = 1;
@@ -278,13 +280,11 @@ impl GameState {
         if let Some(turn) = turn {
             match action {
                 Action::Raise(amt) => {
-                    let added = min(
-                        out.target_push + amt,
-                        min(
-                            out.player_states[turn as usize].stack,
-                            out.player_states[turn.other() as usize].stack,
-                        ),
-                    );
+                    let added = out
+                        .limit
+                        .min(out.target_push + amt)
+                        .min(out.player_states[turn as usize].stack)
+                        .min(out.player_states[turn.other() as usize].stack);
                     if amt > 0 {
                         out.last_aggressor = turn;
                     }
@@ -378,8 +378,8 @@ mod tests {
     #[test]
     fn card_draw_works() {
         let mut rng = StdRng::from_seed([0; 32]);
-        let state1 = GameState::new([50, 50], GameState::get_shuffled_deck(&mut rng));
-        let state2 = GameState::new([50, 50], GameState::get_shuffled_deck(&mut rng));
+        let state1 = GameState::new([50, 50], GameState::get_shuffled_deck(&mut rng), 50);
+        let state2 = GameState::new([50, 50], GameState::get_shuffled_deck(&mut rng), 50);
         assert_ne!(state1.deck, state2.deck);
         assert_eq!(state1.deck.len(), 48);
         assert_eq!(state2.deck.len(), 48);
@@ -389,7 +389,7 @@ mod tests {
     #[test]
     fn whose_turn_works() {
         let mut rng = StdRng::from_seed([0; 32]);
-        let mut state = GameState::new([50, 50], GameState::get_shuffled_deck(&mut rng));
+        let mut state = GameState::new([50, 50], GameState::get_shuffled_deck(&mut rng), 50);
 
         // Start with the sb
         assert!(matches!(
@@ -439,7 +439,7 @@ mod tests {
     #[test]
     fn raise_forces_call() {
         let mut rng = StdRng::from_seed([0; 32]);
-        let mut state = GameState::new([50, 50], GameState::get_shuffled_deck(&mut rng));
+        let mut state = GameState::new([50, 50], GameState::get_shuffled_deck(&mut rng), 50);
 
         state = state.post_action(Action::Raise(10)).unwrap();
         assert_eq!(state.player_states[0].pushed, 12);
@@ -480,7 +480,7 @@ mod tests {
     #[test]
     pub fn bb_raise_gives_sb_action() {
         let mut rng = StdRng::from_seed([0; 32]);
-        let mut state = GameState::new([50, 50], GameState::get_shuffled_deck(&mut rng));
+        let mut state = GameState::new([50, 50], GameState::get_shuffled_deck(&mut rng), 100);
 
         state = state.post_action(Action::Raise(0)).unwrap();
         assert_eq!(state.player_states[0].pushed, 2);
@@ -522,7 +522,7 @@ mod tests {
     #[test]
     pub fn sb_raise_bb_fold_preflop() {
         let mut rng = StdRng::from_seed([0; 32]);
-        let mut state = GameState::new([50, 50], GameState::get_shuffled_deck(&mut rng));
+        let mut state = GameState::new([50, 50], GameState::get_shuffled_deck(&mut rng), 50);
 
         state = state.post_action(Action::Raise(10)).unwrap();
         assert_eq!(state.player_states[0].pushed, 12);
@@ -548,7 +548,7 @@ mod tests {
     #[test]
     pub fn all_in_limited_raise_dont_skip_to_showdown() {
         let mut rng = StdRng::from_seed([0; 32]);
-        let mut state = GameState::new([50, 40], GameState::get_shuffled_deck(&mut rng));
+        let mut state = GameState::new([50, 40], GameState::get_shuffled_deck(&mut rng), 50);
 
         // post flop we want to give the win to bb
         // so we give sb a worse hand
@@ -622,7 +622,7 @@ mod tests {
     pub fn broke_blind_straight_to_showdown() {
         for i in 0..20 {
             let mut rng = StdRng::from_seed([i; 32]);
-            let mut state = GameState::new([50, 1], GameState::get_shuffled_deck(&mut rng));
+            let mut state = GameState::new([50, 1], GameState::get_shuffled_deck(&mut rng), 50);
             // make sure no one can bet anything
             assert_eq!(state.target_push, 1);
             assert_eq!(state.player_states[0].pushed, 1);
@@ -647,7 +647,7 @@ mod tests {
                 assert_eq!(sb_raise.player_states[0].pushed, 1);
             }
             // What if neither player can cover the blind
-            state = GameState::new([1, 1], GameState::get_shuffled_deck(&mut rng));
+            state = GameState::new([1, 1], GameState::get_shuffled_deck(&mut rng), 50);
             {
                 // If sb folds then bb gets all the money
                 let mut sb_fold = state.clone();
@@ -723,7 +723,7 @@ mod tests {
         // we will check that the stacks are correct
         for i in 0..20 {
             let mut rng = StdRng::from_seed([i; 32]);
-            let mut state = GameState::new([50, 50], GameState::get_shuffled_deck(&mut rng));
+            let mut state = GameState::new([50, 50], GameState::get_shuffled_deck(&mut rng), 50);
 
             // sb raises
             state = state.post_action(Action::Raise(4)).unwrap();
@@ -801,7 +801,7 @@ mod tests {
     pub fn better_hand_wins_showdown() {
         let mut rng = StdRng::from_seed(core::array::from_fn(|i| i as u8 + 1));
         for _ in 0..1000 {
-            let mut state = GameState::new([20, 50], GameState::get_shuffled_deck(&mut rng));
+            let mut state = GameState::new([20, 50], GameState::get_shuffled_deck(&mut rng), 50);
             state = state.post_action(Action::Raise(49)).unwrap();
             state = state.post_action(Action::Raise(0)).unwrap();
 
@@ -887,6 +887,7 @@ mod tests {
                 .into_iter()
                 .rev()
                 .collect_vec(),
+            50,
         );
         assert_eq!(
             state.player_states[0].hole_cards.to_vec(),
@@ -924,5 +925,27 @@ mod tests {
             state.end_reason,
             Some(EndReason::WonShowdown(PlayerPosition::BigBlind))
         ));
+    }
+
+    #[test]
+    pub fn test_pot_limit() {
+        let mut state = GameState::new(
+            [500, 500],
+            cards_from("Jc9h7s7hQh7dQc6h4c")
+                .into_iter()
+                .rev()
+                .collect_vec(),
+            50,
+        );
+
+        // Player 1 bets 51 chips
+        // this should be limited to 50 because the bet limit is 50
+        state = state.post_action(Action::Raise(51)).unwrap();
+        assert_eq!(state.player_states[0].pushed, 50);
+        // Player 2 calls
+        state = state.post_action(Action::Raise(2)).unwrap();
+        assert_eq!(state.player_states[1].pushed, 50);
+        assert_eq!(state.round, Round::Flop);
+
     }
 }

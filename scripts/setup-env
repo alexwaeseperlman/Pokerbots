@@ -30,7 +30,7 @@ required_vars = [
     'DOMAIN_NAME'
 ]
 
-fixed_vars = {
+config_vars = {
     'S3_ADDRESS': 'http://localhost:9000',
     'SQS_ADDRESS': 'http://localhost:9324',
     'DB_USER': 'postgres',
@@ -42,7 +42,11 @@ fixed_vars = {
     'BUILD_RESULTS_QUEUE_URL': 'http://localhost:9324/queue/build_results',
     'SMTP_SERVER': 'smtp.gmail.com',
     'PORT': '3000',
+    # number of milliseconds between matchmaking, per team
+    'MATCHMAKING_INTERVAL': '60000',
     'BOT_SIZE': '5000000',
+    'STARTING_STACK_SIZE': '500',
+    'MAX_BET_SIZE': '50',
     'RUSTFLAGS': '"--cfg tokio_unstable"',
     'IMAGE_SUFFIX': "_unstable"
 }
@@ -76,7 +80,7 @@ for var in required_vars:
 
 args = parser.parse_args()
 
-out = fixed_vars
+out = config_vars
 for i in generated_vars:
     if env.get(i) is not None:
         generated_vars[i] = env.get(i)
