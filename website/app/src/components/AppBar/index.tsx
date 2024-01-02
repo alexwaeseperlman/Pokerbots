@@ -13,12 +13,14 @@ import {
   AccordionGroup,
   AccordionSummary,
   Badge,
+  Button,
   Dropdown,
   Menu,
   MenuButton,
   useTheme,
 } from "@mui/joy";
-import { Person } from "@mui/icons-material";
+import Drawer from "@mui/joy/Drawer";
+import { MenuOpen, Person, Menu as MenuIcon } from "@mui/icons-material";
 import { BoxProps } from "@mui/joy/Box";
 
 function RawBarItem({
@@ -94,16 +96,14 @@ function BarItem({
 }
 
 export function TopBar() {
+  const [drawerOpen, setdrawerOpen] = React.useState(false);
   return (
     <>
-      <Dropdown
-        sx={(theme) => ({
-          [theme.breakpoints.up("sm")]: {
-            display: "none",
-          },
-        })}
-      >
-        <MenuButton
+      <Box>
+        <Button
+          onClick={() => {
+            setdrawerOpen(!drawerOpen);
+          }}
           sx={(theme) => ({
             [theme.breakpoints.up("sm")]: {
               display: "none",
@@ -113,11 +113,19 @@ export function TopBar() {
             ":hover": {
               background: "#00000011",
             },
+            justifyContent: "flex-start",
+            alignItems: "center",
           })}
+          color="primary"
+          variant="solid"
         >
-          <Typography textColor="white">Options</Typography>
-        </MenuButton>
-        <Menu
+          <MenuIcon sx={{ color: "inherit" }} />
+        </Button>
+        <Drawer
+          open={drawerOpen}
+          onClose={() => {
+            setdrawerOpen(false);
+          }}
           sx={(theme) => ({
             [theme.breakpoints.up("sm")]: {
               display: "none",
@@ -125,8 +133,8 @@ export function TopBar() {
           })}
         >
           <TopBarContent vertical black={true} />
-        </Menu>
-      </Dropdown>
+        </Drawer>
+      </Box>
       <Box
         sx={(theme) => ({
           [theme.breakpoints.down("sm")]: {
@@ -158,25 +166,15 @@ export function TopBarContent(props: { vertical?: boolean; black?: boolean }) {
           : {}),
       })}
     >
-      <RawBarItem
+      <BarItem
         tabIndex={1}
         command={() => {
           navigate("/");
         }}
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          pt: 1,
-        }}
         underlineColor={props.black ? "black" : "white"}
-      >
-        <Logo
-          sx={{
-            color: "inherit",
-          }}
-        />
-      </RawBarItem>
+        label="HOME"
+        selected={window.location.pathname === "/"}
+      ></BarItem>
       {user && (
         <BarItem
           tabIndex={2}
@@ -286,12 +284,12 @@ export function BottomBar() {
           flexGrow: 1,
         }}
       >
-        <BarItem label="© UPAC 2023" />
+        <BarItem label="© UPAC 2024" />
       </Box>
       <BarItem
         label="REPORT AN ISSUE"
         command={() => {
-          window.open("https://github.com/alexwaeseperlman/UPAC/issues");
+          window.open("https://github.com/alexwaeseperlman/Pokerbots/issues");
         }}
       />
     </Box>

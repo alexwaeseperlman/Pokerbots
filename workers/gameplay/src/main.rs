@@ -26,6 +26,7 @@ async fn main() {
                     challenger,
                     id,
                     rounds,
+                    game_record_presigned,
                     public_logs_presigned,
                     defender_logs_presigned,
                     challenger_logs_presigned,
@@ -55,6 +56,11 @@ async fn main() {
                                     .put(public_logs_presigned.url)
                                     .headers(public_logs_presigned.headers.into())
                                     .body(result.public_log)
+                                    .send(),
+                                reqwest_client
+                                    .put(game_record_presigned.url)
+                                    .headers(game_record_presigned.headers.into())
+                                    .body(result.game_record)
                                     .send(),
                             ) {
                                 log::error!("Error uploading logs: {:?}", e);

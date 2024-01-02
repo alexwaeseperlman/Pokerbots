@@ -3,6 +3,7 @@ import { CircularProgress, Container } from "@mui/joy";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { authUrl, useUser } from "../state";
 import { enqueueSnackbar } from "notistack";
+import HeaderFooter from "../components/HeaderFooter";
 export default function OAuth() {
   const [queryParams, setQueryParams] = useSearchParams();
   const [user, fetchUser] = useUser();
@@ -31,14 +32,17 @@ export default function OAuth() {
       });
   });
   return (
-    <Container
-      sx={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <CircularProgress />
-    </Container>
+    <HeaderFooter>
+      <Container
+        sx={{
+          gridArea: "content",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <CircularProgress />
+      </Container>
+    </HeaderFooter>
   );
 }

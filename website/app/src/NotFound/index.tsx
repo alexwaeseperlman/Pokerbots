@@ -1,32 +1,27 @@
 import { Box, Typography } from "@mui/material";
-import graphic from "./graphic.png";
+import graphic from "./404.webp";
 import React from "react";
 import BackgroundImage from "../components/BackgroundImage";
+import HeaderFooter from "../components/HeaderFooter";
 
 export default function NotFound() {
   return (
-    <Box
-      sx={{
-        width: "100%",
-        p: 4,
-        pb: 16,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        flexGrow: 1,
-      }}
-    >
-      <BackgroundImage graphics={[`url(${graphic})`]} />
+    <HeaderFooter graphics={[`url(${graphic})`]}>
       <Box
         sx={{
-          zIndex: 1,
+          gridArea:'content',
         }}
       >
-        <Typography variant="h2" color="inherit">
-          There is no page at this address.
-        </Typography>
+        <Box
+          sx={{
+            zIndex: 1,
+          }}
+        >
+          <Typography variant="h2" color="inherit">
+            There is no page at this address.
+          </Typography>
+        </Box>
       </Box>
-    </Box>
+    </HeaderFooter>
   );
 }

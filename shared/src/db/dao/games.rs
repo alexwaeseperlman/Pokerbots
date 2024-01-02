@@ -3,7 +3,7 @@ use diesel::{
     pg::Pg,
     query_builder::{BoxedSqlQuery, Query, QueryBuilder, QueryFragment, SelectQuery},
 };
-use futures_util::future::try_join3;
+use futures_util::future::try_join4;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -64,6 +64,9 @@ impl GamesDao for PgConnection {
         if let Some(id) = id {
             base = base.filter(schema::games::dsl::id.eq(id));
         }
+        if let Some(running) = running { 
+            base = base.filter(schema::games::dsl::running.eq(running));
+        }
         if let Some(team) = team {
             // get bots belonging to the team
             let bots = schema::bots::dsl::bots
@@ -118,8 +121,12 @@ impl GamesDao for PgConnection {
             .left_join(game_results::dsl::game_results.on(games::dsl::id.eq(game_results::dsl::id)))
             .into_boxed();
 
+        base = base.order_by(games::dsl::created.desc());
         if let Some(id) = id {
             base = base.filter(schema::games::dsl::id.eq(id));
+        }
+        if let Some(running) = running { 
+            base = base.filter(schema::games::dsl::running.eq(running));
         }
         if let Some(team) = team {
             // get bots belonging to the team
@@ -150,6 +157,7 @@ impl GamesDao for PgConnection {
                     defender_user,
                     challenger_user,
                     game_result,
+
                 )| {
                     GameWithBotsWithResult {
                         id: game.id,
@@ -168,6 +176,7 @@ impl GamesDao for PgConnection {
                         challenger_rating: game.challenger_rating,
                         result: game_result,
                         rated: game.rated,
+                        running: game.running
                     }
                 },
             )
@@ -212,6 +221,7 @@ impl GamesDao for PgConnection {
                 challenger_rating: challenger_team.rating,
                 defender_rating: defender_team.rating,
                 rated: rated,
+                running: true
             })
             .execute(self)?;
 
@@ -221,7 +231,12 @@ impl GamesDao for PgConnection {
             let presign_config =
                 PresigningConfig::expires_in(std::time::Duration::from_secs(60 * 60 * 24 * 7))?;
 
-            let (public_logs, defender_logs, challenger_logs) = try_join3(
+            let (game_records, public_logs, defender_logs, challenger_logs) = try_join4(
+                s3_client
+                    .put_object()
+                    .bucket(game_logs_s3_bucket)
+                    .key(format!("game_record/{}", id.clone()))
+                    .presigned(presign_config.clone()),
                 s3_client
                     .put_object()
                     .bucket(game_logs_s3_bucket)
@@ -240,12 +255,22 @@ impl GamesDao for PgConnection {
             )
             .await?;
             log::debug!(
-                "Log presigned keys created {}, {}, {}",
+                "Log presigned keys created {}, {}, {}, {}",
+                game_records.uri(),
                 public_logs.uri(),
                 defender_logs.uri(),
                 challenger_logs.uri()
             );
-            let (public_logs_presigned, defender_logs_presigned, challenger_logs_presigned) = (
+            let (
+                game_record_presigned,
+                public_logs_presigned,
+                defender_logs_presigned,
+                challenger_logs_presigned,
+            ) = (
+                PresignedRequest {
+                    url: game_records.uri().to_string(),
+                    headers: game_records.headers().into(),
+                },
                 PresignedRequest {
                     url: public_logs.uri().to_string(),
                     headers: public_logs.headers().into(),
@@ -267,6 +292,7 @@ impl GamesDao for PgConnection {
                     challenger: challenger_team.active_bot.unwrap(),
                     id: id.clone(),
                     rounds: 1000,
+                    game_record_presigned,
                     public_logs_presigned,
                     defender_logs_presigned,
                     challenger_logs_presigned,

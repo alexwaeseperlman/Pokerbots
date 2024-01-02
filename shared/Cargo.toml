@@ -25,6 +25,7 @@ rand = "0.8.5"
 async-trait = "0.1.73"
 futures-util = "0.3.28"
 anyhow = "1.0.75"
+itertools = "0.10.5"
 
 [features]
 db=["dep:diesel", "dep:diesel_migrations", "dep:lazy_static"]

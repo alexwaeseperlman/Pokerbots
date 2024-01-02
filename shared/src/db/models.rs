@@ -1,10 +1,13 @@
+use std::io::Write;
+
 use diesel::{
-    deserialize::FromSql,
+    deserialize::{FromSql, FromSqlRow},
+    expression::AsExpression,
     pg::{self, PgValue},
     prelude::{Associations, Identifiable, Insertable},
     serialize::ToSql,
-    sql_types::Integer,
-    AsChangeset, Queryable, Selectable,
+    sql_types::{Integer, Text, VarChar},
+    AsChangeset, Expression, Queryable, Selectable,
 };
 
 use chrono;
@@ -13,8 +16,11 @@ use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::{
-    db::schema::{auth, bots, game_results, games, team_invites, teams, user_profiles, users},
-    BuildStatus, WhichBot,
+    db::schema::{
+        auth, bots, game_results, game_states, games, team_invites, teams, user_profiles, users,
+    },
+    poker::game::{Action, CommunityCards, EndReason, HoleCards, PlayerPosition},
+    BuildStatus, GameError, WhichBot,
 };
 
 #[derive(Serialize, Deserialize, Queryable, Debug, Selectable, TS)]
@@ -92,6 +98,7 @@ pub struct NewGame {
     pub defender_rating: f32,
     pub challenger_rating: f32,
     pub rated: bool,
+    pub running: bool,
 }
 
 #[derive(Queryable, Serialize, Deserialize, Debug, Selectable, TS)]
@@ -105,6 +112,7 @@ pub struct Game {
     pub defender_rating: f32,
     pub challenger_rating: f32,
     pub rated: bool,
+    pub running: bool,
 }
 
 #[derive(
@@ -119,8 +127,7 @@ pub struct GameResult {
     pub defender_rating_change: f32,
     pub defender_score: i32,
     pub challenger_score: i32,
-    pub error_type: Option<String>,
-    pub error_bot: Option<i32>,
+    pub error_type: Option<GameError>,
     pub updated_at: i64,
     pub defender_rating: f32,
     pub challenger_rating: f32,
@@ -135,8 +142,7 @@ pub struct NewGameResult {
     pub defender_rating_change: f32,
     pub defender_score: i32,
     pub challenger_score: i32,
-    pub error_type: Option<String>,
-    pub error_bot: Option<i32>,
+    pub error_type: Option<GameError>,
     pub defender_rating: f32,
     pub challenger_rating: f32,
 }
@@ -152,6 +158,7 @@ pub struct GameWithResult {
     pub challenger_rating: f32,
     pub result: Option<GameResult>,
     pub rated: bool,
+    pub running: bool,
 }
 
 #[derive(Serialize, TS)]
@@ -165,6 +172,7 @@ pub struct GameWithBotsWithResult<T> {
     pub challenger_rating: f32,
     pub result: Option<GameResult>,
     pub rated: bool,
+    pub running: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Queryable, Selectable, TS)]
@@ -315,5 +323,115 @@ impl FromSql<Integer, pg::Pg> for WhichBot {
         } else {
             Err("Invalid build status".into())
         }
+    }
+}
+
+impl ToSql<Text, pg::Pg> for GameError {
+    fn to_sql<'b>(
+        &'b self,
+        out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
+    ) -> diesel::serialize::Result {
+        out.write_all(serde_json::to_vec(self)?.as_slice())?;
+        Ok(diesel::serialize::IsNull::No)
+    }
+}
+
+impl FromSql<Text, pg::Pg> for GameError {
+    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
+        let s = String::from_sql(bytes)?;
+        serde_json::from_str(&s)
+            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
+    }
+}
+
+impl ToSql<VarChar, pg::Pg> for HoleCards {
+    fn to_sql<'b>(
+        &'b self,
+        out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
+    ) -> diesel::serialize::Result {
+        out.write_all(serde_json::to_vec(self)?.as_slice())?;
+        Ok(diesel::serialize::IsNull::No)
+    }
+}
+
+impl FromSql<VarChar, pg::Pg> for HoleCards {
+    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
+        let s = String::from_sql(bytes)?;
+        serde_json::from_str(&s)
+            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
+    }
+}
+
+impl ToSql<VarChar, pg::Pg> for CommunityCards {
+    fn to_sql<'b>(
+        &'b self,
+        out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
+    ) -> diesel::serialize::Result {
+        out.write_all(serde_json::to_vec(self)?.as_slice())?;
+        Ok(diesel::serialize::IsNull::No)
+    }
+}
+
+impl FromSql<VarChar, pg::Pg> for CommunityCards {
+    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
+        let s = String::from_sql(bytes)?;
+        serde_json::from_str(&s)
+            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
+    }
+}
+
+impl ToSql<VarChar, pg::Pg> for Action {
+    fn to_sql<'b>(
+        &'b self,
+        out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
+    ) -> diesel::serialize::Result {
+        out.write_all(serde_json::to_vec(self)?.as_slice())?;
+        Ok(diesel::serialize::IsNull::No)
+    }
+}
+
+impl FromSql<VarChar, pg::Pg> for Action {
+    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
+        let s = String::from_sql(bytes)?;
+        serde_json::from_str(&s)
+            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
+    }
+}
+
+impl ToSql<Integer, pg::Pg> for PlayerPosition {
+    fn to_sql<'b>(
+        &'b self,
+        out: &mut diesel::serialize::Output<'b, '_, pg::Pg>,
+    ) -> diesel::serialize::Result {
+        let val = *self as i32;
+        ToSql::<Integer, pg::Pg>::to_sql(&val, &mut out.reborrow())
+    }
+}
+
+impl FromSql<Integer, pg::Pg> for PlayerPosition {
+    fn from_sql(bytes: PgValue) -> diesel::deserialize::Result<Self> {
+        if let Some(result) = num::FromPrimitive::from_i32(i32::from_sql(bytes)?) {
+            Ok(result)
+        } else {
+            Err("Invalid build status".into())
+        }
+    }
+}
+
+impl ToSql<VarChar, pg::Pg> for EndReason {
+    fn to_sql<'b>(
+        &'b self,
+        out: &mut diesel::serialize::Output<'b, '_, pg::Pg>,
+    ) -> diesel::serialize::Result {
+        out.write_all(serde_json::to_vec(self)?.as_slice())?;
+        Ok(diesel::serialize::IsNull::No)
+    }
+}
+
+impl FromSql<VarChar, pg::Pg> for EndReason {
+    fn from_sql(bytes: PgValue) -> diesel::deserialize::Result<Self> {
+        let s = String::from_sql(bytes)?;
+        serde_json::from_str(&s)
+            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
     }
 }

@@ -1,0 +1,10 @@
+#!/bin/sh
+
+if [ ! -f "scripts/gen-bindings" ]; then
+    echo "This script must be run from the root of the project"
+    exit 1
+fi
+
+source .env
+cd shared
+DATABASE_URL=postgres://postgres:$DB_PASSWORD@localhost:5432 diesel migration run
