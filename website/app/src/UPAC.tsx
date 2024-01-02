@@ -113,6 +113,7 @@ export default function UPAC() {
           <Route path="view-game">
             <Route path=":gameId" element={<GameDashboard />} />
           </Route>
+          <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
     </ErrorBoundary>

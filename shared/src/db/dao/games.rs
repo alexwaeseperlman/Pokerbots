@@ -91,7 +91,7 @@ impl GamesDao for PgConnection {
         use schema_aliases::*;
 
         let mut base = games::table
-            .order_by(games::dsl::created.desc())
+            .order_by((games::dsl::created.desc(), games::dsl::id.desc()))
             .inner_join(
                 defender_bots.on(games::dsl::defender.eq(defender_bots.field(bots::dsl::id))),
             )
