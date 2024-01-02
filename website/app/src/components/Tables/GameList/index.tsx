@@ -118,7 +118,7 @@ export function GameList({ teamId }: { teamId?: string | null }) {
       });
 
     fetch(
-      `${apiUrl}/games?page=${paginationModel.page}&page_size=${
+      `${apiUrl}/games?running=false&page=${paginationModel.page}&page_size=${
         paginationModel.pageSize
       }&${teamId === undefined ? "" : `team=${team?.id}`}`
     )

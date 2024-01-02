@@ -64,6 +64,9 @@ impl GamesDao for PgConnection {
         if let Some(id) = id {
             base = base.filter(schema::games::dsl::id.eq(id));
         }
+        if let Some(running) = running { 
+            base = base.filter(schema::games::dsl::running.eq(running));
+        }
         if let Some(team) = team {
             // get bots belonging to the team
             let bots = schema::bots::dsl::bots
@@ -118,8 +121,12 @@ impl GamesDao for PgConnection {
             .left_join(game_results::dsl::game_results.on(games::dsl::id.eq(game_results::dsl::id)))
             .into_boxed();
 
+        base = base.order_by(games::dsl::created.desc());
         if let Some(id) = id {
             base = base.filter(schema::games::dsl::id.eq(id));
+        }
+        if let Some(running) = running { 
+            base = base.filter(schema::games::dsl::running.eq(running));
         }
         if let Some(team) = team {
             // get bots belonging to the team
@@ -150,6 +157,7 @@ impl GamesDao for PgConnection {
                     defender_user,
                     challenger_user,
                     game_result,
+
                 )| {
                     GameWithBotsWithResult {
                         id: game.id,
@@ -168,6 +176,7 @@ impl GamesDao for PgConnection {
                         challenger_rating: game.challenger_rating,
                         result: game_result,
                         rated: game.rated,
+                        running: game.running
                     }
                 },
             )
@@ -212,6 +221,7 @@ impl GamesDao for PgConnection {
                 challenger_rating: challenger_team.rating,
                 defender_rating: defender_team.rating,
                 rated: rated,
+                running: true
             })
             .execute(self)?;
 

@@ -3,7 +3,7 @@ use futures_lite::AsyncReadExt;
 use itertools::Itertools;
 
 use rand::{thread_rng, Rng};
-use shared::db::models::GameStateSQL;
+use shared::poker::game::GameStateSQL;
 use shared::{BotJson, GameError, WhichBot};
 use std::process::ChildStderr;
 use std::{

@@ -13,11 +13,13 @@ import {
   AccordionGroup,
   AccordionSummary,
   Badge,
+  Button,
   Dropdown,
   Menu,
   MenuButton,
   useTheme,
 } from "@mui/joy";
+import Drawer from "@mui/joy/Drawer";
 import { MenuOpen, Person, Menu as MenuIcon } from "@mui/icons-material";
 import { BoxProps } from "@mui/joy/Box";
 
@@ -94,44 +96,44 @@ function BarItem({
 }
 
 export function TopBar() {
+  const [drawerOpen, setdrawerOpen] = React.useState(false);
   return (
     <>
       <Box>
-        <Dropdown
+        <Button
+          onClick={() => {
+            setdrawerOpen(!drawerOpen);
+          }}
+          sx={(theme) => ({
+            [theme.breakpoints.up("sm")]: {
+              display: "none",
+            },
+            background: "none",
+            border: "none",
+            ":hover": {
+              background: "#00000011",
+            },
+            justifyContent: "flex-start",
+            alignItems: "center",
+          })}
+          color="primary"
+          variant="solid"
+        >
+          <MenuIcon sx={{ color: "inherit" }} />
+        </Button>
+        <Drawer
+          open={drawerOpen}
+          onClose={() => {
+            setdrawerOpen(false);
+          }}
           sx={(theme) => ({
             [theme.breakpoints.up("sm")]: {
               display: "none",
             },
           })}
         >
-          <MenuButton
-            sx={(theme) => ({
-              [theme.breakpoints.up("sm")]: {
-                display: "none",
-              },
-              background: "none",
-              border: "none",
-              ":hover": {
-                background: "#00000011",
-              },
-              justifyContent: "flex-start",
-              alignItems: "center",
-            })}
-            color='primary'
-            variant="solid"
-          >
-            <MenuIcon sx={{ color: "inherit" }} />
-          </MenuButton>
-          <Menu
-            sx={(theme) => ({
-              [theme.breakpoints.up("sm")]: {
-                display: "none",
-              },
-            })}
-          >
-            <TopBarContent vertical black={true} />
-          </Menu>
-        </Dropdown>
+          <TopBarContent vertical black={true} />
+        </Drawer>
       </Box>
       <Box
         sx={(theme) => ({
@@ -170,10 +172,9 @@ export function TopBarContent(props: { vertical?: boolean; black?: boolean }) {
           navigate("/");
         }}
         underlineColor={props.black ? "black" : "white"}
-        label='HOME'
-          selected={window.location.pathname === "/"}
-      >
-      </BarItem>
+        label="HOME"
+        selected={window.location.pathname === "/"}
+      ></BarItem>
       {user && (
         <BarItem
           tabIndex={2}

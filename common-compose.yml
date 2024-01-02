@@ -51,6 +51,7 @@ services:
       - EMAIL_ADDRESS=${EMAIL_ADDRESS}
       - EMAIL_APP_PASSWORD=${EMAIL_APP_PASSWORD}
       - DOMAIN_NAME=${DOMAIN_NAME}
+      - SMTP_SERVER=${SMTP_SERVER}
 
   gameplay:
     volumes:

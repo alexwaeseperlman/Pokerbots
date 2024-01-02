@@ -3,9 +3,10 @@ use diesel::prelude::*;
 use futures_lite::StreamExt;
 use log::error;
 use shared::{
+    poker::game::GameStateSQL,
     db::{
         self,
-        models::{self, Bot, Game, GameStateSQL, NewBot, Team},
+        models::{self, Bot, Game, NewBot, Team},
         schema::{
             game_results,
             game_states::{self, defender_hand},
@@ -166,6 +167,9 @@ pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
                             challenger_rating: challenger.rating,
                             defender_rating: defender.rating,
                         })
+                        .execute(db_conn)?;
+                    diesel::update(games::table.find(id.clone()))
+                        .set(games::dsl::running.eq(false))
                         .execute(db_conn)?;
                 }
                 Ok(GameStatus::TestGameSucceeded) => {

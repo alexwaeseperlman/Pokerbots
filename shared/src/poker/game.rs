@@ -340,6 +340,28 @@ impl GameState {
         hands::hand_eval::best5(&cards)
     }
 }
+
+#[derive(Serialize, Deserialize, Debug, TS)]
+#[cfg_attr(feature = "ts-bindings", ts(export))]
+#[cfg_attr(feature="db", derive(diesel::Queryable, diesel::Insertable, diesel::Selectable))]
+#[cfg_attr(feature="db", diesel(table_name = crate::db::schema::game_states))]
+pub struct GameStateSQL {
+    pub game_id: String,
+    pub step: i32,
+    pub challenger_stack: i32,
+    pub defender_stack: i32,
+    pub challenger_pushed: i32,
+    pub defender_pushed: i32,
+    pub challenger_hand: HoleCards,
+    pub defender_hand: HoleCards,
+    pub community_cards: CommunityCards,
+    pub sb: crate::WhichBot,
+    pub action_time: i32,
+    pub whose_turn: Option<PlayerPosition>,
+    pub action_val: Action,
+    pub end_reason: Option<EndReason>,
+}
+
 #[cfg(test)]
 mod tests {
     use itertools::Itertools;

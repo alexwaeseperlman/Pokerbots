@@ -1,7 +1,7 @@
-use diesel::serialize::Output;
-use diesel::sql_types::SqlType;
+use std::io::Write;
+
 use diesel::{
-    deserialize::{FromSql, FromSqlRow, Result},
+    deserialize::{FromSql, FromSqlRow},
     expression::AsExpression,
     pg::{self, PgValue},
     prelude::{Associations, Identifiable, Insertable},
@@ -9,7 +9,6 @@ use diesel::{
     sql_types::{Integer, Text, VarChar},
     AsChangeset, Expression, Queryable, Selectable,
 };
-use std::io::Write;
 
 use chrono;
 use serde::{Deserialize, Serialize};
@@ -99,6 +98,7 @@ pub struct NewGame {
     pub defender_rating: f32,
     pub challenger_rating: f32,
     pub rated: bool,
+    pub running: bool,
 }
 
 #[derive(Queryable, Serialize, Deserialize, Debug, Selectable, TS)]
@@ -112,6 +112,7 @@ pub struct Game {
     pub defender_rating: f32,
     pub challenger_rating: f32,
     pub rated: bool,
+    pub running: bool,
 }
 
 #[derive(
@@ -157,6 +158,7 @@ pub struct GameWithResult {
     pub challenger_rating: f32,
     pub result: Option<GameResult>,
     pub rated: bool,
+    pub running: bool,
 }
 
 #[derive(Serialize, TS)]
@@ -170,6 +172,7 @@ pub struct GameWithBotsWithResult<T> {
     pub challenger_rating: f32,
     pub result: Option<GameResult>,
     pub rated: bool,
+    pub running: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Queryable, Selectable, TS)]
@@ -281,26 +284,6 @@ pub struct UserProfile {
     pub linkedin: Option<String>,
     pub github: Option<String>,
     pub id: Uuid,
-}
-
-#[derive(Serialize, Deserialize, Debug, Selectable, Insertable, TS, Queryable, SqlType)]
-#[cfg_attr(feature = "ts-bindings", ts(export))]
-#[diesel(table_name = game_states)]
-pub struct GameStateSQL {
-    pub game_id: String,
-    pub step: i32,
-    pub challenger_stack: i32,
-    pub defender_stack: i32,
-    pub challenger_pushed: i32,
-    pub defender_pushed: i32,
-    pub challenger_hand: HoleCards,
-    pub defender_hand: HoleCards,
-    pub community_cards: CommunityCards,
-    pub sb: WhichBot,
-    pub action_time: i32,
-    pub whose_turn: Option<PlayerPosition>,
-    pub action_val: Action,
-    pub end_reason: Option<EndReason>,
 }
 
 impl ToSql<Integer, pg::Pg> for BuildStatus {

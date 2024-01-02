@@ -7,10 +7,11 @@ use shared::{
             bots::BotsDao,
             games::{GameQueryOptions, GamesDao, PageOptions},
         },
-        models::{BotWithTeam, GameStateSQL, GameWithBots, GameWithBotsWithResult, Team},
+        models::{BotWithTeam, GameWithBots, GameWithBotsWithResult, Team},
         schema::game_states::{self, game_id, step},
         schema_aliases::*,
     },
+    poker::game::GameStateSQL,
     WhichBot,
 };
 use std::usize;
@@ -64,11 +65,11 @@ pub async fn game_log(
     web::Query::<GameLogQuery>(GameLogQuery { id, which_bot }): web::Query<GameLogQuery>,
     s3_client: web::Data<aws_sdk_s3::Client>,
 ) -> Result<HttpResponse, ApiError> {
-    let team =
-        auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
     let conn = &mut (*DB_CONNECTION).get()?;
     // If the bot is specified, make sure it belongs to the team
     if let Some(which_bot) = which_bot {
+        let team =
+            auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
         let game: Game = schema::games::dsl::games
             .filter(schema::games::dsl::id.eq(&id))
             .first::<Game>(conn)?;
@@ -113,8 +114,6 @@ pub async fn game_state(
     session: Session,
     web::Query::<GameStateQuery>(GameStateQuery { id, round }): web::Query<GameStateQuery>,
 ) -> ApiResult<GameStateSQL> {
-    let team =
-        auth::get_team(&session).ok_or(actix_web::error::ErrorUnauthorized("Not on a team"))?;
     let conn = &mut (*DB_CONNECTION).get()?;
     // Make sure the game has been played by the team
     let game: Game = schema::games::dsl::games

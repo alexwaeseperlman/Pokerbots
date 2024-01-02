@@ -69,6 +69,7 @@ diesel::table! {
         defender_rating -> Float4,
         challenger_rating -> Float4,
         rated -> Bool,
+        running -> Bool,
     }
 }
 
