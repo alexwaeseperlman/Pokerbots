@@ -34,6 +34,7 @@ services:
       - BOT_SIZE=5000000
 
       - AZURE_SECRET=${AZURE_SECRET}
+      - GOOGLE_SECRET=${GOOGLE_SECRET}
       - SECRET_KEY=${SECRET_KEY}
 
       - BOT_UPLOADS_QUEUE_URL=http://sqs:9324/queue/bot_uploads
