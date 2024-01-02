@@ -7,6 +7,7 @@ import bgImage from "./bg.png";
 
 export interface IHeaderFooterProps {
   graphics?: string[];
+  fullWidth?: boolean;
 }
 
 export default function HeaderFooter(
@@ -49,7 +50,6 @@ export default function HeaderFooter(
             zIndex: 2,
             display: "grid",
             flexGrow: 1,
-            gap: 4,
             [theme.breakpoints.down("md")]: {
               gridTemplateRows: "auto auto 1fr",
               gridTemplateColumns: "1fr",
@@ -68,7 +68,7 @@ export default function HeaderFooter(
               },
               gridTemplateAreas: `
                 "head extra"
-                "content ."
+                "${props.fullWidth ? "content content " : "content ."}"
               `,
             },
           })}
@@ -88,12 +88,18 @@ export default function HeaderFooter(
       <BackgroundImage
         graphics={props.graphics ?? [`url(${bgImage})`]}
         sx={(theme) => ({
-          backgroundPosition: "top",
-          maxWidth: "100vw",
           maxHeight: "100vh",
-          [theme.breakpoints.up("md")]: {
-            backgroundPosition: "right",
-          },
+          mask: "radial-gradient(circle, white, transparent 50%)",
+          ...(props.fullWidth
+            ? {}
+            : {
+                [theme.breakpoints.up("md")]: {
+                  backgroundPosition: "right",
+                  //maskPosition: "right",
+                  // kinda hacky but works
+                  mask: "radial-gradient(circle at 70%, white, transparent 50%)",
+                },
+              }),
         })}
       />{" "}
     </Sheet>

@@ -118,23 +118,23 @@ export const useProfile = () => {
 function fetchTeam(team: string | null) {
   return team
     ? fetch(`${apiUrl}/teams?ids=${team ?? ""}&fill_members=true`)
-        .then((res) => res.json())
-        .then((teams: TeamsResponse) => {
-          if (
-            "TeamsWithMembers" in teams &&
-            teams.TeamsWithMembers.length > 0
-          ) {
-            const invites = teams.TeamsWithMembers[0].invites;
-            const out: TeamWithMembers<User> = {
-              ...teams.TeamsWithMembers[0],
-            };
-            return out;
-          }
-          return null;
-        })
-        .catch(() => null)
+      .then((res) => res.json())
+      .then((teams: TeamsResponse) => {
+        if (
+          "TeamsWithMembers" in teams &&
+          teams.TeamsWithMembers.length > 0
+        ) {
+          const invites = teams.TeamsWithMembers[0].invites;
+          const out: TeamWithMembers<User> = {
+            ...teams.TeamsWithMembers[0],
+          };
+          return out;
+        }
+        return null;
+      })
+      .catch(() => null)
     : fetch(`${apiUrl}/my-team`)
-        .then((res) => res.json())
-        .then((team) => team as TeamWithMembers<User>)
-        .catch(() => null);
+      .then((res) => res.json())
+      .then((team) => team as TeamWithMembers<User>)
+      .catch(() => null);
 }

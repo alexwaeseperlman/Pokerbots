@@ -42,6 +42,25 @@ diesel::table! {
 }
 
 diesel::table! {
+    game_states (game_id, step) {
+        game_id -> Varchar,
+        step -> Int4,
+        challenger_stack -> Int4,
+        defender_stack -> Int4,
+        challenger_pushed -> Int4,
+        defender_pushed -> Int4,
+        challenger_hand -> Varchar,
+        defender_hand -> Varchar,
+        community_cards -> Varchar,
+        sb -> Int4,
+        action_time -> Int4,
+        whose_turn -> Nullable<Int4>,
+        action_val -> Varchar,
+        end_reason -> Nullable<Varchar>,
+    }
+}
+
+diesel::table! {
     games (id) {
         id -> Text,
         defender -> Int4,
@@ -50,6 +69,7 @@ diesel::table! {
         defender_rating -> Float4,
         challenger_rating -> Float4,
         rated -> Bool,
+        running -> Bool,
     }
 }
 
@@ -94,6 +114,7 @@ diesel::table! {
 
 diesel::joinable!(bots -> auth (uploaded_by));
 diesel::joinable!(game_results -> games (id));
+diesel::joinable!(game_states -> games (game_id));
 diesel::joinable!(team_invites -> teams (team));
 diesel::joinable!(teams -> bots (active_bot));
 diesel::joinable!(user_profiles -> auth (id));
@@ -103,6 +124,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     auth,
     bots,
     game_results,
+    game_states,
     games,
     team_invites,
     teams,

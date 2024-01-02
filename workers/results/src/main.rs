@@ -1,6 +1,6 @@
 use aws_sdk_s3::presigning::PresigningConfig;
 use results::build_result::handle_build_result;
-use results::game_result::handle_game_result;
+use results::game_result::{handle_game_result, save_game_details};
 use shared::sqs::listen_on_queue;
 use shared::{BuildResultMessage, GameStatusMessage};
 

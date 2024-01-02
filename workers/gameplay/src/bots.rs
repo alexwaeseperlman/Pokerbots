@@ -1,23 +1,27 @@
+use aws_sdk_s3::primitives::ByteStreamError;
+use futures_lite::AsyncReadExt;
 use itertools::Itertools;
+
 use rand::{thread_rng, Rng};
+use shared::poker::game::GameStateSQL;
 use shared::{BotJson, GameError, WhichBot};
-use std::borrow::BorrowMut;
+use std::process::ChildStderr;
 use std::{
-    env,
     path::{Path, PathBuf},
     process::Stdio,
     time::Duration,
 };
+use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncWriteExt};
 use tokio::{
     fs,
-    io::{self, AsyncBufReadExt, AsyncWriteExt, BufReader},
+    io::{self, BufReader},
     process::{ChildStdout, Command},
     time::Instant,
     try_join,
 };
 
 use crate::communication::{parse_action, EngineCommunication};
-use crate::poker::game::{EndReason, GameState, PlayerPosition, Round};
+use shared::poker::game::{Action, GameState, PlayerPosition, Round};
 
 pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>>(
     bot: U,
@@ -121,11 +125,12 @@ pub async fn download_and_run<T: Into<String>, U: Into<String>, V: Into<PathBuf>
         .uid(1000)
         .gid(1000)
         .process_group(0)
-        .stderr(log_file)
+        .stderr(Stdio::piped())
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()?)
 }
+
 extern "C" {
     fn kill(pid: i32, sig: i32) -> i32;
 }
@@ -135,6 +140,35 @@ pub struct GameResult {
     pub defender_log: Vec<u8>,
     pub challenger_log: Vec<u8>,
     pub public_log: Vec<u8>,
+    pub game_record: Vec<u8>,
+}
+
+async fn write_std_err(
+    stderr: tokio::process::ChildStderr,
+    bot_path: PathBuf,
+    start_time: Instant,
+) -> Result<(), io::Error> {
+    let mut reader = io::BufReader::new(stderr);
+    let mut buffer = String::new();
+    let mut stderr_file = tokio::fs::File::create(bot_path.join("logs")).await?;
+
+    reader.buffer().read_to_string(&mut buffer).await?;
+
+    while let Ok(n) = reader.read_line(&mut buffer).await {
+        if n == 0 {
+            break;
+        }
+
+        let timestamp = tokio::time::Instant::now()
+            .duration_since(start_time)
+            .as_millis();
+        let formatted_line = format!("[{}] {}", timestamp, buffer);
+        stderr_file.write_all(formatted_line.as_bytes()).await?;
+
+        buffer.clear();
+    }
+
+    Ok(())
 }
 
 pub async fn run_game(
@@ -148,6 +182,7 @@ pub async fn run_game(
     // doesn't have the same id as the task
     let game_id = format!("{:x}", rand::thread_rng().gen::<u32>());
     let tmp_dir = Path::new("/tmp").join(&game_id);
+
     log::debug!("Playing {} against {}", defender, challenger);
     log::info!("Running game {} with local id {}", task_id, game_id);
     let bot_bucket = std::env::var("COMPILED_BOT_S3_BUCKET")?;
@@ -160,7 +195,7 @@ pub async fn run_game(
     let challenger_path = tmp_dir.join("challenger");
     fs::create_dir_all(&challenger_path.clone()).await?;
     log::debug!("Downloading bots from aws");
-    let (defender, challenger) = try_join!(
+    let (mut defender, mut challenger) = try_join!(
         download_and_run(
             defender.to_string(),
             defender_path.clone(),
@@ -175,21 +210,45 @@ pub async fn run_game(
         )
     )?;
 
-    // run game
+    let def_stderr = defender
+        .stderr
+        .take()
+        .expect("Could not unwrap defender's stderr");
+    let chall_stderr = challenger
+        .stderr
+        .take()
+        .expect("Could not unwrap challenger's stderr");
+
+    let start_time = Instant::now();
+    let def_handle = tokio::spawn(write_std_err(def_stderr, defender_path.clone(), start_time));
+    let chall_handle = tokio::spawn(write_std_err(
+        chall_stderr,
+        challenger_path.clone(),
+        start_time,
+    ));
+
+    // Do other non-blocking tasks here...
+
+    // Await the completion of the task if needed
     let mut game = Game::new(
         defender,
         challenger,
-        game_id,
+        game_id.clone(),
         Duration::from_secs(1),
         tokio::fs::File::create(tmp_dir.join("logs")).await?,
+        start_time,
+        tokio::fs::File::create(tmp_dir.join("game_record")).await?,
     );
 
     let status = game.play(rounds).await;
     game.drop().await?;
     // TODO: issues reading the logs probably shouldn't cause an internal error
+    def_handle.await;
+    chall_handle.await;
     let defender_log = tokio::fs::read(tmp_dir.join("defender/logs")).await?;
     let challenger_log = tokio::fs::read(tmp_dir.join("challenger/logs")).await?;
     let public_log = tokio::fs::read(tmp_dir.join("logs")).await?;
+    let game_record = tokio::fs::read(tmp_dir.join("game_record")).await?;
     Command::new("umount")
         .arg("-l")
         .arg(format!("{}", challenger_path.display()))
@@ -210,6 +269,7 @@ pub async fn run_game(
         defender_log,
         challenger_log,
         public_log,
+        game_record,
     })
 }
 
@@ -222,10 +282,12 @@ pub struct Game {
     id: String,
     timeout: Duration,
     logs: tokio::fs::File,
+    game_record: tokio::fs::File,
     start_time: Instant,
     // I suck at this :'(
     cleaned_up: bool,
 }
+
 impl Game {
     pub fn new(
         defender: tokio::process::Child,
@@ -233,6 +295,8 @@ impl Game {
         id: String,
         timeout: Duration,
         logs: tokio::fs::File,
+        start_time: Instant,
+        game_record: tokio::fs::File,
     ) -> Self {
         Self {
             defender,
@@ -243,7 +307,8 @@ impl Game {
             timeout,
             id,
             logs,
-            start_time: Instant::now(),
+            game_record,
+            start_time,
             cleaned_up: false,
         }
     }
@@ -275,20 +340,6 @@ impl Game {
             })?;
             Ok(())
         } else {
-            // TODO: determine cause close
-            self.logs
-                .write_all(
-                    format!(
-                        "{}ms System >>> Ending because {} lost stdin\n",
-                        tokio::time::Instant::now()
-                            .duration_since(self.start_time)
-                            .as_millis(),
-                        which_bot
-                    )
-                    .as_bytes(),
-                )
-                .await
-                .map_err(|_| GameError::RunTimeError(which_bot))?;
             // TODO: determine cause of close
             self.write_log(format!("System > Ending because {} lost stdin", which_bot))
                 .await?;
@@ -296,11 +347,57 @@ impl Game {
         }
     }
 
+    async fn save_round(
+        &mut self,
+        state: &GameState,
+        step: i32,
+        action_val: Action,
+        time: tokio::time::Duration,
+    ) -> Result<(), shared::GameError> {
+        let (defender_state, challenger_state) = match self.sb {
+            WhichBot::Defender => (&state.player_states[0], &state.player_states[1]),
+            WhichBot::Challenger => (&state.player_states[1], &state.player_states[0]),
+        };
+        let game_state_sql = GameStateSQL {
+            game_id: "".to_string(),
+            step: step,
+            defender_stack: defender_state.stack as i32,
+            challenger_stack: challenger_state.stack as i32,
+            defender_pushed: defender_state.pushed as i32,
+            challenger_pushed: challenger_state.pushed as i32,
+            defender_hand: defender_state.hole_cards.clone(),
+            challenger_hand: challenger_state.hole_cards.clone(),
+            community_cards: state.community_cards.clone(),
+            sb: self.sb,
+            end_reason: state.end_reason.clone(),
+            // set to other because save_round is called after an action is taken, so the player who just acted is the other player
+            whose_turn: state.whose_turn().map(|x| x.other()),
+            action_val,
+            action_time: time.as_millis() as i32,
+        };
+        match serde_json::to_string(&game_state_sql) {
+            Ok(json_str) => {
+                let _ = self
+                    .game_record
+                    .write_all(format!("{}\n", json_str).as_bytes())
+                    .await
+                    .map_err(|e| {
+                        log::error!("Error while writting game state to file: {}", e);
+                        shared::GameError::InternalError
+                    });
+                Ok(())
+            }
+            Err(e) => {
+                log::error!("Error converting game state to json: {}", e);
+                Err(shared::GameError::InternalError)
+            }
+        }
+    }
     async fn write_log<S: Into<String>>(&mut self, msg: S) -> Result<(), shared::GameError> {
         self.logs
             .write_all(
                 format!(
-                    "{}ms {}\n",
+                    "[{}] {}\n",
                     tokio::time::Instant::now()
                         .duration_since(self.start_time)
                         .as_millis(),
@@ -326,9 +423,10 @@ impl Game {
         &mut self,
         defender_reader: &mut BufReader<ChildStdout>,
         challenger_reader: &mut BufReader<ChildStdout>,
+        state_id: &mut i32,
     ) -> Result<GameState, shared::GameError> {
         let mut rng = thread_rng();
-        let mut state = crate::poker::game::GameState::new(
+        let mut state = shared::poker::game::GameState::new(
             match self.sb {
                 WhichBot::Defender => [self.stacks[0], self.stacks[1]],
                 WhichBot::Challenger => [self.stacks[1], self.stacks[0]],
@@ -350,8 +448,8 @@ impl Game {
                 match round {
                     Some(Round::PreFlop) => {
                         self.write_bots(EngineCommunication::PreFlopCards(
-                            state.player_states[0].hole_cards,
-                            state.player_states[1].hole_cards,
+                            state.player_states[0].hole_cards.clone(),
+                            state.player_states[1].hole_cards.clone(),
                         ))
                         .await?;
                     }
@@ -411,16 +509,23 @@ impl Game {
             self.write_log(format!("{} > {}", whose_turn, line.trim()))
                 .await?;
             //log::debug!("Reading action from {:?}.", line);
+            let action = parse_action(line.trim())
+                .map_err(|_| shared::GameError::InvalidActionError(whose_turn.clone()))?;
             state = state
-                .post_action(
-                    parse_action(line.trim())
-                        .map_err(|_| shared::GameError::InvalidActionError(whose_turn.clone()))?,
-                )
+                .post_action(action.clone())
                 .map_err(|_| shared::GameError::InvalidActionError(whose_turn.clone()))?;
 
             unsafe {
-                let status = kill(-(opponent_gid as i32), 18);
+                kill(-(opponent_gid as i32), 18);
             };
+            self.save_round(
+                &state,
+                *state_id,
+                action,
+                tokio::time::Instant::now().duration_since(self.start_time),
+            )
+            .await?;
+            *state_id += 1;
         }
 
         Ok(state)
@@ -443,6 +548,7 @@ impl Game {
         );
 
         log::info!("Clients connected for {}", self.id);
+        let mut state_id: i32 = 0;
         for i in 0..rounds {
             if self.stacks[0] == 0 || self.stacks[1] == 0 {
                 self.write_log(format!("System > Ending because a bot has an empty stack"))
@@ -453,7 +559,7 @@ impl Game {
                 .await?;
             //log::debug!("Playing round. Current stacks: {:?}.", self.stacks);
             match self
-                .play_round(&mut defender_reader, &mut challenger_reader)
+                .play_round(&mut defender_reader, &mut challenger_reader, &mut state_id)
                 .await
             {
                 Err(e) => {

@@ -21,6 +21,7 @@ import VerifyEmail from "./VerifyEmail";
 import ForgotPassword from "./ForgotPassword";
 import UpdatePassword from "./UpdatePassword";
 import OAuth from "./OAuth";
+import GameVisualizer from "./GameVisualizer";
 import HeaderFooter from "./components/HeaderFooter";
 
 class ErrorBoundary extends React.Component<
@@ -45,20 +46,26 @@ class ErrorBoundary extends React.Component<
       return <ErrorPage />;
     }
 
-    return <Suspense fallback={
-      <HeaderFooter>
-        <Box
-          sx={{
-            gridArea: "content",
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center'
-          }}
-        >
-          <CircularProgress />
-        </Box>
-      </HeaderFooter>
-    }>{this.props.children}</Suspense>;
+    return (
+      <Suspense
+        fallback={
+          <HeaderFooter>
+            <Box
+              sx={{
+                gridArea: "content",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <CircularProgress />
+            </Box>
+          </HeaderFooter>
+        }
+      >
+        {this.props.children}
+      </Suspense>
+    );
   }
 }
 
@@ -75,6 +82,10 @@ function TeamDashboard() {
       teamId={teamId}
     />
   );
+}
+function GameDashboard() {
+  const gameId = useParams().gameId ?? "";
+  return <GameVisualizer gameId={gameId} />;
 }
 
 export default function UPAC() {
@@ -98,8 +109,11 @@ export default function UPAC() {
           <Route path="update-password/:token" element={<UpdatePassword />} />
           <Route path="/login/:provider" element={<OAuth />} />
           <Route path="error" element={<ErrorPage />} />
+
+          <Route path="view-game">
+            <Route path=":gameId" element={<GameDashboard />} />
+          </Route>
         </Route>
-        <Route path="*" element={<NotFound />} />
       </Routes>
     </ErrorBoundary>
   );

@@ -9,7 +9,7 @@ import { team_member_table_row } from "./styles.module.css";
 import { TeamBar } from "./TeamBar";
 import BotTable from "./BotTable";
 import FileUpload from "../components/BotUpload";
-import { GameList } from "../components/Tables/GameTable";
+import { GameList } from "../components/Tables/GameList";
 import Sheet from "@mui/joy/Sheet";
 import Stack from "@mui/joy/Stack";
 import { Card, CardContent, CardCover, Typography } from "@mui/joy";
@@ -70,24 +70,32 @@ function TeamStats({ team }: { team: TeamWithMembers<User> }) {
           console.log(json);
         }
       });
-    }
+    };
     getRank();
     const interval = setInterval(getRank, 1000);
     return () => clearInterval(interval);
   }, [team.id]);
 
   return (
-    <Box
-      sx={{
-        display: "grid",
-        height: "fit-content",
-        gridTemplateColumns: "repeat(2, 1fr)",
-      }}
-    >
-      <KeyValue keyName="Rank" value={teamRank} />
-      <KeyValue keyName="Rating" value={team.rating.toFixed(0)} />
-      <KeyValue keyName="Games played" value={gamesPlayed} />
-      <KeyValue keyName="Team ID" value={team.id.toString()} />
+    <Box sx={{
+      display: 'flex',
+      height: '100%',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      alignItems: 'stretch',
+    }}>
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "repeat(2, auto)",
+          gap: 2
+        }}
+      >
+        <KeyValue keyName="Rank" value={teamRank} />
+        <KeyValue keyName="Rating" value={team.rating.toFixed(0)} />
+        <KeyValue keyName="Games played" value={gamesPlayed} />
+        <KeyValue keyName="Team ID" value={team.id.toString()} />
+      </Box>
     </Box>
   );
 }

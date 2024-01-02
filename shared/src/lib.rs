@@ -1,6 +1,10 @@
 pub mod s3;
 pub mod sqs;
-use std::{fmt::Display, io::{self, Write}, str::FromStr};
+use std::{
+    fmt::Display,
+    io::{self, Write},
+    str::FromStr,
+};
 
 use aws_config::SdkConfig;
 use aws_sdk_s3::config::Credentials;
@@ -13,6 +17,8 @@ extern crate num_derive;
 
 #[cfg(feature = "db")]
 pub mod db;
+
+pub mod poker;
 
 #[derive(Serialize, Deserialize, Debug, Clone, TS)]
 pub struct SerializableHeaderMap(Vec<(String, String)>);
@@ -84,6 +90,7 @@ pub enum GameTask {
         challenger: i32,
         id: String,
         rounds: usize,
+        game_record_presigned: PresignedRequest,
         public_logs_presigned: PresignedRequest,
         defender_logs_presigned: PresignedRequest,
         challenger_logs_presigned: PresignedRequest,
@@ -94,9 +101,21 @@ pub enum GameTask {
     },
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, TS, FromPrimitive, ToPrimitive, PartialEq)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Debug,
+    Clone,
+    Copy,
+    TS,
+    FromPrimitive,
+    ToPrimitive,
+    PartialEq,
+)]
 #[repr(i32)]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
+#[cfg_attr(feature = "db", derive(diesel::AsExpression, diesel::FromSqlRow))]
+#[cfg_attr(feature="db", diesel(sql_type=diesel::sql_types::Integer))]
 pub enum WhichBot {
     Defender = 0,
     Challenger = 1,
@@ -128,7 +147,7 @@ pub enum GameActionError {
 
 #[derive(Serialize, Deserialize, Debug, Clone, TS)]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
-#[cfg_attr(feature="db", derive(diesel::AsExpression))]
+#[cfg_attr(feature = "db", derive(diesel::AsExpression))]
 #[cfg_attr(feature="db", diesel(sql_type=diesel::sql_types::Text))]
 pub enum GameError {
     RunTimeError(WhichBot),

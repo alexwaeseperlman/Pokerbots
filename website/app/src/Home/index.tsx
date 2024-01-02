@@ -38,7 +38,7 @@ export function LogoText({ text }: { text: string }) {
           textShadow: vals1,
           color: "#CDC0FF",
           mask: "repeating-linear-gradient(45deg, transparent 0 3px, rgba(0,0,0,0.5) 0 6px)",
-          transition: "text-shadow 0.2s ease-out",
+          transition: "text-shadow 0.2s ease",
         },
         "&:hover:before": {
           textShadow: vals2

@@ -1,7 +1,12 @@
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 use std::{cmp::Ordering, fmt::Display};
 
-#[derive(PartialEq, Eq, Clone, Debug, Copy)]
+#[derive(PartialEq, Eq, Clone, Debug, Copy, Serialize, Deserialize, TS)]
+#[cfg_attr(feature="db", derive(diesel::AsExpression))]
+#[cfg_attr(feature="ts-bindings", ts(export))]
+#[cfg_attr(feature="db", diesel(sql_type=diesel::sql_types::Text))]
 pub enum Suite {
     Clubs,
     Spades,
@@ -25,7 +30,10 @@ impl Display for Suite {
     }
 }
 
-#[derive(Clone, Debug, Copy, PartialEq, Eq)]
+#[derive(Clone, Debug, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[cfg_attr(feature="ts-bindings", ts(export))]
+#[cfg_attr(feature="db", derive(diesel::AsExpression))]
+#[cfg_attr(feature="db", diesel(sql_type=diesel::sql_types::Text))]
 pub struct Card {
     pub value: u32,
     pub suite: Suite,

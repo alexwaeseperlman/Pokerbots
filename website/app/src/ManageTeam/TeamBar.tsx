@@ -7,7 +7,7 @@ import Table from "@mui/joy/Table";
 import Avatar from "@mui/joy/Avatar";
 import CircularProgress from "@mui/joy/CircularProgress";
 import FileUpload from "../components/BotUpload";
-import { TableButton } from "../components/Tables/GameTable/TableButton";
+import { TableButton } from "../components/Tables/GameList/TableButton";
 import { Button, Input, TextField, Typography, useTheme } from "@mui/joy";
 import EditIcon from "@mui/icons-material/Edit";
 import CopyIcon from "@mui/icons-material/ContentCopy";
