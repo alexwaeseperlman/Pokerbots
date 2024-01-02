@@ -85,5 +85,3 @@ echo
 
 echo "### Reloading nginx ..."
 docker-compose exec nginx nginx -s reload
-
-echo "Check .volumes to make sure that the certs are in a folder named the same your domain name. There might be a suffix like -0001, feel free to remove it."

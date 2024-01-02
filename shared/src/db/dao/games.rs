@@ -121,7 +121,6 @@ impl GamesDao for PgConnection {
             .left_join(game_results::dsl::game_results.on(games::dsl::id.eq(game_results::dsl::id)))
             .into_boxed();
 
-        base = base.order_by(games::dsl::created.desc());
         if let Some(id) = id {
             base = base.filter(schema::games::dsl::id.eq(id));
         }
