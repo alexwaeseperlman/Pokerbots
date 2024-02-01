@@ -220,6 +220,7 @@ export class ResultsWorkerConstruct extends Construct {
 
     db.connections.allowDefaultPortFrom(service);
 
+    game_logs_s3.grantReadWrite(task.taskRole);
   }
 }
 
