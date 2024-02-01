@@ -211,7 +211,7 @@ export class ResultsWorkerConstruct extends Construct {
     const service = new ecs.FargateService(this, "results-service", {
       cluster,
       taskDefinition: task,
-      desiredCount: 0,
+      desiredCount: 1,
     });
 
     game_results_sqs.grantConsumeMessages(task.taskRole);
@@ -220,27 +220,6 @@ export class ResultsWorkerConstruct extends Construct {
 
     db.connections.allowDefaultPortFrom(service);
 
-    const autoscalingGroup = service.autoScaleTaskCount({
-      minCapacity: 0,
-      maxCapacity: 1,
-    });
-
-    const workerQueueMetric = new cloudwatch.MathExpression({
-      expression: "m1 + m2",
-      usingMetrics: {
-        m1: game_results_sqs.metricApproximateNumberOfMessagesVisible(),
-        m2: build_results_sqs.metricApproximateNumberOfMessagesVisible(),
-      },
-    });
-
-    autoscalingGroup.scaleOnMetric("results-queue-size", {
-      metric: workerQueueMetric,
-      scalingSteps: [
-        { upper: 0, change: 0 },
-        { lower: 1, change: 1 },
-      ],
-      adjustmentType: AdjustmentType.EXACT_CAPACITY,
-    });
   }
 }
 
@@ -379,6 +358,8 @@ export class ScalingAPIConstruct extends Construct {
     new_games_sqs.grantSendMessages(
       this.loadBalancer.service.taskDefinition.taskRole
     );
+
+    resume_s3.grantReadWrite(this.loadBalancer.service.taskDefinition.taskRole);
   }
 }
 
