@@ -311,18 +311,27 @@ export class ScalingAPIConstruct extends Construct {
           environment: {
             DB_USER: "postgres",
             DB_URL: db.instanceEndpoint.socketAddress,
-            MICROSOFT_CLIENT_ID: process.env.MICROSOFT_CLIENT_ID ?? "",
-            MICROSOFT_TENANT_ID: process.env.MICROSOFT_TENANT_ID ?? "",
+
+            APP_MICROSOFT_CLIENT_ID: process.env.APP_MICROSOFT_CLIENT_ID ?? "",
+            APP_GOOGLE_CLIENT_ID: process.env.APP_GOOGLE_CLIENT_ID ?? "",
+
             PFP_S3_BUCKET: this.pfp_s3.bucketName,
             BOT_S3_BUCKET: bot_s3.bucketName,
-            BUILD_LOGS_S3_BUCKET: build_logs_s3.bucketName,
             GAME_LOGS_S3_BUCKET: game_logs_s3.bucketName,
+            BUILD_LOGS_S3_BUCKET: build_logs_s3.bucketName,
             RESUME_S3_BUCKET: resume_s3.bucketName,
+            
             BOT_SIZE: "5000000",
+
             BOT_UPLOADS_QUEUE_URL: bot_uploads_sqs.queueUrl,
             NEW_GAMES_QUEUE_URL: new_games_sqs.queueUrl,
             RUST_LOG: "info",
             PORT: "80",
+
+            EMAIL_ADDRESS: process.env.EMAIL_ADDRESS ?? "",
+            EMAIL_APP_PASSWORD: process.env.EMAIL_APP_PASSWORD ?? "",
+            DOMAIN_NAME: domainName,
+            SMTP_SERVER: process.env.SMTP_SERVER ?? "",
           },
           secrets: {
             SECRET_KEY: secretKey,
@@ -331,6 +340,13 @@ export class ScalingAPIConstruct extends Construct {
               new sman.Secret(this, "azure-secret", {
                 secretStringValue: cdk.SecretValue.unsafePlainText(
                   process.env.AZURE_SECRET ?? ""
+                ),
+              })
+            ),
+            GOOGLE_SECRET: ecs.Secret.fromSecretsManager(
+              new sman.Secret(this, "google-secret", {
+                secretStringValue: cdk.SecretValue.unsafePlainText(
+                  process.env.GOOGLE_SECRET ?? ""
                 ),
               })
             ),
@@ -372,10 +388,10 @@ export class ResourcesStack extends cdk.Stack {
 
     /*const zone = route53.HostedZone.fromHostedZoneAttributes(this, "zone", {
       hostedZoneId: "us-east-1",
-      zoneName: process.env.APP_DOMAIN_NAME as string,
+      zoneName: process.env.DOMAIN_NAME as string,
     });*/
     const cert = new certManager.Certificate(this, "cert", {
-      domainName: process.env.APP_DOMAIN_NAME as string,
+      domainName: process.env.DOMAIN_NAME as string,
       validation: certManager.CertificateValidation.fromDns(),
     });
     const vpc = new ec2.Vpc(this, "app-vpc", {
@@ -466,7 +482,7 @@ export class ResourcesStack extends cdk.Stack {
       vpc,
       dbPassword,
       cert,
-      process.env.APP_DOMAIN_NAME as string,
+      process.env.DOMAIN_NAME as string,
       bot_s3,
       bot_uploads_sqs,
       new_games_sqs,
