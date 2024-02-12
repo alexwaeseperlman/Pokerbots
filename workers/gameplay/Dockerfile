@@ -1,4 +1,4 @@
-FROM --platform=linux/arm64 rust:1.70 as builder
+FROM --platform=linux/arm64 rust:1.76-bullseye as builder
 
 WORKDIR /usr/src/gameplay
 

@@ -8,7 +8,7 @@ RUN npm ci
 COPY website/app .
 RUN npm run build
 
-FROM --platform=linux/arm64 rust:1.70 as backend
+FROM --platform=linux/arm64 rust:1.76-bullseye as backend
 WORKDIR /usr/src/backend
 RUN apt-get update && apt-get install pkg-config libssl-dev libpq-dev curl build-essential -y
 

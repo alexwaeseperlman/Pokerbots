@@ -382,7 +382,7 @@ export class ResourcesStack extends cdk.Stack {
       natGatewayProvider: ec2.NatProvider.instance({
         instanceType: ec2.InstanceType.of(
           ec2.InstanceClass.T3A,
-          ec2.InstanceSize.MICRO
+          ec2.InstanceSize.SMALL
         ),
       }),
       natGateways: 1,
@@ -431,8 +431,11 @@ export class ResourcesStack extends cdk.Stack {
       "unsafe-worker-capacity",
       {
         instanceType: ec2.InstanceType.of(
-          ec2.InstanceClass.C6G,
-          ec2.InstanceSize.MEDIUM
+          //TODO: In prod use C6G
+          /*ec2.InstanceClass.C6G,
+          ec2.InstanceSize.MEDIUM*/
+          ec2.InstanceClass.T4G,
+          ec2.InstanceSize.MICRO
         ),
         machineImage: ecs.EcsOptimizedImage.amazonLinux2(
           ecs.AmiHardwareType.ARM
