@@ -118,20 +118,6 @@ pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
                         challenger_score,
                         starting_stack_size
                     );
-                    // Don't rate games that had an internal error
-                    (defender_rating_change, challenger_rating_change) = get_rating_change(
-                        game.defender_rating,
-                        score,
-                        game.challenger_rating,
-                        1.0 - score,
-                    );
-                    // don't update rating for internal errors
-                    match error_type {
-                        Some(GameError::InternalError) => {
-                            (defender_rating_change, challenger_rating_change) = (0.0, 0.0);
-                        }
-                        _ => {}
-                    }
 
                     let (defender_bot, defender_team) = shared::db::schema::bots::dsl::bots
                         .find(game.defender)
@@ -149,6 +135,22 @@ pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
                                     .eq(shared::db::schema::teams::dsl::id)),
                         )
                         .first::<(Bot, Team)>(db_conn)?;
+
+                    // Don't rate games that had an internal error
+                    (defender_rating_change, challenger_rating_change) = get_rating_change(
+                        defender_team.rating,
+                        score,
+                        challenger_team.rating,
+                        1.0 - score,
+                    );
+                    // don't update rating for internal errors
+                    match error_type {
+                        Some(GameError::InternalError) => {
+                            (defender_rating_change, challenger_rating_change) = (0.0, 0.0);
+                        }
+                        _ => {}
+                    }
+
                     // Update rating
                     let defender: Team = diesel::update(teams::table.find(defender_team.id))
                         .set(teams::dsl::rating.eq(teams::dsl::rating + defender_rating_change))
