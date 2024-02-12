@@ -3,7 +3,6 @@ use diesel::prelude::*;
 use futures_lite::StreamExt;
 use log::error;
 use shared::{
-    poker::game::GameStateSQL,
     db::{
         self,
         models::{self, Bot, Game, NewBot, Team},
@@ -13,6 +12,7 @@ use shared::{
             teams,
         },
     },
+    poker::game::GameStateSQL,
     GameError, GameStatus, GameStatusMessage, WhichBot,
 };
 
@@ -26,6 +26,7 @@ pub fn sb_to_team(sb: WhichBot) -> [usize; 2] {
 }
 
 pub async fn save_game_details<T: AsRef<str>>(id: T) -> Result<(), ()> {
+    log::info!("Saving game details for {}", id.as_ref());
     let id_str = id.as_ref();
     let config = shared::aws_config().await;
     let s3 = shared::s3_client(&config).await;
@@ -78,20 +79,20 @@ pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
         Err(e) => match e {
             GameError::InternalError => (starting_stack_size, starting_stack_size),
             GameError::InvalidActionError(which_bot) => match which_bot {
-                shared::WhichBot::Defender => (-2*starting_stack_size, 2*starting_stack_size),
-                shared::WhichBot::Challenger => (2*starting_stack_size, -2*starting_stack_size),
+                shared::WhichBot::Defender => (-starting_stack_size, starting_stack_size),
+                shared::WhichBot::Challenger => (starting_stack_size, -starting_stack_size),
             },
             GameError::MemoryError(which_bot) => match which_bot {
-                shared::WhichBot::Defender => (-2*starting_stack_size, 2*starting_stack_size),
-                shared::WhichBot::Challenger => (2*starting_stack_size, -2*starting_stack_size),
+                shared::WhichBot::Defender => (-starting_stack_size, starting_stack_size),
+                shared::WhichBot::Challenger => (starting_stack_size, -starting_stack_size),
             },
             GameError::RunTimeError(which_bot) => match which_bot {
-                shared::WhichBot::Defender => (-2*starting_stack_size, 2*starting_stack_size),
-                shared::WhichBot::Challenger => (2*starting_stack_size, -2*starting_stack_size),
+                shared::WhichBot::Defender => (-starting_stack_size, starting_stack_size),
+                shared::WhichBot::Challenger => (starting_stack_size, -starting_stack_size),
             },
             GameError::TimeoutError(which_bot) => match which_bot {
-                shared::WhichBot::Defender => (-2*starting_stack_size, 2*starting_stack_size),
-                shared::WhichBot::Challenger => (2*starting_stack_size, -2*starting_stack_size),
+                shared::WhichBot::Defender => (-starting_stack_size, starting_stack_size),
+                shared::WhichBot::Challenger => (starting_stack_size, -starting_stack_size),
             },
         },
     };
@@ -108,12 +109,14 @@ pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
                             e
                         })?;
                     // calculate the bots ratings
-                    let score = (starting_stack_size as f32 + defender_score as f32) / (2.0f32*starting_stack_size as f32);
+                    let score = (starting_stack_size as f32 + defender_score as f32)
+                        / (2.0f32 * starting_stack_size as f32);
                     log::info!(
-                        "Score: {}, defender score {}, challenger score {}",
+                        "Score: {}, defender score {}, challenger score {}, starting stack size {}",
                         score,
                         defender_score,
-                        challenger_score
+                        challenger_score,
+                        starting_stack_size
                     );
                     // Don't rate games that had an internal error
                     (defender_rating_change, challenger_rating_change) = get_rating_change(
@@ -161,21 +164,27 @@ pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
                         challenger
                     );
 
-                    diesel::insert_into(game_results::table)
-                        .values(models::NewGameResult {
-                            id: id.clone(),
-                            challenger_rating_change,
-                            defender_rating_change,
-                            defender_score,
-                            challenger_score,
-                            error_type: error_type.clone(),
-                            challenger_rating: challenger.rating,
-                            defender_rating: defender.rating,
-                        })
+                    let new_result = models::NewGameResult {
+                        id: id.clone(),
+                        challenger_rating_change,
+                        defender_rating_change,
+                        defender_score,
+                        challenger_score,
+                        error_type: error_type.clone(),
+                        challenger_rating: challenger.rating,
+                        defender_rating: defender.rating,
+                    };
+                    diesel::insert_into(game_results::dsl::game_results)
+                        .values(&new_result)
+                        .on_conflict(game_results::dsl::id)
+                        .do_update()
+                        .set(&new_result)
                         .execute(db_conn)?;
+                    log::debug!("Inserted game result for {}", id.clone());
                     diesel::update(games::table.find(id.clone()))
                         .set(games::dsl::running.eq(false))
                         .execute(db_conn)?;
+                    log::debug!("Not running for {}", id.clone());
                 }
                 Ok(GameStatus::TestGameSucceeded) => {
                     // set the active bot for the team if they don't have one

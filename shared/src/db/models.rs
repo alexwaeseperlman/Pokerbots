@@ -133,7 +133,7 @@ pub struct GameResult {
     pub challenger_rating: f32,
 }
 
-#[derive(Deserialize, Debug, Selectable, Insertable, TS)]
+#[derive(Deserialize, Debug, Selectable, Insertable, TS, AsChangeset)]
 #[cfg_attr(feature = "ts-bindings", ts(export))]
 #[diesel(table_name = game_results)]
 pub struct NewGameResult {

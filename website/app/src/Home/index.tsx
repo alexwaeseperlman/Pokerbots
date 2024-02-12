@@ -19,7 +19,7 @@ export function LogoText({ text }: { text: string }) {
     <Typography
       level="h1"
       color="inherit"
-      sx={theme => ({
+      sx={(theme) => ({
         fontSize: 100,
         [theme.breakpoints.down("sm")]: {
           fontSize: 88,
@@ -41,7 +41,7 @@ export function LogoText({ text }: { text: string }) {
           transition: "text-shadow 0.2s ease",
         },
         "&:hover:before": {
-          textShadow: vals2
+          textShadow: vals2,
         },
       })}
     >
@@ -61,7 +61,6 @@ export default function HomePage() {
           flexDirection: "column",
           justifyContent: "center",
           display: "flex",
-          pb: 4,
         }}
       >
         <Box
@@ -71,14 +70,15 @@ export default function HomePage() {
             display: "flex",
             maxWidth: "700px",
             flexGrow: 1,
-            gap: 4,
+            gap: 2,
           }}
         >
           <Box
             sx={{
               display: "flex",
-              flexDirection: "column",
+              flexDirection: "row",
               alignItems: "left",
+              gap: 4,
             }}
           >
             <LogoText text="UPAC" />

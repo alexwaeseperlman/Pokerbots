@@ -28,9 +28,10 @@ pub async fn matchmake(s3_client: &aws_sdk_s3::Client, sqs_client: &aws_sdk_sqs:
             .parse::<u64>()
             .unwrap_or(60000);
         // give an average of 60 seconds per game, plus 10
-        tokio::time::sleep(std::time::Duration::from_secs(
-            1
-        ) + std::time::Duration::from_millis(matchmaking_interval))
+        tokio::time::sleep(
+            std::time::Duration::from_secs(1)
+                + std::time::Duration::from_millis(matchmaking_interval),
+        )
         .await;
     }
 }
@@ -74,7 +75,7 @@ pub async fn matchmake_round(
             Ok(_) => {
                 log::info!("Created game between {} and {}", this.name, other.name);
             }
-            Err(_) => {
+            Err(err) => {
                 log::info!(
                     "Failed to create game between {} and {}",
                     this.name,

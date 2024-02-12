@@ -200,6 +200,7 @@ export class ResultsWorkerConstruct extends Construct {
         NEW_GAMES_QUEUE_URL: new_games_sqs.queueUrl,
         BUILD_LOGS_S3_BUCKET: build_logs_s3.bucketName,
         GAME_LOGS_S3_BUCKET: game_logs_s3.bucketName,
+        RUST_LOG: "info",
       },
       secrets: {
         DB_PASSWORD: ecs.Secret.fromSecretsManager(password),
@@ -373,7 +374,7 @@ export class ResourcesStack extends cdk.Stack {
       zoneName: process.env.DOMAIN_NAME as string,
     });*/
     const cert = new certManager.Certificate(this, "cert", {
-      domainName: process.env.DOMAIN_NAME as string,
+      domainName: "upac.dev",
       validation: certManager.CertificateValidation.fromDns(),
     });
     const vpc = new ec2.Vpc(this, "app-vpc", {
@@ -464,7 +465,7 @@ export class ResourcesStack extends cdk.Stack {
       vpc,
       dbPassword,
       cert,
-      process.env.DOMAIN_NAME as string,
+      "upac.dev",
       bot_s3,
       bot_uploads_sqs,
       new_games_sqs,
