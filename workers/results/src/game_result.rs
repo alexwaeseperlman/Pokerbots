@@ -3,7 +3,6 @@ use diesel::prelude::*;
 use futures_lite::StreamExt;
 use log::error;
 use shared::{
-    poker::game::GameStateSQL,
     db::{
         self,
         models::{self, Bot, Game, NewBot, Team},
@@ -13,6 +12,7 @@ use shared::{
             teams,
         },
     },
+    poker::game::GameStateSQL,
     GameError, GameStatus, GameStatusMessage, WhichBot,
 };
 
@@ -43,10 +43,11 @@ pub async fn save_game_details<T: AsRef<str>>(id: T) -> Result<(), ()> {
         .await
         .map_err(|e| log::error!("Failed to collect game states: {}", e))?;
     let vec = body.to_vec();
-    let lines = vec.split(|b| *b == 0xA);
+    let mut lines = vec.split(|b| *b == 0xA);
     let conn = &mut (*shared::db::conn::DB_CONNECTION)
         .get()
         .map_err(|e| log::error!("Failled to open connection to SLQ: {}", e))?;
+    let _ = lines.next_back();
     for line in lines {
         let mut game_state: GameStateSQL = serde_json::from_slice(line)
             .map_err(|e| log::error!("Failed to convert json to GameStateSQL: {}", e))?;
