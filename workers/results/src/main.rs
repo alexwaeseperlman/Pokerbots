@@ -1,4 +1,5 @@
 use aws_sdk_s3::presigning::PresigningConfig;
+use diesel::prelude::*;
 use results::build_result::handle_build_result;
 use results::game_result::{handle_game_result, save_game_details};
 use shared::sqs::listen_on_queue;
@@ -56,7 +57,21 @@ async fn main() {
             &sqs,
             |task: GameStatusMessage| async move {
                 log::info!("Received game result: {:?}", task);
-                handle_game_result(task).await.is_ok()
+                let id = task.id.clone();
+                let result = handle_game_result(task).await.is_ok();
+                if let Ok(mut db_conn) = shared::db::conn::DB_CONNECTION.get() {
+                    let db_conn = &mut (*db_conn);
+                    if let Err(_) = diesel::update(shared::db::schema::games::table.find(id.clone()))
+                        .set(shared::db::schema::games::dsl::running.eq(false))
+                        .execute(db_conn) {
+                        log::error!("Failed to update running status of {}", id.clone());
+                    }
+                }
+                else {
+                        log::error!("Failed to update running status of {}", id.clone());
+
+                }
+                result
             },
             |err| log::error!("Error receiving game result: {}", err),
         ),

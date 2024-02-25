@@ -183,10 +183,6 @@ pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
                         .set(&new_result)
                         .execute(db_conn)?;
                     log::debug!("Inserted game result for {}", id.clone());
-                    diesel::update(games::table.find(id.clone()))
-                        .set(games::dsl::running.eq(false))
-                        .execute(db_conn)?;
-                    log::debug!("Not running for {}", id.clone());
                 }
                 Ok(GameStatus::TestGameSucceeded) => {
                     // set the active bot for the team if they don't have one
@@ -240,6 +236,11 @@ pub async fn handle_game_result(status: GameStatusMessage) -> Result<(), ()> {
             Ok::<(), diesel::result::Error>(())
         })
         .map_err(|_| ())?;
-    save_game_details(id).await?;
+
+    // Don't fail if we can't save the game details
+    if let Err(_) = save_game_details(id.clone()).await {
+        log::error!("Failed to save game details for {}", id);
+    }
+
     Ok(())
 }

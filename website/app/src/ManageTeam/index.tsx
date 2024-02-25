@@ -44,7 +44,7 @@ function TeamStats({ team }: { team: TeamWithMembers<User> }) {
 
   useEffect(() => {
     const getGames = () => {
-      fetch(`${apiUrl}/count-games?team_id=${team.id}`).then(async (res) => {
+      fetch(`${apiUrl}/count-games?team=${team.id}`).then(async (res) => {
         const json = await res.json();
         if (res.status === 200) {
           setGamesPlayed(json);
