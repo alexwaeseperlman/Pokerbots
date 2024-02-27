@@ -8,3 +8,5 @@ description = "The official Documentation for UPAC"
 [build]
 build-dir = "public"
 create-missing = false
+[output.html]
+mathjax-support = true
