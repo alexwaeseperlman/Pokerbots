@@ -1,13 +1,15 @@
 import React from "react";
 import Box from "@mui/joy/Box";
 import Logo from "../components/Logo";
-import { Button, Link, Sheet, Typography } from "@mui/joy";
+import { Button, Divider, Link, Sheet, Typography, useTheme } from "@mui/joy";
 import { DiscordLogo } from "./Discord";
 import Container from "@mui/joy/Container";
 import graphic_small from "./graphic_small.png";
 import graphic from "./graphic.png";
 import BackgroundImage from "../components/BackgroundImage";
 import HeaderFooter from "../components/HeaderFooter";
+import Logos from "./Sponsors/Sponsors";
+import FAQ from "./FAQ";
 
 export function LogoText({ text }: { text: string }) {
   let vals1 = "0px 0px";
@@ -50,39 +52,76 @@ export function LogoText({ text }: { text: string }) {
   );
 }
 
+function InfoSection(props: { title: string; children: React.ReactNode }) {
+  return (
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      <Typography level="h3" color="inherit">
+        {props.title}
+      </Typography>
+      {props.children}
+    </Box>
+  );
+}
+
+function InfoSections() {
+  return (
+    <Box
+      sx={(theme) => ({
+        display: "flex",
+        flexDirection: "row",
+        gap: 2,
+        justifyContent: "space-between",
+        [theme.breakpoints.down("sm")]: {
+          flexDirection: "column",
+          gap: 4,
+        },
+      })}
+    >
+      <InfoSection title="Design a bot">
+        <Typography level="body-md" color="inherit">
+          Develop a poker algorithm in a programming language of your choice
+        </Typography>
+        <Link href="https://docs.upac.dev/">View documentation</Link>
+      </InfoSection>
+      <InfoSection title="Compete">
+        <Typography level="body-md" color="inherit">
+          Your algorithms will automatically be tested against each other on our
+          platform
+        </Typography>
+        <Link href="/recent-games">View recent games</Link>
+      </InfoSection>
+      <InfoSection title="Get ranked">
+        <Typography level="body-md" color="inherit">
+          We will calculate your Elo, and rank you against other competitors
+        </Typography>
+        <Link href="/leaderboard">View leaderboard</Link>
+      </InfoSection>
+    </Box>
+  );
+}
+
 export default function HomePage() {
   return (
     <HeaderFooter>
-      <Container
+      <Box
         sx={{
-          margin: "auto",
-          gridArea: "content",
-          height: "100%",
+          mt: 16,
+          gridArea: "content / content / content / extra",
           flexDirection: "column",
           justifyContent: "center",
           display: "flex",
+          gap: 10,
         }}
       >
         <Box
           sx={{
-            flexDirection: "column",
-            justifyContent: "center",
             display: "flex",
-            maxWidth: "700px",
-            flexGrow: 1,
+            flexDirection: "column",
+            alignItems: "left",
             gap: 2,
           }}
         >
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "left",
-              gap: 4,
-            }}
-          >
-            <LogoText text="UPAC" />
-          </Box>
+          <LogoText text="UPAC" />
           <Box
             sx={{
               display: "flex",
@@ -101,13 +140,29 @@ export default function HomePage() {
               Join our discord
             </Button>
           </Box>
-          <Typography textColor="inherit" level="body-md">
-            The competition will start in 2024. For sponsorship inquiries,
-            please contact{" "}
+        </Box>
+        <Box>
+          <Typography level="h3" color="inherit">
+            Sponsored by
+          </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 4,
+            }}
+          >
+            <Logos />
+          </Box>
+          <Typography textColor="inherit" level="body-md" mt={1}>
+            For sponsorship inquiries, please contact{" "}
             <Link href="mailto:alex@alexwp.com">alex@alexwp.com</Link>
           </Typography>
         </Box>
-      </Container>
+        <InfoSections />
+        <FAQ />
+      </Box>
     </HeaderFooter>
   );
 }
