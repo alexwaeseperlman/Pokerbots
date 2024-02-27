@@ -1,3 +1,3 @@
 # Sponsorship
 
-Contact us at contact@upac.dev!
+Contact us at alex@alexwp.com!

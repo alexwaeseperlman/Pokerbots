@@ -2,11 +2,12 @@
 
 ## Teams
 
-We invite teams to join the competition with a size ranging from 1 to 5 members. Each team member must meet the following criteria:
+Right now the UPAC platform is open to everyone, but future competitions
+with prizes will only available to students.
 
-- Currently a student (high school, undergrad, masters or PhD).
+We invite prize-elligible teams to join the competition with a size ranging from 1 to 5 members. Each team member must meet the following criteria:
 
-- Not a resident of a country, state, province or territory where the laws of the United States or local law prohibits participating or receiving a prize in an online contest (including, but not limited to, Brazil, Quebec, Russia, Crimea, Cuba, Iran, North Korea, Syria and any other country designated by the United States Treasury's Office of Foreign Assets Control) 
+- Currently a student enrolled at a Canadian university (high school, undergrad, masters or PhD).
 
 - Not a member of UPAC's team.
 
